@@ -12,6 +12,13 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include "ternary_core.h"
+
+// MSVC compatibility: ssize_t is not standard C++
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 namespace py = pybind11;
 
 // --- Conversion trit → int8 (INVERTED MAPPING) ---
@@ -62,7 +69,17 @@ static inline __m256i tadd_simd(__m256i a, __m256i b) {
 static inline __m256i tmul_simd(__m256i a, __m256i b) {
     __m256i ai = trit_to_int8(a);
     __m256i bi = trit_to_int8(b);
-    __m256i p = _mm256_mullo_epi8(ai, bi);
+    // AVX2 doesn't have _mm256_mullo_epi8, emulate with 16-bit multiply
+    // Split into low/high bytes, multiply as 16-bit, recombine
+    __m256i ai_lo = _mm256_srai_epi16(_mm256_unpacklo_epi8(ai, ai), 8);
+    __m256i ai_hi = _mm256_srai_epi16(_mm256_unpackhi_epi8(ai, ai), 8);
+    __m256i bi_lo = _mm256_srai_epi16(_mm256_unpacklo_epi8(bi, bi), 8);
+    __m256i bi_hi = _mm256_srai_epi16(_mm256_unpackhi_epi8(bi, bi), 8);
+    __m256i p_lo = _mm256_mullo_epi16(ai_lo, bi_lo);
+    __m256i p_hi = _mm256_mullo_epi16(ai_hi, bi_hi);
+    __m256i p = _mm256_packs_epi16(p_lo, p_hi);
+    // Restore lane order (packs crosses 128-bit lanes)
+    p = _mm256_permute4x64_epi64(p, 0xD8);
     return int8_to_trit(clamp(p));
 }
 
@@ -92,12 +109,15 @@ py::array_t<uint8_t> func##_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B
     if (n != B.size()) throw std::runtime_error("Arrays must match"); \
     py::array_t<uint8_t> out(n); \
     auto r = out.mutable_unchecked<1>(); \
+    const uint8_t* a_ptr = static_cast<const uint8_t*>(A.data()); \
+    const uint8_t* b_ptr = static_cast<const uint8_t*>(B.data()); \
+    uint8_t* r_ptr = static_cast<uint8_t*>(out.mutable_data()); \
     ssize_t i = 0; \
     for (; i + 32 <= n; i += 32) { \
-        __m256i va = _mm256_loadu_si256((__m256i const*)(a.data() + i)); \
-        __m256i vb = _mm256_loadu_si256((__m256i const*)(b.data() + i)); \
+        __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i)); \
+        __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + i)); \
         __m256i vr = func##_simd(va, vb); \
-        _mm256_storeu_si256((__m256i*)(r.mutable_data() + i), vr); \
+        _mm256_storeu_si256((__m256i*)(r_ptr + i), vr); \
     } \
     for (; i < n; ++i) r[i] = func(a[i], b[i]); \
     return out; \
@@ -109,11 +129,13 @@ py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
     ssize_t n = A.size();
     py::array_t<uint8_t> out(n);
     auto r = out.mutable_unchecked<1>();
+    const uint8_t* a_ptr = static_cast<const uint8_t*>(A.data());
+    uint8_t* r_ptr = static_cast<uint8_t*>(out.mutable_data());
     ssize_t i = 0;
     for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((__m256i const*)(a.data() + i));
+        __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
         __m256i vr = tnot_simd(va);
-        _mm256_storeu_si256((__m256i*)(r.mutable_data() + i), vr);
+        _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
     }
     for (; i < n; ++i) r[i] = tnot(a[i]);
     return out;
