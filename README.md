@@ -1,5 +1,7 @@
 # Ternary Core SIMD
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 High-performance balanced ternary arithmetic library with AVX2 SIMD vectorization and Python bindings.
 
 ## Technical Overview
@@ -399,7 +401,7 @@ Detailed technical documentation is available in the `docs/` directory:
 
 ## License
 
-TBD
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
 
 ## References
 
