@@ -14,12 +14,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// DESIGN NOTE: Inverted Polarity Mapping
-// This implementation uses an intentionally inverted int8 intermediate representation
-// for SIMD efficiency. The trit encoding (0b00=-1, 0b01=0, 0b10=+1) is mapped to
-// int8 as (+1, 0, -1) respectively — opposite of the logical ternary values.
-// This inversion is self-consistent and cancels out during round-trip conversions,
-// producing mathematically correct ternary results. See trit_to_int8() for details.
+// DESIGN NOTE: Phase 0.5 - LUT-Based SIMD Implementation (OPT-061)
+// This implementation uses SIMD shuffle instructions (_mm256_shuffle_epi8) for
+// parallel lookup table operations, replacing the previous int8 arithmetic approach.
+// Each operation performs 32 parallel LUT lookups across vector lanes, achieving
+// the same LUT-based architecture used in scalar operations (Phase 0).
+//
+// Previous approach (Phase 0, pre-OPT-061):
+// - Converted trits to inverted int8 representation
+// - Used arithmetic SIMD intrinsics (_mm256_adds_epi8, _mm256_min_epi8, etc.)
+// - Required conversions and clamping overhead
+//
+// Current approach (Phase 0.5, OPT-061):
+// - Direct LUT lookups via _mm256_shuffle_epi8
+// - No conversions or arithmetic operations
+// - Completes Sidestep #2 (SIMD Vectorization with LUTs)
 
 #include <immintrin.h>
 #include <stdint.h>
@@ -35,83 +44,91 @@ typedef SSIZE_T ssize_t;
 
 namespace py = pybind11;
 
-// --- Conversion trit → int8 (INVERTED MAPPING) ---
-// IMPORTANT: This uses an inverted polarity mapping for SIMD efficiency:
-//   Trit 0b00 (logical -1) → int8 +1
-//   Trit 0b01 (logical  0) → int8  0
-//   Trit 0b10 (logical +1) → int8 -1
-// This inversion is intentional and self-consistent throughout all operations.
-// The round-trip conversion (trit→int8→operations→int8→trit) produces
-// mathematically correct ternary results despite the inverted intermediate form.
-static inline __m256i trit_to_int8(__m256i v) {
-    __m256i neg = _mm256_cmpeq_epi8(v, _mm256_set1_epi8(0b00));  // 0xFF if v==0b00, else 0x00
-    __m256i pos = _mm256_cmpeq_epi8(v, _mm256_set1_epi8(0b10));  // 0xFF if v==0b10, else 0x00
-    // pos - neg yields: 0b00→(0-(-1))=+1, 0b01→(0-0)=0, 0b10→((-1)-0)=-1
-    return _mm256_sub_epi8(pos, neg);
+// --- LUT-Based SIMD Operations (OPT-061) ---
+// Each operation uses _mm256_shuffle_epi8 for 32 parallel LUT lookups.
+// The LUTs are the same 16-entry tables used in scalar operations (ternary_core.h).
+
+// Helper: Load 16-entry LUT and broadcast to both 128-bit lanes of 256-bit vector
+static inline __m256i broadcast_lut_16(const uint8_t* lut) {
+    // Load 16 bytes into lower 128 bits, then duplicate to upper 128 bits
+    __m128i lut_128 = _mm_loadu_si128((const __m128i*)lut);
+    return _mm256_broadcastsi128_si256(lut_128);
 }
 
-// --- Conversion int8 → trit (INVERTED MAPPING, reverse of above) ---
-// Converts back from inverted int8 representation to trit encoding:
-//   int8 +1 → Trit 0b00 (logical -1)
-//   int8  0 → Trit 0b01 (logical  0)
-//   int8 -1 → Trit 0b10 (logical +1)
-// This maintains consistency with trit_to_int8's inverted polarity.
-static inline __m256i int8_to_trit(__m256i v) {
-    __m256i neg = _mm256_cmpeq_epi8(v, _mm256_set1_epi8(-1));  // 0xFF if v==-1, else 0x00
-    __m256i pos = _mm256_cmpeq_epi8(v, _mm256_set1_epi8(1));   // 0xFF if v==+1, else 0x00
-    __m256i out = _mm256_blendv_epi8(_mm256_set1_epi8(0b01), _mm256_set1_epi8(0b00), neg);  // -1→0b10, else 0b01
-    out = _mm256_blendv_epi8(out, _mm256_set1_epi8(0b10), pos);  // +1→0b00, else keep previous
-    return out;
+// Helper: Mask to ensure only lower 2 bits of each byte are used (sanitize input)
+static inline __m256i mask_trit(__m256i v) {
+    return _mm256_and_si256(v, _mm256_set1_epi8(0x03));
 }
 
-// --- Saturating clamp [-1,1] (operates on inverted int8 space) ---
-static inline __m256i clamp(__m256i v) {
-    __m256i one = _mm256_set1_epi8(1);
-    __m256i neg1 = _mm256_set1_epi8(-1);
-    return _mm256_max_epi8(_mm256_min_epi8(v, one), neg1);
-}
-
-// --- Basic operations (work correctly despite inverted int8 mapping) ---
-// All operations convert trit→int8, operate in int8 space, then convert back.
-// The inverted polarity cancels out during the round-trip, yielding correct ternary results.
+// --- Binary Operations (tadd, tmul, tmin, tmax) ---
+// Index formula: (a << 2) | b, where a and b are 2-bit trits
 
 static inline __m256i tadd_simd(__m256i a, __m256i b) {
-    __m256i s = _mm256_adds_epi8(trit_to_int8(a), trit_to_int8(b));  // Saturating add in int8 space
-    return int8_to_trit(clamp(s));  // Clamp to [-1,+1] and convert back to trit
+    // Build 4-bit indices: (a << 2) | b
+    // Since there's no byte-level shift in AVX2, use _mm256_add_epi8 with itself (x+x+x+x = x*4)
+    __m256i a_masked = mask_trit(a);
+    __m256i b_masked = mask_trit(b);
+    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
+                                         _mm256_add_epi8(a_masked, a_masked)); // a * 4
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+
+    // Load and broadcast TADD_LUT
+    __m256i lut = broadcast_lut_16(TADD_LUT);
+
+    // Perform 32 parallel LUT lookups
+    return _mm256_shuffle_epi8(lut, indices);
 }
 
 static inline __m256i tmul_simd(__m256i a, __m256i b) {
-    __m256i ai = trit_to_int8(a);
-    __m256i bi = trit_to_int8(b);
-    // AVX2 doesn't have _mm256_mullo_epi8, emulate with 16-bit multiply
-    // Split into low/high bytes, multiply as 16-bit, recombine
-    __m256i ai_lo = _mm256_srai_epi16(_mm256_unpacklo_epi8(ai, ai), 8);
-    __m256i ai_hi = _mm256_srai_epi16(_mm256_unpackhi_epi8(ai, ai), 8);
-    __m256i bi_lo = _mm256_srai_epi16(_mm256_unpacklo_epi8(bi, bi), 8);
-    __m256i bi_hi = _mm256_srai_epi16(_mm256_unpackhi_epi8(bi, bi), 8);
-    __m256i p_lo = _mm256_mullo_epi16(ai_lo, bi_lo);
-    __m256i p_hi = _mm256_mullo_epi16(ai_hi, bi_hi);
-    __m256i p = _mm256_packs_epi16(p_lo, p_hi);
-    // Restore lane order (packs crosses 128-bit lanes)
-    p = _mm256_permute4x64_epi64(p, 0xD8);
-    return int8_to_trit(clamp(p));
+    __m256i a_masked = mask_trit(a);
+    __m256i b_masked = mask_trit(b);
+    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
+                                         _mm256_add_epi8(a_masked, a_masked));
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+
+    __m256i lut = broadcast_lut_16(TMUL_LUT);
+    return _mm256_shuffle_epi8(lut, indices);
 }
 
 static inline __m256i tmin_simd(__m256i a, __m256i b) {
-    __m256i ai = trit_to_int8(a);
-    __m256i bi = trit_to_int8(b);
-    return int8_to_trit(_mm256_min_epi8(ai, bi));
+    __m256i a_masked = mask_trit(a);
+    __m256i b_masked = mask_trit(b);
+    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
+                                         _mm256_add_epi8(a_masked, a_masked));
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+
+    __m256i lut = broadcast_lut_16(TMIN_LUT);
+    return _mm256_shuffle_epi8(lut, indices);
 }
 
 static inline __m256i tmax_simd(__m256i a, __m256i b) {
-    __m256i ai = trit_to_int8(a);
-    __m256i bi = trit_to_int8(b);
-    return int8_to_trit(_mm256_max_epi8(ai, bi));
+    __m256i a_masked = mask_trit(a);
+    __m256i b_masked = mask_trit(b);
+    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
+                                         _mm256_add_epi8(a_masked, a_masked));
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+
+    __m256i lut = broadcast_lut_16(TMAX_LUT);
+    return _mm256_shuffle_epi8(lut, indices);
 }
 
+// --- Unary Operation (tnot) ---
+// Index formula: a & 0x03 (2-bit trit value)
+// Note: TNOT_LUT only has 4 entries, so we pad it to 16 for shuffle compatibility
+
 static inline __m256i tnot_simd(__m256i a) {
-    __m256i ai = trit_to_int8(a);
-    return int8_to_trit(_mm256_sub_epi8(_mm256_setzero_si256(), ai));
+    __m256i indices = mask_trit(a);
+
+    // Create padded 16-entry TNOT LUT (replicate pattern)
+    alignas(16) static const uint8_t TNOT_LUT_16[16] = {
+        0b10, 0b01, 0b00, 0b00,  // Original TNOT_LUT[0-3]
+        0b10, 0b01, 0b00, 0b00,  // Replicate for indices 4-7
+        0b10, 0b01, 0b00, 0b00,  // Replicate for indices 8-11
+        0b10, 0b01, 0b00, 0b00   // Replicate for indices 12-15
+    };
+
+    __m256i lut = broadcast_lut_16(TNOT_LUT_16);
+    return _mm256_shuffle_epi8(lut, indices);
 }
 
 // --- Macro template for arrays ---
