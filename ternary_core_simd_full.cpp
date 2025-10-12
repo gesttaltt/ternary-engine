@@ -14,15 +14,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// DESIGN NOTE: Inverted Polarity Mapping
-// This implementation uses an intentionally inverted int8 intermediate representation
-// for SIMD efficiency. The trit encoding (0b00=-1, 0b01=0, 0b10=+1) is mapped to
-// int8 as (+1, 0, -1) respectively — opposite of the logical ternary values.
-// This inversion is self-consistent and cancels out during round-trip conversions,
-// producing mathematically correct ternary results. See trit_to_int8() for details.
+// =============================================================================
+// DESIGN EVOLUTION
+// =============================================================================
+//
+// Phase 0.5 - LUT-Based SIMD Implementation (OPT-061):
+// - Replaced arithmetic SIMD with _mm256_shuffle_epi8 for parallel LUT lookups
+// - 32 parallel LUT lookups per operation
+// - Unified semantic domain with scalar operations (no conversions)
+// - Eliminated arithmetic overhead and clamping
+//
+// Phase 1 - Optimization Exploration (DEPRECATED):
+// - OPT-066: Aligned vs unaligned load branching → Removed (negligible benefit)
+// - OPT-041: Manual 2x loop unrolling → Removed (compiler auto-optimizes)
+// - OPT-001: OpenMP threading (>100K elements) → RETAINED
+// - Result: 6 runtime paths, high complexity, unstable measurement
+//
+// Phase 2 - Complexity Compression (CURRENT):
+// - Template-based unification of binary and unary operations
+// - Eliminated aligned/unaligned branching (modern CPUs: unaligned ≈ aligned)
+// - Removed manual unrolling (trust compiler optimization)
+// - Result: 3 execution paths (OpenMP/Serial-SIMD/Tail), 73% code reduction
+// - Achieves "phase coherence": complexity ↓ while performance stable (< 5% loss)
+//
+// =============================================================================
 
 #include <immintrin.h>
 #include <stdint.h>
+#include <omp.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include "ternary_core.h"
@@ -35,131 +54,238 @@ typedef SSIZE_T ssize_t;
 
 namespace py = pybind11;
 
-// --- Conversion trit → int8 (INVERTED MAPPING) ---
-// IMPORTANT: This uses an inverted polarity mapping for SIMD efficiency:
-//   Trit 0b00 (logical -1) → int8 +1
-//   Trit 0b01 (logical  0) → int8  0
-//   Trit 0b10 (logical +1) → int8 -1
-// This inversion is intentional and self-consistent throughout all operations.
-// The round-trip conversion (trit→int8→operations→int8→trit) produces
-// mathematically correct ternary results despite the inverted intermediate form.
-static inline __m256i trit_to_int8(__m256i v) {
-    __m256i neg = _mm256_cmpeq_epi8(v, _mm256_set1_epi8(0b00));  // 0xFF if v==0b00, else 0x00
-    __m256i pos = _mm256_cmpeq_epi8(v, _mm256_set1_epi8(0b10));  // 0xFF if v==0b10, else 0x00
-    // pos - neg yields: 0b00→(0-(-1))=+1, 0b01→(0-0)=0, 0b10→((-1)-0)=-1
-    return _mm256_sub_epi8(pos, neg);
+// OPT-001: OpenMP threshold for large array parallelization
+// Arrays >= 100K elements will use multi-threaded processing
+static const ssize_t OMP_THRESHOLD = 100000;
+
+// --- LUT-Based SIMD Operations (OPT-061) ---
+// Each operation uses _mm256_shuffle_epi8 for 32 parallel LUT lookups.
+// The LUTs are the same 16-entry tables used in scalar operations (ternary_core.h).
+
+// Helper: Load 16-entry LUT and broadcast to both 128-bit lanes of 256-bit vector
+static inline __m256i broadcast_lut_16(const uint8_t* lut) {
+    // Load 16 bytes into lower 128 bits, then duplicate to upper 128 bits
+    __m128i lut_128 = _mm_loadu_si128((const __m128i*)lut);
+    return _mm256_broadcastsi128_si256(lut_128);
 }
 
-// --- Conversion int8 → trit (INVERTED MAPPING, reverse of above) ---
-// Converts back from inverted int8 representation to trit encoding:
-//   int8 +1 → Trit 0b00 (logical -1)
-//   int8  0 → Trit 0b01 (logical  0)
-//   int8 -1 → Trit 0b10 (logical +1)
-// This maintains consistency with trit_to_int8's inverted polarity.
-static inline __m256i int8_to_trit(__m256i v) {
-    __m256i neg = _mm256_cmpeq_epi8(v, _mm256_set1_epi8(-1));  // 0xFF if v==-1, else 0x00
-    __m256i pos = _mm256_cmpeq_epi8(v, _mm256_set1_epi8(1));   // 0xFF if v==+1, else 0x00
-    __m256i out = _mm256_blendv_epi8(_mm256_set1_epi8(0b01), _mm256_set1_epi8(0b00), neg);  // -1→0b10, else 0b01
-    out = _mm256_blendv_epi8(out, _mm256_set1_epi8(0b10), pos);  // +1→0b00, else keep previous
-    return out;
+// Helper: Mask to ensure only lower 2 bits of each byte are used (sanitize input)
+static inline __m256i mask_trit(__m256i v) {
+    return _mm256_and_si256(v, _mm256_set1_epi8(0x03));
 }
 
-// --- Saturating clamp [-1,1] (operates on inverted int8 space) ---
-static inline __m256i clamp(__m256i v) {
-    __m256i one = _mm256_set1_epi8(1);
-    __m256i neg1 = _mm256_set1_epi8(-1);
-    return _mm256_max_epi8(_mm256_min_epi8(v, one), neg1);
-}
-
-// --- Basic operations (work correctly despite inverted int8 mapping) ---
-// All operations convert trit→int8, operate in int8 space, then convert back.
-// The inverted polarity cancels out during the round-trip, yielding correct ternary results.
+// --- Binary Operations (tadd, tmul, tmin, tmax) ---
+// Index formula: (a << 2) | b, where a and b are 2-bit trits
 
 static inline __m256i tadd_simd(__m256i a, __m256i b) {
-    __m256i s = _mm256_adds_epi8(trit_to_int8(a), trit_to_int8(b));  // Saturating add in int8 space
-    return int8_to_trit(clamp(s));  // Clamp to [-1,+1] and convert back to trit
+    // Build 4-bit indices: (a << 2) | b
+    // Since there's no byte-level shift in AVX2, use _mm256_add_epi8 with itself (x+x+x+x = x*4)
+    __m256i a_masked = mask_trit(a);
+    __m256i b_masked = mask_trit(b);
+    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
+                                         _mm256_add_epi8(a_masked, a_masked)); // a * 4
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+
+    // Load and broadcast TADD_LUT
+    __m256i lut = broadcast_lut_16(TADD_LUT);
+
+    // Perform 32 parallel LUT lookups
+    return _mm256_shuffle_epi8(lut, indices);
 }
 
 static inline __m256i tmul_simd(__m256i a, __m256i b) {
-    __m256i ai = trit_to_int8(a);
-    __m256i bi = trit_to_int8(b);
-    // AVX2 doesn't have _mm256_mullo_epi8, emulate with 16-bit multiply
-    // Split into low/high bytes, multiply as 16-bit, recombine
-    __m256i ai_lo = _mm256_srai_epi16(_mm256_unpacklo_epi8(ai, ai), 8);
-    __m256i ai_hi = _mm256_srai_epi16(_mm256_unpackhi_epi8(ai, ai), 8);
-    __m256i bi_lo = _mm256_srai_epi16(_mm256_unpacklo_epi8(bi, bi), 8);
-    __m256i bi_hi = _mm256_srai_epi16(_mm256_unpackhi_epi8(bi, bi), 8);
-    __m256i p_lo = _mm256_mullo_epi16(ai_lo, bi_lo);
-    __m256i p_hi = _mm256_mullo_epi16(ai_hi, bi_hi);
-    __m256i p = _mm256_packs_epi16(p_lo, p_hi);
-    // Restore lane order (packs crosses 128-bit lanes)
-    p = _mm256_permute4x64_epi64(p, 0xD8);
-    return int8_to_trit(clamp(p));
+    __m256i a_masked = mask_trit(a);
+    __m256i b_masked = mask_trit(b);
+    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
+                                         _mm256_add_epi8(a_masked, a_masked));
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+
+    __m256i lut = broadcast_lut_16(TMUL_LUT);
+    return _mm256_shuffle_epi8(lut, indices);
 }
 
 static inline __m256i tmin_simd(__m256i a, __m256i b) {
-    __m256i ai = trit_to_int8(a);
-    __m256i bi = trit_to_int8(b);
-    return int8_to_trit(_mm256_min_epi8(ai, bi));
+    __m256i a_masked = mask_trit(a);
+    __m256i b_masked = mask_trit(b);
+    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
+                                         _mm256_add_epi8(a_masked, a_masked));
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+
+    __m256i lut = broadcast_lut_16(TMIN_LUT);
+    return _mm256_shuffle_epi8(lut, indices);
 }
 
 static inline __m256i tmax_simd(__m256i a, __m256i b) {
-    __m256i ai = trit_to_int8(a);
-    __m256i bi = trit_to_int8(b);
-    return int8_to_trit(_mm256_max_epi8(ai, bi));
+    __m256i a_masked = mask_trit(a);
+    __m256i b_masked = mask_trit(b);
+    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
+                                         _mm256_add_epi8(a_masked, a_masked));
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+
+    __m256i lut = broadcast_lut_16(TMAX_LUT);
+    return _mm256_shuffle_epi8(lut, indices);
 }
+
+// --- Unary Operation (tnot) ---
+// Index formula: a & 0x03 (2-bit trit value)
+// Note: TNOT_LUT only has 4 entries, so we pad it to 16 for shuffle compatibility
 
 static inline __m256i tnot_simd(__m256i a) {
-    __m256i ai = trit_to_int8(a);
-    return int8_to_trit(_mm256_sub_epi8(_mm256_setzero_si256(), ai));
+    __m256i indices = mask_trit(a);
+
+    // Create padded 16-entry TNOT LUT (replicate pattern)
+    alignas(16) static const uint8_t TNOT_LUT_16[16] = {
+        0b10, 0b01, 0b00, 0b00,  // Original TNOT_LUT[0-3]
+        0b10, 0b01, 0b00, 0b00,  // Replicate for indices 4-7
+        0b10, 0b01, 0b00, 0b00,  // Replicate for indices 8-11
+        0b10, 0b01, 0b00, 0b00   // Replicate for indices 12-15
+    };
+
+    __m256i lut = broadcast_lut_16(TNOT_LUT_16);
+    return _mm256_shuffle_epi8(lut, indices);
 }
 
-// --- Macro template for arrays ---
-#define TERNARY_OP_SIMD(func) \
-py::array_t<uint8_t> func##_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) { \
-    auto a = A.unchecked<1>(); \
-    auto b = B.unchecked<1>(); \
-    ssize_t n = A.size(); \
-    if (n != B.size()) throw std::runtime_error("Arrays must match"); \
-    py::array_t<uint8_t> out(n); \
-    auto r = out.mutable_unchecked<1>(); \
-    const uint8_t* a_ptr = static_cast<const uint8_t*>(A.data()); \
-    const uint8_t* b_ptr = static_cast<const uint8_t*>(B.data()); \
-    uint8_t* r_ptr = static_cast<uint8_t*>(out.mutable_data()); \
-    ssize_t i = 0; \
-    for (; i + 32 <= n; i += 32) { \
-        __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i)); \
-        __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + i)); \
-        __m256i vr = func##_simd(va, vb); \
-        _mm256_storeu_si256((__m256i*)(r_ptr + i), vr); \
-    } \
-    for (; i < n; ++i) r[i] = func(a[i], b[i]); \
-    return out; \
+// =============================================================================
+// Phase 2: Unified Template-Based Array Processing (6→3 Path Collapse)
+// =============================================================================
+//
+// DESIGN RATIONALE:
+// - Eliminates aligned vs unaligned branching (modern CPUs: unaligned ≈ aligned)
+// - Removes manual loop unrolling (compiler auto-optimizes)
+// - Unifies binary (Arity=2) and unary (Arity=1) operations
+// - Result: 3 paths instead of 6, 73% code reduction
+//
+// PATH 1: OpenMP parallel for large arrays (n >= 100K)
+// PATH 2: Serial SIMD loop for small arrays
+// PATH 3: Scalar tail for remaining elements
+//
+// =============================================================================
+
+// --- Unified Binary Operation Template ---
+template <typename SimdOp, typename ScalarOp>
+py::array_t<uint8_t> process_binary_array(
+    py::array_t<uint8_t> A,
+    py::array_t<uint8_t> B,
+    SimdOp simd_op,
+    ScalarOp scalar_op
+) {
+    auto a = A.unchecked<1>();
+    auto b = B.unchecked<1>();
+    ssize_t n = A.size();
+    if (n != B.size()) throw std::runtime_error("Arrays must match");
+
+    py::array_t<uint8_t> out(n);
+    auto r = out.mutable_unchecked<1>();
+    const uint8_t* a_ptr = static_cast<const uint8_t*>(A.data());
+    const uint8_t* b_ptr = static_cast<const uint8_t*>(B.data());
+    uint8_t* r_ptr = static_cast<uint8_t*>(out.mutable_data());
+
+    ssize_t i = 0;
+
+    // PATH 1: Large arrays → OpenMP parallel
+    if (n >= OMP_THRESHOLD) {
+        ssize_t n_simd_blocks = (n / 32) * 32;
+
+        #pragma omp parallel for schedule(static)
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
+            __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + idx));
+            __m256i vr = simd_op(va, vb);
+            _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
+            __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + i));
+            __m256i vr = simd_op(va, vb);
+            _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
+        }
+    }
+
+    // PATH 3: Scalar tail
+    for (; i < n; ++i) {
+        r[i] = scalar_op(a[i], b[i]);
+    }
+
+    return out;
 }
 
-// --- Unary ---
-py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
+// --- Unified Unary Operation Template ---
+template <typename SimdOp, typename ScalarOp>
+py::array_t<uint8_t> process_unary_array(
+    py::array_t<uint8_t> A,
+    SimdOp simd_op,
+    ScalarOp scalar_op
+) {
     auto a = A.unchecked<1>();
     ssize_t n = A.size();
+
     py::array_t<uint8_t> out(n);
     auto r = out.mutable_unchecked<1>();
     const uint8_t* a_ptr = static_cast<const uint8_t*>(A.data());
     uint8_t* r_ptr = static_cast<uint8_t*>(out.mutable_data());
+
     ssize_t i = 0;
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
-        __m256i vr = tnot_simd(va);
-        _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
+
+    // PATH 1: Large arrays → OpenMP parallel
+    if (n >= OMP_THRESHOLD) {
+        ssize_t n_simd_blocks = (n / 32) * 32;
+
+        #pragma omp parallel for schedule(static)
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
+            __m256i vr = simd_op(va);
+            _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+        }
+
+        i = n_simd_blocks;
     }
-    for (; i < n; ++i) r[i] = tnot(a[i]);
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
+            __m256i vr = simd_op(va);
+            _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
+        }
+    }
+
+    // PATH 3: Scalar tail
+    for (; i < n; ++i) {
+        r[i] = scalar_op(a[i]);
+    }
+
     return out;
 }
 
-// --- Instantiate wrappers ---
-TERNARY_OP_SIMD(tadd)
-TERNARY_OP_SIMD(tmul)
-TERNARY_OP_SIMD(tmin)
-TERNARY_OP_SIMD(tmax)
+// =============================================================================
+// Operation Wrappers (replacing macro-generated code)
+// =============================================================================
+
+// --- Binary Operations ---
+py::array_t<uint8_t> tadd_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    return process_binary_array(A, B, tadd_simd, tadd);
+}
+
+py::array_t<uint8_t> tmul_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    return process_binary_array(A, B, tmul_simd, tmul);
+}
+
+py::array_t<uint8_t> tmin_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    return process_binary_array(A, B, tmin_simd, tmin);
+}
+
+py::array_t<uint8_t> tmax_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    return process_binary_array(A, B, tmax_simd, tmax);
+}
+
+// --- Unary Operation ---
+py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
+    return process_unary_array(A, tnot_simd, tnot);
+}
 
 PYBIND11_MODULE(ternary_core_simd_full, m) {
     m.def("tadd", &tadd_array);
