@@ -33,3 +33,9 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Always include important legal and reference files (override broad patterns)
+!LICENSE
+!NOTICE
+!CONTRIBUTING.md
+!*.pyd
