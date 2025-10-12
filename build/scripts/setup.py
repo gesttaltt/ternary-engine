@@ -1,5 +1,5 @@
 """
-setup.py - Build script for ternary_core_simd_full module (Standard Optimized)
+setup.py - Build script for ternary_simd_engine module (Standard Optimized)
 
 Copyright 2025 Ternary Core Contributors
 Licensed under the Apache License, Version 2.0
@@ -52,7 +52,7 @@ def setup_directories():
 
 def build_module():
     """Build the module using setuptools"""
-    print("Building ternary_core_simd_full module...\n")
+    print("Building ternary_simd_engine module...\n")
 
     # Generate setup code
     setup_code = f'''
@@ -64,8 +64,8 @@ PROJECT_ROOT = r"{PROJECT_ROOT}"
 
 ext_modules = [
     Extension(
-        'ternary_core_simd_full',
-        [os.path.join(PROJECT_ROOT, 'ternary_core_simd_full.cpp')],
+        'ternary_simd_engine',
+        [os.path.join(PROJECT_ROOT, 'ternary_simd_engine.cpp')],
         include_dirs=[
             pybind11.get_include(),
             pybind11.get_include(user=True),
@@ -87,7 +87,7 @@ ext_modules = [
 ]
 
 setup(
-    name='ternary_core_simd_full',
+    name='ternary_simd_engine',
     version='0.1.0',
     author='Ternary Core Team',
     description='AVX2-optimized ternary logic operations with Phase 0 LUT optimizations',

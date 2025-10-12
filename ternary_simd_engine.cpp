@@ -1,4 +1,4 @@
-// ternary_core_simd_full.cpp — AVX2-accelerated ternary logic operations
+// ternary_simd_engine.cpp — AVX2-accelerated ternary logic operations
 //
 // Copyright 2025 Ternary Core Contributors
 //
@@ -50,7 +50,7 @@
 #include <omp.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include "ternary_core.h"
+#include "ternary_algebra.h"
 
 // MSVC compatibility: ssize_t is not standard C++
 #ifdef _MSC_VER
@@ -66,7 +66,7 @@ static const ssize_t OMP_THRESHOLD = 100000;
 
 // --- LUT-Based SIMD Operations (OPT-061) ---
 // Each operation uses _mm256_shuffle_epi8 for 32 parallel LUT lookups.
-// The LUTs are the same 16-entry tables used in scalar operations (ternary_core.h).
+// The LUTs are the same 16-entry tables used in scalar operations (ternary_algebra.h).
 
 // Helper: Load 16-entry LUT and broadcast to both 128-bit lanes of 256-bit vector
 static inline __m256i broadcast_lut_16(const uint8_t* lut) {
@@ -293,7 +293,7 @@ py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
     return process_unary_array(A, tnot_simd, tnot);
 }
 
-PYBIND11_MODULE(ternary_core_simd_full, m) {
+PYBIND11_MODULE(ternary_simd_engine, m) {
     m.def("tadd", &tadd_array);
     m.def("tmul", &tmul_array);
     m.def("tmin", &tmin_array);

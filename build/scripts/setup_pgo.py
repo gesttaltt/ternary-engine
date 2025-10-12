@@ -1,5 +1,5 @@
 """
-setup_pgo.py - Profile-Guided Optimization build system for ternary_core_simd_full
+setup_pgo.py - Profile-Guided Optimization build system for ternary_simd_engine
 
 Copyright 2025 Ternary Core Contributors
 Licensed under the Apache License, Version 2.0
@@ -38,7 +38,7 @@ ARTIFACTS_DIR = PROJECT_ROOT / "build" / "artifacts"
 # PGO base directory
 PGO_BASE_DIR = ARTIFACTS_DIR / "pgo"
 PGO_DATA_DIR = PGO_BASE_DIR / "pgo_data"
-PROFILE_DATA = PGO_DATA_DIR / "ternary_core_simd_full.pgd"
+PROFILE_DATA = PGO_DATA_DIR / "ternary_simd_engine.pgd"
 PGO_LATEST_DIR = PGO_BASE_DIR / "latest"
 
 def print_phase(phase_name, description):
@@ -58,11 +58,11 @@ def clean_pgo():
         shutil.rmtree(PGO_BASE_DIR)
 
     # Remove compiled modules from project root
-    for pyd_file in PROJECT_ROOT.glob("ternary_core_simd_full*.pyd"):
+    for pyd_file in PROJECT_ROOT.glob("ternary_simd_engine*.pyd"):
         print(f"Removing {pyd_file}")
         pyd_file.unlink()
 
-    for so_file in PROJECT_ROOT.glob("ternary_core_simd_full*.so"):
+    for so_file in PROJECT_ROOT.glob("ternary_simd_engine*.so"):
         print(f"Removing {so_file}")
         so_file.unlink()
 
@@ -102,8 +102,8 @@ PGO_DATA_DIR = r"{PGO_DATA_DIR}"
 
 ext_modules = [
     Extension(
-        'ternary_core_simd_full',
-        [os.path.join(PROJECT_ROOT, 'ternary_core_simd_full.cpp')],
+        'ternary_simd_engine',
+        [os.path.join(PROJECT_ROOT, 'ternary_simd_engine.cpp')],
         include_dirs=[
             pybind11.get_include(),
             pybind11.get_include(user=True),
@@ -120,13 +120,13 @@ ext_modules = [
         ],
         extra_link_args=[
             '/LTCG:PGI',             # OPT-114: Generate instrumented code for profiling
-            f'/PGD:{{PGO_DATA_DIR}}\\ternary_core_simd_full.pgd',  # Profile database location
+            f'/PGD:{{PGO_DATA_DIR}}\\ternary_simd_engine.pgd',  # Profile database location
         ],
     ),
 ]
 
 setup(
-    name='ternary_core_simd_full',
+    name='ternary_simd_engine',
     version='0.1.0',
     author='Ternary Core Team',
     description='AVX2-optimized ternary logic with PGO Phase 1 (Instrumentation)',
@@ -171,7 +171,7 @@ def phase2_profile():
                 "Running benchmarks to collect runtime profiling data")
 
     # Check if instrumented build exists in project root
-    pyd_file = list(PROJECT_ROOT.glob("ternary_core_simd_full*.pyd"))
+    pyd_file = list(PROJECT_ROOT.glob("ternary_simd_engine*.pyd"))
     if not pyd_file:
         print("❌ No instrumented module found. Run 'python build/scripts/setup_pgo.py instrument' first.")
         sys.exit(1)
@@ -249,8 +249,8 @@ PGO_DATA_DIR = r"{PGO_DATA_DIR}"
 
 ext_modules = [
     Extension(
-        'ternary_core_simd_full',
-        [os.path.join(PROJECT_ROOT, 'ternary_core_simd_full.cpp')],
+        'ternary_simd_engine',
+        [os.path.join(PROJECT_ROOT, 'ternary_simd_engine.cpp')],
         include_dirs=[
             pybind11.get_include(),
             pybind11.get_include(user=True),
@@ -267,13 +267,13 @@ ext_modules = [
         ],
         extra_link_args=[
             '/LTCG:PGO',             # OPT-114: Use profile data for optimization
-            f'/PGD:{{PGO_DATA_DIR}}\\ternary_core_simd_full.pgd',  # Profile database location
+            f'/PGD:{{PGO_DATA_DIR}}\\ternary_simd_engine.pgd',  # Profile database location
         ],
     ),
 ]
 
 setup(
-    name='ternary_core_simd_full',
+    name='ternary_simd_engine',
     version='0.1.0',
     author='Ternary Core Team',
     description='AVX2-optimized ternary logic with PGO Phase 3 (Optimized)',
@@ -369,7 +369,7 @@ def print_usage():
         print(f"  Profile Counters: {len(pgc_files)} .pgc files found")
 
     # Check for compiled module
-    pyd_files = list(PROJECT_ROOT.glob("ternary_core_simd_full*.pyd"))
+    pyd_files = list(PROJECT_ROOT.glob("ternary_simd_engine*.pyd"))
     if pyd_files:
         print(f"  Compiled Module:  {pyd_files[0].name} ✅")
 

@@ -64,14 +64,14 @@ pip install pybind11 numpy
 python build/scripts/setup.py
 
 # Verify installation
-python -c "import ternary_core_simd_full; print('Module loaded successfully')"
+python -c "import ternary_simd_engine; print('Module loaded successfully')"
 ```
 
 ### Basic Usage
 
 ```python
 import numpy as np
-import ternary_core_simd_full as tc
+import ternary_simd_engine as tc
 
 # Encoding: 0b00 = -1, 0b01 = 0, 0b10 = +1
 MINUS_ONE = 0b00
@@ -128,8 +128,8 @@ integers = [trit_to_int(t) for t in result]
 
 ```
 ternary-kernel-python-c/
-├── ternary_core.h                # Scalar operations (LUT-based, 125 lines)
-├── ternary_core_simd_full.cpp    # AVX2 SIMD + Python bindings (297 lines)
+├── ternary_algebra.h             # Mathematical rules & LUTs (125 lines)
+├── ternary_simd_engine.cpp       # Vectorized execution layer (297 lines)
 ├── build/
 │   ├── scripts/
 │   │   ├── setup.py              # Standard optimized build
@@ -147,8 +147,8 @@ ternary-kernel-python-c/
 ├── docs/                         # Comprehensive documentation
 │   ├── README.md                 # Documentation index
 │   ├── source-code-overview.md   # High-level code guide
-│   ├── ternary-core-header.md    # ternary_core.h documentation
-│   ├── ternary-core-simd.md      # SIMD implementation guide
+│   ├── ternary-core-header.md    # ternary_algebra.h documentation
+│   ├── ternary-core-simd.md      # ternary_simd_engine.cpp guide
 │   ├── architecture.md           # System architecture
 │   ├── optimization-complexity-rationale.md  # Design decisions
 │   └── PGO_README.md             # Profile-Guided Optimization
@@ -159,7 +159,7 @@ ternary-kernel-python-c/
 
 The library consists of two primary source files implementing a clean layered architecture:
 
-#### Layer 1: Scalar Foundation (`ternary_core.h`)
+#### Layer 1: Scalar Foundation (`ternary_algebra.h`)
 
 **Purpose**: Core definitions and branch-free scalar operations
 
@@ -181,7 +181,7 @@ static FORCE_INLINE trit tadd(trit a, trit b) {
 }
 ```
 
-#### Layer 2: SIMD Acceleration (`ternary_core_simd_full.cpp`)
+#### Layer 2: SIMD Acceleration (`ternary_simd_engine.cpp`)
 
 **Purpose**: AVX2-vectorized array operations with Python bindings
 
@@ -193,7 +193,7 @@ static FORCE_INLINE trit tadd(trit a, trit b) {
 
 **Performance**: 100x faster than pure Python, 1.34x to 2.87x vs arithmetic SIMD
 
-**Dependencies**: `immintrin.h` (AVX2), `pybind11`, `omp.h`, `ternary_core.h`
+**Dependencies**: `immintrin.h` (AVX2), `pybind11`, `omp.h`, `ternary_algebra.h`
 
 ### Execution Paths (Phase 2 Architecture)
 
@@ -252,8 +252,8 @@ PGO uses runtime profiling to optimize hot paths. See `docs/PGO_README.md` for d
 ```bash
 c++ -O3 -march=native -mavx2 -fopenmp -flto -shared -std=c++17 -fPIC \
     $(python3 -m pybind11 --includes) \
-    ternary_core_simd_full.cpp \
-    -o ternary_core_simd_full$(python3-config --extension-suffix)
+    ternary_simd_engine.cpp \
+    -o ternary_simd_engine$(python3-config --extension-suffix)
 ```
 
 ## Testing
@@ -294,8 +294,8 @@ See `benchmarks/README.md` for detailed benchmark documentation.
 |----------------|---------------------------|-------------------|
 | Python (reference.py) | 100 ME/s | 1x |
 | C++ naive (reference_cpp.cpp) | 333 ME/s | 3x |
-| C++ LUT (ternary_core.h) | 2,000 ME/s | 20x |
-| **C++ SIMD (ternary_core_simd_full)** | **10,000 ME/s** | **100x** |
+| C++ LUT (ternary_algebra.h) | 2,000 ME/s | 20x |
+| **C++ SIMD (ternary_simd_engine)** | **10,000 ME/s** | **100x** |
 
 *(ME/s = Million Elements per second)*
 
@@ -397,8 +397,8 @@ Comprehensive documentation is available in the `docs/` directory:
 - **[docs/source-code-overview.md](docs/source-code-overview.md)** - High-level code guide (START HERE)
 
 ### Source Code Documentation
-- **[docs/ternary-core-header.md](docs/ternary-core-header.md)** - `ternary_core.h` detailed guide
-- **[docs/ternary-core-simd.md](docs/ternary-core-simd.md)** - SIMD implementation documentation
+- **[docs/ternary-core-header.md](docs/ternary-core-header.md)** - `ternary_algebra.h` detailed guide
+- **[docs/ternary-core-simd.md](docs/ternary-core-simd.md)** - `ternary_simd_engine.cpp` documentation
 
 ### Architecture & Design
 - **[docs/architecture.md](docs/architecture.md)** - System architecture overview
@@ -437,10 +437,10 @@ The encoding `0b11` is reserved/invalid. Behavior is undefined if invalid trits 
 
 ### Adding New Operations
 
-1. Add LUT to `ternary_core.h`
-2. Add scalar function to `ternary_core.h`
-3. Add SIMD function to `ternary_core_simd_full.cpp`
-4. Add wrapper function to `ternary_core_simd_full.cpp`
+1. Add LUT to `ternary_algebra.h` (mathematical rules)
+2. Add scalar function to `ternary_algebra.h`
+3. Add SIMD function to `ternary_simd_engine.cpp` (vectorized execution)
+4. Add wrapper function to `ternary_simd_engine.cpp`
 5. Add Python binding to `PYBIND11_MODULE`
 6. Update tests in `tests/test_phase0.py`
 

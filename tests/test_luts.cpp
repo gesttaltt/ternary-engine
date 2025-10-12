@@ -18,7 +18,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include "../ternary_core.h"
+#include "../ternary_algebra.h"
 
 // Reference implementations (pre-optimization) for comparison
 namespace reference {

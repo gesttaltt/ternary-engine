@@ -1,4 +1,4 @@
-// ternary_core.h — optimized ternary algebra core header
+// ternary_algebra.h — optimized ternary algebra core header
 //
 // Copyright 2025 Ternary Core Contributors
 //
@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef TERNARY_CORE_H
-#define TERNARY_CORE_H
+#ifndef TERNARY_ALGEBRA_H
+#define TERNARY_ALGEBRA_H
 
 #include <stdint.h>
 
@@ -121,4 +121,4 @@ static inline trit unpack_trit(uint8_t pack,int idx){
     return (pack>>(2*idx)) & 0b11;
 }
 
-#endif // TERNARY_CORE_H
+#endif // TERNARY_ALGEBRA_H
