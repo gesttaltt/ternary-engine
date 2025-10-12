@@ -1,6 +1,10 @@
 # Local reports and analysis
 local-reports/
 
+# Benchmark results (except baseline)
+benchmarks/results/*
+!benchmarks/results/phase0_20251011_215139.json
+
 # Legacy code
 legacy/
 
