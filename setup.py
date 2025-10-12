@@ -35,6 +35,7 @@ ext_modules = [
             '/O2',           # MSVC: Maximum optimization
             '/GL',           # MSVC: Whole program optimization
             '/arch:AVX2',    # MSVC: Enable AVX2
+            '/openmp',       # MSVC: Enable OpenMP (OPT-001)
             '/std:c++17',    # C++17 standard
             '/EHsc',         # Exception handling
         ],
