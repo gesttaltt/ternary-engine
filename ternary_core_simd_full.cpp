@@ -131,7 +131,12 @@ static inline __m256i tnot_simd(__m256i a) {
     return _mm256_shuffle_epi8(lut, indices);
 }
 
-// --- Macro template for arrays ---
+// --- Helper: Check 32-byte alignment (OPT-066) ---
+static inline bool is_aligned_32(const void* ptr) {
+    return (reinterpret_cast<uintptr_t>(ptr) & 31) == 0;
+}
+
+// --- Macro template for arrays with aligned load optimization (OPT-066) ---
 #define TERNARY_OP_SIMD(func) \
 py::array_t<uint8_t> func##_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) { \
     auto a = A.unchecked<1>(); \
@@ -144,17 +149,56 @@ py::array_t<uint8_t> func##_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B
     const uint8_t* b_ptr = static_cast<const uint8_t*>(B.data()); \
     uint8_t* r_ptr = static_cast<uint8_t*>(out.mutable_data()); \
     ssize_t i = 0; \
-    for (; i + 32 <= n; i += 32) { \
-        __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i)); \
-        __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + i)); \
-        __m256i vr = func##_simd(va, vb); \
-        _mm256_storeu_si256((__m256i*)(r_ptr + i), vr); \
+    \
+    /* OPT-066: Use aligned loads if all pointers are 32-byte aligned */ \
+    if (is_aligned_32(a_ptr) && is_aligned_32(b_ptr) && is_aligned_32(r_ptr)) { \
+        /* OPT-041: Loop unrolling - process 2 SIMD blocks (64 elements) per iteration */ \
+        for (; i + 64 <= n; i += 64) { \
+            __m256i va0 = _mm256_load_si256((__m256i const*)(a_ptr + i)); \
+            __m256i vb0 = _mm256_load_si256((__m256i const*)(b_ptr + i)); \
+            __m256i va1 = _mm256_load_si256((__m256i const*)(a_ptr + i + 32)); \
+            __m256i vb1 = _mm256_load_si256((__m256i const*)(b_ptr + i + 32)); \
+            \
+            __m256i vr0 = func##_simd(va0, vb0); \
+            __m256i vr1 = func##_simd(va1, vb1); \
+            \
+            _mm256_store_si256((__m256i*)(r_ptr + i), vr0); \
+            _mm256_store_si256((__m256i*)(r_ptr + i + 32), vr1); \
+        } \
+        /* Handle remaining single SIMD block */ \
+        for (; i + 32 <= n; i += 32) { \
+            __m256i va = _mm256_load_si256((__m256i const*)(a_ptr + i)); \
+            __m256i vb = _mm256_load_si256((__m256i const*)(b_ptr + i)); \
+            __m256i vr = func##_simd(va, vb); \
+            _mm256_store_si256((__m256i*)(r_ptr + i), vr); \
+        } \
+    } else { \
+        /* Fallback to unaligned loads with loop unrolling */ \
+        for (; i + 64 <= n; i += 64) { \
+            __m256i va0 = _mm256_loadu_si256((__m256i const*)(a_ptr + i)); \
+            __m256i vb0 = _mm256_loadu_si256((__m256i const*)(b_ptr + i)); \
+            __m256i va1 = _mm256_loadu_si256((__m256i const*)(a_ptr + i + 32)); \
+            __m256i vb1 = _mm256_loadu_si256((__m256i const*)(b_ptr + i + 32)); \
+            \
+            __m256i vr0 = func##_simd(va0, vb0); \
+            __m256i vr1 = func##_simd(va1, vb1); \
+            \
+            _mm256_storeu_si256((__m256i*)(r_ptr + i), vr0); \
+            _mm256_storeu_si256((__m256i*)(r_ptr + i + 32), vr1); \
+        } \
+        /* Handle remaining single SIMD block */ \
+        for (; i + 32 <= n; i += 32) { \
+            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i)); \
+            __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + i)); \
+            __m256i vr = func##_simd(va, vb); \
+            _mm256_storeu_si256((__m256i*)(r_ptr + i), vr); \
+        } \
     } \
     for (; i < n; ++i) r[i] = func(a[i], b[i]); \
     return out; \
 }
 
-// --- Unary ---
+// --- Unary with aligned load optimization (OPT-066) ---
 py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
     auto a = A.unchecked<1>();
     ssize_t n = A.size();
@@ -163,10 +207,44 @@ py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
     const uint8_t* a_ptr = static_cast<const uint8_t*>(A.data());
     uint8_t* r_ptr = static_cast<uint8_t*>(out.mutable_data());
     ssize_t i = 0;
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
-        __m256i vr = tnot_simd(va);
-        _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
+
+    // OPT-066: Use aligned loads if both pointers are 32-byte aligned
+    if (is_aligned_32(a_ptr) && is_aligned_32(r_ptr)) {
+        // OPT-041: Loop unrolling - process 2 SIMD blocks (64 elements) per iteration
+        for (; i + 64 <= n; i += 64) {
+            __m256i va0 = _mm256_load_si256((__m256i const*)(a_ptr + i));
+            __m256i va1 = _mm256_load_si256((__m256i const*)(a_ptr + i + 32));
+
+            __m256i vr0 = tnot_simd(va0);
+            __m256i vr1 = tnot_simd(va1);
+
+            _mm256_store_si256((__m256i*)(r_ptr + i), vr0);
+            _mm256_store_si256((__m256i*)(r_ptr + i + 32), vr1);
+        }
+        // Handle remaining single SIMD block
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_load_si256((__m256i const*)(a_ptr + i));
+            __m256i vr = tnot_simd(va);
+            _mm256_store_si256((__m256i*)(r_ptr + i), vr);
+        }
+    } else {
+        // Fallback to unaligned loads with loop unrolling
+        for (; i + 64 <= n; i += 64) {
+            __m256i va0 = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
+            __m256i va1 = _mm256_loadu_si256((__m256i const*)(a_ptr + i + 32));
+
+            __m256i vr0 = tnot_simd(va0);
+            __m256i vr1 = tnot_simd(va1);
+
+            _mm256_storeu_si256((__m256i*)(r_ptr + i), vr0);
+            _mm256_storeu_si256((__m256i*)(r_ptr + i + 32), vr1);
+        }
+        // Handle remaining single SIMD block
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
+            __m256i vr = tnot_simd(va);
+            _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
+        }
     }
     for (; i < n; ++i) r[i] = tnot(a[i]);
     return out;
