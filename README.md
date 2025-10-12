@@ -50,6 +50,8 @@ Balanced ternary is a numeral system with three values: **-1, 0, +1**. Unlike bi
 - **Python**: 3.7 or later
 - **Compiler**: MSVC (Windows) or GCC/Clang (Linux/macOS) with C++17 support
 - **CPU**: x86-64 with AVX2 support (Intel Haswell 2013+ or AMD Excavator 2015+)
+  - Current implementation uses basic AVX2 operations (pre-Haswell-optimization era)
+  - Compatible with all AVX2-capable processors
 - **Dependencies**: pybind11, NumPy
 
 ### Installation
@@ -412,6 +414,9 @@ Comprehensive documentation is available in the `docs/` directory:
 ### System Requirements
 
 - **CPU**: x86-64 with AVX2 support (Intel Haswell 2013+ or AMD Excavator 2015+)
+  - Uses fundamental AVX2 operations (loadu, storeu, shuffle, add, or, and)
+  - No Haswell-specific micro-optimizations in current version
+  - Broad compatibility across all AVX2-capable processors
 - **OS**: Windows, Linux, or macOS
 - **Python**: 3.7 or later
 - **Memory**: Minimal (LUTs use 68 bytes total, SIMD requires 32-byte alignment)

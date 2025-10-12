@@ -37,6 +37,12 @@
 // - Result: 3 execution paths (OpenMP/Serial-SIMD/Tail), 73% code reduction
 // - Achieves "phase coherence": complexity ↓ while performance stable (< 5% loss)
 //
+// COMPATIBILITY NOTE:
+// - Current implementation uses basic AVX2 operations compatible with all AVX2 CPUs
+// - No Haswell-specific optimizations applied yet (pre-Haswell-optimization era)
+// - Uses fundamental AVX2 intrinsics: loadu, storeu, shuffle_epi8, or, and, add
+// - Compatible with Intel AVX2 (Haswell 2013+) and AMD AVX2 (Excavator 2015+)
+//
 // =============================================================================
 
 #include <immintrin.h>
