@@ -1,5 +1,5 @@
 """
-setup.py - Build script for ternary_simd_engine module (Standard Optimized)
+build.py - Build script for ternary_simd_engine module (Standard Optimized)
 
 Copyright 2025 Ternary Core Contributors
 Licensed under the Apache License, Version 2.0
@@ -7,7 +7,7 @@ Licensed under the Apache License, Version 2.0
 This provides an organized build system with timestamped artifacts.
 
 USAGE: Run from project root directory:
-    python build/scripts/setup.py
+    python build.py
 
 Artifacts are organized in: build/artifacts/standard/{timestamp}/
 Latest build is copied to: build/artifacts/standard/latest/
@@ -20,9 +20,8 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# Get project root (two levels up from this script)
-SCRIPT_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = SCRIPT_DIR.parent.parent
+# Get project root (script is at root level)
+PROJECT_ROOT = Path(__file__).parent.resolve()
 ARTIFACTS_DIR = PROJECT_ROOT / "build" / "artifacts"
 
 # Generate timestamp for this build

@@ -1,5 +1,5 @@
 """
-setup_pgo.py - Profile-Guided Optimization build system for ternary_simd_engine
+build_pgo.py - Profile-Guided Optimization build system for ternary_simd_engine
 
 Copyright 2025 Ternary Core Contributors
 Licensed under the Apache License, Version 2.0
@@ -10,11 +10,11 @@ This script implements a 3-phase PGO build process:
 3. Optimized build (use profile data for final optimization)
 
 Usage (run from project root):
-    python build/scripts/setup_pgo.py instrument    # Phase 1: Build with instrumentation
-    python build/scripts/setup_pgo.py profile       # Phase 2: Run profiling workload
-    python build/scripts/setup_pgo.py optimize      # Phase 3: Build optimized version
-    python build/scripts/setup_pgo.py clean         # Clean PGO artifacts
-    python build/scripts/setup_pgo.py full          # Run all phases automatically
+    python build_pgo.py instrument    # Phase 1: Build with instrumentation
+    python build_pgo.py profile       # Phase 2: Run profiling workload
+    python build_pgo.py optimize      # Phase 3: Build optimized version
+    python build_pgo.py clean         # Clean PGO artifacts
+    python build_pgo.py full          # Run all phases automatically
 
 Artifacts are organized in:
   - build/artifacts/pgo/instrumented/{timestamp}/
@@ -30,9 +30,8 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# Get project root (two levels up from this script)
-SCRIPT_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = SCRIPT_DIR.parent.parent
+# Get project root (script is at root level)
+PROJECT_ROOT = Path(__file__).parent.resolve()
 ARTIFACTS_DIR = PROJECT_ROOT / "build" / "artifacts"
 
 # PGO base directory
@@ -173,7 +172,7 @@ def phase2_profile():
     # Check if instrumented build exists in project root
     pyd_file = list(PROJECT_ROOT.glob("ternary_simd_engine*.pyd"))
     if not pyd_file:
-        print("❌ No instrumented module found. Run 'python build/scripts/setup_pgo.py instrument' first.")
+        print("❌ No instrumented module found. Run 'python build_pgo.py instrument' first.")
         sys.exit(1)
 
     print(f"Found instrumented module: {pyd_file[0]}")
@@ -219,7 +218,7 @@ def phase3_optimize():
     pgc_files = list(PGO_DATA_DIR.glob("**/*.pgc")) if PGO_DATA_DIR.exists() else []
     if not pgc_files and not PROFILE_DATA.exists():
         print("⚠️  Warning: No profile data found")
-        print("   Run 'python build/scripts/setup_pgo.py profile' first for best results")
+        print("   Run 'python build_pgo.py profile' first for best results")
         print("   Continuing with optimization anyway...\n")
 
     # Generate timestamp for this build

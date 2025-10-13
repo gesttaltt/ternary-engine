@@ -1,10 +1,10 @@
-# Standard Build Script (setup.py)
+# Standard Build Script (build.py)
 
 ## Overview
 
-`build/scripts/setup.py` is the primary build script for creating production-ready, fully optimized builds of the `ternary_core_simd_full` module. It produces AVX2-accelerated binaries with OpenMP multi-threading support.
+`build.py` is the primary build script for creating production-ready, fully optimized builds of the `ternary_core_simd_full` module. It produces AVX2-accelerated binaries with OpenMP multi-threading support.
 
-**Location:** `build/scripts/setup.py`
+**Location:** `build.py` (project root)
 
 **Module produced:** `ternary_core_simd_full.cp312-win_amd64.pyd`
 
@@ -14,7 +14,7 @@
 
 ```bash
 # From project root
-python build/scripts/setup.py
+python build.py
 ```
 
 That's it! The script handles everything automatically:

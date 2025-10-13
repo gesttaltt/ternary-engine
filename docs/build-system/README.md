@@ -6,11 +6,11 @@ This directory contains comprehensive documentation for the ternary-core build s
 
 | Build Type | Script | Purpose | Performance | Build Time |
 |------------|--------|---------|-------------|------------|
-| **Standard** | `setup.py` | Production deployments | 10-50x baseline | 30-60s |
-| **PGO** | `setup_pgo.py` | Performance-critical | 15-60x baseline | 8-10min |
-| **Reference** | `setup_reference.py` | Benchmarking baseline | 1x baseline | 25-45s |
+| **Standard** | `build.py` | Production deployments | 10-50x baseline | 30-60s |
+| **PGO** | `build_pgo.py` | Performance-critical | 15-60x baseline | 8-10min |
+| **Reference** | `build_reference.py` | Benchmarking baseline | 1x baseline | 25-45s |
 
-All build scripts are located in `build/scripts/` and generate timestamped artifacts in `build/artifacts/`.
+All build scripts are located at project root and generate timestamped artifacts in `build/artifacts/`.
 
 ## Documentation Index
 
@@ -22,19 +22,19 @@ All build scripts are located in `build/scripts/` and generate timestamped artif
    - Disk space management
    - Retention policies
 
-2. **[Standard Build (setup.py)](./setup-standard.md)**
+2. **[Standard Build (build.py)](./setup-standard.md)**
    - Production-ready optimized build
    - AVX2 SIMD + OpenMP + LUT optimizations
    - Quick start and usage guide
    - Technical implementation details
 
-3. **[PGO Build (setup_pgo.py)](./setup-pgo.md)**
+3. **[PGO Build (build_pgo.py)](./setup-pgo.md)**
    - Profile-Guided Optimization (3-phase build)
    - 5-15% additional performance gain
    - Detailed phase-by-phase walkthrough
    - Custom profiling workflows
 
-4. **[Reference Build (setup_reference.py)](./setup-reference.md)**
+4. **[Reference Build (build_reference.py)](./setup-reference.md)**
    - Unoptimized baseline for benchmarking
    - Fair performance comparisons
    - Measuring optimization impact
@@ -46,13 +46,13 @@ All build scripts are located in `build/scripts/` and generate timestamped artif
 
 ```bash
 # Most users: Production-ready standard build
-python build/scripts/setup.py
+python build.py
 
 # Performance-critical applications: PGO build
-python build/scripts/setup_pgo.py full
+python build_pgo.py full
 
 # Benchmarking/research: Reference baseline
-python build/scripts/setup_reference.py
+python build_reference.py
 ```
 
 ### First-Time Setup
@@ -66,7 +66,7 @@ cl.exe /?      # Windows
 gcc --version  # Linux
 
 # 3. Build standard version
-python build/scripts/setup.py
+python build.py
 
 # 4. Test
 python -c "import ternary_core_simd_full; print('Build successful!')"
@@ -76,9 +76,9 @@ python -c "import ternary_core_simd_full; print('Build successful!')"
 
 ```bash
 # Build all three versions for comparison
-python build/scripts/setup_reference.py
-python build/scripts/setup.py
-python build/scripts/setup_pgo.py full
+python build_reference.py
+python build.py
+python build_pgo.py full
 
 # Run benchmarks
 python benchmarks/bench_phase0.py
@@ -219,20 +219,20 @@ ternary-kernel-python-c/
 
 ```bash
 # Standard build (recommended for most cases)
-python build/scripts/setup.py
+python build.py
 
 # Or PGO if performance critical
-python build/scripts/setup_pgo.py full
+python build_pgo.py full
 ```
 
 ### Measuring Performance Impact
 
 ```bash
 # Build baseline
-python build/scripts/setup_reference.py
+python build_reference.py
 
 # Build optimized
-python build/scripts/setup.py
+python build.py
 
 # Compare
 python benchmarks/bench_phase0.py
@@ -242,13 +242,13 @@ python benchmarks/bench_phase0.py
 
 ```bash
 # Before changes
-python build/scripts/setup.py
+python build.py
 python benchmarks/bench_phase0.py > before.txt
 
 # Make changes to ternary_core_simd_full.cpp...
 
 # After changes
-python build/scripts/setup.py
+python build.py
 python benchmarks/bench_phase0.py > after.txt
 
 # Compare
@@ -262,7 +262,7 @@ diff before.txt after.txt
 rm -rf build/artifacts/
 
 # Clean only PGO artifacts
-python build/scripts/setup_pgo.py clean
+python build_pgo.py clean
 
 # Keep only latest builds
 find build/artifacts/*/[0-9]* -maxdepth 0 -type d | \
@@ -363,7 +363,7 @@ python --version  # Must match .pyd (e.g., cp312 = 3.12)
 # Download: https://aka.ms/vs/17/release/vc_redist.x64.exe
 
 # Test without AVX2 (build reference instead)
-python build/scripts/setup_reference.py
+python build_reference.py
 ```
 
 ### Performance Issues
@@ -394,10 +394,10 @@ python -m cProfile benchmarks/bench_phase0.py
 
 ### Custom Build Flags
 
-To modify compiler flags, edit the respective `setup_*.py` script:
+To modify compiler flags, edit the respective `build*.py` script:
 
 ```python
-# In build/scripts/setup.py
+# In build.py
 extra_compile_args=[
     '/O2',           # Keep maximum optimization
     '/GL',           # Keep whole program optimization
@@ -413,7 +413,7 @@ extra_compile_args=[
 
 ```bash
 # Windows ARM64 (from x64 host)
-# Modify setup.py:
+# Modify build.py:
 extra_compile_args=[
     '/O2', '/GL', '/std:c++17', '/EHsc',
     # No /arch:AVX2 (ARM doesn't support)
@@ -421,7 +421,7 @@ extra_compile_args=[
 ]
 
 # Linux ARM (from x86 host)
-CC=aarch64-linux-gnu-gcc python build/scripts/setup.py
+CC=aarch64-linux-gnu-gcc python build.py
 ```
 
 ### Continuous Integration
@@ -437,9 +437,9 @@ When contributing changes to the build system:
 
 1. **Test all three builds:**
    ```bash
-   python build/scripts/setup_reference.py
-   python build/scripts/setup.py
-   python build/scripts/setup_pgo.py full
+   python build_reference.py
+   python build.py
+   python build_pgo.py full
    ```
 
 2. **Verify performance:**
@@ -460,7 +460,7 @@ When contributing changes to the build system:
 
 ### Q: Which build should I use for production?
 
-**A:** Start with **standard build** (`setup.py`). It's fast, reliable, and provides 10-50x speedup over baseline. Only use PGO if you need that extra 5-15% and can afford 8-10 minute builds.
+**A:** Start with **standard build** (`build.py`). It's fast, reliable, and provides 10-50x speedup over baseline. Only use PGO if you need that extra 5-15% and can afford 8-10 minute builds.
 
 ---
 

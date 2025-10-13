@@ -1,5 +1,5 @@
 """
-setup_reference.py - Build unoptimized C++ reference for benchmarking
+build_reference.py - Build unoptimized C++ reference for benchmarking
 
 Copyright 2025 Ternary Core Contributors
 Licensed under the Apache License, Version 2.0
@@ -14,7 +14,7 @@ PURPOSE: Fair performance comparison to measure actual optimization impact,
 not Python vs C++ differences.
 
 USAGE: Run from project root directory:
-    python build/scripts/setup_reference.py
+    python build_reference.py
 
 Artifacts are organized in: build/artifacts/reference/{timestamp}/
 Latest build is copied to: build/artifacts/reference/latest/
@@ -27,9 +27,8 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# Get project root (two levels up from this script)
-SCRIPT_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = SCRIPT_DIR.parent.parent
+# Get project root (script is at root level)
+PROJECT_ROOT = Path(__file__).parent.resolve()
 ARTIFACTS_DIR = PROJECT_ROOT / "build" / "artifacts"
 
 # Generate timestamp for this build

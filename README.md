@@ -41,7 +41,7 @@ Ternary Core implements high-performance balanced ternary logic operations using
 
 ```bash
 pip install pybind11 numpy
-python build/scripts/setup.py
+python build.py
 python -c "import ternary_simd_engine; print('Success')"
 ```
 
@@ -186,7 +186,7 @@ See [tests/README.md](tests/README.md) for full testing documentation.
 Additional 5-15% performance gain:
 
 ```bash
-python build/scripts/setup_pgo.py
+python build_pgo.py full
 ```
 
 See [docs/PGO_README.md](docs/PGO_README.md) for details.

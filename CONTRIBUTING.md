@@ -39,7 +39,7 @@ This project follows the principle of **technical accuracy and professional obje
 
 3. **Build the Library**:
    ```bash
-   python build/scripts/setup.py
+   python build.py
    ```
 
 4. **Run Tests**:
@@ -89,7 +89,7 @@ git checkout -b bugfix/issue-123
 
 ```bash
 # Build
-python build/scripts/setup.py
+python build.py
 
 # Test correctness
 python tests/test_phase0.py

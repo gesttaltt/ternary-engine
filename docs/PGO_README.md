@@ -27,7 +27,7 @@ Profile-Guided Optimization uses **actual runtime behavior** to guide compiler o
 ### Option 1: Automated Full PGO Build
 
 ```bash
-python setup_pgo.py full
+python build_pgo.py full
 ```
 
 This runs all 3 phases automatically (~10-15 minutes total).
@@ -36,19 +36,19 @@ This runs all 3 phases automatically (~10-15 minutes total).
 
 ```bash
 # Phase 1: Build with instrumentation (~2 minutes)
-python setup_pgo.py instrument
+python build_pgo.py instrument
 
 # Phase 2: Run profiling workload (~8 minutes)
-python setup_pgo.py profile
+python build_pgo.py profile
 
 # Phase 3: Build optimized version (~2 minutes)
-python setup_pgo.py optimize
+python build_pgo.py optimize
 ```
 
 ### Clean PGO Data
 
 ```bash
-python setup_pgo.py clean
+python build_pgo.py clean
 ```
 
 ---
@@ -58,7 +58,7 @@ python setup_pgo.py clean
 ### Phase 1: Instrumentation Build
 
 ```bash
-python setup_pgo.py instrument
+python build_pgo.py instrument
 ```
 
 **What it does**:
@@ -73,7 +73,7 @@ python setup_pgo.py instrument
 ### Phase 2: Profile Collection
 
 ```bash
-python setup_pgo.py profile
+python build_pgo.py profile
 ```
 
 **What it does**:
@@ -97,7 +97,7 @@ python setup_pgo.py profile
 ### Phase 3: Optimized Build
 
 ```bash
-python setup_pgo.py optimize
+python build_pgo.py optimize
 ```
 
 **What it does**:
@@ -119,7 +119,7 @@ python setup_pgo.py optimize
 
 ```bash
 # Build without PGO
-python setup.py build_ext --inplace
+python build.py
 
 # Run benchmark
 python benchmarks/bench_phase0.py
@@ -129,7 +129,7 @@ python benchmarks/bench_phase0.py
 
 ```bash
 # Build with PGO
-python setup_pgo.py full
+python build_pgo.py full
 
 # Run benchmark again
 python benchmarks/bench_phase0.py
@@ -233,16 +233,16 @@ extra_link_args=[
 
 ### Option 1: Always use PGO (Recommended for releases)
 
-Replace `setup.py` with:
+Replace `build.py` with:
 ```bash
-python setup_pgo.py full
+python build_pgo.py full
 ```
 
 ### Option 2: Conditional PGO
 
 Add environment variable check:
 ```python
-# In setup.py
+# In build.py
 import os
 use_pgo = os.environ.get('USE_PGO', '0') == '1'
 
@@ -255,13 +255,13 @@ else:
 Build with PGO:
 ```bash
 set USE_PGO=1
-python setup.py build_ext --inplace
+python build.py
 ```
 
 ### Option 3: Separate PGO builds
 
-Keep `setup.py` for development builds (fast iteration).
-Use `setup_pgo.py` for release builds (maximum performance).
+Keep `build.py` for development builds (fast iteration).
+Use `build_pgo.py` for release builds (maximum performance).
 
 ---
 
@@ -271,13 +271,13 @@ Use `setup_pgo.py` for release builds (maximum performance).
 
 1. **Baseline** (No PGO):
    ```bash
-   python setup.py build_ext --inplace
+   python build.py
    python benchmarks/bench_phase0.py > results_baseline.json
    ```
 
 2. **With PGO**:
    ```bash
-   python setup_pgo.py full
+   python build_pgo.py full
    python benchmarks/bench_phase0.py > results_pgo.json
    ```
 

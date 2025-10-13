@@ -200,7 +200,7 @@ jobs:
       - name: Install dependencies
         run: pip install pybind11 numpy
       - name: Build library
-        run: python build/scripts/setup.py
+        run: python build.py
       - name: Run correctness tests
         run: python tests/test_phase0.py
       - name: Run OpenMP tests
@@ -217,13 +217,13 @@ jobs:
 
 ```bash
 # Build reference implementation
-python build/scripts/setup_reference.py
+python build_reference.py
 
 # Run benchmarks
 python benchmarks/bench_fair.py > baseline.txt
 
 # Make changes, rebuild
-python build/scripts/setup.py
+python build.py
 
 # Compare
 python benchmarks/bench_fair.py > optimized.txt
@@ -292,7 +292,7 @@ def test_edge_cases():
 
 **Solution**: Build the library first:
 ```bash
-python build/scripts/setup.py
+python build.py
 ```
 
 ### "Illegal instruction" or "SIGILL"

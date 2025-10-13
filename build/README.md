@@ -6,23 +6,23 @@ This directory contains the build infrastructure for the ternary-kernel-python-c
 
 ```
 build/
-├── scripts/           # Build automation scripts
-│   ├── setup.py              # Standard optimized build
-│   ├── setup_pgo.py          # Profile-Guided Optimization build
-│   ├── setup_reference.py    # Reference baseline build
-│   ├── build_standard.py     # Standard build script
-│   ├── build_reference.py    # Reference build script
-│   ├── build_benchmark.py    # Benchmark build script
-│   └── templates/            # Build templates
-│       ├── __init__.py
-│       └── ext_build.py
-│
 └── artifacts/         # Build outputs (timestamped)
-    ├── final/                # Latest production builds
-    ├── reference/            # Reference builds for comparison
-    ├── manifest.txt          # Build manifest
-    ├── archive_artifacts.sh  # Artifact archival script
-    └── *.pyd                 # Compiled Python extensions
+    ├── standard/             # Standard optimized builds
+    │   ├── {timestamp}/      # Timestamped builds
+    │   └── latest/           # Latest standard build
+    ├── pgo/                  # Profile-Guided Optimization builds
+    │   ├── instrumented/     # Instrumentation phase
+    │   ├── optimized/        # Optimized phase
+    │   ├── pgo_data/         # Profile data
+    │   └── latest/           # Latest PGO build
+    └── reference/            # Reference builds for comparison
+        ├── {timestamp}/      # Timestamped builds
+        └── latest/           # Latest reference build
+
+Build scripts are at project root:
+- build.py              # Standard optimized build
+- build_pgo.py          # Profile-Guided Optimization build
+- build_reference.py    # Reference baseline build
 
 ```
 
@@ -33,7 +33,7 @@ build/
 From the project root:
 
 ```bash
-python build/scripts/setup.py
+python build.py
 ```
 
 This produces an optimized build with:
@@ -47,7 +47,7 @@ This produces an optimized build with:
 For 5-15% additional performance:
 
 ```bash
-python build/scripts/setup_pgo.py
+python build_pgo.py full
 ```
 
 See `docs/PGO_README.md` for detailed PGO documentation.
@@ -57,7 +57,7 @@ See `docs/PGO_README.md` for detailed PGO documentation.
 For benchmarking and regression testing:
 
 ```bash
-python build/scripts/setup_reference.py
+python build_reference.py
 ```
 
 ## Build Outputs
@@ -156,29 +156,29 @@ Required: Intel Haswell (2013+) or AMD Excavator (2015+)
 
 ## Build Scripts Documentation
 
-### setup.py
+### build.py
 
-Standard optimized build with production flags. Outputs to `build/artifacts/final/`.
+Standard optimized build with production flags. Outputs to `build/artifacts/standard/`.
 
-**Usage**: `python build/scripts/setup.py`
+**Usage**: `python build.py`
 
-### setup_pgo.py
+### build_pgo.py
 
-Two-phase Profile-Guided Optimization build:
+Three-phase Profile-Guided Optimization build:
 
 1. **Instrumentation phase**: Builds with profiling hooks
-2. **Training phase**: Runs representative workload
+2. **Profile phase**: Runs representative workload
 3. **Optimization phase**: Rebuilds with profile data
 
-**Usage**: `python build/scripts/setup_pgo.py`
+**Usage**: `python build_pgo.py full` (or `instrument`, `profile`, `optimize` individually)
 
 See `docs/PGO_README.md` for details.
 
-### setup_reference.py
+### build_reference.py
 
 Baseline build for benchmarking. Uses conservative optimizations for fair comparison.
 
-**Usage**: `python build/scripts/setup_reference.py`
+**Usage**: `python build_reference.py`
 
 ## Related Documentation
 
@@ -236,7 +236,7 @@ jobs:
       - name: Install dependencies
         run: pip install pybind11 numpy
       - name: Build library
-        run: python build/scripts/setup.py
+        run: python build.py
       - name: Run tests
         run: python tests/test_phase0.py
 ```
