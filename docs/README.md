@@ -2,110 +2,145 @@
 
 This directory contains comprehensive documentation for the ternary-kernel-python-c library.
 
-## Source Code Documentation (NEW)
+## Documentation Organization
+
+Documentation is organized into logical categories:
+
+```
+docs/
+├── README.md (this file)           # Documentation index
+│
+├── api-reference/                  # API and source code documentation
+│   ├── source-code-overview.md    # High-level code guide (START HERE)
+│   ├── ternary-core-header.md     # ternary_algebra.h detailed docs
+│   ├── ternary-core-simd.md       # ternary_simd_engine.cpp guide
+│   ├── headers.md                  # Header design philosophy
+│   └── error-handling.md           # Exception handling system
+│
+├── architecture/                   # Design and architecture
+│   ├── architecture.md             # System architecture overview
+│   ├── optimization-roadmap.md     # Historical optimization journey
+│   └── optimization-complexity-rationale.md  # Phase 2 design decisions
+│
+├── build-system/                   # Build system documentation
+│   ├── README.md                   # Build system overview
+│   ├── artifact-organization.md    # Artifact management
+│   ├── setup-standard.md           # Standard build details
+│   ├── setup-pgo.md                # PGO build details
+│   └── setup-reference.md          # Reference build details
+│
+├── historical/                     # Historical documentation
+│   └── BASELINE-PRE-AUTOLUT.md     # Pre-LUT optimization baseline
+│
+├── PGO_README.md                   # Profile-Guided Optimization guide
+└── general-readme.md               # General project information
+```
+
+## API Reference
 
 **Start here to understand the core implementation:**
 
-- **[Source Code Overview](./source-code-overview.md)** - High-level guide to the pure source code
+- **[API Reference: Source Code Overview](./api-reference/source-code-overview.md)** - High-level guide
   - Architecture layers (4 core files)
   - Operation flow examples
   - Performance summary
   - Reading guide for different purposes
 
-- **[ternary_algebra.h Documentation](./ternary-core-header.md)** - Core algebra header (108 lines)
-  - Trit encoding scheme
+- **[API Reference: ternary_algebra.h](./api-reference/ternary-core-header.md)** - Core algebra header (143 lines)
+  - Trit encoding scheme (2-bit balanced ternary)
   - Constexpr-generated lookup tables (OPT-AUTO-LUT)
   - Scalar operations with force-inlining
   - Type definitions and utilities
   - Uses `ternary_lut_gen.h` for compile-time LUT generation
 
-- **[ternary_simd_engine.cpp Documentation](./ternary-core-simd.md)** - SIMD implementation (331 lines)
+- **[API Reference: ternary_simd_engine.cpp](./api-reference/ternary-core-simd.md)** - SIMD implementation (333 lines)
   - AVX2 acceleration techniques
   - Template-based unified processing with optional masking (OPT-HASWELL-02)
-  - Execution path selection
-  - OpenMP parallelization (OPT-001)
+  - Execution path selection (OpenMP, SIMD, scalar)
+  - OpenMP parallelization (OPT-PHASE3-01)
   - Python integration via pybind11
   - Centralized error handling via `ternary_errors.h`
 
-- **[Error Handling Documentation](./error-handling.md)** - Exception handling system
+- **[API Reference: Error Handling](./api-reference/error-handling.md)** - Exception handling system
   - Domain-specific exception types
   - YAGNI principle (minimal exception set)
   - Python exception mapping
   - Usage examples for C++ and Python
 
-## Additional Documentation
+- **[API Reference: Headers Design](./api-reference/headers.md)** - Header design philosophy
+  - When to use headers vs .cpp files
+  - YAGNI principle application
+  - Header-only vs compiled approach
 
-### Build and Optimization
+## Architecture & Design
 
-- **[general-readme.md](./general-readme.md)** - General project information
-- **[PGO_README.md](./PGO_README.md)** - Profile-Guided Optimization guide
-- **[architecture.md](./architecture.md)** - Overall architecture overview
+- **[Architecture Overview](./architecture/architecture.md)** - Overall system architecture
+  - Layer-by-layer breakdown
+  - Data flow and execution paths
+  - Performance characteristics
 
-### Design Rationale
+- **[Optimization Roadmap](./architecture/optimization-roadmap.md)** - Historical optimization journey
+  - Evolution from Phase 0 to Phase 3
+  - Lessons learned at each phase
+  - Future roadmap (Phase 4+)
 
-- **[optimization-complexity-rationale.md](./optimization-complexity-rationale.md)** - Phase 2 design decisions
+- **[Optimization Complexity Rationale](./architecture/optimization-complexity-rationale.md)** - Phase 2 design decisions
   - Why certain optimizations were removed
   - Phase coherence philosophy
   - Complexity vs performance tradeoffs
 
-- **[optimization-roadmap.md](./optimization-roadmap.md)** - Historical optimization journey
-  - Evolution from Phase 0 to Phase 2
-  - Lessons learned
+## Build System
 
-## Quick Navigation
+- **[Build System Overview](./build-system/README.md)** - Complete build documentation
+  - Build scripts and usage
+  - Compiler flags and options
+  - Artifact management
+  - Troubleshooting
+
+- **[Artifact Organization](./build-system/artifact-organization.md)** - Build artifact management
+- **[Standard Build](./build-system/setup-standard.md)** - Standard optimized build
+- **[PGO Build](./build-system/setup-pgo.md)** - Profile-Guided Optimization
+- **[Reference Build](./build-system/setup-reference.md)** - Baseline reference build
+
+## Quick Start Guides
 
 ### I want to...
 
 **Understand how the code works:**
-1. [Source Code Overview](./source-code-overview.md)
-2. [ternary_algebra.h Documentation](./ternary-core-header.md)
-3. [ternary_simd_engine.cpp Documentation](./ternary-core-simd.md)
-4. [Error Handling Documentation](./error-handling.md)
+1. [Source Code Overview](./api-reference/source-code-overview.md) ← START HERE
+2. [ternary_algebra.h Documentation](./api-reference/ternary-core-header.md)
+3. [ternary_simd_engine.cpp Documentation](./api-reference/ternary-core-simd.md)
+4. [Error Handling Documentation](./api-reference/error-handling.md)
 
 **Add a new ternary operation:**
-1. Read [ternary_algebra.h § Adding Operations](./ternary-core-header.md#future-considerations)
-2. Read [ternary_simd_engine.cpp § Operation Wrappers](./ternary-core-simd.md#operation-wrappers)
+1. Read [CONTRIBUTING.md § Adding New Operations](../CONTRIBUTING.md#adding-new-operations)
+2. Read [ternary_algebra.h § Adding Operations](./api-reference/ternary-core-header.md#future-considerations)
 3. Use `make_binary_lut()` or `make_unary_lut()` from `ternary_lut_gen.h`
 
+**Build the project:**
+1. Quick: `python build/scripts/setup.py`
+2. Detailed: [Build System Overview](./build-system/README.md)
+3. PGO: [PGO_README.md](./PGO_README.md)
+
 **Optimize performance:**
-1. Read [ternary_core_simd.md § Performance Analysis](./ternary-core-simd.md#performance-analysis)
+1. Read [ternary_simd_engine.cpp § Performance Analysis](./api-reference/ternary-core-simd.md#performance-analysis)
 2. Read [PGO_README.md](./PGO_README.md)
 3. Profile with `python benchmarks/bench_phase0.py`
+4. See [Optimization Roadmap](./architecture/optimization-roadmap.md)
 
 **Understand design decisions:**
-1. [optimization-complexity-rationale.md](./optimization-complexity-rationale.md)
-2. [Source Code Overview § Key Design Principles](./source-code-overview.md#key-design-principles)
-
-**Build the project:**
-1. See [PGO_README.md § Building](./PGO_README.md) for standard build
-2. Or run: `python build/scripts/setup.py build_ext --inplace`
+1. [Optimization Complexity Rationale](./architecture/optimization-complexity-rationale.md)
+2. [Source Code Overview § Key Design Principles](./api-reference/source-code-overview.md#key-design-principles)
 
 **Port to a new architecture (ARM/NEON):**
-1. Read [ternary_core_simd.md § Platform-Specific Notes](./ternary-core-simd.md#platform-specific-notes)
+1. Read [ternary_simd_engine.cpp § Platform-Specific Notes](./api-reference/ternary-core-simd.md#platform-specific-notes)
 2. Keep `ternary_algebra.h` and `ternary_lut_gen.h` unchanged (portable)
 3. Reimplement SIMD layer with NEON intrinsics in `ternary_simd_engine.cpp`
 
-## File Organization
-
-```
-docs/
-├── README.md (this file)
-│
-├── Source Code Documentation
-│   ├── source-code-overview.md         ← START HERE
-│   ├── ternary-core-header.md          ← ternary_algebra.h (+ ternary_lut_gen.h)
-│   ├── ternary-core-simd.md            ← ternary_simd_engine.cpp
-│   └── error-handling.md               ← ternary_errors.h
-│
-├── Architecture & Design
-│   ├── architecture.md
-│   ├── optimization-complexity-rationale.md
-│   └── optimization-roadmap.md
-│
-└── Build & Performance
-    ├── general-readme.md
-    └── PGO_README.md
-```
+**Contribute to the project:**
+1. Read [CONTRIBUTING.md](../CONTRIBUTING.md)
+2. Review [CHANGELOG.md](../CHANGELOG.md) for recent changes
+3. Check [Optimization Roadmap](./architecture/optimization-roadmap.md) for future plans
 
 ## Core Concepts
 
