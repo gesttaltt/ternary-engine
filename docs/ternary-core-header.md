@@ -1,12 +1,12 @@
-# ternary_core.h - Core Header Documentation
+# ternary_algebra.h - Core Algebra Header Documentation
 
 ## Overview
 
-`ternary_core.h` is the foundational header file that defines the balanced ternary logic system and provides optimized scalar operations. It serves as the semantic core for all ternary operations in the library, establishing the encoding scheme, lookup tables, and basic operations that are used by both scalar and SIMD implementations.
+`ternary_algebra.h` is the foundational header file that defines the balanced ternary logic system and provides optimized scalar operations with compile-time generated lookup tables. It serves as the semantic core for all ternary operations in the library, establishing the encoding scheme, constexpr-generated LUTs, and basic operations that are used by both scalar and SIMD implementations.
 
-**File**: `ternary_core.h` (125 lines)
-**Purpose**: Core definitions, LUT-based scalar operations, encoding/conversion utilities
-**Dependencies**: `<stdint.h>` only
+**File**: `ternary_algebra.h` (108 lines)
+**Purpose**: Core definitions, constexpr LUT generation, LUT-based scalar operations, encoding/conversion utilities
+**Dependencies**: `<stdint.h>`, `ternary_lut_gen.h`
 **License**: Apache 2.0
 
 ---
@@ -47,21 +47,60 @@ Uses `uint8_t` for:
 
 ## Lookup Tables (LUTs)
 
-The core optimization strategy (OPT-086) replaces arithmetic operations with direct table lookups. All LUTs are `static const` for compile-time initialization and cache-friendly access.
+The core optimization strategy combines two approaches:
+- **OPT-086**: Replace arithmetic operations with direct table lookups
+- **OPT-AUTO-LUT**: Generate LUTs at compile time via constexpr (infinite maintainability ROI)
+
+All LUTs are generated using `constexpr` functions from `ternary_lut_gen.h`, ensuring:
+- Algorithm is the documentation (single source of truth)
+- Zero runtime cost (evaluated at compile time)
+- Auditability (algebraic rules visible in code)
+- Flexibility (new operations via lambda expressions)
+
+### Constexpr LUT Generation Framework
+
+**File**: `ternary_lut_gen.h`
+
+**Key Functions**:
+```cpp
+template <typename Func>
+constexpr std::array<uint8_t, 16> make_binary_lut(Func op);
+
+template <typename Func>
+constexpr std::array<uint8_t, 4> make_unary_lut(Func op);
+```
+
+**Example Generation**:
+```cpp
+constexpr auto TADD_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int sum = sa + sb;
+    return int_to_trit_constexpr(clamp_ternary(sum));  // Saturated addition
+});
+```
 
 ### Binary Operation LUTs
 
-Binary operations use 16-entry tables indexed by `(a << 2) | b`:
+Binary operations use 16-entry tables indexed by `(a << 2) | b`, generated via `make_binary_lut()`:
 
 #### TADD_LUT - Saturating Ternary Addition
 
-```c
-static const uint8_t TADD_LUT[16] = {
-    0b00, 0b00, 0b01, 0b00,  // a=-1: -1+(-1)=-1, -1+0=-1, -1+1=0
-    0b00, 0b01, 0b10, 0b00,  // a=0:  0+(-1)=-1, 0+0=0,   0+1=+1
-    0b01, 0b10, 0b10, 0b00,  // a=+1: 1+(-1)=0,  1+0=+1,  1+1=+1 (saturate)
-    0b00, 0b00, 0b00, 0b00   // a=invalid
-};
+**Algorithm**: `clamp(a + b, -1, +1)`
+
+```cpp
+constexpr auto TADD_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int sum = sa + sb;
+    return int_to_trit_constexpr(clamp_ternary(sum));
+});
+```
+
+**Generated Values** (for reference):
+```
+Index: 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
+Value: 00 00 01 00 00 01 10 00 01 10 10 00 00 00 00 00
 ```
 
 **Saturation Behavior**:
@@ -71,13 +110,24 @@ static const uint8_t TADD_LUT[16] = {
 
 #### TMUL_LUT - Ternary Multiplication
 
-```c
-static const uint8_t TMUL_LUT[16] = {
-    0b10, 0b01, 0b00, 0b00,  // a=-1: (-1)*(-1)=+1, (-1)*0=0, (-1)*(+1)=-1
-    0b01, 0b01, 0b01, 0b00,  // a=0:  0*(-1)=0, 0*0=0, 0*(+1)=0 (absorbing)
-    0b00, 0b01, 0b10, 0b00,  // a=+1: (+1)*(-1)=-1, (+1)*0=0, (+1)*(+1)=+1
-    0b00, 0b00, 0b00, 0b00   // a=invalid
-};
+**Algorithm**: `a * b`
+
+```cpp
+constexpr auto TMUL_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int product = sa * sb;
+    return int_to_trit_constexpr(product);
+});
+```
+
+**Generated Values** (for reference):
+```
+Index: 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
+Value: 10 01 00 00 01 01 01 00 00 01 10 00 00 00 00 00
+       a=-1: (-1)*(-1)=+1, (-1)*0=0, (-1)*(+1)=-1
+       a=0:  0*(-1)=0, 0*0=0, 0*(+1)=0 (absorbing)
+       a=+1: (+1)*(-1)=-1, (+1)*0=0, (+1)*(+1)=+1
 ```
 
 **Properties**:
@@ -87,39 +137,72 @@ static const uint8_t TMUL_LUT[16] = {
 
 #### TMIN_LUT - Ternary Minimum
 
-```c
-static const uint8_t TMIN_LUT[16] = {
-    0b00, 0b00, 0b00, 0b00,  // a=-1: min(-1, x) = -1 for all x
-    0b00, 0b01, 0b01, 0b00,  // a=0:  min(0, -1)=-1, min(0,0)=0, min(0,+1)=0
-    0b00, 0b01, 0b10, 0b00,  // a=+1: min(+1,-1)=-1, min(+1,0)=0, min(+1,+1)=+1
-    0b00, 0b00, 0b00, 0b00   // a=invalid
-};
+**Algorithm**: `min(a, b)` where `-1 < 0 < +1`
+
+```cpp
+constexpr auto TMIN_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int minimum = (sa < sb) ? sa : sb;
+    return int_to_trit_constexpr(minimum);
+});
+```
+
+**Generated Values** (for reference):
+```
+Index: 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
+Value: 00 00 00 00 00 01 01 00 00 01 10 00 00 00 00 00
+       a=-1: min(-1, x) = -1 for all x
+       a=0:  min(0, -1)=-1, min(0,0)=0, min(0,+1)=0
+       a=+1: min(+1,-1)=-1, min(+1,0)=0, min(+1,+1)=+1
 ```
 
 **Order**: `-1 < 0 < +1`
 
 #### TMAX_LUT - Ternary Maximum
 
-```c
-static const uint8_t TMAX_LUT[16] = {
-    0b00, 0b01, 0b10, 0b00,  // a=-1: max(-1,-1)=-1, max(-1,0)=0, max(-1,+1)=+1
-    0b01, 0b01, 0b10, 0b00,  // a=0:  max(0,-1)=0, max(0,0)=0, max(0,+1)=+1
-    0b10, 0b10, 0b10, 0b00,  // a=+1: max(+1, x) = +1 for all x
-    0b00, 0b00, 0b00, 0b00   // a=invalid
-};
+**Algorithm**: `max(a, b)` where `-1 < 0 < +1`
+
+```cpp
+constexpr auto TMAX_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int maximum = (sa > sb) ? sa : sb;
+    return int_to_trit_constexpr(maximum);
+});
+```
+
+**Generated Values** (for reference):
+```
+Index: 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
+Value: 00 01 10 00 01 01 10 00 10 10 10 00 00 00 00 00
+       a=-1: max(-1,-1)=-1, max(-1,0)=0, max(-1,+1)=+1
+       a=0:  max(0,-1)=0, max(0,0)=0, max(0,+1)=+1
+       a=+1: max(+1, x) = +1 for all x
 ```
 
 ### Unary Operation LUT
 
 #### TNOT_LUT - Ternary Negation
 
-```c
-static const uint8_t TNOT_LUT[4] = {
-    0b10,  // tnot(-1) = +1
-    0b01,  // tnot(0)  = 0
-    0b00,  // tnot(+1) = -1
-    0b00   // tnot(invalid) = undefined
-};
+**Algorithm**: `-a`
+
+```cpp
+constexpr auto TNOT_LUT = make_unary_lut([](uint8_t a) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int negated = -sa;
+    return int_to_trit_constexpr(negated);
+});
+```
+
+**Generated Values** (for reference):
+```
+Index: 0  1  2  3
+Value: 10 01 00 00
+       tnot(-1) = +1
+       tnot(0)  = 0
+       tnot(+1) = -1
+       tnot(invalid) = undefined
 ```
 
 Indexed directly by `a & 0b11` (only 4 entries needed).
@@ -274,25 +357,25 @@ static FORCE_INLINE trit tadd(trit a, trit b) {
 
 ## Integration with SIMD Implementation
 
-The header provides the **scalar fallback** and **semantic reference** for SIMD operations in `ternary_core_simd_full.cpp`:
+The header provides the **scalar fallback** and **semantic reference** for SIMD operations in `ternary_simd_engine.cpp`:
 
 1. **Scalar Tail Processing**: SIMD loops process 32 elements at a time; remaining elements use these scalar functions
-2. **LUT Reuse**: SIMD operations use `_mm256_shuffle_epi8` with the same LUT tables
+2. **LUT Reuse**: SIMD operations use `_mm256_shuffle_epi8` with the same constexpr-generated LUT tables
 3. **Correctness Verification**: SIMD results are validated against scalar reference
 
 ### Example Integration
 
 ```cpp
-// ternary_core_simd_full.cpp
-#include "ternary_core.h"
+// ternary_simd_engine.cpp
+#include "ternary_algebra.h"
 
-// SIMD uses broadcast LUTs
-__m256i lut = broadcast_lut_16(TADD_LUT);  // From ternary_core.h
+// SIMD uses broadcast LUTs (constexpr-generated at compile time)
+__m256i lut = broadcast_lut_16(TADD_LUT.data());  // From ternary_algebra.h
 __m256i result = _mm256_shuffle_epi8(lut, indices);
 
 // Scalar tail uses scalar functions
 for (; i < n; ++i) {
-    r[i] = tadd(a[i], b[i]);  // From ternary_core.h
+    r[i] = tadd(a[i], b[i]);  // From ternary_algebra.h
 }
 ```
 
@@ -337,6 +420,11 @@ trit result = tadd(0b01, 0b10);  // Compiler knows: a=1, b=2
 // Can fold to: trit result = TADD_LUT[6]; → result = 0b10;
 ```
 
+**Constexpr LUT Benefits**:
+- LUTs are evaluated at compile time (zero runtime cost)
+- Compiler can inline LUT values for constant operands
+- No static initialization overhead
+
 ### Auto-Vectorization Limitations
 
 **Scalar loops don't auto-vectorize well**:
@@ -350,7 +438,7 @@ Compilers struggle because:
 - Array indexing patterns are complex for ternary encoding
 - LUT dependencies prevent vectorization analysis
 
-**Solution**: Explicit SIMD implementation in `ternary_core_simd_full.cpp`
+**Solution**: Explicit SIMD implementation in `ternary_simd_engine.cpp`
 
 ---
 
@@ -402,11 +490,12 @@ The current encoding (`-1=0b00, 0=0b01, +1=0b10`) and LUT values are **stable** 
 
 ## Summary
 
-`ternary_core.h` provides:
+`ternary_algebra.h` provides:
 - Efficient 2-bit encoding for balanced ternary (-1, 0, +1)
-- LUT-based scalar operations (3-10x faster than arithmetic)
+- Constexpr-generated LUT-based scalar operations (3-10x faster than arithmetic, OPT-AUTO-LUT)
+- Algorithm-as-documentation approach (infinite maintainability ROI)
 - Platform-agnostic force-inline macros
 - Thread-safe, cache-friendly design
 - Foundation for SIMD acceleration
 
-This header represents the **Phase 0 optimization milestone**: replacing conversion-based operations with direct lookup tables, establishing the semantic core that all higher-level implementations build upon.
+This header represents the **Phase 0 optimization milestone**: replacing conversion-based operations with direct lookup tables, establishing the semantic core that all higher-level implementations build upon. The constexpr LUT generation framework ensures LUTs are generated at compile time from algebraic rules, eliminating manual maintenance while achieving zero runtime cost.

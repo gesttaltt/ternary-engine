@@ -8,39 +8,70 @@ This document provides a high-level overview of the pure source code files in th
 
 ## Core Source Files
 
-The library consists of **two primary source files** that implement the complete balanced ternary logic system:
+The library consists of **four primary source files** that implement the complete balanced ternary logic system:
 
-### 1. `ternary_core.h` - Foundation Layer
+### 1. `ternary_lut_gen.h` - Compile-Time LUT Generation Framework
 
-**Purpose**: Core definitions and scalar operations
+**Purpose**: Constexpr LUT generation infrastructure (OPT-AUTO-LUT)
+
+**Key Components**:
+- `make_binary_lut()` - Template for 16-entry binary operation LUTs
+- `make_unary_lut()` - Template for 4-entry unary operation LUTs
+- `make_unary_lut_padded()` - Template for 16-entry padded unary LUTs
+- Constexpr conversion helpers
+
+**Size**: ~80 lines
+**Dependencies**: `<array>`, `<cstdint>`
+**Benefit**: Algorithm-as-documentation, infinite maintainability ROI, zero runtime cost
+
+### 2. `ternary_algebra.h` - Foundation Layer
+
+**Purpose**: Core definitions and constexpr-generated scalar operations
 
 **Key Components**:
 - Trit encoding system (2-bit representation)
-- Lookup tables (LUTs) for all operations
-- Scalar operation implementations
+- Constexpr-generated lookup tables (LUTs) for all operations
+- Force-inlined scalar operation implementations
 - Conversion and packing utilities
 
 **Documentation**: [`docs/ternary-core-header.md`](./ternary-core-header.md)
 
-**Size**: 125 lines
-**Dependencies**: `stdint.h` only
+**Size**: 108 lines
+**Dependencies**: `stdint.h`, `ternary_lut_gen.h`
 **Performance**: 3-10x faster than conversion-based approach
 
-### 2. `ternary_core_simd_full.cpp` - Acceleration Layer
+### 3. `ternary_simd_engine.cpp` - Acceleration Layer
 
 **Purpose**: AVX2-vectorized array operations with Python bindings
 
 **Key Components**:
 - SIMD implementations using `_mm256_shuffle_epi8`
-- Template-based unified processing
-- OpenMP parallelization for large arrays
+- Template-based unified processing with optional masking (OPT-HASWELL-02)
+- OpenMP parallelization for large arrays (OPT-001)
 - Pybind11 Python integration
+- Centralized error handling via `ternary_errors.h`
 
 **Documentation**: [`docs/ternary-core-simd.md`](./ternary-core-simd.md)
 
-**Size**: 297 lines
-**Dependencies**: `immintrin.h`, `pybind11`, `omp.h`, `ternary_core.h`
+**Size**: 331 lines
+**Dependencies**: `immintrin.h`, `pybind11`, `omp.h`, `ternary_algebra.h`, `ternary_errors.h`
 **Performance**: 100x faster than pure Python
+
+### 4. `ternary_errors.h` - Error Handling
+
+**Purpose**: Domain-specific exception types for ternary operations
+
+**Key Components**:
+- `TernaryError` - Base exception class
+- `ArraySizeMismatchError` - Binary operation size validation
+- `InvalidTritError` - Trit value validation (reserved)
+- `AllocationError` - Memory allocation failures (reserved)
+
+**Documentation**: [`docs/error-handling.md`](./error-handling.md)
+
+**Size**: 120 lines
+**Dependencies**: `<stdexcept>`, `<string>`
+**Design Principle**: YAGNI - minimal exception set, expand only when needed
 
 ---
 
@@ -53,34 +84,47 @@ The library consists of **two primary source files** that implement the complete
 └────────────────────┬────────────────────────────┘
                      │ pybind11
 ┌────────────────────▼────────────────────────────┐
-│     ternary_core_simd_full.cpp (297 lines)     │
+│      ternary_simd_engine.cpp (331 lines)        │
 │  ┌──────────────────────────────────────────┐  │
 │  │  Python Bindings (pybind11)              │  │
+│  │  • PYBIND11_MODULE definitions           │  │
+│  └──────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────┐  │
+│  │  Error Handling (ternary_errors.h)      │  │
+│  │  • ArraySizeMismatchError validation     │  │
 │  └──────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────┐  │
 │  │  Template Processing Layer               │  │
-│  │  • process_binary_array<>                │  │
-│  │  • process_unary_array<>                 │  │
+│  │  • process_binary_array<Sanitize>        │  │
+│  │  • process_unary_array<Sanitize>         │  │
+│  │  (OPT-HASWELL-02: optional masking)      │  │
 │  └──────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────┐  │
 │  │  Execution Path Selection                │  │
 │  │  PATH 1: OpenMP (n >= 100K)              │  │
 │  │  PATH 2: Serial SIMD (n < 100K)          │  │
-│  │  PATH 3: Scalar tail (n < 32)            │  │
+│  │  PATH 3: Scalar tail (remaining)         │  │
 │  └──────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────┐  │
 │  │  SIMD Operations (AVX2)                  │  │
-│  │  • tadd_simd(), tmul_simd(), ...         │  │
+│  │  • tadd_simd<>(), tmul_simd<>(), ...     │  │
 │  │  • _mm256_shuffle_epi8 (32 parallel)     │  │
+│  │  • maybe_mask<Sanitize>() helper         │  │
 │  └────────────┬─────────────────────────────┘  │
 └───────────────┼─────────────────────────────────┘
                 │ #include
 ┌───────────────▼─────────────────────────────────┐
-│       ternary_core.h (125 lines)                │
+│       ternary_algebra.h (108 lines)             │
 │  ┌──────────────────────────────────────────┐  │
-│  │  Lookup Tables (LUTs)                    │  │
-│  │  • TADD_LUT[16], TMUL_LUT[16], ...       │  │
-│  │  • TNOT_LUT[4]                           │  │
+│  │  Constexpr LUT Generation Framework      │  │
+│  │  (uses ternary_lut_gen.h)                │  │
+│  └──────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────┐  │
+│  │  Lookup Tables (Constexpr-Generated)     │  │
+│  │  • TADD_LUT = make_binary_lut(λ)         │  │
+│  │  • TMUL_LUT, TMIN_LUT, TMAX_LUT          │  │
+│  │  • TNOT_LUT = make_unary_lut(λ)          │  │
+│  │  (OPT-AUTO-LUT: algorithm-as-docs)       │  │
 │  └──────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────┐  │
 │  │  Scalar Operations                       │  │
@@ -94,6 +138,22 @@ The library consists of **two primary source files** that implement the complete
 │  │  • int_to_trit(), trit_to_int()          │  │
 │  │  • pack_trits(), unpack_trit()           │  │
 │  └──────────────────────────────────────────┘  │
+└────────────────┬────────────────────────────────┘
+                 │ #include
+┌────────────────▼────────────────────────────────┐
+│       ternary_lut_gen.h (~80 lines)             │
+│  ┌──────────────────────────────────────────┐  │
+│  │  Constexpr LUT Generation Templates      │  │
+│  │  • make_binary_lut<Func>(λ) → [16]      │  │
+│  │  • make_unary_lut<Func>(λ) → [4]        │  │
+│  │  • make_unary_lut_padded<Func>(λ) → [16]│  │
+│  └──────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────┐  │
+│  │  Constexpr Conversion Helpers            │  │
+│  │  • trit_to_int_constexpr()               │  │
+│  │  • int_to_trit_constexpr()               │  │
+│  │  • clamp_ternary()                       │  │
+│  └──────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -105,7 +165,7 @@ Let's trace a simple operation: `result = tc.tadd(a, b)` where `a` and `b` are 1
 
 ### Step 1: Python Call
 ```python
-import ternary_core_simd_full as tc
+import ternary_simd_engine as tc
 import numpy as np
 
 a = np.array([0, 1, 2] * 33334, dtype=np.uint8)  # 100,002 elements
@@ -114,21 +174,21 @@ b = np.array([2, 1, 0] * 33334, dtype=np.uint8)
 result = tc.tadd(a, b)  # Calls into C++
 ```
 
-### Step 2: Python Binding (ternary_core_simd_full.cpp:269-271)
+### Step 2: Python Binding (ternary_simd_engine.cpp:303-305)
 ```cpp
 py::array_t<uint8_t> tadd_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array(A, B, tadd_simd, tadd);
+    return process_binary_array<true>(A, B, tadd_simd<true>, tadd);
 }
 ```
 
-### Step 3: Template Instantiation (ternary_core_simd_full.cpp:165-215)
+### Step 3: Template Instantiation (ternary_simd_engine.cpp:196-249)
 ```cpp
-template <typename SimdOp, typename ScalarOp>
+template <bool Sanitize = true, typename SimdOp, typename ScalarOp>
 py::array_t<uint8_t> process_binary_array(
     py::array_t<uint8_t> A,
     py::array_t<uint8_t> B,
-    SimdOp simd_op,     // = tadd_simd
-    ScalarOp scalar_op  // = tadd (from ternary_core.h)
+    SimdOp simd_op,     // = tadd_simd<true>
+    ScalarOp scalar_op  // = tadd (from ternary_algebra.h)
 )
 ```
 
@@ -138,46 +198,61 @@ n = 100,002 elements
 n >= 100,000? YES → PATH 1: OpenMP Parallel
 ```
 
-### Step 5: Parallel SIMD Processing (ternary_core_simd_full.cpp:186-198)
+### Step 5: Parallel SIMD Processing (ternary_simd_engine.cpp:223-229)
 ```cpp
 // Process 100,000 elements (3,125 blocks of 32) in parallel
 #pragma omp parallel for schedule(static)
 for (ssize_t idx = 0; idx < 100000; idx += 32) {
     // Each iteration:
-    __m256i va = _mm256_loadu_si256(...);  // Load 32 trits from a
-    __m256i vb = _mm256_loadu_si256(...);  // Load 32 trits from b
-    __m256i vr = tadd_simd(va, vb);        // 32 parallel additions
-    _mm256_storeu_si256(..., vr);          // Store 32 results
+    __m256i va = _mm256_loadu_si256(...);       // Load 32 trits from a
+    __m256i vb = _mm256_loadu_si256(...);       // Load 32 trits from b
+    __m256i vr = simd_op(va, vb);               // 32 parallel additions
+    _mm256_storeu_si256(..., vr);               // Store 32 results
 }
 ```
 
-### Step 6: SIMD Operation (ternary_core_simd_full.cpp:80-94)
+### Step 6: SIMD Operation (ternary_simd_engine.cpp:101-115)
 ```cpp
+template <bool Sanitize = true>
 static inline __m256i tadd_simd(__m256i a, __m256i b) {
-    // Build indices: (a << 2) | b
-    __m256i indices = ...;
+    // Optional masking (OPT-HASWELL-02)
+    __m256i a_masked = maybe_mask<Sanitize>(a);
+    __m256i b_masked = maybe_mask<Sanitize>(b);
 
-    // Load TADD_LUT from ternary_core.h
-    __m256i lut = broadcast_lut_16(TADD_LUT);
+    // Build indices: (a << 2) | b
+    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
+                                         _mm256_add_epi8(a_masked, a_masked));
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+
+    // Load constexpr-generated TADD_LUT from ternary_algebra.h
+    __m256i lut = broadcast_lut_16(TADD_LUT.data());
 
     // 32 parallel lookups
     return _mm256_shuffle_epi8(lut, indices);
 }
 ```
 
-### Step 7: Scalar Tail (ternary_core_simd_full.cpp:210-212)
+### Step 7: Scalar Tail (ternary_simd_engine.cpp:244-246)
 ```cpp
 // Process remaining 2 elements
 for (; i < 100002; ++i) {
-    r[i] = tadd(a[i], b[i]);  // Scalar operation from ternary_core.h
+    r[i] = scalar_op(a[i], b[i]);  // Scalar operation from ternary_algebra.h
 }
 ```
 
-### Step 8: Scalar LUT Lookup (ternary_core.h:108-110)
+### Step 8: Scalar LUT Lookup (ternary_algebra.h)
 ```cpp
 static FORCE_INLINE trit tadd(trit a, trit b) {
-    return TADD_LUT[(a << 2) | b];  // Direct array access
+    return TADD_LUT[(a << 2) | b];  // Direct constexpr-generated LUT access
 }
+
+// TADD_LUT is constexpr-generated at compile time:
+constexpr auto TADD_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int sum = sa + sb;
+    return int_to_trit_constexpr(clamp_ternary(sum));
+});
 ```
 
 ### Result
@@ -201,10 +276,37 @@ return int_to_trit(sum);                     // 1 conversion
 
 **After** (LUT-based):
 ```c
-return TADD_LUT[(a << 2) | b];  // Single array access
+return TADD_LUT[(a << 2) | b];  // Single constexpr-generated LUT access
 ```
 
 **Speedup**: 3-10x (eliminates conversions and branches)
+
+### 1.5. Constexpr LUT Generation (OPT-AUTO-LUT)
+
+**Before** (manual LUTs):
+```c
+static const uint8_t TADD_LUT[16] = {
+    0b00, 0b00, 0b01, 0b00,
+    0b00, 0b01, 0b10, 0b00,
+    // ... manual maintenance burden
+};
+```
+
+**After** (constexpr generation):
+```cpp
+constexpr auto TADD_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int sum = sa + sb;
+    return int_to_trit_constexpr(clamp_ternary(sum));
+});
+```
+
+**Benefits**:
+- Algorithm is the documentation (single source of truth)
+- Zero runtime cost (evaluated at compile time)
+- Auditability (algebraic rules visible in code)
+- Infinite maintainability ROI
 
 ### 2. SIMD Vectorization (Phase 0.5)
 
@@ -226,13 +328,32 @@ return TADD_LUT[(a << 2) | b];  // Single array access
 
 **Solution** (Phase 2): Single template handles all operations
 ```cpp
-template <typename SimdOp, typename ScalarOp>
+template <bool Sanitize = true, typename SimdOp, typename ScalarOp>
 py::array_t<uint8_t> process_binary_array(...) {
-    // Universal processing logic
+    // Universal processing logic with optional masking (OPT-HASWELL-02)
 }
 ```
 
 **Result**: 73% code reduction, <5% performance loss
+
+### 3.5. Optional Input Sanitization (OPT-HASWELL-02)
+
+**Technique**: Template-based compile-time masking control
+
+```cpp
+template <bool Sanitize = true>
+static inline __m256i maybe_mask(__m256i v) {
+    if constexpr (Sanitize)
+        return _mm256_and_si256(v, _mm256_set1_epi8(0x03));
+    else
+        return v;
+}
+```
+
+**Benefits**:
+- Production use: `Sanitize=true` (default, safe)
+- Advanced use: `Sanitize=false` (3-5% gain for validated pipelines)
+- Zero runtime overhead (resolved at compile time)
 
 ### 4. Phase Coherence Philosophy
 
@@ -255,8 +376,8 @@ py::array_t<uint8_t> process_binary_array(...) {
 |-----------------------------------|---------|-----------------|---------|
 | Python (reference.py)             | 100 ms  | 100 ME/s        | 1x      |
 | C++ naive (reference_cpp.cpp)     | 30 ms   | 333 ME/s        | 3x      |
-| C++ LUT (ternary_core.h)          | 5 ms    | 2000 ME/s       | 20x     |
-| C++ SIMD (ternary_core_simd_full) | 1 ms    | 10,000 ME/s     | 100x    |
+| C++ LUT (ternary_algebra.h)       | 5 ms    | 2000 ME/s       | 20x     |
+| C++ SIMD (ternary_simd_engine)    | 1 ms    | 10,000 ME/s     | 100x    |
 
 *(ME/s = Million Elements per second)*
 
@@ -291,11 +412,11 @@ py::array_t<uint8_t> process_binary_array(...) {
 ### For Modifying the Code
 
 1. **Adding new operations**:
-   - Add LUT to `ternary_core.h`
-   - Add scalar function to `ternary_core.h`
-   - Add SIMD function to `ternary_core_simd_full.cpp`
-   - Add wrapper to `ternary_core_simd_full.cpp`
-   - Add Python binding to `PYBIND11_MODULE`
+   - Define constexpr LUT lambda in `ternary_algebra.h` using `make_binary_lut()` or `make_unary_lut()`
+   - Add scalar function to `ternary_algebra.h` (force-inlined, LUT-based)
+   - Add SIMD template function to `ternary_simd_engine.cpp`
+   - Add wrapper function to `ternary_simd_engine.cpp`
+   - Add Python binding to `PYBIND11_MODULE` in `ternary_simd_engine.cpp`
 
 2. **Optimizing performance**:
    - See [`docs/ternary-core-simd.md`](./ternary-core-simd.md) § "Future Optimizations"
@@ -303,8 +424,8 @@ py::array_t<uint8_t> process_binary_array(...) {
    - Consider PGO: [`docs/PGO_README.md`](./PGO_README.md)
 
 3. **Porting to new architectures**:
-   - ARM/NEON: Replace AVX2 intrinsics in `ternary_core_simd_full.cpp`
-   - Keep `ternary_core.h` unchanged (portable)
+   - ARM/NEON: Replace AVX2 intrinsics in `ternary_simd_engine.cpp`
+   - Keep `ternary_algebra.h` and `ternary_lut_gen.h` unchanged (portable)
 
 ### For Understanding the Evolution
 
@@ -350,7 +471,7 @@ Verifies parallel scaling on multi-core systems.
 python build/scripts/setup.py build_ext --inplace
 ```
 
-Produces `ternary_core_simd_full.cp312-win_amd64.pyd` (or `.so` on Linux).
+Produces `ternary_simd_engine.cp312-win_amd64.pyd` (or `.so` on Linux).
 
 ### With Profile-Guided Optimization
 
@@ -365,22 +486,26 @@ See [`docs/PGO_README.md`](./PGO_README.md) for details.
 ## File Dependencies
 
 ```
-ternary_core.h
-    ↑
+ternary_lut_gen.h
+    ↓
     │ #include
     │
-ternary_core_simd_full.cpp
+ternary_algebra.h
+    ↓
+    │ #include (+ ternary_errors.h)
+    │
+ternary_simd_engine.cpp
     ↓
     compiled via pybind11
     ↓
-ternary_core_simd_full.pyd/.so
+ternary_simd_engine.pyd/.so
     ↓
     imported by Python
     ↓
 Python application
 ```
 
-**No circular dependencies**: Clean, linear dependency structure.
+**No circular dependencies**: Clean, linear dependency structure with constexpr LUT generation at compile time.
 
 ---
 
@@ -406,10 +531,13 @@ When modifying the source code:
 
 The ternary-kernel-python-c library achieves 100x speedups through:
 
-1. **LUT-based operations** (`ternary_core.h`): Eliminates conversion overhead
-2. **SIMD parallelization** (`ternary_core_simd_full.cpp`): 32 operations per instruction
-3. **Template-based design**: Code reuse without performance cost
-4. **OpenMP threading**: Scales to multiple cores for large arrays
-5. **Phase coherence**: Maximum simplicity for stable performance
+1. **Constexpr LUT generation** (`ternary_lut_gen.h`): Algorithm-as-documentation with zero runtime cost (OPT-AUTO-LUT)
+2. **LUT-based operations** (`ternary_algebra.h`): Eliminates conversion overhead
+3. **SIMD parallelization** (`ternary_simd_engine.cpp`): 32 operations per instruction
+4. **Template-based design**: Code reuse without performance cost (Phase 2)
+5. **Optional masking** (OPT-HASWELL-02): Compile-time sanitization control
+6. **OpenMP threading** (OPT-001): Scales to multiple cores for large arrays (≥100K elements)
+7. **Centralized error handling** (`ternary_errors.h`): Domain-specific exceptions with YAGNI principle
+8. **Phase coherence**: Maximum simplicity for stable performance
 
-Two files, 422 lines of code, 100x performance improvement.
+Four core files, ~640 lines of code, 100x performance improvement.

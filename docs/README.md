@@ -7,23 +7,31 @@ This directory contains comprehensive documentation for the ternary-kernel-pytho
 **Start here to understand the core implementation:**
 
 - **[Source Code Overview](./source-code-overview.md)** - High-level guide to the pure source code
-  - Architecture layers
+  - Architecture layers (4 core files)
   - Operation flow examples
   - Performance summary
   - Reading guide for different purposes
 
-- **[ternary_core.h Documentation](./ternary-core-header.md)** - Core header file (125 lines)
+- **[ternary_algebra.h Documentation](./ternary-core-header.md)** - Core algebra header (108 lines)
   - Trit encoding scheme
-  - Lookup table (LUT) design
-  - Scalar operations
+  - Constexpr-generated lookup tables (OPT-AUTO-LUT)
+  - Scalar operations with force-inlining
   - Type definitions and utilities
+  - Uses `ternary_lut_gen.h` for compile-time LUT generation
 
-- **[ternary_core_simd_full.cpp Documentation](./ternary-core-simd.md)** - SIMD implementation (297 lines)
+- **[ternary_simd_engine.cpp Documentation](./ternary-core-simd.md)** - SIMD implementation (331 lines)
   - AVX2 acceleration techniques
-  - Template-based unified processing
+  - Template-based unified processing with optional masking (OPT-HASWELL-02)
   - Execution path selection
-  - OpenMP parallelization
+  - OpenMP parallelization (OPT-001)
   - Python integration via pybind11
+  - Centralized error handling via `ternary_errors.h`
+
+- **[Error Handling Documentation](./error-handling.md)** - Exception handling system
+  - Domain-specific exception types
+  - YAGNI principle (minimal exception set)
+  - Python exception mapping
+  - Usage examples for C++ and Python
 
 ## Additional Documentation
 
@@ -50,12 +58,14 @@ This directory contains comprehensive documentation for the ternary-kernel-pytho
 
 **Understand how the code works:**
 1. [Source Code Overview](./source-code-overview.md)
-2. [ternary_core.h Documentation](./ternary-core-header.md)
-3. [ternary_core_simd_full.cpp Documentation](./ternary-core-simd.md)
+2. [ternary_algebra.h Documentation](./ternary-core-header.md)
+3. [ternary_simd_engine.cpp Documentation](./ternary-core-simd.md)
+4. [Error Handling Documentation](./error-handling.md)
 
 **Add a new ternary operation:**
-1. Read [ternary_core.h § Adding Operations](./ternary-core-header.md#future-considerations)
-2. Read [ternary_core_simd_full.cpp § Operation Wrappers](./ternary-core-simd.md#operation-wrappers)
+1. Read [ternary_algebra.h § Adding Operations](./ternary-core-header.md#future-considerations)
+2. Read [ternary_simd_engine.cpp § Operation Wrappers](./ternary-core-simd.md#operation-wrappers)
+3. Use `make_binary_lut()` or `make_unary_lut()` from `ternary_lut_gen.h`
 
 **Optimize performance:**
 1. Read [ternary_core_simd.md § Performance Analysis](./ternary-core-simd.md#performance-analysis)
@@ -72,8 +82,8 @@ This directory contains comprehensive documentation for the ternary-kernel-pytho
 
 **Port to a new architecture (ARM/NEON):**
 1. Read [ternary_core_simd.md § Platform-Specific Notes](./ternary-core-simd.md#platform-specific-notes)
-2. Keep `ternary_core.h` unchanged (portable)
-3. Reimplement SIMD layer with NEON intrinsics
+2. Keep `ternary_algebra.h` and `ternary_lut_gen.h` unchanged (portable)
+3. Reimplement SIMD layer with NEON intrinsics in `ternary_simd_engine.cpp`
 
 ## File Organization
 
@@ -83,8 +93,9 @@ docs/
 │
 ├── Source Code Documentation
 │   ├── source-code-overview.md         ← START HERE
-│   ├── ternary-core-header.md          ← ternary_core.h
-│   └── ternary-core-simd.md            ← ternary_core_simd_full.cpp
+│   ├── ternary-core-header.md          ← ternary_algebra.h (+ ternary_lut_gen.h)
+│   ├── ternary-core-simd.md            ← ternary_simd_engine.cpp
+│   └── error-handling.md               ← ternary_errors.h
 │
 ├── Architecture & Design
 │   ├── architecture.md
