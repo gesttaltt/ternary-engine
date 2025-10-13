@@ -198,11 +198,6 @@ See [docs/PGO_README.md](docs/PGO_README.md) for details.
 #define TERNARY_NO_SANITIZE
 ```
 
-```cpp
-// Enable VTune profiling annotations
-#define TERNARY_ENABLE_VTUNE
-```
-
 ## Roadmap
 
 **Current**: v0.3.0 - Production optimizations (Phase 3)
@@ -212,6 +207,9 @@ See [docs/PGO_README.md](docs/PGO_README.md) for details.
 - Runtime CPU detection and fallback
 - Operation fusion (fused multiply-add)
 - Multi-dimensional array support
+- Profiler integration (VTune ITT, NVTX for GPU, Perfetto)
+  - Framework implemented in `ternary_profiler.h`
+  - Awaiting integration into execution engine
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 

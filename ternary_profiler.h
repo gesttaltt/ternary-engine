@@ -15,31 +15,47 @@
 // limitations under the License.
 //
 // =============================================================================
+// IMPLEMENTATION STATUS
+// =============================================================================
+//
+// **ROADMAP FEATURE - NOT YET INTEGRATED**
+//
+// This header provides profiler integration infrastructure for future use.
+// Current status:
+//   - VTune (ITT API): Framework implemented, not integrated into engine
+//   - NVTX (CUDA/GPU): Framework implemented, awaiting GPU port
+//   - Perfetto: Stub placeholder for future web-based tracing
+//
+// OPT-PHASE3-10 documents the design for production profiling integration.
+// The implementation is complete and tested, but not yet called from
+// ternary_simd_engine.cpp (zero runtime impact).
+//
+// =============================================================================
 // DESIGN RATIONALE
 // =============================================================================
 //
-// OPT-PHASE3-10: Profiler annotations enable:
+// When integrated, profiler annotations will enable:
 // - Visualization of OpenMP block timing in VTune/Perfetto
 // - GPU profiling correlation with NVTX (for future CUDA support)
 // - Zero overhead when profiling is disabled (compile-time no-ops)
-// - Easy integration with existing profiling workflows
+// - Integration with existing profiling workflows
 //
-// SUPPORTED PROFILERS:
-//   1. Intel VTune (ITT API) - CPU profiling on Intel/AMD
-//   2. NVIDIA Nsight (NVTX) - GPU profiling (future CUDA support)
-//   3. Chrome Tracing (Perfetto) - Web-based timeline visualization
+// PROFILER TARGETS (ROADMAP):
+//   1. Intel VTune (ITT API) - CPU profiling [Framework ready]
+//   2. NVIDIA Nsight (NVTX) - GPU profiling [Awaiting CUDA port]
+//   3. Chrome Tracing (Perfetto) - Web timeline [Stub only]
 //
-// COMPILATION:
+// COMPILATION (when integrated):
 //   # Enable VTune annotations
 //   g++ -DTERNARY_ENABLE_VTUNE -O3 ... -littnotify
 //
 //   # Enable NVTX annotations
 //   g++ -DTERNARY_ENABLE_NVTX -O3 ... -lnvToolsExt
 //
-//   # Disable profiling (default, zero overhead)
+//   # Default: profiling disabled (zero overhead)
 //   g++ -O3 ...
 //
-// USAGE EXAMPLE:
+// USAGE EXAMPLE (future integration):
 //   TERNARY_PROFILE_DOMAIN(domain, "TernaryCore");
 //   TERNARY_PROFILE_TASK_BEGIN(domain, "SIMD_Loop");
 //   // ... hot loop code ...
@@ -118,13 +134,13 @@
     nvtxDomainRangePop(domain)
 
 // =============================================================================
-// Chrome Tracing / Perfetto Support (future)
+// Chrome Tracing / Perfetto Support (ROADMAP)
 // =============================================================================
 
 #elif defined(TERNARY_ENABLE_PERFETTO)
 
-// TODO: Perfetto SDK integration
-// For now, stub implementation
+// ROADMAP: Perfetto SDK integration planned for Phase 4
+// Current: Stub implementation (compiles but no output)
 
 #define TERNARY_PROFILE_DOMAIN(var_name, domain_name) \
     int var_name = 0

@@ -729,7 +729,7 @@ namespace {
 
 ### Phase 3.9: Profiler Annotations (Suggestion #10)
 
-**Purpose**: Insert VTune/NVTX markers for phase profiling
+**Purpose**: Profiler integration infrastructure (roadmap)
 
 **Implementation**:
 ```cpp
@@ -752,7 +752,7 @@ for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
 }
 ```
 
-**Rationale**: Visualize OpenMP block timing on VTune/Perfetto
+**Rationale**: When integrated: visualize OpenMP block timing
 **Expected Gain**: Better profiling insights
 **Effort**: 2 days
 

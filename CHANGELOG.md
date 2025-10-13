@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Infrastructure
 - Enhanced cross-language ecosystem (Rust, Zig, C#, Go via C API)
-- Production-grade profiling workflows (VTune, NVTX)
+- Profiling framework infrastructure (VTune ITT, NVTX) - roadmap feature
 - Multi-platform SIMD readiness (ARM NEON, future ARM SVE)
 - CI-friendly feature detection and testing
 
