@@ -128,8 +128,10 @@ integers = [trit_to_int(t) for t in result]
 
 ```
 ternary-kernel-python-c/
-├── ternary_algebra.h             # Mathematical rules & LUTs (125 lines)
-├── ternary_simd_engine.cpp       # Vectorized execution layer (297 lines)
+├── ternary_lut_gen.h             # Constexpr LUT generation (111 lines)
+├── ternary_errors.h              # Centralized error handling (119 lines)
+├── ternary_algebra.h             # Mathematical rules & LUTs (143 lines)
+├── ternary_simd_engine.cpp       # Vectorized execution layer (333 lines)
 ├── build/
 │   ├── scripts/
 │   │   ├── setup.py              # Standard optimized build
@@ -157,21 +159,35 @@ ternary-kernel-python-c/
 
 ### Implementation Layers
 
-The library consists of two primary source files implementing a clean layered architecture:
+The library consists of four core source files implementing a clean layered architecture:
+
+#### Layer 0: LUT Generation Framework (`ternary_lut_gen.h`)
+
+**Purpose**: Constexpr compile-time LUT generation infrastructure (OPT-AUTO-LUT)
+
+**Key Components**:
+- `make_binary_lut()` - Template for 16-entry binary operation LUTs
+- `make_unary_lut()` - Template for 4-entry unary operation LUTs
+- `make_unary_lut_padded()` - Template for 16-entry padded unary LUTs
+- Constexpr conversion helpers
+
+**Benefits**: Algorithm-as-documentation, single source of truth, zero runtime cost, infinite maintainability ROI
+
+**Dependencies**: `<array>`, `<stdint.h>` only (C++17 constexpr)
 
 #### Layer 1: Scalar Foundation (`ternary_algebra.h`)
 
-**Purpose**: Core definitions and branch-free scalar operations
+**Purpose**: Core definitions and branch-free scalar operations with constexpr-generated LUTs
 
 **Key Components**:
 - Trit type definitions and encoding scheme
-- Lookup tables (LUTs) for all operations (68 bytes total)
+- Constexpr-generated lookup tables for all operations (uses `ternary_lut_gen.h`)
 - Force-inlined scalar operations
 - Conversion and packing utilities
 
 **Performance**: 3-10x faster than conversion-based approach (theoretical), 1.07x measured vs optimized baseline
 
-**Dependencies**: `stdint.h` only (highly portable)
+**Dependencies**: `ternary_lut_gen.h`, `<stdint.h>`
 
 **Example**:
 ```c
@@ -181,19 +197,34 @@ static FORCE_INLINE trit tadd(trit a, trit b) {
 }
 ```
 
-#### Layer 2: SIMD Acceleration (`ternary_simd_engine.cpp`)
+#### Layer 2: Error Handling (`ternary_errors.h`)
+
+**Purpose**: Domain-specific exception types for ternary operations
+
+**Key Components**:
+- `TernaryError` - Base exception class
+- `ArraySizeMismatchError` - Binary operation size validation
+- `InvalidTritError` - Trit value validation (reserved)
+- `AllocationError` - Memory allocation failures (reserved)
+
+**Design Principle**: YAGNI - minimal exception set, expand only when needed
+
+**Dependencies**: `<stdexcept>`, `<string>`
+
+#### Layer 3: SIMD Acceleration (`ternary_simd_engine.cpp`)
 
 **Purpose**: AVX2-vectorized array operations with Python bindings
 
 **Key Components**:
 - SIMD operations using `_mm256_shuffle_epi8` (32 parallel LUT lookups)
-- Template-based unified processing (binary/unary operations)
+- Template-based unified processing with optional masking (OPT-HASWELL-02)
 - Three execution paths: OpenMP parallel, serial SIMD, scalar tail
 - Pybind11 Python integration
+- Centralized error handling via `ternary_errors.h`
 
 **Performance**: 100x faster than pure Python, 1.34x to 2.87x vs arithmetic SIMD
 
-**Dependencies**: `immintrin.h` (AVX2), `pybind11`, `omp.h`, `ternary_algebra.h`
+**Dependencies**: `immintrin.h` (AVX2), `pybind11`, `omp.h`, `ternary_algebra.h`, `ternary_errors.h`
 
 ### Execution Paths (Phase 2 Architecture)
 
@@ -369,6 +400,10 @@ This approach eliminates conversions and maintains unified semantics between sca
 ### Phase 0: LUT Optimization
 - Replaced conversion-based operations with lookup tables
 - Eliminated branches from scalar operations
+- **OPT-AUTO-LUT**: Implemented constexpr compile-time LUT generation
+  - Algorithm-as-documentation approach
+  - Single source of truth for mathematical rules
+  - Zero runtime cost, infinite maintainability ROI
 - Result: 3-10x theoretical speedup (1.07x measured vs optimized baseline)
 
 ### Phase 0.5: SIMD LUT Shuffles
@@ -384,6 +419,8 @@ This approach eliminates conversions and maintains unified semantics between sca
 
 ### Phase 2: Complexity Compression (Current)
 - Template-based unification of operations
+- **OPT-HASWELL-02**: Template-based optional masking for input sanitization
+- Centralized error handling with domain-specific exception types
 - Eliminated aligned/unaligned branching
 - Removed manual unrolling (trust compiler)
 - Result: 3 execution paths instead of 6, 73% code reduction, <5% performance loss
@@ -494,5 +531,5 @@ Version 0.2.0 (Phase 2: Complexity Compression)
 
 **Current Version**: 0.2.0 (Phase 2)
 **Status**: Production-ready with comprehensive documentation
-**Last Updated**: 2025-10-12
+**Last Updated**: 2025-10-13
 **Maintained by**: Ternary Core Contributors
