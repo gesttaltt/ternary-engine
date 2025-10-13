@@ -1,6 +1,6 @@
 // verify_autolut.cpp - Verify constexpr-generated LUTs match manual baseline
 //
-// Copyright 2025 Ternary Core Contributors
+// Copyright (c) 2025 Jonathan Verdun (Ternary Core Experimental Project)
 // Licensed under the Apache License, Version 2.0
 //
 // Compile: g++ -std=c++17 -O0 -I.. verify_autolut.cpp -o verify_autolut && ./verify_autolut

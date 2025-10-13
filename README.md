@@ -227,14 +227,14 @@ Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 Apache License 2.0 - See [LICENSE](LICENSE)
 
-Copyright 2025 Ternary Core Contributors
+Copyright 2025 Jonathan Verdun (Ternary Core Experimental Project)
 
 ## Citation
 
 ```bibtex
 @software{ternary_core_simd,
   title={Ternary Core SIMD: High-Performance Balanced Ternary Arithmetic},
-  author={Ternary Core Contributors},
+  author={Jonathan Verdun (Ternary Core Experimental Project)},
   year={2025},
   version={0.3.0},
   url={https://github.com/[your-repo]/ternary-kernel-python-c}

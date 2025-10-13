@@ -243,6 +243,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Maintained by**: Ternary Core Contributors
+**Maintained by**: Jonathan Verdun (Ternary Core Experimental Project)
 **License**: Apache 2.0
 **Last Updated**: 2025-10-13

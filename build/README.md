@@ -265,4 +265,4 @@ See `CHANGELOG.md` for detailed version history.
 ---
 
 **Last Updated**: 2025-10-13
-**Maintained by**: Ternary Core Contributors
+**Maintained by**: Jonathan Verdun (Ternary Core Experimental Project)

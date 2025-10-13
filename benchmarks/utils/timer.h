@@ -1,6 +1,6 @@
 // timer.h — High-resolution timer for benchmarking
 //
-// Copyright 2025 Ternary Core Contributors
+// Copyright (c) 2025 Jonathan Verdun (Ternary Core Experimental Project)
 // Licensed under the Apache License, Version 2.0
 
 #pragma once

@@ -1,6 +1,6 @@
 // ternary_errors.h — Centralized exception types for ternary operations
 //
-// Copyright 2025 Ternary Core Contributors
+// Copyright (c) 2025 Jonathan Verdun (Ternary Core Experimental Project)
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
