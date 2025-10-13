@@ -18,6 +18,7 @@
 #define TERNARY_ALGEBRA_H
 
 #include <stdint.h>
+#include "ternary_lut_gen.h"  // Constexpr LUT generation
 
 // each trit occupies 2 bits → 00 = -1, 01 = 0, 10 = +1
 typedef uint8_t trit;
@@ -33,66 +34,58 @@ typedef uint8_t trit;
 static inline trit int_to_trit(int v) { return (v < 0) ? 0b00 : (v > 0) ? 0b10 : 0b01; }
 static inline int  trit_to_int(trit t){ return (t==0b00)?-1:(t==0b10)?1:0; }
 
-// --- Lookup tables for optimized operations (OPT-086) ---
+// --- Constexpr-generated lookup tables (OPT-AUTO-LUT) ---
 // Index format: (a << 2) | b, where a,b are 2-bit trit values
+// AVX2-compatible: 16-byte tables for _mm256_shuffle_epi8
 
 // TADD: Saturated ternary addition
-static const uint8_t TADD_LUT[16] = {
-    // a=0b00 (-1): -1+-1=-1, -1+0=-1, -1+1=0, -1+xx=undefined
-    0b00, 0b00, 0b01, 0b00,
-    // a=0b01 (0): 0+-1=-1, 0+0=0, 0+1=+1, 0+xx=undefined
-    0b00, 0b01, 0b10, 0b00,
-    // a=0b10 (+1): 1+-1=0, 1+0=+1, 1+1=+1, 1+xx=undefined
-    0b01, 0b10, 0b10, 0b00,
-    // a=0b11 (invalid): all undefined
-    0b00, 0b00, 0b00, 0b00
-};
+// Algorithm: clamp(a + b, -1, +1)
+constexpr auto TADD_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int sum = sa + sb;
+    // Saturate to [-1, +1] range
+    return int_to_trit_constexpr(clamp_ternary(sum));
+});
 
 // TMUL: Ternary multiplication
-static const uint8_t TMUL_LUT[16] = {
-    // a=0b00 (-1): -1*-1=+1, -1*0=0, -1*+1=-1, -1*xx=undefined
-    0b10, 0b01, 0b00, 0b00,
-    // a=0b01 (0): 0*-1=0, 0*0=0, 0*+1=0, 0*xx=undefined
-    0b01, 0b01, 0b01, 0b00,
-    // a=0b10 (+1): +1*-1=-1, +1*0=0, +1*+1=+1, +1*xx=undefined
-    0b00, 0b01, 0b10, 0b00,
-    // a=0b11 (invalid): all undefined
-    0b00, 0b00, 0b00, 0b00
-};
+// Algorithm: a * b
+constexpr auto TMUL_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int product = sa * sb;
+    return int_to_trit_constexpr(product);
+});
 
 // TMIN: Ternary minimum
-static const uint8_t TMIN_LUT[16] = {
-    // a=0b00 (-1): min(-1,-1)=-1, min(-1,0)=-1, min(-1,+1)=-1, min(-1,xx)=undefined
-    0b00, 0b00, 0b00, 0b00,
-    // a=0b01 (0): min(0,-1)=-1, min(0,0)=0, min(0,+1)=0, min(0,xx)=undefined
-    0b00, 0b01, 0b01, 0b00,
-    // a=0b10 (+1): min(+1,-1)=-1, min(+1,0)=0, min(+1,+1)=+1, min(+1,xx)=undefined
-    0b00, 0b01, 0b10, 0b00,
-    // a=0b11 (invalid): all undefined
-    0b00, 0b00, 0b00, 0b00
-};
+// Algorithm: min(a, b)
+constexpr auto TMIN_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int minimum = (sa < sb) ? sa : sb;
+    return int_to_trit_constexpr(minimum);
+});
 
 // TMAX: Ternary maximum
-static const uint8_t TMAX_LUT[16] = {
-    // a=0b00 (-1): max(-1,-1)=-1, max(-1,0)=0, max(-1,+1)=+1, max(-1,xx)=undefined
-    0b00, 0b01, 0b10, 0b00,
-    // a=0b01 (0): max(0,-1)=0, max(0,0)=0, max(0,+1)=+1, max(0,xx)=undefined
-    0b01, 0b01, 0b10, 0b00,
-    // a=0b10 (+1): max(+1,-1)=+1, max(+1,0)=+1, max(+1,+1)=+1, max(+1,xx)=undefined
-    0b10, 0b10, 0b10, 0b00,
-    // a=0b11 (invalid): all undefined
-    0b00, 0b00, 0b00, 0b00
-};
+// Algorithm: max(a, b)
+constexpr auto TMAX_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int sb = trit_to_int_constexpr(b);
+    int maximum = (sa > sb) ? sa : sb;
+    return int_to_trit_constexpr(maximum);
+});
 
-// TNOT: Ternary negation (OPT-091)
-static const uint8_t TNOT_LUT[4] = {
-    0b10,  // tnot(0b00=-1) = +1 = 0b10
-    0b01,  // tnot(0b01=0)  = 0  = 0b01
-    0b00,  // tnot(0b10=+1) = -1 = 0b00
-    0b00   // tnot(0b11=invalid) = undefined
-};
+// TNOT: Ternary negation
+// Algorithm: -a (sign flip, 0 unchanged)
+constexpr auto TNOT_LUT = make_unary_lut([](uint8_t a) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int negated = -sa;
+    return int_to_trit_constexpr(negated);
+});
 
-// --- Optimized operations using lookup tables (OPT-051: Force inline) ---
+// --- Optimized operations using constexpr-generated lookup tables ---
+// OPT-051: Force inline + OPT-AUTO-LUT: Compile-time generation
+
 static FORCE_INLINE trit tnot(trit a) {
     return TNOT_LUT[a & 0b11];
 }

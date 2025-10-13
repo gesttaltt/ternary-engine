@@ -100,8 +100,8 @@ static inline __m256i tadd_simd(__m256i a, __m256i b) {
                                          _mm256_add_epi8(a_masked, a_masked)); // a * 4
     __m256i indices = _mm256_or_si256(a_shifted, b_masked);
 
-    // Load and broadcast TADD_LUT
-    __m256i lut = broadcast_lut_16(TADD_LUT);
+    // Load and broadcast TADD_LUT (constexpr generated)
+    __m256i lut = broadcast_lut_16(TADD_LUT.data());
 
     // Perform 32 parallel LUT lookups
     return _mm256_shuffle_epi8(lut, indices);
@@ -115,7 +115,7 @@ static inline __m256i tmul_simd(__m256i a, __m256i b) {
                                          _mm256_add_epi8(a_masked, a_masked));
     __m256i indices = _mm256_or_si256(a_shifted, b_masked);
 
-    __m256i lut = broadcast_lut_16(TMUL_LUT);
+    __m256i lut = broadcast_lut_16(TMUL_LUT.data());
     return _mm256_shuffle_epi8(lut, indices);
 }
 
@@ -127,7 +127,7 @@ static inline __m256i tmin_simd(__m256i a, __m256i b) {
                                          _mm256_add_epi8(a_masked, a_masked));
     __m256i indices = _mm256_or_si256(a_shifted, b_masked);
 
-    __m256i lut = broadcast_lut_16(TMIN_LUT);
+    __m256i lut = broadcast_lut_16(TMIN_LUT.data());
     return _mm256_shuffle_epi8(lut, indices);
 }
 
@@ -139,27 +139,25 @@ static inline __m256i tmax_simd(__m256i a, __m256i b) {
                                          _mm256_add_epi8(a_masked, a_masked));
     __m256i indices = _mm256_or_si256(a_shifted, b_masked);
 
-    __m256i lut = broadcast_lut_16(TMAX_LUT);
+    __m256i lut = broadcast_lut_16(TMAX_LUT.data());
     return _mm256_shuffle_epi8(lut, indices);
 }
 
 // --- Unary Operation (tnot) ---
 // Index formula: a & 0x03 (2-bit trit value)
-// Note: TNOT_LUT only has 4 entries, so we pad it to 16 for shuffle compatibility
+// Note: TNOT_LUT has 4 entries, padded to 16 for _mm256_shuffle_epi8 compatibility
+
+// Constexpr-generated 16-entry padded TNOT LUT for SIMD
+constexpr auto TNOT_LUT_SIMD = make_unary_lut_padded([](uint8_t a) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int negated = -sa;
+    return int_to_trit_constexpr(negated);
+});
 
 template <bool Sanitize = true>
 static inline __m256i tnot_simd(__m256i a) {
     __m256i indices = maybe_mask<Sanitize>(a);
-
-    // Create padded 16-entry TNOT LUT (replicate pattern)
-    alignas(16) static const uint8_t TNOT_LUT_16[16] = {
-        0b10, 0b01, 0b00, 0b00,  // Original TNOT_LUT[0-3]
-        0b10, 0b01, 0b00, 0b00,  // Replicate for indices 4-7
-        0b10, 0b01, 0b00, 0b00,  // Replicate for indices 8-11
-        0b10, 0b01, 0b00, 0b00   // Replicate for indices 12-15
-    };
-
-    __m256i lut = broadcast_lut_16(TNOT_LUT_16);
+    __m256i lut = broadcast_lut_16(TNOT_LUT_SIMD.data());
     return _mm256_shuffle_epi8(lut, indices);
 }
 
