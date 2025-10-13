@@ -40,7 +40,13 @@
 // COMPATIBILITY NOTE:
 // - Current implementation uses basic AVX2 operations compatible with all AVX2 CPUs
 // - OPT-HASWELL-02 applied: Template-based optional masking (3-5% gain)
-// - Note: OPT-HASWELL-01 (shift replacement) not viable - AVX2 lacks byte-level shifts
+// - OPT-HASWELL-01 (shift replacement) SKIPPED - Technical rationale:
+//   * AVX2 lacks byte-level shift instructions (_mm256_slli_epi8 doesn't exist)
+//   * Triple-add pattern is actually optimal for AVX2 (semantically equivalent to shift)
+//   * Word-level shifts would require emulation/repacking (performance loss + complexity)
+//   * Skipping this optimization ensures clean, reproducible benchmarks on AVX2 CPUs
+//   * Avoids false performance deltas from instruction emulation artifacts
+//   * Future: Can add byte-level shifts when targeting AVX-512BW or ARM SVE
 // - Uses fundamental AVX2 intrinsics: loadu, storeu, shuffle_epi8, or, and, add
 // - Compatible with Intel AVX2 (Haswell 2013+) and AMD AVX2 (Excavator 2015+)
 //
