@@ -52,6 +52,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include "ternary_algebra.h"
+#include "ternary_errors.h"
 
 // MSVC compatibility: ssize_t is not standard C++
 #ifdef _MSC_VER
@@ -188,7 +189,7 @@ py::array_t<uint8_t> process_binary_array(
     auto a = A.unchecked<1>();
     auto b = B.unchecked<1>();
     ssize_t n = A.size();
-    if (n != B.size()) throw std::runtime_error("Arrays must match");
+    if (n != B.size()) throw ArraySizeMismatchError(n, B.size());
 
     py::array_t<uint8_t> out(n);
     auto r = out.mutable_unchecked<1>();
