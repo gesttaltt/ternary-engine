@@ -478,6 +478,286 @@ static inline uint8x16_t tadd_simd_neon(uint8x16_t a, uint8x16_t b) {
 
 ---
 
+## Phase 3 (Revised): Production Refinements (Current Implementation)
+
+**Goal**: Near-production quality with maintainability and extensibility focus
+
+**Status**: IN PROGRESS (based on local-reports/optimization.md)
+**Timeline**: 2-4 weeks
+**Effort**: 60-100 hours
+**Risk**: Low
+**Expected Gain**: 2-15% performance, major maintainability/extensibility improvements
+
+### Phase 3.1: Adaptive Threading (Suggestion #1)
+
+**Current Problem**: Static `OMP_THRESHOLD = 100000` doesn't scale across CPU tiers
+
+**Optimized Solution**:
+```cpp
+const ssize_t OMP_THRESHOLD = 32768 * std::thread::hardware_concurrency();
+```
+
+**Rationale**: Keeps load balancing efficient across CPU configurations
+**Expected Gain**: 5-10% on systems with many cores
+**Effort**: 30 minutes
+
+---
+
+### Phase 3.2: SIMD Width Abstraction Layer (Suggestion #2)
+
+**Purpose**: Prepare for AVX-512BW / ARM SVE without rewriting kernels
+
+**Implementation**:
+```cpp
+#ifdef __AVX512BW__
+  #define VEC __m512i
+  #define LOAD _mm512_loadu_si512
+  #define STORE _mm512_storeu_si512
+  #define SHUFFLE _mm512_shuffle_epi8
+  #define VEC_SIZE 64
+#else
+  #define VEC __m256i
+  #define LOAD _mm256_loadu_si256
+  #define STORE _mm256_storeu_si256
+  #define SHUFFLE _mm256_shuffle_epi8
+  #define VEC_SIZE 32
+#endif
+```
+
+**Rationale**: Compiler auto-selects ISA while keeping one codepath
+**Expected Gain**: 2× throughput on AVX-512 systems
+**Effort**: 1 week
+
+---
+
+### Phase 3.3: Prefetch Distance Tuning (Suggestion #3)
+
+**Current Problem**: Static `_mm_prefetch(... + 256)` stride
+
+**Optimized Solution**:
+```cpp
+constexpr int PREFETCH_DIST = 512;  // Tunable per CPU family
+
+// In hot loop:
+if (idx + PREFETCH_DIST < n_simd_blocks) {
+    _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+    _mm_prefetch((const char*)(b_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+}
+```
+
+**Rationale**: Empirically tune for Zen 2, Zen 4, Raptor Lake
+**Expected Gain**: 2-5% throughput
+**Effort**: 2 days (tuning + benchmarking)
+
+---
+
+### Phase 3.4: Optional Compile-Time Sanitization Switch (Suggestion #4)
+
+**Purpose**: Enable CI sanitized vs. raw pipelines
+
+**Implementation**:
+```cpp
+#ifdef TERNARY_NO_SANITIZE
+constexpr bool SANITIZE = false;
+#else
+constexpr bool SANITIZE = true;
+#endif
+
+// Usage:
+process_binary_array<SANITIZE>(A, B, simd_op, scalar_op);
+```
+
+**Rationale**: Easy `-DTERNARY_NO_SANITIZE` flags for performance testing
+**Expected Gain**: 3-5% in validated data pipelines
+**Effort**: 1 day
+
+---
+
+### Phase 3.5: Runtime Feature Detection (Suggestion #5)
+
+**Purpose**: Expose CPU capability detection via cpuid
+
+**Implementation** (new file: `ternary_cpu_detect.h`):
+```cpp
+#include <cpuid.h>
+
+inline bool has_avx512bw() {
+    unsigned int eax, ebx, ecx, edx;
+    if (__get_cpuid_max(0, nullptr) < 7) return false;
+    __cpuid_count(7, 0, eax, ebx, ecx, edx);
+    return (ebx & bit_AVX512BW) != 0;
+}
+
+inline bool has_avx2() {
+    unsigned int eax, ebx, ecx, edx;
+    if (__get_cpuid_max(0, nullptr) < 7) return false;
+    __cpuid_count(7, 0, eax, ebx, ecx, edx);
+    return (ebx & bit_AVX2) != 0;
+}
+
+inline bool has_sve() {
+    #ifdef __ARM_FEATURE_SVE
+    return true;
+    #else
+    return false;
+    #endif
+}
+```
+
+**Rationale**: Enables dynamic fallback in future hybrid builds
+**Expected Gain**: Portability, graceful degradation
+**Effort**: 2 days
+
+---
+
+### Phase 3.6: Cross-Language Interop Layer (Suggestion #6)
+
+**Purpose**: Direct integration in Rust, Zig, C# without Python
+
+**Implementation** (new file: `ternary_c_api.h`):
+```cpp
+#ifndef TERNARY_C_API_H
+#define TERNARY_C_API_H
+
+#include <stdint.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Pure C API for cross-language FFI
+void tadd_simd_u8(const uint8_t* A, const uint8_t* B, uint8_t* R, size_t n);
+void tmul_simd_u8(const uint8_t* A, const uint8_t* B, uint8_t* R, size_t n);
+void tmin_simd_u8(const uint8_t* A, const uint8_t* B, uint8_t* R, size_t n);
+void tmax_simd_u8(const uint8_t* A, const uint8_t* B, uint8_t* R, size_t n);
+void tnot_simd_u8(const uint8_t* A, uint8_t* R, size_t n);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // TERNARY_C_API_H
+```
+
+**Rationale**: Enables FFI without pybind11 dependency
+**Expected Gain**: Ecosystem expansion
+**Effort**: 2-3 days
+
+---
+
+### Phase 3.7: Advanced Microbenchmarking (Suggestion #7)
+
+**Purpose**: Kernel-level benchmarks bypassing Python/NumPy overhead
+
+**Implementation** (new file: `benchmarks/bench_kernels.cpp`):
+```cpp
+#include <chrono>
+#include <iostream>
+#include <random>
+#include "ternary_simd_kernels.h"
+
+void bench_tadd_simd(size_t N) {
+    std::vector<uint8_t> A(N), B(N), R(N);
+
+    // Initialize with random trits
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 2);
+    for (size_t i = 0; i < N; ++i) {
+        A[i] = dis(gen) == 0 ? 0b00 : (dis(gen) == 1 ? 0b01 : 0b10);
+        B[i] = dis(gen) == 0 ? 0b00 : (dis(gen) == 1 ? 0b01 : 0b10);
+    }
+
+    // Benchmark
+    auto start = std::chrono::steady_clock::now();
+    for (size_t iter = 0; iter < 1000; ++iter) {
+        for (size_t i = 0; i + 32 <= N; i += 32) {
+            __m256i va = _mm256_loadu_si256((__m256i const*)(A.data() + i));
+            __m256i vb = _mm256_loadu_si256((__m256i const*)(B.data() + i));
+            __m256i vr = tadd_simd<true>(va, vb);
+            _mm256_storeu_si256((__m256i*)(R.data() + i), vr);
+        }
+    }
+    auto end = std::chrono::steady_clock::now();
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    double throughput = (N * 1000.0) / (elapsed / 1e9);
+    std::cout << "N=" << N << ", Throughput: " << throughput / 1e6 << " ME/s\n";
+}
+```
+
+**Rationale**: Direct comparison with xsimd or Eigen
+**Expected Gain**: Better profiling visibility
+**Effort**: 3-4 days
+
+---
+
+### Phase 3.8: Constexpr LUT Generation (C++20) (Suggestion #9)
+
+**Purpose**: Move LUT initialization to compile-time
+
+**Current State**: Already implemented in `ternary_lut_gen.h` (C++17 constexpr)
+
+**C++20 Enhancement**:
+```cpp
+// Current (runtime initialization):
+namespace {
+    struct BroadcastedLUTs {
+        __m256i tadd;
+        BroadcastedLUTs() : tadd(broadcast_lut_16(TADD_LUT.data())) {}
+    };
+    static const BroadcastedLUTs g_luts;
+}
+
+// C++20 potential (constexpr if __m256i becomes literal type):
+namespace {
+    constexpr auto g_luts = []() {
+        BroadcastedLUTs luts;
+        // ... compile-time initialization
+        return luts;
+    }();
+}
+```
+
+**Status**: Partially complete (LUTs are constexpr, broadcast is runtime)
+**Rationale**: Eliminates runtime broadcast overhead on startup
+**Expected Gain**: Negligible (initialization is one-time)
+**Effort**: 2 days (C++20 migration + testing)
+
+---
+
+### Phase 3.9: Profiler Annotations (Suggestion #10)
+
+**Purpose**: Insert VTune/NVTX markers for phase profiling
+
+**Implementation**:
+```cpp
+#ifdef TERNARY_ENABLE_PROFILING
+#include <ittnotify.h>
+__itt_domain* domain = __itt_domain_create("TernaryCore");
+__itt_string_handle* handle_simd = __itt_string_handle_create("SIMD_Loop");
+__itt_string_handle* handle_tail = __itt_string_handle_create("Scalar_Tail");
+#else
+#define __itt_task_begin(...)
+#define __itt_task_end(...)
+#endif
+
+// In code:
+#pragma omp parallel for schedule(guided)
+for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
+    __itt_task_begin(domain, __itt_null, __itt_null, handle_simd);
+    // ... SIMD work
+    __itt_task_end(domain);
+}
+```
+
+**Rationale**: Visualize OpenMP block timing on VTune/Perfetto
+**Expected Gain**: Better profiling insights
+**Effort**: 2 days
+
+---
+
 ## Phase 4: Specialization (Weeks 17+)
 
 **Goal**: Domain-specific kernels for target applications
@@ -510,21 +790,21 @@ py::array_t<uint8_t> mandelbrot_iterate(py::array_t<uint8_t> Z,
 
 ---
 
-## Implementation Timeline
+## Implementation Timeline (Revised)
 
 ```
-Week 1:     Phase 0 (Quick Wins)
-Weeks 2-4:  Phase 1 (Core Optimizations)
-Weeks 5-8:  Phase 2 (SIMD Enhancements)
-Weeks 9-16: Phase 3 (Advanced Features)
-Weeks 17+:  Phase 4 (Specialization)
+Week 1:     Phase 0 (Quick Wins) - COMPLETE
+Weeks 2-4:  Phase 1 (Core Optimizations) - COMPLETE
+Weeks 5-8:  Phase 2 (SIMD Enhancements) - COMPLETE
+Weeks 9-10: Phase 3 (Production Refinements) - IN PROGRESS
+Weeks 11+:  Phase 4 (Specialization) - PLANNED
 ```
 
 **Milestones**:
-- Week 1: 30-50% speedup (Phase 0 complete)
-- Week 4: 2-3× speedup (Phase 1 complete)
-- Week 8: 4-8× speedup (Phase 2 complete)
-- Week 16: 10-20× speedup (Phase 3 complete)
+- Week 1: 30-50% speedup (Phase 0 complete) ✓
+- Week 4: 2-3× speedup (Phase 1 complete) ✓
+- Week 8: 4-8× speedup (Phase 2 complete) ✓
+- Week 10: Best-in-class architecture (Phase 3 in progress)
 - Ongoing: Up to 50× on domain-specific workloads
 
 ---
@@ -550,6 +830,6 @@ Weeks 17+:  Phase 4 (Specialization)
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2025-10-11
-**Status**: Phase 0 ready to begin
+**Document Version**: 2.0
+**Last Updated**: 2025-10-13
+**Status**: Phase 3 in progress, implementing optimization.md suggestions
