@@ -234,7 +234,7 @@ Copyright 2025 Jonathan Verdun (Ternary Core Experimental Project)
 ```bibtex
 @software{ternary_core_simd,
   title={Ternary Core SIMD: High-Performance Balanced Ternary Arithmetic},
-  author={Jonathan Verdun (Ternary Core Experimental Project)},
+  author={Jonathan Verdun},
   year={2025},
   version={0.3.0},
   url={https://github.com/[your-repo]/ternary-kernel-python-c}
