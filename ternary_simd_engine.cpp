@@ -72,6 +72,11 @@ namespace py = pybind11;
 // Arrays >= 100K elements will use multi-threaded processing
 static const ssize_t OMP_THRESHOLD = 100000;
 
+// OPT-STREAM: Streaming store threshold (arrays exceeding L3 cache size)
+// Typical L3: 8-32 MB; use streaming stores for arrays > 1M elements (~1 MB)
+// Non-temporal stores reduce cache pollution for memory-bound workloads
+static const ssize_t STREAM_THRESHOLD = 1000000;
+
 // --- LUT-Based SIMD Operations (OPT-061) ---
 // Each operation uses _mm256_shuffle_epi8 for 32 parallel LUT lookups.
 // The LUTs are the same 16-entry tables used in scalar operations (ternary_algebra.h).
@@ -219,16 +224,36 @@ py::array_t<uint8_t> process_binary_array(
 
     ssize_t i = 0;
 
-    // PATH 1: Large arrays → OpenMP parallel
+    // PATH 1: Large arrays → OpenMP parallel (NUMA-aware scheduling)
     if (n >= OMP_THRESHOLD) {
         ssize_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD);
 
-        #pragma omp parallel for schedule(static)
+        // OPT-NUMA: guided scheduling + spread binding for multi-CCD CPUs (Ryzen/EPYC)
+        // Guided schedule adapts chunk sizes dynamically; spread binding improves NUMA locality
+        #pragma omp parallel for schedule(guided, 4) proc_bind(spread)
         for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            // OPT-PREFETCH: Prefetch next cache lines to hide memory latency
+            if (idx + 256 < n_simd_blocks) {
+                _mm_prefetch((const char*)(a_ptr + idx + 256), _MM_HINT_T0);
+                _mm_prefetch((const char*)(b_ptr + idx + 256), _MM_HINT_T0);
+            }
+
             __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
             __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + idx));
             __m256i vr = simd_op(va, vb);
-            _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+
+            // OPT-STREAM: Use streaming stores for very large arrays to reduce cache pollution
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
+            } else {
+                _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+            }
+        }
+
+        // Memory fence after streaming stores to ensure visibility
+        if (use_streaming) {
+            _mm_sfence();
         }
 
         i = n_simd_blocks;
@@ -268,15 +293,34 @@ py::array_t<uint8_t> process_unary_array(
 
     ssize_t i = 0;
 
-    // PATH 1: Large arrays → OpenMP parallel
+    // PATH 1: Large arrays → OpenMP parallel (NUMA-aware scheduling)
     if (n >= OMP_THRESHOLD) {
         ssize_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD);
 
-        #pragma omp parallel for schedule(static)
+        // OPT-NUMA: guided scheduling + spread binding for multi-CCD CPUs (Ryzen/EPYC)
+        // Guided schedule adapts chunk sizes dynamically; spread binding improves NUMA locality
+        #pragma omp parallel for schedule(guided, 4) proc_bind(spread)
         for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            // OPT-PREFETCH: Prefetch next cache lines to hide memory latency
+            if (idx + 256 < n_simd_blocks) {
+                _mm_prefetch((const char*)(a_ptr + idx + 256), _MM_HINT_T0);
+            }
+
             __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
             __m256i vr = simd_op(va);
-            _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+
+            // OPT-STREAM: Use streaming stores for very large arrays to reduce cache pollution
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
+            } else {
+                _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+            }
+        }
+
+        // Memory fence after streaming stores to ensure visibility
+        if (use_streaming) {
+            _mm_sfence();
         }
 
         i = n_simd_blocks;
