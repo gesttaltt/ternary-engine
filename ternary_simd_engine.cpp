@@ -176,6 +176,13 @@ static inline __m256i tnot_simd(__m256i a) {
 // PATH 2: Serial SIMD loop for small arrays
 // PATH 3: Scalar tail for remaining elements
 //
+// VALIDATION STRATEGY:
+// - Input validation occurs at entry points (process_binary_array, process_unary_array)
+// - Validation is inline for simplicity: single check per entry point
+// - Uses centralized exception types from ternary_errors.h for consistency
+// - If validation logic grows complex, consider extracting to validation helpers
+// - Current validation: array size matching (binary ops), no validation needed (unary ops)
+//
 // =============================================================================
 
 // --- Unified Binary Operation Template ---
@@ -189,6 +196,10 @@ py::array_t<uint8_t> process_binary_array(
     auto a = A.unchecked<1>();
     auto b = B.unchecked<1>();
     ssize_t n = A.size();
+
+    // ENTRY-POINT VALIDATION: Ensure arrays match in size
+    // Validation happens here (not centralized) for simplicity and early failure
+    // Uses typed exception from ternary_errors.h for clear error semantics
     if (n != B.size()) throw ArraySizeMismatchError(n, B.size());
 
     py::array_t<uint8_t> out(n);
