@@ -83,6 +83,33 @@ static inline __m256i broadcast_lut_16(const uint8_t* lut) {
     return _mm256_broadcastsi128_si256(lut_128);
 }
 
+// --- Pre-broadcasted LUT Cache (OPT-LUT-BROADCAST) ---
+// Pre-broadcast all LUTs once at initialization to avoid repeated broadcast_lut_16() calls
+// Note: __m256i is not a literal type, so these must be runtime-initialized (not constexpr)
+// Initialized before first use via static initialization
+
+namespace {
+    // Helper function for static initialization
+    struct BroadcastedLUTs {
+        __m256i tadd;
+        __m256i tmul;
+        __m256i tmin;
+        __m256i tmax;
+        __m256i tnot;
+
+        BroadcastedLUTs()
+            : tadd(broadcast_lut_16(TADD_LUT.data()))
+            , tmul(broadcast_lut_16(TMUL_LUT.data()))
+            , tmin(broadcast_lut_16(TMIN_LUT.data()))
+            , tmax(broadcast_lut_16(TMAX_LUT.data()))
+            , tnot(broadcast_lut_16(TNOT_LUT_SIMD.data()))
+        {}
+    };
+
+    // Static instance - initialized once before main()
+    static const BroadcastedLUTs g_luts;
+}  // anonymous namespace
+
 // Helper: Optional masking to ensure only lower 2 bits of each byte are used
 // OPT-HASWELL-02: Template-based sanitization for compile-time optimization
 // When Sanitize=false, masking is elided for validated data pipelines (3-5% gain)
@@ -97,8 +124,9 @@ static inline __m256i maybe_mask(__m256i v) {
 // --- Binary Operations (tadd, tmul, tmin, tmax) ---
 // Index formula: (a << 2) | b, where a and b are 2-bit trits
 
+// Unified template for all binary SIMD operations (eliminates 90% code duplication)
 template <bool Sanitize = true>
-static inline __m256i tadd_simd(__m256i a, __m256i b) {
+static inline __m256i binary_simd_op(__m256i a, __m256i b, __m256i lut) {
     // Build 4-bit indices: (a << 2) | b
     // Note: AVX2 lacks byte-level shifts, using triple-add is actually optimal
     __m256i a_masked = maybe_mask<Sanitize>(a);
@@ -107,65 +135,40 @@ static inline __m256i tadd_simd(__m256i a, __m256i b) {
                                          _mm256_add_epi8(a_masked, a_masked)); // a * 4
     __m256i indices = _mm256_or_si256(a_shifted, b_masked);
 
-    // Load and broadcast TADD_LUT (constexpr generated)
-    __m256i lut = broadcast_lut_16(TADD_LUT.data());
-
-    // Perform 32 parallel LUT lookups
+    // Perform 32 parallel LUT lookups (LUT pre-broadcasted for efficiency)
     return _mm256_shuffle_epi8(lut, indices);
+}
+
+// Specialized wrappers for each operation (using pre-broadcasted LUTs)
+template <bool Sanitize = true>
+static inline __m256i tadd_simd(__m256i a, __m256i b) {
+    return binary_simd_op<Sanitize>(a, b, g_luts.tadd);
 }
 
 template <bool Sanitize = true>
 static inline __m256i tmul_simd(__m256i a, __m256i b) {
-    __m256i a_masked = maybe_mask<Sanitize>(a);
-    __m256i b_masked = maybe_mask<Sanitize>(b);
-    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
-                                         _mm256_add_epi8(a_masked, a_masked));
-    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
-
-    __m256i lut = broadcast_lut_16(TMUL_LUT.data());
-    return _mm256_shuffle_epi8(lut, indices);
+    return binary_simd_op<Sanitize>(a, b, g_luts.tmul);
 }
 
 template <bool Sanitize = true>
 static inline __m256i tmin_simd(__m256i a, __m256i b) {
-    __m256i a_masked = maybe_mask<Sanitize>(a);
-    __m256i b_masked = maybe_mask<Sanitize>(b);
-    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
-                                         _mm256_add_epi8(a_masked, a_masked));
-    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
-
-    __m256i lut = broadcast_lut_16(TMIN_LUT.data());
-    return _mm256_shuffle_epi8(lut, indices);
+    return binary_simd_op<Sanitize>(a, b, g_luts.tmin);
 }
 
 template <bool Sanitize = true>
 static inline __m256i tmax_simd(__m256i a, __m256i b) {
-    __m256i a_masked = maybe_mask<Sanitize>(a);
-    __m256i b_masked = maybe_mask<Sanitize>(b);
-    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
-                                         _mm256_add_epi8(a_masked, a_masked));
-    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
-
-    __m256i lut = broadcast_lut_16(TMAX_LUT.data());
-    return _mm256_shuffle_epi8(lut, indices);
+    return binary_simd_op<Sanitize>(a, b, g_luts.tmax);
 }
 
 // --- Unary Operation (tnot) ---
 // Index formula: a & 0x03 (2-bit trit value)
-// Note: TNOT_LUT has 4 entries, padded to 16 for _mm256_shuffle_epi8 compatibility
-
-// Constexpr-generated 16-entry padded TNOT LUT for SIMD
-constexpr auto TNOT_LUT_SIMD = make_unary_lut_padded([](uint8_t a) -> uint8_t {
-    int sa = trit_to_int_constexpr(a);
-    int negated = -sa;
-    return int_to_trit_constexpr(negated);
-});
+// Note: TNOT_LUT_SIMD is defined in ternary_algebra.h (16-entry padded for _mm256_shuffle_epi8)
 
 template <bool Sanitize = true>
 static inline __m256i tnot_simd(__m256i a) {
     __m256i indices = maybe_mask<Sanitize>(a);
-    __m256i lut = broadcast_lut_16(TNOT_LUT_SIMD.data());
-    return _mm256_shuffle_epi8(lut, indices);
+    // Use pre-broadcasted LUT for efficiency
+    return _mm256_shuffle_epi8(g_luts.tnot, indices);
 }
 
 // =============================================================================

@@ -36,7 +36,17 @@ static inline int  trit_to_int(trit t){ return (t==0b00)?-1:(t==0b10)?1:0; }
 
 // --- Constexpr-generated lookup tables (OPT-AUTO-LUT) ---
 // Index format: (a << 2) | b, where a,b are 2-bit trit values
-// AVX2-compatible: 16-byte tables for _mm256_shuffle_epi8
+//
+// LUT SIZE STRATEGY:
+// - Binary operations (TADD, TMUL, TMIN, TMAX): 16 entries
+//   * Cover all 4×4 combinations of 2-bit trit pairs
+//   * Directly compatible with AVX2 _mm256_shuffle_epi8 (requires 16-byte LUTs)
+//   * Used by both scalar operations and SIMD operations without conversion
+//
+// - Unary operations: Dual LUT approach
+//   * TNOT_LUT: 4 entries (scalar/minimal use)
+//   * TNOT_LUT_SIMD: 16 entries (padded/replicated for AVX2 compatibility)
+//   * Both generated from same algebraic lambda, ensuring semantic consistency
 
 // TADD: Saturated ternary addition
 // Algorithm: clamp(a + b, -1, +1)
@@ -82,6 +92,22 @@ constexpr auto TNOT_LUT = make_unary_lut([](uint8_t a) -> uint8_t {
     int negated = -sa;
     return int_to_trit_constexpr(negated);
 });
+
+// TNOT_SIMD: Padded version for SIMD operations (16 entries for _mm256_shuffle_epi8)
+constexpr auto TNOT_LUT_SIMD = make_unary_lut_padded([](uint8_t a) -> uint8_t {
+    int sa = trit_to_int_constexpr(a);
+    int negated = -sa;
+    return int_to_trit_constexpr(negated);
+});
+
+// --- Compile-time LUT size validation ---
+// Ensures LUTs have correct sizes for their respective use cases
+static_assert(TADD_LUT.size() == 16, "Binary LUTs must have 16 entries for AVX2 compatibility");
+static_assert(TMUL_LUT.size() == 16, "Binary LUTs must have 16 entries for AVX2 compatibility");
+static_assert(TMIN_LUT.size() == 16, "Binary LUTs must have 16 entries for AVX2 compatibility");
+static_assert(TMAX_LUT.size() == 16, "Binary LUTs must have 16 entries for AVX2 compatibility");
+static_assert(TNOT_LUT.size() == 4, "Scalar unary LUT must have 4 entries");
+static_assert(TNOT_LUT_SIMD.size() == 16, "SIMD unary LUT must have 16 entries (padded)");
 
 // --- Optimized operations using constexpr-generated lookup tables ---
 // OPT-051: Force inline + OPT-AUTO-LUT: Compile-time generation
