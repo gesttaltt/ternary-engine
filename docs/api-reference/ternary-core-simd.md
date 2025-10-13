@@ -731,7 +731,7 @@ Useful for investigating performance anomalies (though Phase 2 doesn't rely on a
 - **LUT-based lookups**: Same semantic domain as scalar operations
 - **3 execution paths**: OpenMP parallel, serial SIMD, scalar tail
 - **Template-based design**: 73% code reduction from Phase 1
-- **Phase coherence**: Simplicity ↓, performance stable (<5% loss)
+- **Code simplification**: Simplicity ↓, performance stable (<5% loss)
 - **100x speedup**: Over pure Python reference
 
 This implementation represents the **Phase 2 milestone**: achieving maximum simplicity while maintaining high performance through principled optimization and elimination of premature micro-optimizations.

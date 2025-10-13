@@ -50,7 +50,7 @@ but *participates* in it.
 
 ## Goal
 
-The main goal for this implementation is just to function as a kernel level optimization for module 3 arithmetics, more details on this are accounted here: The general purposes behind ternary SIMD core is to fully implement a later optimized abstraction on numpy so we properly translate ternary operations at CPU kernel level optimized to proper modular arithmetic applications on continuum-discrete boundary operations/entities such as iterated function systems, multifractals, strange attractors or even L-systems. Another stronger application (completely theorical at this time though) could be on Fractal Perlin Noise / fBm (fractional Brownian motion) so the overall reasons to make this project work are almost endless when we think about gaps on the discrete and continuum "translation" or "equivalence" on fields such as theoretical math, software and its hardware counterparts (optimization as engineering process for example) that could be applicable to chemical/biological infinite research-grade computations.
+The main goal for this implementation is just to function as a kernel level optimization for module 3 arithmetics, more details on this are accounted here: The general purposes behind ternary SIMD core is to fully implement a later optimized abstraction on numpy so we properly translate ternary operations at CPU kernel level optimized to proper modular arithmetic applications on continuum-discrete boundary operations/entities such as iterated function systems, multifractals, strange attractors or even L-systems. Another stronger application (completely theorical at this time though) could be on Fractal Perlin Noise / fBm (fractional Brownian motion) so the overall reasons to make this project work are almost endless when we think about gaps on the discrete and continuum "translation" or "equivalence" on fields such as theoretical math, software and its hardware counterparts (optimization as engineering process for example) that could be applicable to chemical/biological infinite production-grade computations.
 
 ## Codebase Description
 High performance ternary logic arithmetic library that implements three-valued algebraic operations (-1, 0, +1) using AVX2 SIMD vectorization to process 32 trits in parallel, achieving impressive throughput of over 30 million trits per second on modern CPUs through a compact 2-bit encoding scheme and fully discrete integer operations without floating-point overhead.
@@ -228,7 +228,7 @@ C_not = tc.tnot(A)
 
 * Processes >30 M trits/s on modern CPU.
 * Fully discrete operations avoiding floats or branch mispredicts.
-* Infinite math applications on research-grade and optimization such as: iterative functions, dynamical systems, cellular automata and modulo 3 operations in general.
+* Infinite math applications on production-grade and optimization such as: iterative functions, dynamical systems, cellular automata and modulo 3 operations in general.
 * Higher performance and better traceability on mandelbrot set, julia set, lyapunov fractal or any "continuum" fractal computation.
 * Ulam–Warburton automaton
 * Cantor, Koch or any other "discrete" fractals could be properly represented with new degrees of complexity

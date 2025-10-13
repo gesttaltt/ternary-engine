@@ -19,7 +19,7 @@ docs/
 │
 ├── architecture/                   # Design and architecture
 │   ├── architecture.md             # System architecture overview
-│   ├── optimization-roadmap.md     # Historical optimization journey
+│   ├── optimization-roadmap.md     # Historical optimization evolution
 │   └── optimization-complexity-rationale.md  # Phase 2 design decisions
 │
 ├── build-system/                   # Build system documentation
@@ -79,14 +79,14 @@ docs/
   - Data flow and execution paths
   - Performance characteristics
 
-- **[Optimization Roadmap](./architecture/optimization-roadmap.md)** - Historical optimization journey
+- **[Optimization Roadmap](./architecture/optimization-roadmap.md)** - Historical optimization evolution
   - Evolution from Phase 0 to Phase 3
   - Lessons learned at each phase
   - Future roadmap (Phase 4+)
 
 - **[Optimization Complexity Rationale](./architecture/optimization-complexity-rationale.md)** - Phase 2 design decisions
   - Why certain optimizations were removed
-  - Phase coherence philosophy
+  - Code simplification philosophy
   - Complexity vs performance tradeoffs
 
 ## Build System
@@ -205,5 +205,5 @@ All documentation is released under Apache 2.0 (same as source code).
 
 ---
 
-**Last Updated**: 2025-10-12 (Phase 2 completion)
-**Primary Authors**: Ternary Core Contributors
+**Last Updated**: 2025-10-13
+**Maintained by**: Ternary Core Contributors

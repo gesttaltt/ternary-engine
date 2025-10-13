@@ -22,7 +22,7 @@ The library consists of **four primary source files** that implement the complet
 
 **Size**: ~80 lines
 **Dependencies**: `<array>`, `<cstdint>`
-**Benefit**: Algorithm-as-documentation, infinite maintainability ROI, zero runtime cost
+**Benefit**: Compile-time generation, reduced maintenance overhead, zero runtime cost
 
 ### 2. `ternary_algebra.h` - Foundation Layer
 
@@ -303,10 +303,10 @@ constexpr auto TADD_LUT = make_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
 ```
 
 **Benefits**:
-- Algorithm is the documentation (single source of truth)
+- Algorithm is the documentation (centralized definition)
 - Zero runtime cost (evaluated at compile time)
 - Auditability (algebraic rules visible in code)
-- Infinite maintainability ROI
+- Long-term maintainability
 
 ### 2. SIMD Vectorization (Phase 0.5)
 
@@ -407,7 +407,7 @@ static inline __m256i maybe_mask(__m256i v) {
    - Execution paths
 4. **Context**: [`docs/optimization-complexity-rationale.md`](./optimization-complexity-rationale.md)
    - Why certain optimizations were removed
-   - Phase coherence philosophy
+   - Code simplification philosophy
 
 ### For Modifying the Code
 
@@ -519,7 +519,7 @@ Both source files are licensed under Apache 2.0. See `LICENSE` and `NOTICE` file
 
 When modifying the source code:
 
-1. **Maintain phase coherence**: Only add complexity if it provides >10% performance gain
+1. **Maintain code simplification**: Only add complexity if it provides >10% performance gain
 2. **Update documentation**: Keep this doc and component docs in sync
 3. **Add tests**: Update `tests/test_phase0.py` for new operations
 4. **Benchmark**: Run `benchmarks/bench_phase0.py` before/after changes
@@ -531,13 +531,13 @@ When modifying the source code:
 
 The ternary-kernel-python-c library achieves 100x speedups through:
 
-1. **Constexpr LUT generation** (`ternary_lut_gen.h`): Algorithm-as-documentation with zero runtime cost (OPT-AUTO-LUT)
+1. **Constexpr LUT generation** (`ternary_lut_gen.h`): Compile-time generation with zero runtime cost (OPT-AUTO-LUT)
 2. **LUT-based operations** (`ternary_algebra.h`): Eliminates conversion overhead
 3. **SIMD parallelization** (`ternary_simd_engine.cpp`): 32 operations per instruction
 4. **Template-based design**: Code reuse without performance cost (Phase 2)
 5. **Optional masking** (OPT-HASWELL-02): Compile-time sanitization control
 6. **OpenMP threading** (OPT-001): Scales to multiple cores for large arrays (≥100K elements)
 7. **Centralized error handling** (`ternary_errors.h`): Domain-specific exceptions with YAGNI principle
-8. **Phase coherence**: Maximum simplicity for stable performance
+8. **Code simplification**: Maximum simplicity for stable performance
 
 Four core files, ~640 lines of code, 100x performance improvement.

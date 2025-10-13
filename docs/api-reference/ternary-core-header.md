@@ -49,10 +49,10 @@ Uses `uint8_t` for:
 
 The core optimization strategy combines two approaches:
 - **OPT-086**: Replace arithmetic operations with direct table lookups
-- **OPT-AUTO-LUT**: Generate LUTs at compile time via constexpr (infinite maintainability ROI)
+- **OPT-AUTO-LUT**: Generate LUTs at compile time via constexpr (reduced maintenance overhead)
 
 All LUTs are generated using `constexpr` functions from `ternary_lut_gen.h`, ensuring:
-- Algorithm is the documentation (single source of truth)
+- Algorithm is the documentation (centralized definition)
 - Zero runtime cost (evaluated at compile time)
 - Auditability (algebraic rules visible in code)
 - Flexibility (new operations via lambda expressions)
@@ -493,7 +493,7 @@ The current encoding (`-1=0b00, 0=0b01, +1=0b10`) and LUT values are **stable** 
 `ternary_algebra.h` provides:
 - Efficient 2-bit encoding for balanced ternary (-1, 0, +1)
 - Constexpr-generated LUT-based scalar operations (3-10x faster than arithmetic, OPT-AUTO-LUT)
-- Algorithm-as-documentation approach (infinite maintainability ROI)
+- Compile-time generation approach (reduced maintenance overhead)
 - Platform-agnostic force-inline macros
 - Thread-safe, cache-friendly design
 - Foundation for SIMD acceleration
