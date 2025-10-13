@@ -15,6 +15,28 @@
 // limitations under the License.
 //
 // =============================================================================
+// CURRENT STATUS: FUTURE USE INFRASTRUCTURE
+// =============================================================================
+//
+// ⚠️ NOTE: This abstraction layer is NOT yet used by ternary_simd_engine.cpp
+//
+// STATUS:
+//   - This header provides multi-ISA abstraction macros (AVX-512, AVX2, NEON)
+//   - Currently UNUSED by main engine (ternary_simd_engine.cpp still uses direct AVX2)
+//   - USED by: ternary_c_api.h (C FFI layer), benchmarks/bench_kernels.cpp
+//   - FUTURE: Refactor main engine to use these macros for AVX-512/ARM support
+//
+// WHY KEPT:
+//   - Future-ready infrastructure for multi-platform expansion
+//   - Documents portable SIMD patterns for AVX-512/ARM migration
+//   - Enables gradual refactoring without breaking existing code
+//
+// TODO (Phase 4):
+//   - Refactor ternary_simd_engine.cpp to use TERNARY_* macros
+//   - Add runtime dispatch based on ternary_cpu_detect.h
+//   - Benchmark AVX-512 vs AVX2 performance on capable hardware
+//
+// =============================================================================
 // DESIGN RATIONALE
 // =============================================================================
 //

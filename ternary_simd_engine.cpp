@@ -15,6 +15,32 @@
 // limitations under the License.
 //
 // =============================================================================
+// CURRENT IMPLEMENTATION: DIRECT AVX2 INTRINSICS
+// =============================================================================
+//
+// ⚠️ TODO (Phase 4): Refactor to use ternary_simd_config.h for multi-ISA support
+//
+// CURRENT STATE:
+//   - This file uses DIRECT AVX2 intrinsics (__m256i, _mm256_*, etc.)
+//   - Hardcoded to 256-bit vectors (32 trits per operation)
+//   - Does NOT use abstraction layer from ternary_simd_config.h
+//
+// FUTURE REFACTORING:
+//   - Replace __m256i → TERNARY_VEC
+//   - Replace _mm256_loadu_si256 → TERNARY_LOAD
+//   - Replace _mm256_storeu_si256 → TERNARY_STORE
+//   - Replace _mm256_shuffle_epi8 → TERNARY_SHUFFLE
+//   - Add runtime dispatch based on ternary_cpu_detect.h
+//
+// BENEFITS OF REFACTORING:
+//   - Single codebase for AVX-512BW (512-bit, 64 trits/op)
+//   - ARM NEON support (128-bit, 16 trits/op)
+//   - Compiler auto-selects ISA based on -march flags
+//   - DRY principle: eliminate duplicate SIMD patterns
+//
+// See ternary_simd_config.h for abstraction layer design.
+//
+// =============================================================================
 // DESIGN EVOLUTION
 // =============================================================================
 //
