@@ -115,7 +115,7 @@ static const uint8_t TNOT_LUT[4] = {
 
 ### Source Files
 ```
-ternary-kernel-python-c/
+ternary-engine/
 ├── ternary_algebra.h              # Mathematical rules & manual LUTs (125 lines)
 ├── ternary_simd_engine.cpp        # Vectorized execution layer (314 lines)
 ├── build/
@@ -132,8 +132,8 @@ ternary-kernel-python-c/
 │   ├── bench_fair.py
 │   └── reference.py
 ├── docs/
-│   ├── ternary-core-header.md     # Documents ternary_algebra.h
-│   ├── ternary-core-simd.md       # Documents ternary_simd_engine.cpp
+│   ├── ternary-engine-header.md     # Documents ternary_algebra.h
+│   ├── ternary-engine-simd.md       # Documents ternary_simd_engine.cpp
 │   └── [other docs...]
 └── local-reports/
     ├── optimization.md            # Optimization roadmap

@@ -1,6 +1,6 @@
-# Contributing to Ternary Core SIMD
+# Contributing to Ternary Engine
 
-Thank you for your interest in contributing to the Ternary Core SIMD library! This document provides guidelines for contributing code, documentation, and other improvements.
+Thank you for your interest in contributing to the Ternary Engine library! This document provides guidelines for contributing code, documentation, and other improvements.
 
 ## Table of Contents
 
@@ -51,7 +51,7 @@ This project follows the principle of **technical accuracy and professional obje
 ### Repository Structure
 
 ```
-ternary-kernel-python-c/
+ternary-engine/
 ├── *.h, *.cpp          # Core source files (DO NOT NEST)
 ├── docs/               # Documentation (organized by category)
 ├── tests/              # Test suite
@@ -66,8 +66,8 @@ ternary-kernel-python-c/
 ### 1. Fork and Clone
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ternary-kernel-python-c.git
-cd ternary-kernel-python-c
+git clone https://github.com/YOUR_USERNAME/ternary-engine.git
+cd ternary-engine
 ```
 
 ### 2. Create a Branch
@@ -473,4 +473,4 @@ By contributing, you agree that your contributions will be licensed under the Ap
 ---
 
 **Last Updated**: 2025-10-13
-**Maintained by**: Jonathan Verdun (Ternary Core Experimental Project)
+**Maintained by**: Jonathan Verdun (Ternary Engine Project)

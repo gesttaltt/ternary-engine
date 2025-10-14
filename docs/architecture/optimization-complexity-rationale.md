@@ -2,7 +2,7 @@
 
 ## Purpose of This Document
 
-This document explains **why** the Ternary Core library evolved from simple, maintainable code to complex, heavily-optimized code. It addresses the maintainability concerns raised in `local-reports/nests.txt` (lines 36-198) and provides context for future developers who may ask: "Why is this code so complicated?"
+This document explains **why** the Ternary Engine library evolved from simple, maintainable code to complex, heavily-optimized code. It addresses the maintainability concerns raised in `local-reports/nests.txt` (lines 36-198) and provides context for future developers who may ask: "Why is this code so complicated?"
 
 **Target Audience**: Future maintainers, code reviewers, and developers considering similar optimization paths.
 
@@ -12,7 +12,7 @@ This document explains **why** the Ternary Core library evolved from simple, mai
 
 ## Executive Summary
 
-The Ternary Core codebase underwent aggressive performance optimization from October 2025, growing from:
+The Ternary Engine codebase underwent aggressive performance optimization from October 2025, growing from:
 - **110 lines** with **1 code path** (legacy implementation)
 - **307 lines** with **6+ code paths** (current Phase 1 implementation)
 
@@ -31,7 +31,7 @@ This document justifies that trade-off and provides guidance for managing the re
 
 ### Before: Simple and Maintainable (Legacy Implementation)
 
-**File**: `legacy/ternary_core_simd_full.cpp` (pre-Phase 0)
+**File**: `legacy/ternary_simd_engine.cpp` (pre-Phase 0)
 
 **Code Structure**:
 ```cpp
@@ -61,7 +61,7 @@ for (; i < n; ++i) r[i] = tadd(a[i], b[i]);  // Scalar tail
 
 ### After: Complex but Fast (Current Phase 1 Implementation)
 
-**File**: `ternary_core_simd_full.cpp` (current)
+**File**: `ternary_simd_engine.cpp` (current)
 
 **Code Structure**:
 ```cpp
@@ -112,7 +112,7 @@ if (n >= OMP_THRESHOLD) {
 
 ### The Performance Imperative
 
-The Ternary Core library is designed for **high-performance computational tasks**:
+The Ternary Engine library is designed for **high-performance computational tasks**:
 1. **Fractal generation** - Millions of iterations on ternary arrays
 2. **Modulo-3 arithmetic** - Performance-critical numerical algorithms
 3. **Continuum-discrete boundary operations** - Real-time processing requirements
@@ -626,7 +626,7 @@ Is the optimization necessary to meet functional requirements?
 1. Determine array size: Small (<100K) or large (>=100K)?
 2. Check alignment: Run `printf("ptr=%p, aligned=%d\n", ptr, (uintptr_t)ptr % 32 == 0)`
 3. Identify active path:
-   - Large arrays → OpenMP path (ternary_core_simd_full.cpp:163-174)
+   - Large arrays → OpenMP path (ternary_simd_engine.cpp:163-174)
    - Small + aligned + n>=64 → Aligned unrolled (lines 179-192)
    - Small + aligned + n>=32 → Aligned single (lines 194-199)
    - Small + unaligned + n>=64 → Unaligned unrolled (lines 200-213)
@@ -715,7 +715,7 @@ Is the optimization necessary to meet functional requirements?
 
 ### Final Thoughts
 
-The Ternary Core optimizations demonstrate a classic engineering trade-off:
+The Ternary Engine optimizations demonstrate a classic engineering trade-off:
 - **Performance vs Maintainability**
 - **Optimization vs Simplicity**
 - **Today's speed vs Tomorrow's debugging time**

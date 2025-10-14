@@ -1,6 +1,6 @@
 # Test Suite
 
-Comprehensive test suite for the ternary-kernel-python-c library, covering correctness, performance, and scaling behavior.
+Comprehensive test suite for the Ternary Engine library, covering correctness, performance, and scaling behavior.
 
 ## Structure
 
@@ -346,4 +346,4 @@ python benchmarks/bench_phase0.py
 ---
 
 **Last Updated**: 2025-10-13
-**Maintained by**: Jonathan Verdun (Ternary Core Experimental Project)
+**Maintained by**: Jonathan Verdun (Ternary Engine Project)

@@ -1,7 +1,7 @@
 """
 build.py - Build script for ternary_simd_engine module (Standard Optimized)
 
-Copyright 2025 Ternary Core Contributors
+Copyright 2025 Ternary Engine Contributors
 Licensed under the Apache License, Version 2.0
 
 This provides an organized build system with timestamped artifacts.
@@ -88,7 +88,7 @@ ext_modules = [
 setup(
     name='ternary_simd_engine',
     version='0.1.0',
-    author='Ternary Core Team',
+    author='Ternary Engine Team',
     description='AVX2-optimized ternary logic operations with Phase 0 LUT optimizations',
     ext_modules=ext_modules,
     zip_safe=False,
@@ -101,11 +101,12 @@ setup(
     with open(setup_temp_path, "w") as f:
         f.write(setup_code)
 
-    # Run build
+    # Run build (use relative paths to avoid Windows MAX_PATH issues)
     result = subprocess.run(
         [sys.executable, str(setup_temp_path), "build_ext",
-         "--build-temp", str(BUILD_TEMP_DIR),
-         "--build-lib", str(BUILD_OUTPUT_DIR)],
+         "--build-temp", str(BUILD_TEMP_DIR.relative_to(PROJECT_ROOT)),
+         "--build-lib", str(BUILD_OUTPUT_DIR.relative_to(PROJECT_ROOT)),
+         "--inplace"],
         cwd=str(PROJECT_ROOT),
         capture_output=False
     )

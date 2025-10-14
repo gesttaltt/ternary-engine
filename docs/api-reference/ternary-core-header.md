@@ -481,7 +481,7 @@ The current encoding (`-1=0b00, 0=0b01, +1=0b10`) and LUT values are **stable** 
 
 ## Cross-Reference
 
-- **SIMD Implementation**: See `docs/ternary-core-simd.md`
+- **SIMD Implementation**: See `docs/ternary-engine-simd.md`
 - **Optimization History**: See `docs/optimization-complexity-rationale.md`
 - **Architecture Overview**: See `docs/architecture.md`
 - **Reference Implementations**: See `benchmarks/reference.py` and `benchmarks/reference_cpp.cpp`

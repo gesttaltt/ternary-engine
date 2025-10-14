@@ -1,7 +1,7 @@
 """
 build_pgo.py - Profile-Guided Optimization build system for ternary_simd_engine
 
-Copyright 2025 Ternary Core Contributors
+Copyright 2025 Ternary Engine Contributors
 Licensed under the Apache License, Version 2.0
 
 This script implements a 3-phase PGO build process:
@@ -127,7 +127,7 @@ ext_modules = [
 setup(
     name='ternary_simd_engine',
     version='0.1.0',
-    author='Ternary Core Team',
+    author='Ternary Engine Team',
     description='AVX2-optimized ternary logic with PGO Phase 1 (Instrumentation)',
     ext_modules=ext_modules,
     zip_safe=False,
@@ -274,7 +274,7 @@ ext_modules = [
 setup(
     name='ternary_simd_engine',
     version='0.1.0',
-    author='Ternary Core Team',
+    author='Ternary Engine Team',
     description='AVX2-optimized ternary logic with PGO Phase 3 (Optimized)',
     ext_modules=ext_modules,
     zip_safe=False,

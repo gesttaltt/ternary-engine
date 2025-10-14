@@ -1,4 +1,4 @@
-# TERNARY CORE ABSTRACT
+# TERNARY ENGINE ABSTRACT
 
 ## Ternary and Continuum Representation Bottleneck
 
@@ -18,7 +18,7 @@ by redefining how we encode and operate — even within existing binary hardware
 
 ## Hardware Note — Beyond Binary and physical limitations
 
-While this ternary-core approach can significantly reduce representational loss **within binary architectures**, it ultimately operates under the constraints of a **two-state physical substrate**.
+While this ternary-engine approach can significantly reduce representational loss **within binary architectures**, it ultimately operates under the constraints of a **two-state physical substrate**.
 True continuum-aligned computation will likely require **hardware that natively supports multi-valued or analog states**, such as:
 
 * **Memristor-based logic** and **resistive computing** (state-dependent conductance)
@@ -30,7 +30,7 @@ These paradigms hint at a **post-binary era**, where ternary and continuum compu
 
 ## Vision & Research Directions
 
-While the **Ternary Core** aims to explore a very specific implementation of the **ternary algebra** further research could be performed to explore how ternary algebra can act as a *universal bridge* between symbolic computation, physical modeling, and AI architectures.
+While the **Ternary Engine** aims to explore a very specific implementation of the **ternary algebra** further research could be performed to explore how ternary algebra can act as a *universal bridge* between symbolic computation, physical modeling, and AI architectures.
 By integrating ternary arithmetic kernels into fractal systems, agent models, and neural networks, we may:
 
 * Create **fractal arithmetic engines** capable of dynamic precision scaling.
@@ -79,7 +79,7 @@ This final codebase version represents a sophisticated evolution from scalar ope
 
 ---
 
-### `ternary_core_simd_full.cpp`
+### `ternary_simd_engine.cpp`
 
 This is the "extended AVX2 core" with all the operations (`tadd`, `tmul`, `tmin`, `tmax`, `tnot`) fully optimized for 32 trits blocks on parallel
 
@@ -88,7 +88,7 @@ This is the "extended AVX2 core" with all the operations (`tadd`, `tmul`, `tmin`
 #include <stdint.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include "ternary_core.c"
+#include "ternary_algebra.c"
 namespace py = pybind11;
 
 // --- conversion trit → int8 (-1,0,1) ---
@@ -186,7 +186,7 @@ TERNARY_OP_SIMD(tmul)
 TERNARY_OP_SIMD(tmin)
 TERNARY_OP_SIMD(tmax)
 
-PYBIND11_MODULE(ternary_core_simd_full, m) {
+PYBIND11_MODULE(ternary_simd_engine, m) {
     m.def("tadd", &tadd_array);
     m.def("tmul", &tmul_array);
     m.def("tmin", &tmin_array);
@@ -201,8 +201,8 @@ PYBIND11_MODULE(ternary_core_simd_full, m) {
 
 ```bash
 c++ -O3 -march=native -mavx2 -shared -std=c++17 -fPIC \
-$(python3 -m pybind11 --includes) ternary_core_simd_full.cpp \
--o ternary_core_simd_full$(python3-config --extension-suffix)
+$(python3 -m pybind11 --includes) ternary_simd_engine.cpp \
+-o ternary_simd_engine$(python3-config --extension-suffix)
 ```
 
 ---
@@ -210,7 +210,7 @@ $(python3 -m pybind11 --includes) ternary_core_simd_full.cpp \
 ### Use case on python
 
 ```python
-import numpy as np, ternary_core_simd_full as tc
+import numpy as np, ternary_simd_engine as tc
 
 A = np.random.choice([0b00,0b01,0b10], 2_000_000, dtype=np.uint8)
 B = np.random.choice([0b00,0b01,0b10], 2_000_000, dtype=np.uint8)

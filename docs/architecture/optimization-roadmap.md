@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the **4-phase optimization roadmap** for the Ternary Core library, with detailed technical specifications for each optimization. Total estimated effort: **6-12 months**.
+This document outlines the **4-phase optimization roadmap** for the Ternary Engine library, with detailed technical specifications for each optimization. Total estimated effort: **6-12 months**.
 
 **Expected Cumulative Performance Gains**: 10-50× depending on workload
 
@@ -19,7 +19,7 @@ This document outlines the **4-phase optimization roadmap** for the Ternary Core
 
 ### OPT-086: Scalar Lookup Tables
 
-**Current Problem** (`ternary_core.h:16-25`):
+**Current Problem** (`ternary_algebra.h:16-25`):
 ```c
 static inline trit tadd(trit a, trit b) {
     int s = trit_to_int(a) + trit_to_int(b);  // 2 conversions
@@ -52,7 +52,7 @@ static inline trit tadd(trit a, trit b) {
 **Implementation Steps**:
 1. Generate LUTs for all 4 operations (tadd, tmul, tmin, tmax)
 2. Verify correctness with exhaustive 16-case testing
-3. Replace function bodies in `ternary_core.h`
+3. Replace function bodies in `ternary_algebra.h`
 4. Benchmark scalar performance
 
 **Memory Cost**: 64 bytes (4 ops × 16 bytes), fits in L1 cache
@@ -121,8 +121,8 @@ static inline trit tnot(trit a) {
 **Current Compilation** (manual):
 ```bash
 c++ -O3 -march=native -mavx2 -shared -std=c++17 -fPIC \
-$(python3 -m pybind11 --includes) ternary_core_simd_full.cpp \
--o ternary_core_simd_full$(python3-config --extension-suffix)
+$(python3 -m pybind11 --includes) ternary_simd_engine.cpp \
+-o ternary_simd_engine$(python3-config --extension-suffix)
 ```
 
 **Enhanced Compilation**:
@@ -135,16 +135,16 @@ c++ -O3 -march=native -mavx2 \
     -fomit-frame-pointer \               # Free up register
     -shared -std=c++17 -fPIC \
     $(python3 -m pybind11 --includes) \
-    ternary_core_simd_full.cpp \
-    -o ternary_core_simd_full$(python3-config --extension-suffix)
+    ternary_simd_engine.cpp \
+    -o ternary_simd_engine$(python3-config --extension-suffix)
 ```
 
 **For MSVC (Windows)**:
 ```bash
 cl /O2 /GL /arch:AVX2 /std:c++17 /LD /EHsc \
    /I"pybind11_include_path" \
-   ternary_core_simd_full.cpp \
-   /link /LTCG /OUT:ternary_core_simd_full.pyd
+   ternary_simd_engine.cpp \
+   /link /LTCG /OUT:ternary_simd_engine.pyd
 ```
 
 **Expected Gain**: 5-20% depending on baseline
@@ -154,7 +154,7 @@ cl /O2 /GL /arch:AVX2 /std:c++17 /LD /EHsc \
 
 ### OPT-051: Force Inline Critical Functions
 
-**Modification to `ternary_core.h`**:
+**Modification to `ternary_algebra.h`**:
 ```c
 // Add platform-specific inline hints
 #ifdef _MSC_VER
@@ -180,7 +180,7 @@ static FORCE_INLINE trit tnot(trit a)        { return TNOT_LUT[a]; }
 ### Phase 0 Deliverables
 
 **Code Changes**:
-1. `ternary_core.h` - LUT-based operations
+1. `ternary_algebra.h` - LUT-based operations
 2. Build instructions - Enhanced compiler flags
 3. Test suite - LUT correctness validation
 

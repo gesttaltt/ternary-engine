@@ -6,7 +6,7 @@
 
 **Location:** `build/scripts/setup_pgo.py`
 
-**Module produced:** `ternary_core_simd_full.cp312-win_amd64.pyd` (PGO-optimized)
+**Module produced:** `ternary_simd_engine.cp312-win_amd64.pyd` (PGO-optimized)
 
 **Total build time:** 8-10 minutes (instrumentation + profiling + optimization)
 
@@ -119,11 +119,11 @@ Output:
 ```
 Current PGO Status:
   PGO Base Dir:     build/artifacts/pgo/ ✅ exists
-  Profile Database: ...pgo_data/ternary_core_simd_full.pgd ✅ exists
+  Profile Database: ...pgo_data/ternary_simd_engine.pgd ✅ exists
   Instrumented Builds: 2 (20251012_143022 latest)
   Optimized Builds: 1 (20251012_150530 latest)
   Profile Counters: 3 .pgc files found
-  Compiled Module:  ternary_core_simd_full.cp312-win_amd64.pyd ✅
+  Compiled Module:  ternary_simd_engine.cp312-win_amd64.pyd ✅
 ```
 
 ### Clean PGO Artifacts
@@ -192,7 +192,7 @@ The script runs `benchmarks/bench_phase0.py`, which exercises:
 
 **`.pgd` (Profile-Guided Database):**
 - Master database file
-- Location: `build/artifacts/pgo/pgo_data/ternary_core_simd_full.pgd`
+- Location: `build/artifacts/pgo/pgo_data/ternary_simd_engine.pgd`
 - Size: ~100-200 KB
 - Contains aggregated profile information
 
@@ -290,11 +290,11 @@ build/artifacts/
     │   └── 20251012_143022/
     │       ├── temp/
     │       │   └── Release/
-    │       │       ├── ternary_core_simd_full.obj
+    │       │       ├── ternary_simd_engine.obj
     │       │       ├── *.exp
     │       │       └── *.lib
     │       └── output/
-    │           └── ternary_core_simd_full.cp312-win_amd64.pyd  (instrumented)
+    │           └── ternary_simd_engine.cp312-win_amd64.pyd  (instrumented)
     └── pgo_data/                    # Created, but empty
 ```
 
@@ -306,10 +306,10 @@ build/artifacts/
     ├── instrumented/
     │   └── (same as Phase 1)
     └── pgo_data/
-        ├── ternary_core_simd_full.pgd         # Profile database (150 KB)
-        ├── ternary_core_simd_full!1.pgc       # Profile counters (25 KB)
-        ├── ternary_core_simd_full!2.pgc       # Profile counters (25 KB)
-        └── ternary_core_simd_full!3.pgc       # Profile counters (25 KB)
+        ├── ternary_simd_engine.pgd         # Profile database (150 KB)
+        ├── ternary_simd_engine!1.pgc       # Profile counters (25 KB)
+        ├── ternary_simd_engine!2.pgc       # Profile counters (25 KB)
+        └── ternary_simd_engine!3.pgc       # Profile counters (25 KB)
 ```
 
 ### After Phase 3 (Optimization)
@@ -323,7 +323,7 @@ build/artifacts/
     │   └── 20251012_150530/
     │       ├── temp/
     │       └── output/
-    │           └── ternary_core_simd_full.cp312-win_amd64.pyd  (optimized)
+    │           └── ternary_simd_engine.cp312-win_amd64.pyd  (optimized)
     ├── pgo_data/
     │   └── (same)
     └── latest/                      # Copy of optimized/20251012_150530/
@@ -384,7 +384,7 @@ python build/scripts/setup_pgo.py optimize
 ```python
 # my_custom_workload.py
 import numpy as np
-import ternary_core_simd_full as tc
+import ternary_simd_engine as tc
 
 # Profile your actual production workload
 for _ in range(1000):
@@ -501,7 +501,7 @@ python build/scripts/setup_pgo.py instrument
 **Solution:**
 ```bash
 # Check if instrumented .pyd exists
-ls -lh ternary_core_simd_full*.pyd
+ls -lh ternary_simd_engine*.pyd
 
 # Manually run benchmark with verbose output
 python benchmarks/bench_phase0.py 2>&1 | tee profile.log
@@ -530,7 +530,7 @@ mv *.pgc build/artifacts/pgo/pgo_data/
 **Solution:**
 ```bash
 # Test instrumented binary directly
-python -c "import ternary_core_simd_full; print('OK')"
+python -c "import ternary_simd_engine; print('OK')"
 
 # Run benchmark with error details
 python benchmarks/bench_phase0.py
@@ -645,7 +645,7 @@ jobs:
       - name: Archive PGO binary
         uses: actions/upload-artifact@v3
         with:
-          name: ternary-core-pgo-${{ github.sha }}
+          name: ternary-engine-pgo-${{ github.sha }}
           path: build/artifacts/pgo/latest/output/*.pyd
 
       - name: Run benchmarks
@@ -690,7 +690,7 @@ python workload_large.py   # 1M elements
 
 ```bash
 # Reprofile after significant code changes
-git diff --stat ternary_core_simd_full.cpp
+git diff --stat ternary_simd_engine.cpp
 
 # If changes are major:
 python build/scripts/setup_pgo.py clean

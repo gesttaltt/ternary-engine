@@ -1,12 +1,12 @@
-# ternary_core_simd_full.cpp - SIMD Implementation Documentation
+# ternary_simd_engine.cpp - SIMD Implementation Documentation
 
 ## Overview
 
-`ternary_core_simd_full.cpp` is the AVX2-accelerated implementation of ternary array operations. It provides high-performance vectorized operations using Intel AVX2 intrinsics, achieving 10-30x speedups over scalar code through parallel processing of 32 trits per operation.
+`ternary_simd_engine.cpp` is the AVX2-accelerated implementation of ternary array operations. It provides high-performance vectorized operations using Intel AVX2 intrinsics, achieving 10-30x speedups over scalar code through parallel processing of 32 trits per operation.
 
-**File**: `ternary_core_simd_full.cpp` (297 lines)
+**File**: `ternary_simd_engine.cpp` (297 lines)
 **Purpose**: AVX2-optimized array operations with Python bindings
-**Dependencies**: `immintrin.h`, `pybind11`, `omp.h`, `ternary_core.h`
+**Dependencies**: `immintrin.h`, `pybind11`, `omp.h`, `ternary_algebra.h`
 **Target Architecture**: x86-64 with AVX2 support (Intel Haswell+ / AMD Excavator+)
 **License**: Apache 2.0
 
@@ -308,7 +308,7 @@ for (; i < n; ++i) {
 ```
 
 **Key Details**:
-- Uses scalar operations from `ternary_core.h`
+- Uses scalar operations from `ternary_algebra.h`
 - Processes remainder elements (0-31)
 - Branch-free LUT lookups (efficient even for small counts)
 
@@ -411,7 +411,7 @@ export OMP_PLACES=cores
 ### Pybind11 Bindings
 
 ```cpp
-PYBIND11_MODULE(ternary_core_simd_full, m) {
+PYBIND11_MODULE(ternary_simd_engine, m) {
     m.def("tadd", &tadd_array);
     m.def("tmul", &tmul_array);
     m.def("tmin", &tmin_array);
@@ -420,7 +420,7 @@ PYBIND11_MODULE(ternary_core_simd_full, m) {
 }
 ```
 
-**Module Name**: `ternary_core_simd_full` (matches compiled `.pyd` / `.so` filename)
+**Module Name**: `ternary_simd_engine` (matches compiled `.pyd` / `.so` filename)
 
 ### NumPy Array Handling
 
@@ -458,7 +458,7 @@ py::array_t<uint8_t> process_binary_array(
 
 ```python
 import numpy as np
-import ternary_core_simd_full as tc
+import ternary_simd_engine as tc
 
 a = np.array([0, 1, 2] * 100000, dtype=np.uint8)  # -1, 0, +1 encoded
 b = np.array([2, 1, 0] * 100000, dtype=np.uint8)
@@ -480,10 +480,10 @@ result = tc.tadd(a, b)  # AVX2-accelerated addition
 - Conversion overhead: ~2 ns
 - Arithmetic + branches: ~1 ns
 
-**Scalar C++ + LUT (ternary_core.h)**: ~0.5 ns/element
+**Scalar C++ + LUT (ternary_algebra.h)**: ~0.5 ns/element
 - LUT lookup: ~0.5 ns (L1 cache hit)
 
-**SIMD (ternary_core_simd_full.cpp)**: ~0.1 ns/element
+**SIMD (ternary_simd_engine.cpp)**: ~0.1 ns/element
 - 32 elements per SIMD operation: ~3-5 cycles
 - Effective: 0.1-0.15 cycles/element
 
@@ -611,7 +611,7 @@ Caught by pybind11 and converted to Python `RuntimeError`.
 
 ```python
 # tests/test_phase0.py
-import ternary_core_simd_full as tc
+import ternary_simd_engine as tc
 import numpy as np
 
 def test_tadd_correctness():
@@ -629,7 +629,7 @@ def test_tadd_correctness():
 # benchmarks/bench_phase0.py
 import time
 import numpy as np
-import ternary_core_simd_full as tc
+import ternary_simd_engine as tc
 
 def benchmark_tadd(size=10_000_000):
     a = np.random.randint(0, 3, size=size, dtype=np.uint8)
@@ -716,7 +716,7 @@ Useful for investigating performance anomalies (though Phase 2 doesn't rely on a
 
 ## Cross-Reference
 
-- **Scalar Operations**: See `docs/ternary-core-header.md`
+- **Scalar Operations**: See `docs/ternary-engine-header.md`
 - **Benchmark Results**: See `benchmarks/results/`
 - **Phase Evolution**: See `docs/optimization-complexity-rationale.md`
 - **Build System**: See `build/scripts/setup.py`
@@ -726,7 +726,7 @@ Useful for investigating performance anomalies (though Phase 2 doesn't rely on a
 
 ## Summary
 
-`ternary_core_simd_full.cpp` implements:
+`ternary_simd_engine.cpp` implements:
 - **AVX2 acceleration**: 32 parallel operations via `_mm256_shuffle_epi8`
 - **LUT-based lookups**: Same semantic domain as scalar operations
 - **3 execution paths**: OpenMP parallel, serial SIMD, scalar tail

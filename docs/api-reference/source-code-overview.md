@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document provides a high-level overview of the pure source code files in the ternary-kernel-python-c library and guides you through understanding the implementation.
+This document provides a high-level overview of the pure source code files in the ternary-engine library and guides you through understanding the implementation.
 
 ---
 
@@ -34,7 +34,7 @@ The library consists of **four primary source files** that implement the complet
 - Force-inlined scalar operation implementations
 - Conversion and packing utilities
 
-**Documentation**: [`docs/ternary-core-header.md`](./ternary-core-header.md)
+**Documentation**: [`docs/ternary-engine-header.md`](./ternary-engine-header.md)
 
 **Size**: 108 lines
 **Dependencies**: `stdint.h`, `ternary_lut_gen.h`
@@ -51,7 +51,7 @@ The library consists of **four primary source files** that implement the complet
 - Pybind11 Python integration
 - Centralized error handling via `ternary_errors.h`
 
-**Documentation**: [`docs/ternary-core-simd.md`](./ternary-core-simd.md)
+**Documentation**: [`docs/ternary-engine-simd.md`](./ternary-engine-simd.md)
 
 **Size**: 331 lines
 **Dependencies**: `immintrin.h`, `pybind11`, `omp.h`, `ternary_algebra.h`, `ternary_errors.h`
@@ -397,11 +397,11 @@ static inline __m256i maybe_mask(__m256i v) {
 ### For Understanding the Implementation
 
 1. **Start here**: Current document (overview)
-2. **Core concepts**: [`docs/ternary-core-header.md`](./ternary-core-header.md)
+2. **Core concepts**: [`docs/ternary-engine-header.md`](./ternary-engine-header.md)
    - Trit encoding
    - LUT design
    - Scalar operations
-3. **Acceleration**: [`docs/ternary-core-simd.md`](./ternary-core-simd.md)
+3. **Acceleration**: [`docs/ternary-engine-simd.md`](./ternary-engine-simd.md)
    - SIMD techniques
    - Template design
    - Execution paths
@@ -419,7 +419,7 @@ static inline __m256i maybe_mask(__m256i v) {
    - Add Python binding to `PYBIND11_MODULE` in `ternary_simd_engine.cpp`
 
 2. **Optimizing performance**:
-   - See [`docs/ternary-core-simd.md`](./ternary-core-simd.md) § "Future Optimizations"
+   - See [`docs/ternary-engine-simd.md`](./ternary-engine-simd.md) § "Future Optimizations"
    - Profile first: `python benchmarks/bench_phase0.py`
    - Consider PGO: [`docs/PGO_README.md`](./PGO_README.md)
 
@@ -529,7 +529,7 @@ When modifying the source code:
 
 ## Summary
 
-The ternary-kernel-python-c library achieves 100x speedups through:
+The ternary-engine library achieves 100x speedups through:
 
 1. **Constexpr LUT generation** (`ternary_lut_gen.h`): Compile-time generation with zero runtime cost (OPT-AUTO-LUT)
 2. **LUT-based operations** (`ternary_algebra.h`): Eliminates conversion overhead

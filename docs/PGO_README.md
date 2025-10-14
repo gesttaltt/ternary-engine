@@ -1,4 +1,4 @@
-# Profile-Guided Optimization (PGO) - OPT-114
+# Profile-Guided Optimization (PGO) - Ternary Engine
 
 **Status**: ✅ IMPLEMENTED
 **Date**: 2025-10-11
@@ -67,8 +67,8 @@ python build_pgo.py instrument
 - Generates instrumented module that records runtime behavior
 
 **Output**:
-- `ternary_core_simd_full.cp312-win_amd64.pyd` (instrumented)
-- `pgo_data/ternary_core_simd_full.pgd` (profile database, empty)
+- `ternary_simd_engine.cp312-win_amd64.pyd` (instrumented)
+- `pgo_data/ternary_simd_engine.pgd` (profile database, empty)
 
 ### Phase 2: Profile Collection
 
@@ -86,7 +86,7 @@ python build_pgo.py profile
 
 **Output**:
 - `*.pgc` files (profile counter data)
-- Updated `pgo_data/ternary_core_simd_full.pgd` (contains profile data)
+- Updated `pgo_data/ternary_simd_engine.pgd` (contains profile data)
 
 **Representative Workload**: The benchmark suite covers:
 - Small arrays (8-31 elements) → scalar code paths
@@ -109,7 +109,7 @@ python build_pgo.py optimize
   - Register allocation (prioritize frequently accessed variables)
 
 **Output**:
-- `ternary_core_simd_full.cp312-win_amd64.pyd` (PGO-optimized)
+- `ternary_simd_engine.cp312-win_amd64.pyd` (PGO-optimized)
 
 ---
 
@@ -155,7 +155,7 @@ Based on MSVC PGO documentation:
 ```python
 extra_link_args=[
     '/LTCG:PGI',     # Link-Time Code Generation: Profile-Guided Instrumentation
-    '/PGD:pgo_data/ternary_core_simd_full.pgd',  # Profile database location
+    '/PGD:pgo_data/ternary_simd_engine.pgd',  # Profile database location
 ]
 ```
 
@@ -163,7 +163,7 @@ extra_link_args=[
 ```python
 extra_link_args=[
     '/LTCG:PGO',     # Link-Time Code Generation: Profile-Guided Optimization
-    '/PGD:pgo_data/ternary_core_simd_full.pgd',  # Use this profile database
+    '/PGD:pgo_data/ternary_simd_engine.pgd',  # Use this profile database
 ]
 ```
 
@@ -202,7 +202,7 @@ extra_link_args=[
 **Solutions**:
 1. Check instrumented module was used:
    ```bash
-   python -c "import ternary_core_simd_full; print(ternary_core_simd_full.__file__)"
+   python -c "import ternary_simd_engine; print(ternary_simd_engine.__file__)"
    ```
 2. Verify profiling workload ran successfully
 3. Check PGO directory exists: `pgo_data/`

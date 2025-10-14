@@ -2,11 +2,11 @@
 
 ## Overview
 
-`build.py` is the primary build script for creating production-ready, fully optimized builds of the `ternary_core_simd_full` module. It produces AVX2-accelerated binaries with OpenMP multi-threading support.
+`build.py` is the primary build script for creating production-ready, fully optimized builds of the `ternary_simd_engine` module. It produces AVX2-accelerated binaries with OpenMP multi-threading support.
 
 **Location:** `build.py` (project root)
 
-**Module produced:** `ternary_core_simd_full.cp312-win_amd64.pyd`
+**Module produced:** `ternary_simd_engine.cp312-win_amd64.pyd`
 
 **Typical build time:** 30-60 seconds
 
@@ -44,12 +44,12 @@ Created build directories:
   Temp:   H:\...\build\artifacts\standard\20251012_143022\temp
   Output: H:\...\build\artifacts\standard\20251012_143022\output
 
-Building ternary_core_simd_full module...
+Building ternary_simd_engine module...
 
 [Compiler output...]
 
 Copying to latest directory...
-  ✓ ternary_core_simd_full.cp312-win_amd64.pyd → H:\...\ternary_core_simd_full.cp312-win_amd64.pyd
+  ✓ ternary_simd_engine.cp312-win_amd64.pyd → H:\...\ternary_simd_engine.cp312-win_amd64.pyd
 
 ======================================================================
   ✅ BUILD COMPLETE
@@ -60,7 +60,7 @@ Build artifacts:
   Latest:      H:\...\build\artifacts\standard\latest
 
 Generated modules:
-  - ternary_core_simd_full.cp312-win_amd64.pyd (145.4 KB)
+  - ternary_simd_engine.cp312-win_amd64.pyd (145.4 KB)
 ```
 
 ## Technical Details
@@ -127,8 +127,8 @@ The script executes the following workflow:
 
 | File | Description | Lines | Purpose |
 |------|-------------|-------|---------|
-| `ternary_core_simd_full.cpp` | Main SIMD implementation | ~297 | AVX2 vectorized operations |
-| `ternary_core.h` | Core header | ~111 | Scalar operations, LUTs |
+| `ternary_simd_engine.cpp` | Main SIMD implementation | ~297 | AVX2 vectorized operations |
+| `ternary_algebra.h` | Core header | ~111 | Scalar operations, LUTs |
 
 ### Build Script Structure
 
@@ -181,12 +181,12 @@ build/
 │       ├── 20251012_143022/          # New timestamped build
 │       │   ├── temp/
 │       │   │   ├── Release/
-│       │   │   │   ├── ternary_core_simd_full.obj          (8.2 MB)
-│       │   │   │   ├── ternary_core_simd_full.*.exp        (899 bytes)
-│       │   │   │   └── ternary_core_simd_full.*.lib        (2.3 KB)
+│       │   │   │   ├── ternary_simd_engine.obj          (8.2 MB)
+│       │   │   │   ├── ternary_simd_engine.*.exp        (899 bytes)
+│       │   │   │   └── ternary_simd_engine.*.lib        (2.3 KB)
 │       │   │   └── (setup_temp.py deleted)
 │       │   └── output/
-│       │       └── ternary_core_simd_full.cp312-win_amd64.pyd  (145 KB)
+│       │       └── ternary_simd_engine.cp312-win_amd64.pyd  (145 KB)
 │       └── latest/                   # Copy of 20251012_143022/
 │           ├── temp/
 │           └── output/
@@ -197,8 +197,8 @@ build/
 ### Project Root
 
 ```
-ternary-kernel-python-c/
-├── ternary_core_simd_full.cp312-win_amd64.pyd    # Copied for convenience
+ternary-engine/
+├── ternary_simd_engine.cp312-win_amd64.pyd    # Copied for convenience
 └── (other files...)
 ```
 
@@ -394,8 +394,8 @@ chmod -R u+w build/artifacts/
 
 **Symptom:**
 ```python
->>> import ternary_core_simd_full
-ImportError: DLL load failed while importing ternary_core_simd_full
+>>> import ternary_simd_engine
+ImportError: DLL load failed while importing ternary_simd_engine
 ```
 
 **Causes:**
@@ -421,9 +421,9 @@ python build/scripts/setup.py
 
 **Symptom:**
 ```python
->>> import ternary_core_simd_full as tc
+>>> import ternary_simd_engine as tc
 >>> tc.tadd([1], [2])
-AttributeError: module 'ternary_core_simd_full' has no attribute 'tadd'
+AttributeError: module 'ternary_simd_engine' has no attribute 'tadd'
 ```
 
 **Cause:** Wrong module version loaded (old build)
@@ -431,7 +431,7 @@ AttributeError: module 'ternary_core_simd_full' has no attribute 'tadd'
 **Solution:**
 ```bash
 # Force reload
-python -c "import sys; sys.path.insert(0, 'build/artifacts/standard/latest/output'); import ternary_core_simd_full; print(dir(ternary_core_simd_full))"
+python -c "import sys; sys.path.insert(0, 'build/artifacts/standard/latest/output'); import ternary_simd_engine; print(dir(ternary_simd_engine))"
 
 # Or clear Python cache
 find . -type d -name __pycache__ -exec rm -rf {} +
@@ -448,7 +448,7 @@ import numpy as np
 
 # Use latest build
 sys.path.insert(0, 'build/artifacts/standard/latest/output')
-import ternary_core_simd_full as tc
+import ternary_simd_engine as tc
 
 # Create test arrays
 a = np.array([0, 1, 2, 0, 1], dtype=np.uint8)
@@ -490,7 +490,7 @@ WORKDIR /app
 RUN python build/scripts/setup.py
 
 # Test
-RUN python -c "import ternary_core_simd_full; print('Build OK')"
+RUN python -c "import ternary_simd_engine; print('Build OK')"
 ```
 
 ## Comparison with Other Builds

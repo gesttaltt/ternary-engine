@@ -1,6 +1,6 @@
 // ternary_simd_engine.cpp — AVX2-accelerated ternary logic operations
 //
-// Copyright (c) 2025 Jonathan Verdun (Ternary Core Experimental Project)
+// Copyright (c) 2025 Jonathan Verdun (Ternary Engine Project)
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

@@ -1,8 +1,8 @@
-# Error Handling in Ternary Core
+# Error Handling in Ternary Engine
 
 ## Overview
 
-Ternary Core uses domain-specific exception types for clear error semantics and Python-friendly error propagation. All exceptions inherit from `TernaryError`, which extends `std::runtime_error`, ensuring compatibility with pybind11's automatic exception translation.
+Ternary Engine uses domain-specific exception types for clear error semantics and Python-friendly error propagation. All exceptions inherit from `TernaryError`, which extends `std::runtime_error`, ensuring compatibility with pybind11's automatic exception translation.
 
 **File**: `ternary_errors.h`
 **Design Principle**: YAGNI (You Aren't Gonna Need It) - Only defines actually-needed exceptions, expands only when real use cases emerge.

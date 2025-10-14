@@ -176,9 +176,9 @@ static inline trit tadd(trit a, trit b) {
 | File | Description | Implementation |
 |------|-------------|----------------|
 | `benchmarks/reference_cpp.cpp` | Reference implementation | Conversion-based operations |
-| `ternary_core.h` | Header (unused) | Contains LUTs (not used by reference) |
+| `ternary_algebra.h` | Header (unused) | Contains LUTs (not used by reference) |
 
-**Note:** Reference implementation is self-contained in `reference_cpp.cpp` and does NOT use `ternary_core.h` LUTs.
+**Note:** Reference implementation is self-contained in `reference_cpp.cpp` and does NOT use `ternary_algebra.h` LUTs.
 
 ## Directory Structure
 
@@ -210,7 +210,7 @@ build/artifacts/
 ```python
 import numpy as np
 import reference_cpp as ref
-import ternary_core_simd_full as opt
+import ternary_simd_engine as opt
 
 # Test data
 a = np.random.randint(0, 3, size=1000000, dtype=np.uint8)
@@ -252,15 +252,15 @@ Benchmark Results
 
 Small arrays (100 elements):
   reference_cpp:          250 ns/op
-  ternary_core_simd_full:  50 ns/op  (5.0x faster)
+  ternary_simd_engine:  50 ns/op  (5.0x faster)
 
 Medium arrays (10,000 elements):
   reference_cpp:         2500 ns/op
-  ternary_core_simd_full: 500 ns/op  (5.0x faster)
+  ternary_simd_engine: 500 ns/op  (5.0x faster)
 
 Large arrays (1,000,000 elements):
   reference_cpp:       500000 ns/op
-  ternary_core_simd_full: 50000 ns/op  (10.0x faster)
+  ternary_simd_engine: 50000 ns/op  (10.0x faster)
 ```
 
 ## Performance Characteristics
@@ -349,7 +349,7 @@ python benchmarks/bench_phase0.py --compare-reference > current.txt
 ```python
 # Fair comparison for academic paper
 reference_time = benchmark(reference_cpp.tadd)
-optimized_time = benchmark(ternary_core_simd_full.tadd)
+optimized_time = benchmark(ternary_simd_engine.tadd)
 
 print(f"Our SIMD+LUT optimizations achieve {reference_time/optimized_time:.1f}x")
 print(f"speedup over baseline C++ implementation.")
@@ -364,7 +364,7 @@ print(f"speedup over baseline C++ implementation.")
 | Module | Size | Difference | Reason |
 |--------|------|------------|--------|
 | `reference_cpp.pyd` | ~125 KB | Baseline | Minimal code |
-| `ternary_core_simd_full.pyd` | ~145 KB | +20 KB | SIMD code variants |
+| `ternary_simd_engine.pyd` | ~145 KB | +20 KB | SIMD code variants |
 
 **Size breakdown:**
 - Reference: Conversion functions + scalar loops
@@ -422,7 +422,7 @@ fatal error C1083: Cannot open source file: 'reference_cpp.cpp'
 ls benchmarks/reference_cpp.cpp
 
 # Run from project root
-cd /path/to/ternary-kernel-python-c
+cd /path/to/ternary-engine
 python build/scripts/setup_reference.py
 ```
 

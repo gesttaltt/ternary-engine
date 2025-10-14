@@ -1,6 +1,6 @@
 # Documentation Index
 
-This directory contains comprehensive documentation for the ternary-kernel-python-c library.
+This directory contains comprehensive documentation for the ternary-engine library.
 
 ## Documentation Organization
 
@@ -12,8 +12,8 @@ docs/
 │
 ├── api-reference/                  # API and source code documentation
 │   ├── source-code-overview.md    # High-level code guide (START HERE)
-│   ├── ternary-core-header.md     # ternary_algebra.h detailed docs
-│   ├── ternary-core-simd.md       # ternary_simd_engine.cpp guide
+│   ├── ternary-engine-header.md     # ternary_algebra.h detailed docs
+│   ├── ternary-engine-simd.md       # ternary_simd_engine.cpp guide
 │   ├── headers.md                  # Header design philosophy
 │   └── error-handling.md           # Exception handling system
 │
@@ -46,14 +46,14 @@ docs/
   - Performance summary
   - Reading guide for different purposes
 
-- **[API Reference: ternary_algebra.h](./api-reference/ternary-core-header.md)** - Core algebra header (143 lines)
+- **[API Reference: ternary_algebra.h](./api-reference/ternary-engine-header.md)** - Core algebra header (143 lines)
   - Trit encoding scheme (2-bit balanced ternary)
   - Constexpr-generated lookup tables (OPT-AUTO-LUT)
   - Scalar operations with force-inlining
   - Type definitions and utilities
   - Uses `ternary_lut_gen.h` for compile-time LUT generation
 
-- **[API Reference: ternary_simd_engine.cpp](./api-reference/ternary-core-simd.md)** - SIMD implementation (333 lines)
+- **[API Reference: ternary_simd_engine.cpp](./api-reference/ternary-engine-simd.md)** - SIMD implementation (333 lines)
   - AVX2 acceleration techniques
   - Template-based unified processing with optional masking (OPT-HASWELL-02)
   - Execution path selection (OpenMP, SIMD, scalar)
@@ -108,13 +108,13 @@ docs/
 
 **Understand how the code works:**
 1. [Source Code Overview](./api-reference/source-code-overview.md) ← START HERE
-2. [ternary_algebra.h Documentation](./api-reference/ternary-core-header.md)
-3. [ternary_simd_engine.cpp Documentation](./api-reference/ternary-core-simd.md)
+2. [ternary_algebra.h Documentation](./api-reference/ternary-engine-header.md)
+3. [ternary_simd_engine.cpp Documentation](./api-reference/ternary-engine-simd.md)
 4. [Error Handling Documentation](./api-reference/error-handling.md)
 
 **Add a new ternary operation:**
 1. Read [CONTRIBUTING.md § Adding New Operations](../CONTRIBUTING.md#adding-new-operations)
-2. Read [ternary_algebra.h § Adding Operations](./api-reference/ternary-core-header.md#future-considerations)
+2. Read [ternary_algebra.h § Adding Operations](./api-reference/ternary-engine-header.md#future-considerations)
 3. Use `make_binary_lut()` or `make_unary_lut()` from `ternary_lut_gen.h`
 
 **Build the project:**
@@ -123,7 +123,7 @@ docs/
 3. PGO: [PGO_README.md](./PGO_README.md)
 
 **Optimize performance:**
-1. Read [ternary_simd_engine.cpp § Performance Analysis](./api-reference/ternary-core-simd.md#performance-analysis)
+1. Read [ternary_simd_engine.cpp § Performance Analysis](./api-reference/ternary-engine-simd.md#performance-analysis)
 2. Read [PGO_README.md](./PGO_README.md)
 3. Profile with `python benchmarks/bench_phase0.py`
 4. See [Optimization Roadmap](./architecture/optimization-roadmap.md)
@@ -133,7 +133,7 @@ docs/
 2. [Source Code Overview § Key Design Principles](./api-reference/source-code-overview.md#key-design-principles)
 
 **Port to a new architecture (ARM/NEON):**
-1. Read [ternary_simd_engine.cpp § Platform-Specific Notes](./api-reference/ternary-core-simd.md#platform-specific-notes)
+1. Read [ternary_simd_engine.cpp § Platform-Specific Notes](./api-reference/ternary-engine-simd.md#platform-specific-notes)
 2. Keep `ternary_algebra.h` and `ternary_lut_gen.h` unchanged (portable)
 3. Reimplement SIMD layer with NEON intrinsics in `ternary_simd_engine.cpp`
 
@@ -149,7 +149,7 @@ docs/
 Values: **-1, 0, +1** (three states)
 Encoding: **0b00, 0b01, 0b10** (2 bits per trit)
 
-See [ternary-core-header.md § Encoding Scheme](./ternary-core-header.md#encoding-scheme)
+See [ternary-engine-header.md § Encoding Scheme](./ternary-engine-header.md#encoding-scheme)
 
 ### LUT-Based Operations
 
@@ -158,7 +158,7 @@ All operations use lookup tables instead of arithmetic:
 return TADD_LUT[(a << 2) | b];  // Faster than arithmetic
 ```
 
-See [ternary-core-header.md § Lookup Tables](./ternary-core-header.md#lookup-tables-luts)
+See [ternary-engine-header.md § Lookup Tables](./ternary-engine-header.md#lookup-tables-luts)
 
 ### SIMD Acceleration
 
@@ -167,7 +167,7 @@ Process 32 trits in parallel using AVX2:
 __m256i result = _mm256_shuffle_epi8(lut, indices);  // 32 parallel lookups
 ```
 
-See [ternary-core-simd.md § SIMD Operations](./ternary-core-simd.md#simd-operations)
+See [ternary-engine-simd.md § SIMD Operations](./ternary-engine-simd.md#simd-operations)
 
 ### Three Execution Paths
 
@@ -175,7 +175,7 @@ See [ternary-core-simd.md § SIMD Operations](./ternary-core-simd.md#simd-operat
 2. **Serial SIMD** (32 ≤ n < 100K): Single-threaded SIMD
 3. **Scalar Tail** (n < 32): Fallback to scalar LUTs
 
-See [ternary-core-simd.md § Execution Paths](./ternary-core-simd.md#execution-paths-detailed)
+See [ternary-engine-simd.md § Execution Paths](./ternary-engine-simd.md#execution-paths-detailed)
 
 ## Performance Summary
 
@@ -206,4 +206,4 @@ All documentation is released under Apache 2.0 (same as source code).
 ---
 
 **Last Updated**: 2025-10-13
-**Maintained by**: Jonathan Verdun (Ternary Core Experimental Project)
+**Maintained by**: Jonathan Verdun (Ternary Engine Project)

@@ -101,7 +101,7 @@ Located in `build/artifacts/pgo/pgo_data/`:
 
 **Use case:** Production deployments
 
-**Module:** `ternary_core_simd_full.cp312-win_amd64.pyd`
+**Module:** `ternary_simd_engine.cp312-win_amd64.pyd`
 
 **Typical size:** 145-150 KB
 
@@ -117,7 +117,7 @@ Located in `build/artifacts/pgo/pgo_data/`:
 
 **Use case:** Performance-critical deployments
 
-**Module:** `ternary_core_simd_full.cp312-win_amd64.pyd`
+**Module:** `ternary_simd_engine.cp312-win_amd64.pyd`
 
 **Typical size:** 145-155 KB
 
@@ -163,7 +163,7 @@ latest/
 # Always use the latest standard build
 import sys
 sys.path.insert(0, 'build/artifacts/standard/latest/output')
-import ternary_core_simd_full
+import ternary_simd_engine
 ```
 
 **Note:** The `.pyd` file is also copied to the project root for convenience during development.
@@ -258,7 +258,7 @@ find build/artifacts/standard -maxdepth 1 -type d -name "202*" |
 - name: Archive build artifacts
   uses: actions/upload-artifact@v3
   with:
-    name: ternary-core-${{ github.sha }}
+    name: ternary-engine-${{ github.sha }}
     path: |
       build/artifacts/*/latest/output/*.pyd
       build/artifacts/*/latest/output/*.so

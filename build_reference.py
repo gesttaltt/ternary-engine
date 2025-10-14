@@ -1,7 +1,7 @@
 """
 build_reference.py - Build unoptimized C++ reference for benchmarking
 
-Copyright 2025 Ternary Core Contributors
+Copyright 2025 Ternary Engine Contributors
 Licensed under the Apache License, Version 2.0
 
 This builds a baseline C++ implementation WITHOUT optimizations:
@@ -91,7 +91,7 @@ ext_modules = [
 setup(
     name='reference_cpp',
     version='0.1.0',
-    author='Ternary Core Team',
+    author='Ternary Engine Team',
     description='Unoptimized C++ reference for fair benchmarking',
     ext_modules=ext_modules,
     zip_safe=False,

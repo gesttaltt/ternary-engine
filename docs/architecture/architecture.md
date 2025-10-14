@@ -1,8 +1,8 @@
-# Ternary Core Architecture - Technical Documentation
+# Ternary Engine Architecture - Technical Documentation
 
 ## Overview
 
-The Ternary Core is a high-performance computational library implementing balanced ternary arithmetic (-1, 0, +1) using AVX2 SIMD vectorization. The library achieves >30M trits/second throughput on modern x86-64 CPUs through compact 2-bit encoding and vectorized operations.
+The Ternary Engine is a high-performance computational library implementing balanced ternary arithmetic (-1, 0, +1) using AVX2 SIMD vectorization. The library achieves >30M trits/second throughput on modern x86-64 CPUs through compact 2-bit encoding and vectorized operations.
 
 **Current Version**: Phase 0 (LUT-based scalar operations)
 **Target Platform**: x86-64 with AVX2 support
@@ -16,8 +16,8 @@ The Ternary Core is a high-performance computational library implementing balanc
 **This document describes the PRE-OPTIMIZATION BASELINE (pre-Phase 0) implementation.** It serves as historical reference to understand the optimization evolution.
 
 **For current implementation state:**
-- **Scalar operations**: See `ternary_core.h` (Phase 0 LUT-based implementation)
-- **SIMD operations**: See `ternary_core_simd_full.cpp` (current AVX2 implementation)
+- **Scalar operations**: See `ternary_algebra.h` (Phase 0 LUT-based implementation)
+- **SIMD operations**: See `ternary_simd_engine.cpp` (current AVX2 implementation)
 - **Optimization roadmap**: See `docs/optimization-roadmap.md`
 - **Research analysis**: See `local-reports/comparison-references/4-sidesteps.md`
 
@@ -74,19 +74,19 @@ Operations are designed for vectorization:
 ## File Structure
 
 ```
-ternary-kernel-python-c/
-├── ternary_core.h                    # Scalar operations header
-├── ternary_core_simd_full.cpp        # AVX2 SIMD implementation + Python bindings
-├── ternary_core_simd_full-use-cases.md   # High-level project vision
+ternary-engine/
+├── ternary_algebra.h                    # Scalar operations header
+├── ternary_simd_engine.cpp        # AVX2 SIMD implementation + Python bindings
+├── ternary_simd_engine-use-cases.md   # High-level project vision
 ├── docs/                             # Technical documentation
 │   ├── architecture.md               # This file
 │   ├── optimization-roadmap.md       # Implementation phases
 │   ├── encoding-specification.md     # Bit-level encoding details
 │   └── simd-implementation.md        # Vectorization internals
 ├── legacy/                           # Evolution history (not tracked)
-│   ├── ternary_core.c
+│   ├── ternary_algebra.c
 │   ├── ternary_core_simd.cpp
-│   ├── ternary_core_simd_full.cpp
+│   ├── ternary_simd_engine.cpp
 │   └── ternary_core_full.cpp
 └── local-reports/                    # Research notes (not tracked)
     ├── optimization.md
@@ -97,7 +97,7 @@ ternary-kernel-python-c/
 
 ## Component Architecture
 
-### Layer 1: Scalar Operations (`ternary_core.h`)
+### Layer 1: Scalar Operations (`ternary_algebra.h`)
 
 **Purpose**: Define baseline ternary operations on individual trits
 
@@ -107,7 +107,7 @@ ternary-kernel-python-c/
 
 This section documents the **original baseline implementation** that existed before Phase 0 optimizations were applied. This code has been **replaced** with LUT-based operations.
 
-**Original Implementation** (conversion-based, found in `legacy/ternary_core.c`):
+**Original Implementation** (conversion-based, found in `legacy/ternary_algebra.c`):
 ```c
 // Conversion functions (used by all operations)
 static inline trit int_to_trit(int v) {
@@ -151,7 +151,7 @@ static inline trit tnot(trit a) {
 
 **Optimization Applied**: Replaced conversion-based logic with lookup tables (LUTs)
 
-**Current Implementation** (LUT-based, in `ternary_core.h:40-115`):
+**Current Implementation** (LUT-based, in `ternary_algebra.h:40-115`):
 ```c
 // Pre-computed lookup tables (total: 68 bytes)
 static const uint8_t TADD_LUT[16] = { /* ... */ };
@@ -180,7 +180,7 @@ static FORCE_INLINE trit tmul(trit a, trit b) {
 
 ---
 
-### Layer 2: SIMD Vectorization (`ternary_core_simd_full.cpp`)
+### Layer 2: SIMD Vectorization (`ternary_simd_engine.cpp`)
 
 **Purpose**: Vectorize operations using AVX2 intrinsics
 
@@ -308,7 +308,7 @@ py::array_t<uint8_t> func##_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B
 
 **Interface Exposure**:
 ```cpp
-PYBIND11_MODULE(ternary_core_simd_full, m) {
+PYBIND11_MODULE(ternary_simd_engine, m) {
     m.def("tadd", &tadd_array);
     m.def("tmul", &tmul_array);
     m.def("tmin", &tmin_array);
@@ -322,7 +322,7 @@ PYBIND11_MODULE(ternary_core_simd_full, m) {
 **Python Usage**:
 ```python
 import numpy as np
-import ternary_core_simd_full as tc
+import ternary_simd_engine as tc
 
 A = np.array([0b00, 0b01, 0b10], dtype=np.uint8)  # [-1, 0, +1]
 B = np.array([0b10, 0b01, 0b00], dtype=np.uint8)  # [+1, 0, -1]
@@ -431,7 +431,7 @@ See `docs/optimization-roadmap.md` for detailed implementation plans.
 - `docs/optimization-roadmap.md` - Phase 0-4 implementation details
 - `docs/encoding-specification.md` - Bit-level encoding details
 - `docs/simd-implementation.md` - Vectorization internals
-- `ternary_core_simd_full-use-cases.md` - Project vision & use cases
+- `ternary_simd_engine-use-cases.md` - Project vision & use cases
 
 ### External Resources
 - Balanced Ternary: [Wikipedia](https://en.wikipedia.org/wiki/Balanced_ternary)

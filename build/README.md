@@ -1,6 +1,6 @@
 # Build System
 
-This directory contains the build infrastructure for the ternary-kernel-python-c library.
+This directory contains the build infrastructure for the Ternary Engine library.
 
 ## Structure
 
@@ -265,4 +265,4 @@ See `CHANGELOG.md` for detailed version history.
 ---
 
 **Last Updated**: 2025-10-13
-**Maintained by**: Jonathan Verdun (Ternary Core Experimental Project)
+**Maintained by**: Jonathan Verdun (Ternary Engine Project)

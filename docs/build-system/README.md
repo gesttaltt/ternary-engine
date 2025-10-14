@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains comprehensive documentation for the ternary-core build system. The build system provides three distinct build configurations, each serving a specific purpose:
+This directory contains comprehensive documentation for the ternary-engine build system. The build system provides three distinct build configurations, each serving a specific purpose:
 
 | Build Type | Script | Purpose | Performance | Build Time |
 |------------|--------|---------|-------------|------------|
@@ -69,7 +69,7 @@ gcc --version  # Linux
 python build.py
 
 # 4. Test
-python -c "import ternary_core_simd_full; print('Build successful!')"
+python -c "import ternary_simd_engine; print('Build successful!')"
 ```
 
 ### Building All Versions
@@ -89,7 +89,7 @@ python benchmarks/bench_phase0.py
 ### Directory Structure
 
 ```
-ternary-kernel-python-c/
+ternary-engine/
 ├── build/
 │   ├── artifacts/              # All build outputs
 │   │   ├── standard/           # Standard optimized builds
@@ -123,8 +123,8 @@ ternary-kernel-python-c/
 │   ├── bench_phase0.py        # Main benchmark runner
 │   └── reference_cpp.cpp      # Reference implementation source
 │
-├── ternary_core_simd_full.cpp # Optimized implementation source
-└── ternary_core.h              # Core header with LUTs
+├── ternary_simd_engine.cpp # Optimized implementation source
+└── ternary_algebra.h              # Core header with LUTs
 ```
 
 ### Build Workflow
@@ -245,7 +245,7 @@ python benchmarks/bench_phase0.py
 python build.py
 python benchmarks/bench_phase0.py > before.txt
 
-# Make changes to ternary_core_simd_full.cpp...
+# Make changes to ternary_simd_engine.cpp...
 
 # After changes
 python build.py
@@ -379,7 +379,7 @@ python build_reference.py
 **Diagnosis:**
 ```bash
 # Verify build type
-python -c "import ternary_core_simd_full; print(ternary_core_simd_full.__file__)"
+python -c "import ternary_simd_engine; print(ternary_simd_engine.__file__)"
 # Should point to standard/latest/output/ or pgo/latest/output/
 
 # Check CPU features
@@ -511,7 +511,7 @@ if performance_critical:
 else:
     sys.path.insert(0, 'build/artifacts/standard/latest/output')
 
-import ternary_core_simd_full
+import ternary_simd_engine
 ```
 
 ---
@@ -556,7 +556,7 @@ For build system issues:
 
 1. Check this documentation first
 2. Review individual build script documentation
-3. Search existing issues: https://github.com/gesttaltt/ternary-core/issues
+3. Search existing issues: https://github.com/gesttaltt/ternary-engine/issues
 4. Open new issue with:
    - OS and Python version
    - Compiler version
