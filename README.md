@@ -227,6 +227,8 @@ Apache License 2.0 - See [LICENSE](LICENSE)
 
 Copyright 2025 Jonathan Verdun (Ternary Core Experimental Project)
 
+Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der Pol and Kyrian Weiss Van der Pol for their support.
+
 ## Citation
 
 ```bibtex
