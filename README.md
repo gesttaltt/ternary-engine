@@ -1,6 +1,10 @@
 # Ternary Core SIMD
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![C++ Standard](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
+[![Performance](https://img.shields.io/badge/speedup-100x-brightgreen)](https://github.com/gesttaltt/ternary-core#performance)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 Production-grade balanced ternary arithmetic library with AVX2 SIMD vectorization, OpenMP parallelization, and Python bindings.
 
