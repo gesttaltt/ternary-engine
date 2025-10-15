@@ -24,6 +24,15 @@ from datetime import datetime
 PROJECT_ROOT = Path(__file__).parent.resolve()
 TESTS_DIR = PROJECT_ROOT / "tests"
 
+# Import capability detection
+sys.path.insert(0, str(TESTS_DIR))
+try:
+    from test_capabilities import detect_capabilities
+    CAPABILITIES_AVAILABLE = True
+except ImportError:
+    CAPABILITIES_AVAILABLE = False
+    print("[WARN] Capability detection not available")
+
 # ANSI color codes for terminal output
 class Colors:
     HEADER = '\033[95m'
@@ -53,8 +62,28 @@ def print_warning(message):
     """Print warning message"""
     print(f"{Colors.WARNING}[WARN] {message}{Colors.ENDC}")
 
-def run_test_suite(script_path, name, verbose=False):
-    """Run a single test suite"""
+def print_skip(message):
+    """Print skipped test message"""
+    print(f"{Colors.WARNING}[SKIP] {message}{Colors.ENDC}")
+
+def run_test_suite(script_path, name, verbose=False, can_skip=False, skip_reason=None):
+    """Run a single test suite
+
+    Args:
+        script_path: Path to test script
+        name: Test suite name
+        verbose: Print verbose output
+        can_skip: Whether this test can be skipped
+        skip_reason: Reason for skipping
+
+    Returns:
+        tuple: (passed: bool, skipped: bool)
+    """
+    if can_skip and skip_reason:
+        print(f"\n{Colors.WARNING}Skipping: {name}{Colors.ENDC}")
+        print(f"  Reason: {skip_reason}")
+        return (True, True)  # Treat skipped as passed
+
     print(f"\n{Colors.OKBLUE}Running: {name}{Colors.ENDC}")
     print(f"  Script: {script_path}")
 
@@ -71,20 +100,20 @@ def run_test_suite(script_path, name, verbose=False):
             print_success(f"{name} passed")
             if verbose and result.stdout:
                 print(result.stdout)
-            return True
+            return (True, False)  # Passed, not skipped
         else:
             print_error(f"{name} failed (exit code: {result.returncode})")
             if result.stdout:
                 print("STDOUT:", result.stdout)
             if result.stderr:
                 print("STDERR:", result.stderr)
-            return False
+            return (False, False)  # Failed, not skipped
     except subprocess.TimeoutExpired:
         print_error(f"{name} timed out (>60s)")
-        return False
+        return (False, False)
     except Exception as e:
         print_error(f"{name} raised exception: {e}")
-        return False
+        return (False, False)
 
 def check_module_built():
     """Check if the ternary_simd_engine module is built"""
@@ -124,6 +153,15 @@ def main():
     print(f"Python: {sys.version.split()[0]}")
     print(f"Platform: {sys.platform}")
 
+    # Detect capabilities
+    capabilities = None
+    if CAPABILITIES_AVAILABLE:
+        try:
+            capabilities = detect_capabilities()
+            capabilities.print_report()
+        except Exception as e:
+            print_warning(f"Could not detect capabilities: {e}")
+
     # Check if module is built
     print_header("Pre-flight Checks")
     if not check_module_built():
@@ -134,17 +172,23 @@ def main():
         'phase0': {
             'name': 'Phase 0 Correctness Tests',
             'script': TESTS_DIR / 'test_phase0.py',
-            'required': True
+            'required': True,
+            'optional': False,
+            'requires_capability': None
         },
         'omp': {
             'name': 'OpenMP Parallelization Tests',
             'script': TESTS_DIR / 'test_omp.py',
-            'required': True
+            'required': False,  # Optional on platforms without OpenMP
+            'optional': True,
+            'requires_capability': 'openmp'
         },
         'errors': {
             'name': 'Error Handling & Edge Cases',
             'script': TESTS_DIR / 'test_errors.py',
-            'required': True
+            'required': True,
+            'optional': False,
+            'requires_capability': None
         }
     }
 
@@ -158,41 +202,65 @@ def main():
 
     # Run tests
     print_header("Running Test Suites")
-    results = {}
+    results = {}  # suite_id -> (passed, skipped)
 
     for suite_id, suite_info in test_suites.items():
         if not suite_info['script'].exists():
             print_warning(f"Skipping {suite_info['name']}: script not found")
             continue
 
-        success = run_test_suite(
+        # Check if test can be skipped based on capabilities
+        can_skip = False
+        skip_reason = None
+
+        if suite_info['optional'] and capabilities:
+            required_cap = suite_info['requires_capability']
+            if required_cap == 'openmp':
+                skip_reason = capabilities.get_skip_reason('openmp')
+                can_skip = skip_reason is not None
+
+        passed, skipped = run_test_suite(
             suite_info['script'],
             suite_info['name'],
-            verbose=args.verbose
+            verbose=args.verbose,
+            can_skip=can_skip,
+            skip_reason=skip_reason
         )
-        results[suite_id] = success
+        results[suite_id] = (passed, skipped)
 
     # Print summary
     print_header("Test Summary")
 
     total_suites = len(results)
-    passed_suites = sum(1 for r in results.values() if r)
-    failed_suites = total_suites - passed_suites
+    passed_suites = sum(1 for passed, skipped in results.values() if passed and not skipped)
+    skipped_suites = sum(1 for passed, skipped in results.values() if skipped)
+    failed_suites = sum(1 for passed, skipped in results.values() if not passed and not skipped)
 
     print(f"Total test suites: {total_suites}")
     print(f"Passed: {Colors.OKGREEN}{passed_suites}{Colors.ENDC}")
+    print(f"Skipped: {Colors.WARNING}{skipped_suites}{Colors.ENDC}")
     print(f"Failed: {Colors.FAIL}{failed_suites}{Colors.ENDC}")
+
+    if skipped_suites > 0:
+        print(f"\n{Colors.WARNING}{Colors.BOLD}SKIPPED TEST SUITES:{Colors.ENDC}")
+        for suite_id, (passed, skipped) in results.items():
+            if skipped:
+                print(f"  - {test_suites[suite_id]['name']}")
 
     if failed_suites > 0:
         print(f"\n{Colors.FAIL}{Colors.BOLD}FAILED TEST SUITES:{Colors.ENDC}")
-        for suite_id, success in results.items():
-            if not success:
+        for suite_id, (passed, skipped) in results.items():
+            if not passed and not skipped:
                 print(f"  - {test_suites[suite_id]['name']}")
 
     print("\n" + "="*70)
 
-    if all(results.values()):
-        print(f"{Colors.OKGREEN}{Colors.BOLD}[SUCCESS] ALL TESTS PASSED!{Colors.ENDC}")
+    if failed_suites == 0:
+        if skipped_suites > 0:
+            print(f"{Colors.OKGREEN}{Colors.BOLD}[SUCCESS] ALL REQUIRED TESTS PASSED!{Colors.ENDC}")
+            print(f"{Colors.WARNING}(Some optional tests were skipped){Colors.ENDC}")
+        else:
+            print(f"{Colors.OKGREEN}{Colors.BOLD}[SUCCESS] ALL TESTS PASSED!{Colors.ENDC}")
         print("="*70 + "\n")
         return 0
     else:

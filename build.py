@@ -63,10 +63,13 @@ import platform
 PROJECT_ROOT = r"{PROJECT_ROOT}"
 
 # Platform-specific compiler flags
-is_windows = platform.system() == 'Windows'
+system = platform.system()
+is_windows = system == 'Windows'
+is_macos = system == 'Darwin'
+is_linux = system == 'Linux'
 
 if is_windows:
-    # MSVC flags
+    # MSVC flags (Windows)
     compile_args = [
         '/O2',           # Maximum optimization
         '/GL',           # Whole program optimization
@@ -76,11 +79,22 @@ if is_windows:
         '/EHsc',         # Exception handling
     ]
     link_args = ['/LTCG']  # Link-time code generation
-else:
-    # GCC/Clang flags (Linux/macOS)
+elif is_macos:
+    # Clang flags (macOS) - OpenMP not supported by Apple Clang
     compile_args = [
         '-O3',           # Maximum optimization
-        '-march=native', # Native architecture optimization (includes AVX2)
+        '-march=haswell',# Haswell architecture (AVX2 support, safer than native)
+        '-mavx2',        # Explicit AVX2
+        '-std=c++17',    # C++17 standard
+        '-flto',         # Link-time optimization
+    ]
+    link_args = []
+    print("Note: OpenMP disabled on macOS (Apple Clang does not support -fopenmp)")
+else:
+    # GCC flags (Linux)
+    compile_args = [
+        '-O3',           # Maximum optimization
+        '-march=haswell',# Haswell architecture (AVX2 support, safer than native for CI)
         '-mavx2',        # Explicit AVX2
         '-fopenmp',      # Enable OpenMP (OPT-001)
         '-std=c++17',    # C++17 standard

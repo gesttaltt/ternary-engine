@@ -32,6 +32,10 @@ jobs:
     - name: Build module
       run: python build.py
 
+    - name: Report System Capabilities
+      run: python tests/test_capabilities.py
+      continue-on-error: true
+
     - name: Run tests
       run: python run_tests.py --no-color
 
@@ -73,6 +77,10 @@ jobs:
     - name: Build module
       run: python build.py
 
+    - name: Report System Capabilities
+      run: python tests/test_capabilities.py
+      continue-on-error: true
+
     - name: Run tests
       run: python run_tests.py --no-color
 
@@ -113,6 +121,10 @@ jobs:
 
     - name: Build module
       run: python build.py
+
+    - name: Report System Capabilities
+      run: python tests/test_capabilities.py
+      continue-on-error: true
 
     - name: Run tests
       run: python run_tests.py --no-color
