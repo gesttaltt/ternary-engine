@@ -148,11 +148,12 @@ def copy_to_latest():
     # Copy entire timestamp directory
     shutil.copytree(BUILD_TIMESTAMP_DIR, BUILD_LATEST_DIR)
 
-    # Also copy .pyd to project root for convenience
-    for pyd_file in BUILD_OUTPUT_DIR.glob("*.pyd"):
-        dest = PROJECT_ROOT / pyd_file.name
-        shutil.copy2(pyd_file, dest)
-        print(f"  [OK] {pyd_file.name} -> {dest}")
+    # Copy module files to project root for convenience (both .pyd and .so)
+    module_files = list(BUILD_OUTPUT_DIR.glob("*.pyd")) + list(BUILD_OUTPUT_DIR.glob("*.so"))
+    for module_file in module_files:
+        dest = PROJECT_ROOT / module_file.name
+        shutil.copy2(module_file, dest)
+        print(f"  [OK] {module_file.name} -> {dest}")
 
 def print_summary():
     """Print build summary"""
@@ -163,13 +164,13 @@ def print_summary():
     print(f"  Timestamped: {BUILD_TIMESTAMP_DIR}")
     print(f"  Latest:      {BUILD_LATEST_DIR}")
 
-    # Show file sizes
-    pyd_files = list(BUILD_OUTPUT_DIR.glob("*.pyd"))
-    if pyd_files:
+    # Show file sizes for both .pyd (Windows) and .so (Linux/macOS)
+    module_files = list(BUILD_OUTPUT_DIR.glob("*.pyd")) + list(BUILD_OUTPUT_DIR.glob("*.so"))
+    if module_files:
         print(f"\nGenerated modules:")
-        for pyd_file in pyd_files:
-            size_kb = pyd_file.stat().st_size / 1024
-            print(f"  - {pyd_file.name} ({size_kb:.1f} KB)")
+        for module_file in module_files:
+            size_kb = module_file.stat().st_size / 1024
+            print(f"  - {module_file.name} ({size_kb:.1f} KB)")
 
 def main():
     print_header()

@@ -13,6 +13,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyd
 *.egg
 *.egg-info/
 dist/
@@ -44,4 +45,3 @@ Thumbs.db
 !LICENSE
 !NOTICE
 !CONTRIBUTING.md
-!*.pyd
