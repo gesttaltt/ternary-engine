@@ -81,15 +81,32 @@ if is_windows:
     link_args = ['/LTCG']  # Link-time code generation
 elif is_macos:
     # Clang flags (macOS) - OpenMP not supported by Apple Clang
-    compile_args = [
-        '-O3',           # Maximum optimization
-        '-march=haswell',# Haswell architecture (AVX2 support, safer than native)
-        '-mavx2',        # Explicit AVX2
-        '-std=c++17',    # C++17 standard
-        '-flto',         # Link-time optimization
-    ]
+    # Note: macOS can be ARM64 (Apple Silicon) or x86_64 (Intel)
+    import platform as plat
+    machine = plat.machine()
+
+    if machine == 'arm64':
+        # Apple Silicon (M1/M2/M3)
+        compile_args = [
+            '-O3',           # Maximum optimization
+            '-mcpu=apple-m1',# Apple Silicon optimization
+            '-std=c++17',    # C++17 standard
+            '-flto',         # Link-time optimization
+        ]
+        print("Note: Building for Apple Silicon (ARM64)")
+        print("Note: OpenMP and AVX2 not available on ARM (tests will be skipped)")
+    else:
+        # Intel macOS
+        compile_args = [
+            '-O3',           # Maximum optimization
+            '-march=haswell',# Haswell architecture (AVX2 support)
+            '-mavx2',        # Explicit AVX2
+            '-std=c++17',    # C++17 standard
+            '-flto',         # Link-time optimization
+        ]
+        print("Note: Building for Intel macOS (x86_64)")
+        print("Note: OpenMP disabled (Apple Clang does not support -fopenmp)")
     link_args = []
-    print("Note: OpenMP disabled on macOS (Apple Clang does not support -fopenmp)")
 else:
     # GCC flags (Linux)
     compile_args = [
