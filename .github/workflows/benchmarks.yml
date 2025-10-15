@@ -1,0 +1,151 @@
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      compare_baseline:
+        description: 'Compare against baseline'
+        required: false
+        default: 'true'
+
+jobs:
+  benchmark:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for comparison
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pybind11 numpy
+
+    - name: Build module
+      run: python build.py
+
+    - name: Run quick benchmark
+      run: |
+        python benchmarks/bench_phase0.py --quick --output=benchmarks/results/current
+      continue-on-error: true
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results
+        path: benchmarks/results/
+
+    - name: Download baseline (if exists)
+      if: github.event_name == 'pull_request'
+      continue-on-error: true
+      run: |
+        # Try to download baseline from main branch artifacts
+        echo "Checking for baseline benchmarks..."
+        # This would require storing baselines in repo or artifact storage
+
+    - name: Compare with baseline
+      if: github.event_name == 'pull_request'
+      continue-on-error: true
+      run: |
+        # If baseline exists, run comparison
+        if [ -f "benchmarks/results/baseline/bench_results_*.json" ]; then
+          python benchmarks/bench_compare.py \
+            benchmarks/results/baseline/bench_results_*.json \
+            benchmarks/results/current/bench_results_*.json \
+            --threshold=5.0
+        else
+          echo "No baseline found for comparison"
+        fi
+
+    - name: Performance summary
+      if: always()
+      run: |
+        echo "## Benchmark Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f "benchmarks/results/current/bench_results_"*.json ]; then
+          echo "Benchmark completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "Results uploaded as artifact" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Benchmark may have failed" >> $GITHUB_STEP_SUMMARY
+        fi
+
+  benchmark-windows:
+    name: Benchmark on Windows
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pybind11 numpy
+
+    - name: Build module
+      run: python build.py
+
+    - name: Run quick benchmark
+      run: |
+        python benchmarks/bench_phase0.py --quick --output=benchmarks/results/windows
+
+    - name: Upload Windows benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-windows
+        path: benchmarks/results/
+
+  pgo-benchmark:
+    name: PGO Build Benchmark
+    runs-on: windows-latest
+    timeout-minutes: 45
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pybind11 numpy
+
+    - name: Build with PGO
+      run: python build_pgo.py full
+      continue-on-error: true  # PGO may fail on CI runners
+
+    - name: Run PGO benchmark
+      if: success()
+      run: |
+        python benchmarks/bench_phase0.py --quick --output=benchmarks/results/pgo
+
+    - name: Upload PGO results
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-pgo
+        path: benchmarks/results/

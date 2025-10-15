@@ -155,20 +155,23 @@ See [docs/api-reference/](docs/api-reference/) for detailed architecture documen
 ## Testing
 
 ```bash
-# Correctness
-python tests/test_phase0.py
+# Run all tests (unified test runner)
+python run_tests.py
 
-# Performance
+# Run individual test suites
+python tests/test_phase0.py     # Correctness
+python tests/test_omp.py         # OpenMP scaling
+python tests/test_errors.py      # Error handling
+
+# Performance benchmarks
 python benchmarks/bench_phase0.py
-
-# OpenMP scaling
-python tests/test_omp.py
 ```
 
-See [tests/README.md](tests/README.md) for full testing documentation.
+See **[TESTING.md](TESTING.md)** for comprehensive testing and CI/CD documentation.
 
 ## Documentation
 
+- **[TESTING.md](TESTING.md)** - Testing and CI/CD guide ⭐ New!
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guidelines
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history
 - **[docs/](docs/)** - Complete API reference and architecture docs
