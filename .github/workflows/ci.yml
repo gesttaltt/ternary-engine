@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pybind11 numpy
+        pip install setuptools pybind11 numpy
 
     - name: Build module
       run: python build.py
@@ -63,7 +63,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pybind11 numpy
+        pip install setuptools pybind11 numpy
 
     - name: Check AVX2 support
       run: |
@@ -104,7 +104,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pybind11 numpy
+        pip install setuptools pybind11 numpy
 
     - name: Check AVX2 support
       run: |
@@ -147,7 +147,7 @@ jobs:
         test -f "run_tests.py" || (echo "Missing run_tests.py" && exit 1)
         test -d "tests" || (echo "Missing tests directory" && exit 1)
         test -d "benchmarks" || (echo "Missing benchmarks directory" && exit 1)
-        echo "✓ Project structure OK"
+        echo "[OK] Project structure OK"
 
     - name: Check for critical files
       run: |
@@ -155,7 +155,7 @@ jobs:
         test -f "ternary_simd_engine.cpp" || (echo "Missing ternary_simd_engine.cpp" && exit 1)
         test -f "ternary_algebra.h" || (echo "Missing ternary_algebra.h" && exit 1)
         test -f "ternary_lut_gen.h" || (echo "Missing ternary_lut_gen.h" && exit 1)
-        echo "✓ Critical files present"
+        echo "[OK] Critical files present"
 
     - name: Line count statistics
       run: |
