@@ -67,14 +67,14 @@ def test_operation(name, op_func, test_cases):
             input_str = f"{name}({trit_name(a)}, {trit_name(b)})"
 
         passed = (result == expected)
-        status = "✓" if passed else "✗"
+        status = "[PASS]" if passed else "[FAIL]"
 
         if not passed:
             print(f"  {status} {input_str} = {trit_name(result)}, expected {trit_name(expected)}")
             all_passed = False
 
     if all_passed:
-        print(f"  ✓ All {len(test_cases)} test cases passed")
+        print(f"  [OK] All {len(test_cases)} test cases passed")
 
     return all_passed
 
@@ -182,14 +182,14 @@ def main():
     print("  Test Summary")
     print("=" * 50)
     print(f"  Operations tested: {total_ops}")
-    print(f"  Passed: {passed_ops} ✓")
-    print(f"  Failed: {total_ops - passed_ops}" + (" ✗" if passed_ops < total_ops else ""))
+    print(f"  Passed: {passed_ops} [OK]")
+    print(f"  Failed: {total_ops - passed_ops}" + (" [FAIL]" if passed_ops < total_ops else ""))
 
     if all(results):
-        print("\n  🎉 ALL TESTS PASSED! 🎉")
+        print("\n  [SUCCESS] ALL TESTS PASSED!")
         print("  Phase 0 LUT optimizations are correct.")
     else:
-        print("\n  ❌ TESTS FAILED")
+        print("\n  [FAIL] TESTS FAILED")
         print("  Please review the LUT implementations.")
 
     # Print truth tables

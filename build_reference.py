@@ -116,7 +116,7 @@ setup(
     setup_temp_path.unlink()
 
     if result.returncode != 0:
-        print("\n❌ Build failed")
+        print("\n[FAIL] Build failed")
         sys.exit(1)
 
     return True
@@ -136,12 +136,12 @@ def copy_to_latest():
     for pyd_file in BUILD_OUTPUT_DIR.glob("*.pyd"):
         dest = PROJECT_ROOT / pyd_file.name
         shutil.copy2(pyd_file, dest)
-        print(f"  ✓ {pyd_file.name} → {dest}")
+        print(f"  [OK] {pyd_file.name} -> {dest}")
 
 def print_summary():
     """Print build summary"""
     print("\n" + "="*70)
-    print("  ✅ BUILD COMPLETE")
+    print("  [SUCCESS] BUILD COMPLETE")
     print("="*70)
     print(f"\nBuild artifacts:")
     print(f"  Timestamped: {BUILD_TIMESTAMP_DIR}")

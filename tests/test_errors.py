@@ -38,18 +38,18 @@ def test_array_size_mismatch():
 
     try:
         result = tc.tadd(a, b)
-        print("✗ Expected exception for size mismatch, but none was raised")
+        print("[FAIL] Expected exception for size mismatch, but none was raised")
         return False
     except (RuntimeError, ValueError) as e:
         if "size" in str(e).lower() or "match" in str(e).lower():
-            print(f"✓ Correctly raised exception: {type(e).__name__}")
+            print(f"[OK] Correctly raised exception: {type(e).__name__}")
             print(f"  Message: {e}")
             return True
         else:
-            print(f"✗ Unexpected exception message: {e}")
+            print(f"[FAIL] Unexpected exception message: {e}")
             return False
     except Exception as e:
-        print(f"✗ Unexpected exception type: {type(e).__name__}: {e}")
+        print(f"[FAIL] Unexpected exception type: {type(e).__name__}: {e}")
         return False
 
 def test_empty_arrays():
@@ -62,13 +62,13 @@ def test_empty_arrays():
     try:
         result = tc.tadd(a, b)
         if len(result) == 0:
-            print("✓ Empty array handling correct")
+            print("[OK] Empty array handling correct")
             return True
         else:
-            print(f"✗ Expected empty result, got {len(result)} elements")
+            print(f"[FAIL] Expected empty result, got {len(result)} elements")
             return False
     except Exception as e:
-        print(f"✗ Unexpected exception on empty arrays: {e}")
+        print(f"[FAIL] Unexpected exception on empty arrays: {e}")
         return False
 
 def test_single_element():
@@ -81,13 +81,13 @@ def test_single_element():
     try:
         result = tc.tadd(a, b)
         if len(result) == 1 and result[0] == ZERO:
-            print("✓ Single element handling correct")
+            print("[OK] Single element handling correct")
             return True
         else:
-            print(f"✗ Expected [ZERO], got {result}")
+            print(f"[FAIL] Expected [ZERO], got {result}")
             return False
     except Exception as e:
-        print(f"✗ Unexpected exception: {e}")
+        print(f"[FAIL] Unexpected exception: {e}")
         return False
 
 def test_simd_boundary():
@@ -107,12 +107,12 @@ def test_simd_boundary():
             expected = np.full(size, PLUS_ONE, dtype=np.uint8)
 
             if np.array_equal(result, expected):
-                print(f"✓ Size {size}: correct")
+                print(f"[OK] Size {size}: correct")
             else:
-                print(f"✗ Size {size}: mismatch")
+                print(f"[FAIL] Size {size}: mismatch")
                 all_passed = False
         except Exception as e:
-            print(f"✗ Size {size}: exception {e}")
+            print(f"[FAIL] Size {size}: exception {e}")
             all_passed = False
 
     return all_passed
@@ -133,16 +133,16 @@ def test_large_arrays():
         result = tc.tadd(a, b)
 
         if len(result) == size:
-            print(f"✓ Large array ({size:,} elements) handled correctly")
+            print(f"[OK] Large array ({size:,} elements) handled correctly")
             return True
         else:
-            print(f"✗ Size mismatch: expected {size}, got {len(result)}")
+            print(f"[FAIL] Size mismatch: expected {size}, got {len(result)}")
             return False
     except MemoryError:
-        print("⚠ Skipped: Insufficient memory for 100M element test")
+        print("[WARN] Skipped: Insufficient memory for 100M element test")
         return True  # Not a failure, just limited resources
     except Exception as e:
-        print(f"✗ Unexpected exception: {e}")
+        print(f"[FAIL] Unexpected exception: {e}")
         return False
 
 def test_invalid_trit_values():
@@ -158,11 +158,11 @@ def test_invalid_trit_values():
         # With masking, 0b11 & 0x03 = 0b11, treated as index 3 in LUT
         print(f"  Input with INVALID: {a}")
         print(f"  Result: {result}")
-        print("✓ Invalid trit handling completed (check for sanitization)")
+        print("[OK] Invalid trit handling completed (check for sanitization)")
         return True
     except Exception as e:
         print(f"  Exception raised: {e}")
-        print("✓ Invalid trit handling (exception path)")
+        print("[OK] Invalid trit handling (exception path)")
         return True
 
 def test_wrong_dtype():
@@ -176,11 +176,11 @@ def test_wrong_dtype():
     try:
         result = tc.tadd(a, b)
         print(f"  Result with int32: {result}")
-        print("⚠ No exception raised for int32 (may auto-convert)")
+        print("[WARN] No exception raised for int32 (may auto-convert)")
         return True  # Some flexibility is okay
     except Exception as e:
         print(f"  Exception raised: {type(e).__name__}")
-        print("✓ Type checking enforced")
+        print("[OK] Type checking enforced")
         return True
 
 def test_unary_operation_errors():
@@ -195,12 +195,12 @@ def test_unary_operation_errors():
         a = np.array([], dtype=np.uint8)
         result = tc.tnot(a)
         if len(result) == 0:
-            print("✓ tnot: empty array handled")
+            print("[OK] tnot: empty array handled")
         else:
-            print("✗ tnot: empty array size mismatch")
+            print("[FAIL] tnot: empty array size mismatch")
             tests_passed = False
     except Exception as e:
-        print(f"✗ tnot: unexpected exception on empty array: {e}")
+        print(f"[FAIL] tnot: unexpected exception on empty array: {e}")
         tests_passed = False
 
     # Large array
@@ -209,12 +209,12 @@ def test_unary_operation_errors():
         result = tc.tnot(a)
         expected = np.full(10_000, MINUS_ONE, dtype=np.uint8)
         if np.array_equal(result, expected):
-            print("✓ tnot: large array correct")
+            print("[OK] tnot: large array correct")
         else:
-            print("✗ tnot: large array mismatch")
+            print("[FAIL] tnot: large array mismatch")
             tests_passed = False
     except Exception as e:
-        print(f"✗ tnot: exception on large array: {e}")
+        print(f"[FAIL] tnot: exception on large array: {e}")
         tests_passed = False
 
     return tests_passed
@@ -245,8 +245,8 @@ def main():
     failed_tests = total_tests - passed_tests
 
     print(f"Total tests: {total_tests}")
-    print(f"Passed: {passed_tests} ✓")
-    print(f"Failed: {failed_tests}" + (" ✗" if failed_tests > 0 else ""))
+    print(f"Passed: {passed_tests} [OK]")
+    print(f"Failed: {failed_tests}" + (" [FAIL]" if failed_tests > 0 else ""))
 
     if failed_tests > 0:
         print("\nFailed tests:")
@@ -255,11 +255,11 @@ def main():
                 print(f"  - {name}")
 
     if all(passed for _, passed in results):
-        print("\n  🎉 ALL ERROR HANDLING TESTS PASSED! 🎉")
+        print("\n  [SUCCESS] ALL ERROR HANDLING TESTS PASSED!")
         print("  Error handling is robust.")
         return 0
     else:
-        print("\n  ❌ SOME TESTS FAILED")
+        print("\n  [FAIL] SOME TESTS FAILED")
         print("  Review error handling implementation.")
         return 1
 

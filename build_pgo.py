@@ -65,7 +65,7 @@ def clean_pgo():
         print(f"Removing {so_file}")
         so_file.unlink()
 
-    print("\n✅ Clean complete")
+    print("\n[OK] Clean complete")
 
 def phase1_instrument():
     """Phase 1: Build with instrumentation"""
@@ -151,16 +151,16 @@ setup(
     setup_temp_path.unlink()
 
     if result.returncode != 0:
-        print("\n❌ Instrumentation build failed")
+        print("\n[FAIL] Instrumentation build failed")
         sys.exit(1)
 
     # Copy .pyd to project root for profiling
     for pyd_file in output_dir.glob("*.pyd"):
         dest = PROJECT_ROOT / pyd_file.name
         shutil.copy2(pyd_file, dest)
-        print(f"\n  ✓ Copied {pyd_file.name} to project root")
+        print(f"\n  [OK] Copied {pyd_file.name} to project root")
 
-    print("\n✅ Phase 1 complete: Instrumented build ready")
+    print("\n[OK] Phase 1 complete: Instrumented build ready")
     print(f"   Build artifacts: {instrumented_dir}")
     print(f"   Profile data will be written to: {PROFILE_DATA}")
 
@@ -172,7 +172,7 @@ def phase2_profile():
     # Check if instrumented build exists in project root
     pyd_file = list(PROJECT_ROOT.glob("ternary_simd_engine*.pyd"))
     if not pyd_file:
-        print("❌ No instrumented module found. Run 'python build_pgo.py instrument' first.")
+        print("[FAIL] No instrumented module found. Run 'python build_pgo.py instrument' first.")
         sys.exit(1)
 
     print(f"Found instrumented module: {pyd_file[0]}")
@@ -188,25 +188,25 @@ def phase2_profile():
     )
 
     if result.returncode != 0:
-        print("\n❌ Profiling workload failed")
+        print("\n[FAIL] Profiling workload failed")
         sys.exit(1)
 
     # Check if profile data was generated
     pgc_files = list(PGO_DATA_DIR.glob("**/*.pgc")) if PGO_DATA_DIR.exists() else []
     if not pgc_files:
-        print("\n⚠️  Warning: No .pgc files found in PGO data directory")
+        print("\n[WARN] No .pgc files found in PGO data directory")
         print("   Profile data may not have been collected properly")
     else:
-        print(f"\n✅ Found {len(pgc_files)} profile counter files:")
+        print(f"\n[OK] Found {len(pgc_files)} profile counter files:")
         for pgc in pgc_files:
             print(f"   - {pgc.name}")
 
     if PROFILE_DATA.exists():
         size_mb = PROFILE_DATA.stat().st_size / (1024 * 1024)
-        print(f"\n✅ Phase 2 complete: Profile data collected ({size_mb:.2f} MB)")
+        print(f"\n[OK] Phase 2 complete: Profile data collected ({size_mb:.2f} MB)")
         print(f"   Location: {PROFILE_DATA}")
     else:
-        print(f"\n⚠️  Warning: Expected profile database not found at {PROFILE_DATA}")
+        print(f"\n[WARN] Expected profile database not found at {PROFILE_DATA}")
         print("   Continuing to Phase 3 anyway (MSVC may have written it elsewhere)")
 
 def phase3_optimize():
@@ -217,7 +217,7 @@ def phase3_optimize():
     # Check for profile data
     pgc_files = list(PGO_DATA_DIR.glob("**/*.pgc")) if PGO_DATA_DIR.exists() else []
     if not pgc_files and not PROFILE_DATA.exists():
-        print("⚠️  Warning: No profile data found")
+        print("[WARN] No profile data found")
         print("   Run 'python build_pgo.py profile' first for best results")
         print("   Continuing with optimization anyway...\n")
 
@@ -298,7 +298,7 @@ setup(
     setup_temp_path.unlink()
 
     if result.returncode != 0:
-        print("\n❌ Optimized build failed")
+        print("\n[FAIL] Optimized build failed")
         sys.exit(1)
 
     # Copy to latest directory
@@ -310,11 +310,11 @@ setup(
     for pyd_file in output_dir.glob("*.pyd"):
         dest = PROJECT_ROOT / pyd_file.name
         shutil.copy2(pyd_file, dest)
-        print(f"\n  ✓ Copied {pyd_file.name} to project root")
+        print(f"\n  [OK] Copied {pyd_file.name} to project root")
         size_kb = pyd_file.stat().st_size / 1024
         print(f"    Size: {size_kb:.1f} KB")
 
-    print("\n✅ Phase 3 complete: Profile-guided optimized build ready")
+    print("\n[OK] Phase 3 complete: Profile-guided optimized build ready")
     print(f"   Build artifacts: {optimized_dir}")
     print(f"   Latest: {PGO_LATEST_DIR}")
     print("\n" + "="*70)
@@ -338,15 +338,15 @@ def run_full_pgo():
     phase3_optimize()
 
     print("\n" + "="*70)
-    print("  ✅ FULL PGO PROCESS COMPLETE")
+    print("  [SUCCESS] FULL PGO PROCESS COMPLETE")
     print("="*70)
 
 def print_usage():
     """Print usage information"""
     print(__doc__)
     print("\nCurrent PGO Status:")
-    print(f"  PGO Base Dir:     {PGO_BASE_DIR}/ {'✅ exists' if PGO_BASE_DIR.exists() else '❌ not found'}")
-    print(f"  Profile Database: {PROFILE_DATA} {'✅ exists' if PROFILE_DATA.exists() else '❌ not found'}")
+    print(f"  PGO Base Dir:     {PGO_BASE_DIR}/ {'[EXISTS]' if PGO_BASE_DIR.exists() else '[NOT FOUND]'}")
+    print(f"  Profile Database: {PROFILE_DATA} {'[EXISTS]' if PROFILE_DATA.exists() else '[NOT FOUND]'}")
 
     # Check for instrumented builds
     instrumented_dir = PGO_BASE_DIR / "instrumented"
@@ -370,7 +370,7 @@ def print_usage():
     # Check for compiled module
     pyd_files = list(PROJECT_ROOT.glob("ternary_simd_engine*.pyd"))
     if pyd_files:
-        print(f"  Compiled Module:  {pyd_files[0].name} ✅")
+        print(f"  Compiled Module:  {pyd_files[0].name} [OK]")
 
 def main():
     if len(sys.argv) < 2:
@@ -389,7 +389,7 @@ def main():
     }
 
     if command not in commands:
-        print(f"❌ Unknown command: {command}")
+        print(f"[ERROR] Unknown command: {command}")
         print_usage()
         sys.exit(1)
 

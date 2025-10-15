@@ -43,15 +43,15 @@ def print_header(message):
 
 def print_success(message):
     """Print success message"""
-    print(f"{Colors.OKGREEN}✓ {message}{Colors.ENDC}")
+    print(f"{Colors.OKGREEN}[OK] {message}{Colors.ENDC}")
 
 def print_error(message):
     """Print error message"""
-    print(f"{Colors.FAIL}✗ {message}{Colors.ENDC}")
+    print(f"{Colors.FAIL}[FAIL] {message}{Colors.ENDC}")
 
 def print_warning(message):
     """Print warning message"""
-    print(f"{Colors.WARNING}⚠ {message}{Colors.ENDC}")
+    print(f"{Colors.WARNING}[WARN] {message}{Colors.ENDC}")
 
 def run_test_suite(script_path, name, verbose=False):
     """Run a single test suite"""
@@ -192,11 +192,11 @@ def main():
     print("\n" + "="*70)
 
     if all(results.values()):
-        print(f"{Colors.OKGREEN}{Colors.BOLD}✓ ALL TESTS PASSED!{Colors.ENDC}")
+        print(f"{Colors.OKGREEN}{Colors.BOLD}[SUCCESS] ALL TESTS PASSED!{Colors.ENDC}")
         print("="*70 + "\n")
         return 0
     else:
-        print(f"{Colors.FAIL}{Colors.BOLD}✗ SOME TESTS FAILED{Colors.ENDC}")
+        print(f"{Colors.FAIL}{Colors.BOLD}[FAIL] SOME TESTS FAILED{Colors.ENDC}")
         print("="*70 + "\n")
         return 1
 

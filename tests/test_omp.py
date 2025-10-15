@@ -11,9 +11,9 @@ import time
 
 try:
     import ternary_simd_engine as tc
-    print("✓ Module loaded successfully")
+    print("[OK] Module loaded successfully")
 except ImportError as e:
-    print(f"✗ Failed to import module: {e}")
+    print(f"[FAIL] Failed to import module: {e}")
     print("  Run 'python build.py' to build the module first")
     exit(1)
 
@@ -30,7 +30,7 @@ elapsed = time.perf_counter() - start
 print(f"Size: {n:,} elements")
 print(f"Time: {elapsed*1000:.3f} ms")
 print(f"Throughput: {n/elapsed/1e6:.1f} M trits/sec")
-print("✓ Small array test passed")
+print("[OK] Small array test passed")
 
 # Test 2: Large array (should use OpenMP parallel path)
 print("\n=== Test 2: Large array (1M elements, OpenMP threshold) ===")
@@ -45,7 +45,7 @@ elapsed = time.perf_counter() - start
 print(f"Size: {n:,} elements")
 print(f"Time: {elapsed*1000:.3f} ms")
 print(f"Throughput: {n/elapsed/1e6:.1f} M trits/sec")
-print("✓ Large array test passed")
+print("[OK] Large array test passed")
 
 # Test 3: Very large array (should benefit most from threading)
 print("\n=== Test 3: Very large array (10M elements) ===")
@@ -60,7 +60,7 @@ elapsed = time.perf_counter() - start
 print(f"Size: {n:,} elements")
 print(f"Time: {elapsed*1000:.3f} ms")
 print(f"Throughput: {n/elapsed/1e6:.1f} M trits/sec")
-print("✓ Very large array test passed")
+print("[OK] Very large array test passed")
 
 # Test 4: Correctness check
 print("\n=== Test 4: Correctness verification ===")
@@ -72,13 +72,13 @@ result = tc.tadd(a, b)
 expected = np.array([0b00, 0b01, 0b10], dtype=np.uint8)
 
 if np.array_equal(result, expected):
-    print("✓ Correctness test passed")
+    print("[OK] Correctness test passed")
 else:
-    print(f"✗ Correctness test failed!")
+    print(f"[FAIL] Correctness test failed!")
     print(f"  Expected: {expected}")
     print(f"  Got:      {result}")
     exit(1)
 
 print("\n" + "="*50)
-print("✓ All OPT-001 tests passed!")
+print("[OK] All OPT-001 tests passed!")
 print("="*50)
