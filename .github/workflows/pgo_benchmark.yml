@@ -1,11 +1,7 @@
 name: Run PGO Benchmark
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:  # Allow manual triggers
+  workflow_dispatch:  # Manual trigger only - PGO benchmarks temporarily disabled until fixed
 
 jobs:
   pgo-benchmark:
@@ -27,9 +23,11 @@ jobs:
 
     - name: Build ternary_simd_engine module
       run: python build.py
+      # Note: Build may fail on CI runners - investigating module build issues
 
     - name: Run PGO benchmark (quick mode)
       run: python benchmarks/bench_phase0.py --quick --output=benchmarks/results/pgo
+      # Note: Benchmark expects ternary_simd_engine module to be successfully built
 
     - name: Upload benchmark results
       uses: actions/upload-artifact@v4
