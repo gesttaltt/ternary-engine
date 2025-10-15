@@ -11,12 +11,34 @@ on:
         description: 'Compare against baseline'
         required: false
         default: 'true'
+      benchmark_mode:
+        description: 'Benchmark mode (quick/full)'
+        required: false
+        default: 'quick'
+        type: choice
+        options:
+          - quick
+          - full
+
+env:
+  # Benchmark configuration
+  PYTHON_VERSION: '3.11'
+  BENCHMARK_MODE: ${{ github.event.inputs.benchmark_mode || 'quick' }}
+  BENCHMARK_TIMEOUT_MINUTES: '30'
+  BENCHMARK_RETENTION_DAYS: '30'
+
+  # Dependency versions
+  PYBIND11_VERSION: 'latest'
+  NUMPY_VERSION: 'latest'
+
+  # Build configuration
+  MSVC_ARCH: 'x64'
 
 jobs:
   benchmark:
     name: Run Benchmarks
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: ${{ fromJSON(vars.BENCHMARK_TIMEOUT_MINUTES || '30') }}
 
     steps:
     - name: Checkout code
@@ -42,16 +64,19 @@ jobs:
     - name: Build module
       run: python build.py
 
-    - name: Run quick benchmark
+    - name: Run benchmark
       run: |
-        python benchmarks/bench_phase0.py --quick --output=benchmarks/results/current
+        python benchmarks/bench_phase0.py ${{ env.BENCHMARK_MODE == 'quick' && '--quick' || '' }} --output=benchmarks/results/current
       continue-on-error: true
+      env:
+        BENCHMARK_ITERATIONS: ${{ secrets.BENCHMARK_ITERATIONS || '1000' }}
 
     - name: Upload benchmark results
       uses: actions/upload-artifact@v4
       with:
         name: benchmark-results
         path: benchmarks/results/
+        retention-days: ${{ fromJSON(vars.BENCHMARK_RETENTION_DAYS || env.BENCHMARK_RETENTION_DAYS) }}
 
     - name: Download baseline (if exists)
       if: github.event_name == 'pull_request'

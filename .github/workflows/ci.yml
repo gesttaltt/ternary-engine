@@ -7,10 +7,26 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:  # Allow manual triggering
 
+env:
+  # Build configuration
+  PYTHON_VERSION_DEFAULT: '3.11'
+  MSVC_ARCH: 'x64'
+  COMPILER_FLAGS_WINDOWS: '/O2 /GL /arch:AVX2 /openmp /std:c++17'
+  COMPILER_FLAGS_LINUX: '-O3 -march=haswell -mavx2 -fopenmp -std=c++17'
+
+  # Dependency versions (can be overridden via repository secrets)
+  PYBIND11_VERSION: 'latest'
+  NUMPY_VERSION: 'latest'
+
+  # Test configuration
+  TEST_TIMEOUT_MINUTES: '10'
+  ARTIFACT_RETENTION_DAYS: '7'
+
 jobs:
   test-windows:
     name: Test on Windows
     runs-on: windows-latest
+    timeout-minutes: ${{ fromJSON(vars.TEST_TIMEOUT_MINUTES || '10') }}
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
@@ -32,10 +48,15 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools pybind11 numpy
+        pip install setuptools pybind11${{ env.PYBIND11_VERSION != 'latest' && format('=={0}', env.PYBIND11_VERSION) || '' }} numpy${{ env.NUMPY_VERSION != 'latest' && format('=={0}', env.NUMPY_VERSION) || '' }}
+      env:
+        PYBIND11_VERSION: ${{ secrets.PYBIND11_VERSION || env.PYBIND11_VERSION }}
+        NUMPY_VERSION: ${{ secrets.NUMPY_VERSION || env.NUMPY_VERSION }}
 
     - name: Build module
       run: python build.py
+      env:
+        BUILD_VERBOSE: ${{ secrets.BUILD_VERBOSE || '0' }}
 
     - name: Report System Capabilities
       run: python tests/test_capabilities.py
@@ -43,6 +64,8 @@ jobs:
 
     - name: Run tests
       run: python run_tests.py --no-color
+      env:
+        TEST_VERBOSE: ${{ secrets.TEST_VERBOSE || '0' }}
 
     - name: Upload test results
       if: always()
@@ -52,6 +75,7 @@ jobs:
         path: |
           *.pyd
           build/artifacts/
+        retention-days: ${{ fromJSON(vars.ARTIFACT_RETENTION_DAYS || env.ARTIFACT_RETENTION_DAYS) }}
 
   # Linux and macOS testing temporarily disabled - focusing on Windows/x86 development
   # Will be re-enabled when cross-platform ports are ready
