@@ -58,8 +58,35 @@ def build_module():
 from setuptools import setup, Extension
 import pybind11
 import os
+import platform
 
 PROJECT_ROOT = r"{PROJECT_ROOT}"
+
+# Platform-specific compiler flags
+is_windows = platform.system() == 'Windows'
+
+if is_windows:
+    # MSVC flags
+    compile_args = [
+        '/O2',           # Maximum optimization
+        '/GL',           # Whole program optimization
+        '/arch:AVX2',    # Enable AVX2
+        '/openmp',       # Enable OpenMP (OPT-001)
+        '/std:c++17',    # C++17 standard
+        '/EHsc',         # Exception handling
+    ]
+    link_args = ['/LTCG']  # Link-time code generation
+else:
+    # GCC/Clang flags (Linux/macOS)
+    compile_args = [
+        '-O3',           # Maximum optimization
+        '-march=native', # Native architecture optimization (includes AVX2)
+        '-mavx2',        # Explicit AVX2
+        '-fopenmp',      # Enable OpenMP (OPT-001)
+        '-std=c++17',    # C++17 standard
+        '-flto',         # Link-time optimization
+    ]
+    link_args = ['-fopenmp']  # OpenMP linker flag
 
 ext_modules = [
     Extension(
@@ -71,17 +98,8 @@ ext_modules = [
             PROJECT_ROOT
         ],
         language='c++',
-        extra_compile_args=[
-            '/O2',           # MSVC: Maximum optimization
-            '/GL',           # MSVC: Whole program optimization
-            '/arch:AVX2',    # MSVC: Enable AVX2
-            '/openmp',       # MSVC: Enable OpenMP (OPT-001)
-            '/std:c++17',    # C++17 standard
-            '/EHsc',         # Exception handling
-        ],
-        extra_link_args=[
-            '/LTCG',         # Link-time code generation
-        ],
+        extra_compile_args=compile_args,
+        extra_link_args=link_args,
     ),
 ]
 

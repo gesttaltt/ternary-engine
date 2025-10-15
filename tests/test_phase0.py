@@ -88,9 +88,9 @@ def print_truth_table(name, op_func, is_unary=False):
             print(f"  {name}({trit_name(t)}) = {trit_name(result)}")
     else:
         print("     -1   0  +1")
-        print("    ───────────")
+        print("    -----------")
         for a in [MINUS_ONE, ZERO, PLUS_ONE]:
-            print(f"{trit_name(a)} │ ", end="")
+            print(f"{trit_name(a)} | ", end="")
             for b in [MINUS_ONE, ZERO, PLUS_ONE]:
                 result = op_func(
                     np.array([a], dtype=np.uint8),
