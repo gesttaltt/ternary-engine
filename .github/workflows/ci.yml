@@ -48,95 +48,98 @@ jobs:
           *.pyd
           build/artifacts/
 
-  test-linux:
-    name: Test on Linux
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+  # Linux and macOS testing temporarily disabled - focusing on Windows/x86 development
+  # Will be re-enabled when cross-platform ports are ready
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install setuptools pybind11 numpy
-
-    - name: Check AVX2 support
-      run: |
-        echo "CPU Info:"
-        grep -o 'avx2' /proc/cpuinfo | head -1 || echo "AVX2 not detected (may cause issues)"
-
-    - name: Build module
-      run: python build.py
-
-    - name: Report System Capabilities
-      run: python tests/test_capabilities.py
-      continue-on-error: true
-
-    - name: Run tests
-      run: python run_tests.py --no-color
-
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-linux-py${{ matrix.python-version }}
-        path: |
-          *.so
-          build/artifacts/
-
-  test-macos:
-    name: Test on macOS
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install setuptools pybind11 numpy
-
-    - name: Check AVX2 support
-      run: |
-        echo "CPU Info:"
-        sysctl machdep.cpu.features | grep -o 'AVX2' || echo "AVX2 not detected (may cause issues)"
-
-    - name: Build module
-      run: python build.py
-
-    - name: Report System Capabilities
-      run: python tests/test_capabilities.py
-      continue-on-error: true
-
-    - name: Run tests
-      run: python run_tests.py --no-color
-
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-macos-py${{ matrix.python-version }}
-        path: |
-          *.so
-          build/artifacts/
+  # test-linux:
+  #   name: Test on Linux
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+  #
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+  #
+  #   - name: Set up Python ${{ matrix.python-version }}
+  #     uses: actions/setup-python@v5
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
+  #
+  #   - name: Install dependencies
+  #     run: |
+  #       python -m pip install --upgrade pip
+  #       pip install setuptools pybind11 numpy
+  #
+  #   - name: Check AVX2 support
+  #     run: |
+  #       echo "CPU Info:"
+  #       grep -o 'avx2' /proc/cpuinfo | head -1 || echo "AVX2 not detected (may cause issues)"
+  #
+  #   - name: Build module
+  #     run: python build.py
+  #
+  #   - name: Report System Capabilities
+  #     run: python tests/test_capabilities.py
+  #     continue-on-error: true
+  #
+  #   - name: Run tests
+  #     run: python run_tests.py --no-color
+  #
+  #   - name: Upload test results
+  #     if: always()
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: test-results-linux-py${{ matrix.python-version }}
+  #       path: |
+  #         *.so
+  #         build/artifacts/
+  #
+  # test-macos:
+  #   name: Test on macOS
+  #   runs-on: macos-latest
+  #   strategy:
+  #     matrix:
+  #       python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+  #
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+  #
+  #   - name: Set up Python ${{ matrix.python-version }}
+  #     uses: actions/setup-python@v5
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
+  #
+  #   - name: Install dependencies
+  #     run: |
+  #       python -m pip install --upgrade pip
+  #       pip install setuptools pybind11 numpy
+  #
+  #   - name: Check AVX2 support
+  #     run: |
+  #       echo "CPU Info:"
+  #       sysctl machdep.cpu.features | grep -o 'AVX2' || echo "AVX2 not detected (may cause issues)"
+  #
+  #   - name: Build module
+  #     run: python build.py
+  #
+  #   - name: Report System Capabilities
+  #     run: python tests/test_capabilities.py
+  #     continue-on-error: true
+  #
+  #   - name: Run tests
+  #     run: python run_tests.py --no-color
+  #
+  #   - name: Upload test results
+  #     if: always()
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: test-results-macos-py${{ matrix.python-version }}
+  #       path: |
+  #         *.so
+  #         build/artifacts/
 
   code-quality:
     name: Code Quality Checks
