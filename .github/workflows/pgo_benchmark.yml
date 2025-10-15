@@ -16,6 +16,11 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: Set up MSVC compiler
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -23,7 +28,20 @@ jobs:
 
     - name: Build ternary_simd_engine module
       run: python build.py
-      # Note: Build may fail on CI runners - investigating module build issues
+      # Note: Requires MSVC 2017+ with C++17 support and AVX2 flags
+
+    - name: Verify module was built
+      run: |
+        if (Test-Path "ternary_simd_engine*.pyd") {
+          Write-Host "[OK] Module built successfully"
+          Get-ChildItem ternary_simd_engine*.pyd | ForEach-Object { Write-Host "  Found: $($_.Name) ($([math]::Round($_.Length/1KB, 2)) KB)" }
+        } else {
+          Write-Host "[ERROR] Module file not found!"
+          Write-Host "Checking build artifacts directory..."
+          Get-ChildItem -Path build -Recurse -Filter "*.pyd" -ErrorAction SilentlyContinue
+          exit 1
+        }
+      shell: pwsh
 
     - name: Run PGO benchmark (quick mode)
       run: python benchmarks/bench_phase0.py --quick --output=benchmarks/results/pgo
