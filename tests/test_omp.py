@@ -10,10 +10,11 @@ import numpy as np
 import time
 
 try:
-    import ternary_core_simd_full as tc
+    import ternary_simd_engine as tc
     print("✓ Module loaded successfully")
 except ImportError as e:
     print(f"✗ Failed to import module: {e}")
+    print("  Run 'python build.py' to build the module first")
     exit(1)
 
 # Test 1: Small array (should use single-threaded path)

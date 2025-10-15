@@ -74,7 +74,7 @@ All builds create timestamped artifacts in `build/artifacts/`:
 
 Built extensions (`.pyd` on Windows, `.so` on Linux/macOS):
 
-- `ternary_core_simd_full.*.pyd` - Main optimized library
+- `ternary_simd_engine.*.pyd` - Main optimized library
 - `reference_cpp.*.pyd` - Reference implementation for benchmarks
 
 ## Build Flags

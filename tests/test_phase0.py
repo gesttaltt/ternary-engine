@@ -29,10 +29,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 
 try:
-    import ternary_core_simd_full as tc
+    import ternary_simd_engine as tc
 except ImportError:
     print("ERROR: Module not compiled. Please compile first:")
-    print("  See BUILD.md for compilation instructions")
+    print("  python build.py")
     exit(1)
 
 # Encoding: 0b00=-1, 0b01=0, 0b10=+1
