@@ -274,9 +274,10 @@ py::array_t<uint8_t> process_binary_array(
         ssize_t n_simd_blocks = (n / 32) * 32;
         bool use_streaming = (n >= STREAM_THRESHOLD);
 
-        // OPT-NUMA: guided scheduling + spread binding for multi-CCD CPUs (Ryzen/EPYC)
-        // Guided schedule adapts chunk sizes dynamically; spread binding improves NUMA locality
-        #pragma omp parallel for schedule(guided, 4) proc_bind(spread)
+        // OPT-NUMA: guided scheduling for multi-CCD CPUs (Ryzen/EPYC)
+        // Guided schedule adapts chunk sizes dynamically
+        // Note: proc_bind(spread) removed for MSVC compatibility (OpenMP 4.0 feature)
+        #pragma omp parallel for schedule(guided, 4)
         for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             // OPT-PREFETCH: Prefetch next cache lines to hide memory latency
             if (idx + PREFETCH_DIST < n_simd_blocks) {
@@ -343,9 +344,10 @@ py::array_t<uint8_t> process_unary_array(
         ssize_t n_simd_blocks = (n / 32) * 32;
         bool use_streaming = (n >= STREAM_THRESHOLD);
 
-        // OPT-NUMA: guided scheduling + spread binding for multi-CCD CPUs (Ryzen/EPYC)
-        // Guided schedule adapts chunk sizes dynamically; spread binding improves NUMA locality
-        #pragma omp parallel for schedule(guided, 4) proc_bind(spread)
+        // OPT-NUMA: guided scheduling for multi-CCD CPUs (Ryzen/EPYC)
+        // Guided schedule adapts chunk sizes dynamically
+        // Note: proc_bind(spread) removed for MSVC compatibility (OpenMP 4.0 feature)
+        #pragma omp parallel for schedule(guided, 4)
         for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             // OPT-PREFETCH: Prefetch next cache lines to hide memory latency
             if (idx + PREFETCH_DIST < n_simd_blocks) {

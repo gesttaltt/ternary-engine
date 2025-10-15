@@ -157,8 +157,8 @@ def generate_test_data(size: int, seed: int = 42) -> Tuple[np.ndarray, np.ndarra
     """Generate reproducible test data"""
     np.random.seed(seed)
     # Generate random trits (0b00, 0b01, 0b10)
-    a = np.random.choice([MINUS_ONE, ZERO, PLUS_ONE], size=size, dtype=np.uint8)
-    b = np.random.choice([MINUS_ONE, ZERO, PLUS_ONE], size=size, dtype=np.uint8)
+    a = np.random.choice([MINUS_ONE, ZERO, PLUS_ONE], size=size).astype(np.uint8)
+    b = np.random.choice([MINUS_ONE, ZERO, PLUS_ONE], size=size).astype(np.uint8)
     return a, b
 
 
