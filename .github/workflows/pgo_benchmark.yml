@@ -75,7 +75,7 @@ jobs:
       shell: pwsh
 
     - name: Run PGO benchmark
-      run: python benchmarks/bench_phase0.py ${{ env.BENCHMARK_MODE == 'quick' && '--quick' || '' }} --output=benchmarks/results/pgo
+      run: python benchmarks/bench_phase0.py ${{ env.BENCHMARK_MODE == 'quick' && '--quick' || '' }} --output=benchmarks/results/pgo --no-unicode
       env:
         BENCHMARK_ITERATIONS: ${{ secrets.BENCHMARK_ITERATIONS || '1000' }}
       # Note: Benchmark expects ternary_simd_engine module to be successfully built

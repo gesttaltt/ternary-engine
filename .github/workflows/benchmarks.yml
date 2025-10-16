@@ -66,7 +66,7 @@ jobs:
 
     - name: Run benchmark
       run: |
-        python benchmarks/bench_phase0.py ${{ env.BENCHMARK_MODE == 'quick' && '--quick' || '' }} --output=benchmarks/results/current
+        python benchmarks/bench_phase0.py ${{ env.BENCHMARK_MODE == 'quick' && '--quick' || '' }} --output=benchmarks/results/current --no-unicode
       continue-on-error: true
       env:
         BENCHMARK_ITERATIONS: ${{ secrets.BENCHMARK_ITERATIONS || '1000' }}
@@ -141,7 +141,7 @@ jobs:
 
     - name: Run quick benchmark
       run: |
-        python benchmarks/bench_phase0.py --quick --output=benchmarks/results/windows
+        python benchmarks/bench_phase0.py --quick --output=benchmarks/results/windows --no-unicode
 
     - name: Upload Windows benchmark results
       uses: actions/upload-artifact@v4
@@ -181,7 +181,7 @@ jobs:
     - name: Run PGO benchmark
       if: success()
       run: |
-        python benchmarks/bench_phase0.py --quick --output=benchmarks/results/pgo
+        python benchmarks/bench_phase0.py --quick --output=benchmarks/results/pgo --no-unicode
 
     - name: Upload PGO results
       if: success()

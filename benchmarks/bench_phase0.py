@@ -20,6 +20,8 @@ import sys
 import time
 import json
 import argparse
+import platform
+import os
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Tuple
@@ -49,6 +51,70 @@ MEASURED_ITERATIONS = 1000
 MINUS_ONE = 0b00
 ZERO = 0b01
 PLUS_ONE = 0b10
+
+
+def get_cpu_info() -> Dict:
+    """Collect CPU and system information for benchmark metadata"""
+    info = {
+        'platform': platform.system(),
+        'platform_release': platform.release(),
+        'platform_version': platform.version(),
+        'architecture': platform.machine(),
+        'processor': platform.processor(),
+        'python_version': platform.python_version(),
+    }
+
+    # Get CPU count
+    try:
+        info['cpu_count_logical'] = os.cpu_count()
+    except:
+        info['cpu_count_logical'] = 'unknown'
+
+    # Get OMP_NUM_THREADS if set
+    info['omp_num_threads'] = os.environ.get('OMP_NUM_THREADS', 'default')
+
+    # Platform-specific CPU detection
+    if platform.system() == 'Linux':
+        try:
+            with open('/proc/cpuinfo', 'r') as f:
+                cpuinfo = f.read()
+                # Extract CPU model
+                for line in cpuinfo.split('\n'):
+                    if 'model name' in line:
+                        info['cpu_model'] = line.split(':')[1].strip()
+                        break
+                # Check for AVX2 support
+                info['has_avx2'] = 'avx2' in cpuinfo.lower()
+        except:
+            info['cpu_model'] = 'unknown'
+            info['has_avx2'] = 'unknown'
+    elif platform.system() == 'Windows':
+        try:
+            import subprocess
+            result = subprocess.run(['wmic', 'cpu', 'get', 'name'],
+                                  capture_output=True, text=True, timeout=2)
+            lines = result.stdout.strip().split('\n')
+            if len(lines) > 1:
+                info['cpu_model'] = lines[1].strip()
+        except:
+            info['cpu_model'] = 'unknown'
+        info['has_avx2'] = 'unknown'  # Would need CPUID check
+    elif platform.system() == 'Darwin':
+        try:
+            import subprocess
+            result = subprocess.run(['sysctl', '-n', 'machdep.cpu.brand_string'],
+                                  capture_output=True, text=True, timeout=2)
+            info['cpu_model'] = result.stdout.strip()
+
+            # Check for AVX2
+            result = subprocess.run(['sysctl', 'machdep.cpu.features'],
+                                  capture_output=True, text=True, timeout=2)
+            info['has_avx2'] = 'AVX2' in result.stdout
+        except:
+            info['cpu_model'] = 'unknown'
+            info['has_avx2'] = 'unknown'
+
+    return info
 
 
 class BenchmarkResult:
@@ -187,6 +253,9 @@ def benchmark_operation(func, a: np.ndarray, b: np.ndarray = None,
 
 def run_benchmark_suite(sizes: List[int], verbose: bool = True) -> Dict:
     """Run complete benchmark suite"""
+    # Collect hardware info
+    hw_info = get_cpu_info()
+
     results = {
         'metadata': {
             'timestamp': datetime.now().isoformat(),
@@ -195,6 +264,7 @@ def run_benchmark_suite(sizes: List[int], verbose: bool = True) -> Dict:
             'test_sizes': sizes,
             'warmup_iterations': WARMUP_ITERATIONS,
             'measured_iterations': MEASURED_ITERATIONS,
+            'hardware': hw_info,
         },
         'results_optimized': [],
         'results_baseline': [],
@@ -204,6 +274,18 @@ def run_benchmark_suite(sizes: List[int], verbose: bool = True) -> Dict:
         print("=" * 80)
         print("  TERNARY ENGINE BENCHMARK SUITE")
         print("=" * 80)
+        print(f"\nHardware Info:")
+        print(f"  CPU: {hw_info.get('cpu_model', 'unknown')}")
+        print(f"  Architecture: {hw_info.get('architecture', 'unknown')}")
+        print(f"  Logical CPUs: {hw_info.get('cpu_count_logical', 'unknown')}")
+        print(f"  AVX2 Support: {hw_info.get('has_avx2', 'unknown')}")
+        print(f"  OMP Threads: {hw_info.get('omp_num_threads', 'default')}")
+
+        # Warn if AVX2 not detected
+        if hw_info.get('has_avx2') == False:
+            print("\n  WARNING: AVX2 not detected! Performance will be severely degraded.")
+            print("  This module requires AVX2 support (Intel Haswell 2013+ or AMD Excavator 2015+)")
+
         print(f"\nTest sizes: {sizes}")
         print(f"Warmup iterations: {WARMUP_ITERATIONS}")
         print(f"Measured iterations: {MEASURED_ITERATIONS}")
@@ -326,8 +408,14 @@ def main():
                        help='Output directory for results (default: benchmarks/results)')
     parser.add_argument('--quiet', action='store_true',
                        help='Minimal output')
+    parser.add_argument('--no-unicode', action='store_true',
+                       help='Avoid Unicode characters in output (for CI compatibility)')
 
     args = parser.parse_args()
+
+    # Set environment variable for Unicode handling
+    if args.no_unicode:
+        os.environ['BENCHMARK_NO_UNICODE'] = '1'
 
     sizes = TEST_SIZES_QUICK if args.quick else TEST_SIZES
     verbose = not args.quiet
