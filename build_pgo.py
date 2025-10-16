@@ -139,11 +139,18 @@ setup(
     with open(setup_temp_path, "w") as f:
         f.write(setup_code)
 
-    # Run build from project root with custom build directories
+    # Run build from project root using --inplace (module goes directly to PROJECT_ROOT)
+    # Use short temp directory on Windows to avoid MAX_PATH issues
+    import platform as plat
+    if plat.system() == 'Windows':
+        short_temp = Path("C:/Temp/ternary_pgo_inst")
+        short_temp.mkdir(parents=True, exist_ok=True)
+        temp_arg = ["--build-temp", str(short_temp)]
+    else:
+        temp_arg = ["--build-temp", str(temp_dir)]
+
     result = subprocess.run(
-        [sys.executable, str(setup_temp_path), "build_ext",
-         "--build-temp", str(temp_dir),
-         "--build-lib", str(output_dir)],
+        [sys.executable, str(setup_temp_path), "build_ext", "--inplace"] + temp_arg,
         cwd=str(PROJECT_ROOT),
         capture_output=False
     )
@@ -154,11 +161,18 @@ setup(
         print("\n[FAIL] Instrumentation build failed")
         sys.exit(1)
 
-    # Copy .pyd to project root for profiling
-    for pyd_file in output_dir.glob("*.pyd"):
-        dest = PROJECT_ROOT / pyd_file.name
-        shutil.copy2(pyd_file, dest)
-        print(f"\n  [OK] Copied {pyd_file.name} to project root")
+    # Verify module was built in project root
+    pyd_files = list(PROJECT_ROOT.glob("ternary_simd_engine*.pyd"))
+    if pyd_files:
+        for pyd_file in pyd_files:
+            size_kb = pyd_file.stat().st_size / 1024
+            print(f"\n  [OK] Module built in project root: {pyd_file.name} ({size_kb:.1f} KB)")
+            # Also copy to output directory for archival
+            dest = output_dir / pyd_file.name
+            shutil.copy2(pyd_file, dest)
+    else:
+        print("\n[ERROR] Module not found in project root after build!")
+        sys.exit(1)
 
     print("\n[OK] Phase 1 complete: Instrumented build ready")
     print(f"   Build artifacts: {instrumented_dir}")
@@ -286,11 +300,18 @@ setup(
     with open(setup_temp_path, "w") as f:
         f.write(setup_code)
 
-    # Run build from project root with custom build directories
+    # Run build from project root using --inplace (module goes directly to PROJECT_ROOT)
+    # Use short temp directory on Windows to avoid MAX_PATH issues
+    import platform as plat
+    if plat.system() == 'Windows':
+        short_temp = Path("C:/Temp/ternary_pgo_opt")
+        short_temp.mkdir(parents=True, exist_ok=True)
+        temp_arg = ["--build-temp", str(short_temp)]
+    else:
+        temp_arg = ["--build-temp", str(temp_dir)]
+
     result = subprocess.run(
-        [sys.executable, str(setup_temp_path), "build_ext",
-         "--build-temp", str(temp_dir),
-         "--build-lib", str(output_dir)],
+        [sys.executable, str(setup_temp_path), "build_ext", "--inplace"] + temp_arg,
         cwd=str(PROJECT_ROOT),
         capture_output=False
     )
@@ -301,18 +322,23 @@ setup(
         print("\n[FAIL] Optimized build failed")
         sys.exit(1)
 
+    # Verify module was built in project root and copy to output/latest directories
+    pyd_files = list(PROJECT_ROOT.glob("ternary_simd_engine*.pyd"))
+    if pyd_files:
+        for pyd_file in pyd_files:
+            size_kb = pyd_file.stat().st_size / 1024
+            print(f"\n  [OK] Module built in project root: {pyd_file.name} ({size_kb:.1f} KB)")
+            # Copy to output directory for archival
+            dest = output_dir / pyd_file.name
+            shutil.copy2(pyd_file, dest)
+    else:
+        print("\n[ERROR] Module not found in project root after build!")
+        sys.exit(1)
+
     # Copy to latest directory
     if PGO_LATEST_DIR.exists():
         shutil.rmtree(PGO_LATEST_DIR)
     shutil.copytree(optimized_dir, PGO_LATEST_DIR)
-
-    # Copy .pyd to project root
-    for pyd_file in output_dir.glob("*.pyd"):
-        dest = PROJECT_ROOT / pyd_file.name
-        shutil.copy2(pyd_file, dest)
-        print(f"\n  [OK] Copied {pyd_file.name} to project root")
-        size_kb = pyd_file.stat().st_size / 1024
-        print(f"    Size: {size_kb:.1f} KB")
 
     print("\n[OK] Phase 3 complete: Profile-guided optimized build ready")
     print(f"   Build artifacts: {optimized_dir}")
