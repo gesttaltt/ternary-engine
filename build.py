@@ -27,11 +27,12 @@ ARTIFACTS_DIR = PROJECT_ROOT / "build" / "artifacts"
 # Generate timestamp for this build
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-# Build directories
+# Build directories (use shorter paths to avoid Windows MAX_PATH)
 BUILD_TYPE_DIR = ARTIFACTS_DIR / "standard"
 BUILD_TIMESTAMP_DIR = BUILD_TYPE_DIR / TIMESTAMP
-BUILD_TEMP_DIR = BUILD_TIMESTAMP_DIR / "temp"
-BUILD_OUTPUT_DIR = BUILD_TIMESTAMP_DIR / "output"
+# Use "t" and "o" for temp/output to keep paths short
+BUILD_TEMP_DIR = BUILD_TIMESTAMP_DIR / "t"
+BUILD_OUTPUT_DIR = BUILD_TIMESTAMP_DIR / "o"
 BUILD_LATEST_DIR = BUILD_TYPE_DIR / "latest"
 
 def print_header():
@@ -150,13 +151,22 @@ setup(
     with open(setup_temp_path, "w") as f:
         f.write(setup_code)
 
-    # Run build (use relative paths to avoid Windows MAX_PATH issues)
-    # Note: --inplace removed as it conflicts with --build-lib
-    # Module is copied to project root by copy_to_latest() instead
+    # Run build using --inplace with a short temp directory
+    # Use C:\Temp on Windows to avoid MAX_PATH issues with deep project paths
+    import tempfile
+    import platform as plat
+
+    if plat.system() == 'Windows':
+        # Use a short path for Windows temp directory
+        short_temp = Path("C:/Temp/ternary_build")
+        short_temp.mkdir(parents=True, exist_ok=True)
+        temp_arg = ["--build-temp", str(short_temp)]
+    else:
+        # On Unix, use system temp
+        temp_arg = []
+
     result = subprocess.run(
-        [sys.executable, str(setup_temp_path), "build_ext",
-         "--build-temp", str(BUILD_TEMP_DIR.relative_to(PROJECT_ROOT)),
-         "--build-lib", str(BUILD_OUTPUT_DIR.relative_to(PROJECT_ROOT))],
+        [sys.executable, str(setup_temp_path), "build_ext", "--inplace"] + temp_arg,
         cwd=str(PROJECT_ROOT),
         capture_output=False
     )
@@ -171,21 +181,32 @@ setup(
 
 def copy_to_latest():
     """Copy build output to latest directory"""
-    print(f"\nCopying to latest directory...")
+    print(f"\nCopying to output directory...")
 
-    # Remove old latest directory
+    # Find module files in project root (built with --inplace)
+    module_files = list(PROJECT_ROOT.glob("ternary_simd_engine*.pyd")) + \
+                   list(PROJECT_ROOT.glob("ternary_simd_engine*.so"))
+
+    if not module_files:
+        print("  [ERROR] No module files found!")
+        return
+
+    # Copy to output directory
+    BUILD_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    for module_file in module_files:
+        dest = BUILD_OUTPUT_DIR / module_file.name
+        shutil.copy2(module_file, dest)
+        print(f"  [OK] {module_file.name} -> output directory")
+
+    # Copy to latest directory
     if BUILD_LATEST_DIR.exists():
         shutil.rmtree(BUILD_LATEST_DIR)
+    BUILD_LATEST_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Copy entire timestamp directory
-    shutil.copytree(BUILD_TIMESTAMP_DIR, BUILD_LATEST_DIR)
-
-    # Copy module files to project root for convenience (both .pyd and .so)
-    module_files = list(BUILD_OUTPUT_DIR.glob("*.pyd")) + list(BUILD_OUTPUT_DIR.glob("*.so"))
     for module_file in module_files:
-        dest = PROJECT_ROOT / module_file.name
+        dest = BUILD_LATEST_DIR / module_file.name
         shutil.copy2(module_file, dest)
-        print(f"  [OK] {module_file.name} -> {dest}")
+        print(f"  [OK] {module_file.name} -> latest directory")
 
 def print_summary():
     """Print build summary"""
@@ -193,11 +214,13 @@ def print_summary():
     print("  [SUCCESS] BUILD COMPLETE")
     print("="*70)
     print(f"\nBuild artifacts:")
-    print(f"  Timestamped: {BUILD_TIMESTAMP_DIR}")
-    print(f"  Latest:      {BUILD_LATEST_DIR}")
+    print(f"  Project root: {PROJECT_ROOT}")
+    print(f"  Timestamped:  {BUILD_TIMESTAMP_DIR}")
+    print(f"  Latest:       {BUILD_LATEST_DIR}")
 
     # Show file sizes for both .pyd (Windows) and .so (Linux/macOS)
-    module_files = list(BUILD_OUTPUT_DIR.glob("*.pyd")) + list(BUILD_OUTPUT_DIR.glob("*.so"))
+    module_files = list(PROJECT_ROOT.glob("ternary_simd_engine*.pyd")) + \
+                   list(PROJECT_ROOT.glob("ternary_simd_engine*.so"))
     if module_files:
         print(f"\nGenerated modules:")
         for module_file in module_files:
