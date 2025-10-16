@@ -72,6 +72,8 @@ jobs:
           Get-ChildItem -Path build -Recurse -Filter "*.pyd" -ErrorAction SilentlyContinue
           exit 1
         }
+        Write-Host "Testing module import..."
+        python -c "import ternary_simd_engine as tc; print('Module loaded OK'); print('Functions:', dir(tc))"
       shell: pwsh
 
     - name: Run PGO benchmark

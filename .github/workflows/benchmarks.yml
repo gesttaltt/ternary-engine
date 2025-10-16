@@ -64,6 +64,13 @@ jobs:
     - name: Build module
       run: python build.py
 
+    - name: Verify module was built
+      run: |
+        echo "Checking for built module..."
+        ls -la *.so *.pyd 2>/dev/null || true
+        echo "Testing module import..."
+        python -c "import sys; print('Python path:', sys.path); import ternary_simd_engine as tc; print('✓ Module loaded successfully'); print('Available functions:', dir(tc))"
+
     - name: Run benchmark
       run: |
         python benchmarks/bench_phase0.py ${{ env.BENCHMARK_MODE == 'quick' && '--quick' || '' }} --output=benchmarks/results/current --no-unicode
@@ -138,6 +145,19 @@ jobs:
 
     - name: Build module
       run: python build.py
+
+    - name: Verify module was built
+      run: |
+        echo "Checking for built module..."
+        if (Test-Path "*.pyd") {
+          Get-ChildItem *.pyd | ForEach-Object { Write-Host "Found: $($_.Name)" }
+        } else {
+          Write-Host "[ERROR] No .pyd file found!"
+          exit 1
+        }
+        echo "Testing module import..."
+        python -c "import ternary_simd_engine as tc; print('Module loaded OK'); print('Functions:', dir(tc))"
+      shell: pwsh
 
     - name: Run quick benchmark
       run: |

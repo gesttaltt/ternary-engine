@@ -58,6 +58,27 @@ jobs:
       env:
         BUILD_VERBOSE: ${{ secrets.BUILD_VERBOSE || '0' }}
 
+    - name: Verify module was built
+      run: |
+        if (Test-Path "ternary_simd_engine*.pyd") {
+          Write-Host "[OK] Module built successfully"
+          Get-ChildItem ternary_simd_engine*.pyd | ForEach-Object {
+            Write-Host "  Found: $($_.Name) ($([math]::Round($_.Length/1KB, 2)) KB)"
+          }
+          # Test import
+          python -c "import ternary_simd_engine as tc; print('Module import: OK')"
+        } else {
+          Write-Host "[ERROR] No .pyd file found in project root!"
+          Write-Host "Listing project root:"
+          Get-ChildItem | Select-Object Name
+          Write-Host "`nSearching build directory:"
+          if (Test-Path "build") {
+            Get-ChildItem -Path build -Recurse -Filter "*.pyd" -ErrorAction SilentlyContinue
+          }
+          exit 1
+        }
+      shell: pwsh
+
     - name: Report System Capabilities
       run: python tests/test_capabilities.py
       continue-on-error: true
