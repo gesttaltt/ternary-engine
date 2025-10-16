@@ -119,7 +119,7 @@ ext_modules = [
         ],
         extra_link_args=[
             '/LTCG:PGI',             # OPT-114: Generate instrumented code for profiling
-            f'/PGD:{{PGO_DATA_DIR}}\\ternary_simd_engine.pgd',  # Profile database location
+            f'/PGD:{{PGO_DATA_DIR}}\\\\ternary_simd_engine.pgd',  # Profile database location
         ],
     ),
 ]
@@ -280,7 +280,7 @@ ext_modules = [
         ],
         extra_link_args=[
             '/LTCG:PGO',             # OPT-114: Use profile data for optimization
-            f'/PGD:{{PGO_DATA_DIR}}\\ternary_simd_engine.pgd',  # Profile database location
+            f'/PGD:{{PGO_DATA_DIR}}\\\\ternary_simd_engine.pgd',  # Profile database location
         ],
     ),
 ]
