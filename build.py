@@ -151,11 +151,12 @@ setup(
         f.write(setup_code)
 
     # Run build (use relative paths to avoid Windows MAX_PATH issues)
+    # Note: --inplace removed as it conflicts with --build-lib
+    # Module is copied to project root by copy_to_latest() instead
     result = subprocess.run(
         [sys.executable, str(setup_temp_path), "build_ext",
          "--build-temp", str(BUILD_TEMP_DIR.relative_to(PROJECT_ROOT)),
-         "--build-lib", str(BUILD_OUTPUT_DIR.relative_to(PROJECT_ROOT)),
-         "--inplace"],
+         "--build-lib", str(BUILD_OUTPUT_DIR.relative_to(PROJECT_ROOT))],
         cwd=str(PROJECT_ROOT),
         capture_output=False
     )
