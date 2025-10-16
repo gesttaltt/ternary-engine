@@ -12,8 +12,6 @@ legacy/
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-*.pyd
 *.egg
 *.egg-info/
 dist/
@@ -21,6 +19,10 @@ build/artifacts/
 build/lib.*/
 build/temp.*/
 *.whl
+
+# Compiled modules - ignore in build dirs but allow in project root for development/CI
+build/**/*.so
+build/**/*.pyd
 
 # C/C++
 *.o
