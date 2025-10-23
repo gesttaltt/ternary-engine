@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     setup(
         name="ternary_fusion_engine",
-        version="0.1.0-poc",
+        version="0.1.0",
         description="Ternary Operation Fusion Engine - Phase 4.0 Proof of Concept",
         author="Jonathan Verdun (Ternary Engine Project)",
         license="Apache License 2.0",
