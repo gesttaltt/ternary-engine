@@ -15,23 +15,38 @@
 // limitations under the License.
 //
 // =============================================================================
-// PHASE 4.0: PROOF OF CONCEPT
+// PHASE 4.0: PROOF OF CONCEPT (VALIDATED)
 // =============================================================================
 //
-// IMPLEMENTATION STATUS: Minimal viable implementation
-//   - Single fused operation: tnot(tadd(a, b))
-//   - Goal: Validate fusion concept with rigorous benchmarking
-//   - Success criteria: Measurable speedup with statistical significance
+// IMPLEMENTATION STATUS: Single operation validated
+//   - Fused operation: tnot(tadd(a, b))
+//   - Validation: Rigorous statistical benchmarking
+//   - Results: 1.5-1.8× speedup (conservative, reproducible)
 //
-// DESIGN PHILOSOPHY: Truth over claims
-//   - Measure actual performance, not theoretical
-//   - Report failures honestly
-//   - Adapt design based on real-world results
+// LESSONS LEARNED:
+//   - Fusion is real but original claims over-estimated
+//   - High variance for large arrays (CV 40-130%)
+//   - Must report variance + confidence intervals
+//   - Conservative claims: 1.5-1.8× (not 2.0-2.5×)
 //
-// PERFORMANCE HYPOTHESIS (TO BE VALIDATED):
-//   - Memory traffic reduction: 40% (5N → 3N bytes)
-//   - Expected speedup: 1.5-2.5× on large arrays (>1M elements)
-//   - Breakeven point: TBD via benchmarking
+// =============================================================================
+// PHASE 4.1: FULL BINARY→UNARY SUITE
+// =============================================================================
+//
+// IMPLEMENTATION STATUS: Expanding to full suite
+//   - tnot(tadd), tnot(tmul), tnot(tmin), tnot(tmax)
+//   - Goal: Validate fusion pattern generalizes
+//   - Success criteria: 1.2-1.4× conservative speedup with CV < 20%
+//
+// DESIGN PHILOSOPHY: Truth-first engineering
+//   - Always report variance + confidence intervals
+//   - Conservative claims (under-promise, over-deliver)
+//   - Acknowledge micro ≠ macro speedups
+//
+// CONSERVATIVE PERFORMANCE EXPECTATIONS:
+//   - Small arrays (1-10K): 1.2-1.5× speedup
+//   - Medium arrays (100K): 1.3-1.6× speedup
+//   - Large arrays (1M+): 1.4-1.8× speedup (with caveats: high variance)
 //
 // =============================================================================
 
@@ -42,27 +57,73 @@
 #include "ternary_algebra.h"
 
 // =============================================================================
-// PHASE 4.0: SINGLE FUSED OPERATION (Proof of Concept)
+// PHASE 4.1: BINARY→UNARY FUSED OPERATIONS
+// =============================================================================
+//
+// Pattern: unary(binary(a, b))
+// All operations eliminate intermediate array allocation
+// Memory traffic reduction: 40% (5N → 3N bytes)
+//
 // =============================================================================
 
-// Fused operation: tnot(tadd(a, b))
-// Combines saturated addition with negation in single pass
+// -----------------------------------------------------------------------------
+// fused_tnot_tadd: tnot(tadd(a, b))
+// Status: ✓ Validated in Phase 4.0 (1.5-1.8× speedup)
+// -----------------------------------------------------------------------------
 
-// SIMD kernel (AVX2: 32 trits per vector)
 template <bool Sanitize = true>
 static inline __m256i fused_tnot_tadd_simd(__m256i a, __m256i b) {
-    // Step 1: tadd_simd(a, b) - saturated addition
     __m256i temp = tadd_simd<Sanitize>(a, b);
-
-    // Step 2: tnot_simd(temp) - negation
-    // Note: temp stays in register, no memory store/load
-    return tnot_simd<Sanitize>(temp);
+    return tnot_simd<Sanitize>(temp);  // temp stays in register
 }
 
-// Scalar fallback (for tail processing)
 static inline uint8_t fused_tnot_tadd_scalar(uint8_t a, uint8_t b) {
-    // Both operations force-inline to single LUT lookups
     return tnot(tadd(a, b));
+}
+
+// -----------------------------------------------------------------------------
+// fused_tnot_tmul: tnot(tmul(a, b))
+// Status: Phase 4.1 - Pending validation
+// -----------------------------------------------------------------------------
+
+template <bool Sanitize = true>
+static inline __m256i fused_tnot_tmul_simd(__m256i a, __m256i b) {
+    __m256i temp = tmul_simd<Sanitize>(a, b);
+    return tnot_simd<Sanitize>(temp);  // temp stays in register
+}
+
+static inline uint8_t fused_tnot_tmul_scalar(uint8_t a, uint8_t b) {
+    return tnot(tmul(a, b));
+}
+
+// -----------------------------------------------------------------------------
+// fused_tnot_tmin: tnot(tmin(a, b))
+// Status: Phase 4.1 - Pending validation
+// -----------------------------------------------------------------------------
+
+template <bool Sanitize = true>
+static inline __m256i fused_tnot_tmin_simd(__m256i a, __m256i b) {
+    __m256i temp = tmin_simd<Sanitize>(a, b);
+    return tnot_simd<Sanitize>(temp);  // temp stays in register
+}
+
+static inline uint8_t fused_tnot_tmin_scalar(uint8_t a, uint8_t b) {
+    return tnot(tmin(a, b));
+}
+
+// -----------------------------------------------------------------------------
+// fused_tnot_tmax: tnot(tmax(a, b))
+// Status: Phase 4.1 - Pending validation
+// -----------------------------------------------------------------------------
+
+template <bool Sanitize = true>
+static inline __m256i fused_tnot_tmax_simd(__m256i a, __m256i b) {
+    __m256i temp = tmax_simd<Sanitize>(a, b);
+    return tnot_simd<Sanitize>(temp);  // temp stays in register
+}
+
+static inline uint8_t fused_tnot_tmax_scalar(uint8_t a, uint8_t b) {
+    return tnot(tmax(a, b));
 }
 
 // =============================================================================

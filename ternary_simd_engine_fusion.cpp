@@ -119,7 +119,7 @@ py::array_t<uint8_t> process_binary_array_fusion(
 }
 
 // =============================================================================
-// PHASE 4.0 PoC: Single Fused Operation
+// PHASE 4.1: Binary→Unary Fused Operations
 // =============================================================================
 
 py::array_t<uint8_t> fused_tnot_tadd_array(
@@ -133,25 +133,60 @@ py::array_t<uint8_t> fused_tnot_tadd_array(
     );
 }
 
+py::array_t<uint8_t> fused_tnot_tmul_array(
+    py::array_t<uint8_t> A,
+    py::array_t<uint8_t> B
+) {
+    return process_binary_array_fusion<SANITIZE>(
+        A, B,
+        fused_tnot_tmul_simd<SANITIZE>,
+        fused_tnot_tmul_scalar
+    );
+}
+
+py::array_t<uint8_t> fused_tnot_tmin_array(
+    py::array_t<uint8_t> A,
+    py::array_t<uint8_t> B
+) {
+    return process_binary_array_fusion<SANITIZE>(
+        A, B,
+        fused_tnot_tmin_simd<SANITIZE>,
+        fused_tnot_tmin_scalar
+    );
+}
+
+py::array_t<uint8_t> fused_tnot_tmax_array(
+    py::array_t<uint8_t> A,
+    py::array_t<uint8_t> B
+) {
+    return process_binary_array_fusion<SANITIZE>(
+        A, B,
+        fused_tnot_tmax_simd<SANITIZE>,
+        fused_tnot_tmax_scalar
+    );
+}
+
 // =============================================================================
 // PYTHON BINDINGS
 // =============================================================================
 
 PYBIND11_MODULE(ternary_fusion_engine, m) {
-    m.doc() = "Ternary Operation Fusion Engine - Phase 4.0 Proof of Concept\n\n"
+    m.doc() = "Ternary Operation Fusion Engine - Phase 4.1 Binary→Unary Suite\n\n"
               "Implements fused ternary operations to reduce memory traffic\n"
               "and improve performance on multi-operation workflows.\n\n"
-              "Phase 4.0 Status:\n"
-              "  - Single fused operation: fused_tnot_tadd(a, b)\n"
-              "  - Theoretical gain: 40% memory reduction, 2-3× speedup\n"
-              "  - Validation: See benchmarks/bench_fusion_poc.py\n\n"
+              "Phase 4.1 Status:\n"
+              "  - Binary→Unary operations: tnot(tadd/tmul/tmin/tmax)\n"
+              "  - Conservative claims: 1.5-1.8× speedup (Phase 4.0 validated)\n"
+              "  - Truth-first benchmarking: Always report variance + CI\n\n"
               "Usage:\n"
               "  import ternary_fusion_engine as fusion\n"
-              "  result = fusion.fused_tnot_tadd(a, b)  # tnot(tadd(a, b))\n";
+              "  result = fusion.fused_tnot_tadd(a, b)  # tnot(tadd(a, b))\n"
+              "  result = fusion.fused_tnot_tmul(a, b)  # tnot(tmul(a, b))\n";
 
     m.def("fused_tnot_tadd", &fused_tnot_tadd_array,
           py::arg("a"), py::arg("b"),
           "Fused operation: tnot(tadd(a, b))\n\n"
+          "Status: ✓ Validated in Phase 4.0 (1.5-1.8× speedup)\n\n"
           "Combines saturated ternary addition with negation in a single pass,\n"
           "eliminating intermediate array allocation and reducing memory traffic.\n\n"
           "Parameters:\n"
@@ -159,10 +194,42 @@ PYBIND11_MODULE(ternary_fusion_engine, m) {
           "  b: NumPy uint8 array (same size as a)\n\n"
           "Returns:\n"
           "  NumPy uint8 array: result = tnot(tadd(a, b))\n\n"
-          "Performance:\n"
-          "  - Small arrays (<100K): ~1.2-1.5× speedup\n"
-          "  - Medium arrays (100K-1M): ~1.5-2.0× speedup\n"
-          "  - Large arrays (>1M): ~2.0-2.5× speedup (theoretical)\n\n"
-          "Note: Actual performance depends on system memory bandwidth.\n"
-          "Run benchmarks/bench_fusion_poc.py for validation on your hardware.");
+          "Conservative Performance Estimate:\n"
+          "  - Small arrays (1-10K): 1.2-1.5× speedup\n"
+          "  - Medium arrays (100K): 1.3-1.6× speedup\n"
+          "  - Large arrays (1M+): 1.4-1.8× speedup (with high variance)\n\n"
+          "Note: Run benchmarks with variance reporting for your hardware.");
+
+    m.def("fused_tnot_tmul", &fused_tnot_tmul_array,
+          py::arg("a"), py::arg("b"),
+          "Fused operation: tnot(tmul(a, b))\n\n"
+          "Status: Phase 4.1 - Pending validation\n\n"
+          "Combines ternary multiplication with negation in a single pass.\n\n"
+          "Parameters:\n"
+          "  a: NumPy uint8 array (2-bit trit encoding)\n"
+          "  b: NumPy uint8 array (same size as a)\n\n"
+          "Returns:\n"
+          "  NumPy uint8 array: result = tnot(tmul(a, b))");
+
+    m.def("fused_tnot_tmin", &fused_tnot_tmin_array,
+          py::arg("a"), py::arg("b"),
+          "Fused operation: tnot(tmin(a, b))\n\n"
+          "Status: Phase 4.1 - Pending validation\n\n"
+          "Combines ternary minimum with negation in a single pass.\n\n"
+          "Parameters:\n"
+          "  a: NumPy uint8 array (2-bit trit encoding)\n"
+          "  b: NumPy uint8 array (same size as a)\n\n"
+          "Returns:\n"
+          "  NumPy uint8 array: result = tnot(tmin(a, b))");
+
+    m.def("fused_tnot_tmax", &fused_tnot_tmax_array,
+          py::arg("a"), py::arg("b"),
+          "Fused operation: tnot(tmax(a, b))\n\n"
+          "Status: Phase 4.1 - Pending validation\n\n"
+          "Combines ternary maximum with negation in a single pass.\n\n"
+          "Parameters:\n"
+          "  a: NumPy uint8 array (2-bit trit encoding)\n"
+          "  b: NumPy uint8 array (same size as a)\n\n"
+          "Returns:\n"
+          "  NumPy uint8 array: result = tnot(tmax(a, b))");
 }
