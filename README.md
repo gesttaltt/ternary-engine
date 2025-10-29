@@ -132,25 +132,58 @@ result = tc.tadd(trits, trits)
 
 ## Architecture
 
-### Core Files
+### Project Structure (v1.0 - Clean Separation)
 
 ```
-ternary_lut_gen.h        # Compile-time LUT generation (111 lines)
-ternary_algebra.h        # Scalar operations + LUTs (143 lines)
-ternary_errors.h         # Exception handling (119 lines)
-ternary_simd_engine.cpp  # Vectorized execution (333 lines)
+ternary_core/              # Production-ready kernel (mathematically stable)
+├─ algebra/                # Core ternary operations
+│   ├─ ternary_algebra.h      # Scalar operations + LUTs (143 lines)
+│   └─ ternary_lut_gen.h      # Compile-time LUT generation (111 lines)
+├─ simd/                   # SIMD acceleration
+│   ├─ ternary_simd_kernels.h # AVX2 vectorization (103 lines)
+│   ├─ ternary_cpu_detect.h   # Runtime CPU detection (185 lines)
+│   └─ ternary_fusion.h       # Operation fusion PoC (204 lines)
+├─ ffi/                    # Cross-language FFI
+│   └─ ternary_c_api.h        # Pure C API (255 lines)
+└─ core_api.h              # Unified entry point
+
+ternary_engine/            # Experimental optimizations (not production-ready)
+└─ experimental/
+    ├─ dense243/           # Dense243 encoding (broken, needs redesign)
+    ├─ fusion/             # Full fusion suite (pending validation)
+    └─ [future expansions]
+
+Root level:
+├─ ternary_simd_engine.cpp # Main engine (uses ternary_core/)
+├─ ternary_errors.h        # Error definitions
+└─ ternary_profiler.h      # Profiling utilities
 ```
 
-Total implementation: **~700 lines of core code**
+**Total kernel implementation:** ~1,000 lines of validated code
 
-### Design
+### Design Layers
 
 **Layer 0**: Constexpr LUT generation - Compile-time table construction
 **Layer 1**: Scalar operations - Branch-free lookup table operations
 **Layer 2**: SIMD vectorization - 32-wide parallel processing via AVX2
 **Layer 3**: Python bindings - Zero-copy NumPy integration
+**Layer 4**: Runtime safety - CPU detection, alignment validation, ISA dispatch
 
-See [docs/api-reference/](docs/api-reference/) for detailed architecture documentation.
+### Deployment Status
+
+✅ **Production-Ready** (ternary_core/):
+- Core algebra system (100% test coverage)
+- SIMD kernels (AVX2, validated)
+- CPU feature detection (runtime ISA dispatch)
+- C FFI layer (cross-language ready)
+- Operation fusion PoC (1.5-1.8× speedup)
+
+⚠️ **Experimental** (ternary_engine/):
+- Dense243 encoding (broken, needs redesign)
+- OpenMP threading (requires validation)
+- Full fusion suite (pending benchmarks)
+
+See [local-reports/savefile.md](local-reports/savefile.md) for detailed separation analysis.
 
 ## Testing
 
@@ -182,9 +215,11 @@ See **[TESTING.md](TESTING.md)** for comprehensive testing and CI/CD documentati
 
 - **Platform**: x86-64 only (ARM/NEON support planned)
 - **Arrays**: 1D arrays only
-- **CPU requirement**: AVX2 instruction set (2013+ Intel, 2015+ AMD)
+- **CPU requirement**: AVX2 instruction set (Intel Haswell 2013+, AMD Excavator 2015+)
+  - Module performs runtime detection and fails gracefully on unsupported CPUs
 - **Size matching**: Binary operations require identical array sizes
 - **Invalid encoding**: 0b11 is reserved/undefined
+- **Alignment**: Streaming stores require 32-byte alignment (automatically detected)
 
 ## Advanced Features
 
@@ -207,12 +242,23 @@ See [docs/PGO_README.md](docs/PGO_README.md) for details.
 
 ## Roadmap
 
-**Current**: v0.3.0 - Production optimizations (Phase 3)
+**Current**: v1.0.0 - Clean architecture with deployment-ready kernel
+
+**Completed (v1.0)**:
+- ✅ Clean kernel/engine separation (ternary_core/ vs ternary_engine/)
+- ✅ Runtime CPU detection and graceful fallback
+- ✅ Alignment validation for streaming stores
+- ✅ Hardware concurrency clamping (fixes VM crashes)
+- ✅ Operation fusion PoC (1.5-1.8× validated speedup)
+- ✅ C FFI layer (cross-language ready)
+
+**In Progress**:
+- 🔧 Dense243 encoding redesign (currently broken)
+- 🔧 OpenMP validation and re-enablement
+- 🔧 Full fusion suite validation (Phase 4.1)
 
 **Planned**:
-- Multi-platform SIMD (AVX-512, ARM NEON)
-- Runtime CPU detection and fallback
-- Operation fusion (fused multiply-add)
+- Multi-platform SIMD (AVX-512, ARM NEON/SVE)
 - Multi-dimensional array support
 - Profiler integration (VTune ITT, NVTX for GPU, Perfetto)
   - Framework implemented in `ternary_profiler.h`
@@ -243,7 +289,7 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
   title={Ternary Engine: High-Performance Balanced Ternary Arithmetic},
   author={Jonathan Verdun},
   year={2025},
-  version={0.3.0},
+  version={1.0.0},
   url={https://github.com/gesttaltt/ternary-engine}
 }
 ```
@@ -256,6 +302,6 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 
 ---
 
-**Version**: 0.3.0
-**Status**: Production
-**Updated**: 2025-10-13
+**Version**: 1.0.0
+**Status**: Production (ternary_core/), Experimental (ternary_engine/)
+**Updated**: 2025-10-29

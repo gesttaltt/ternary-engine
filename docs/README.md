@@ -2,6 +2,19 @@
 
 This directory contains comprehensive documentation for the ternary-engine library.
 
+## 🆕 Architecture Update (v1.0.0 - 2025-10-29)
+
+**The project structure has been reorganized:**
+- **`ternary_core/`** - Production-ready kernel (validated, stable)
+- **`ternary_engine/`** - Experimental optimizations (pending validation)
+
+**Note:** Some documentation paths may reference old root-level files. The implementation is now in:
+- `ternary_core/algebra/` - Core algebra and LUT generation
+- `ternary_core/simd/` - SIMD kernels and CPU detection
+- `ternary_core/ffi/` - C FFI layer
+
+See [../local-reports/savefile.md](../local-reports/savefile.md) for detailed architectural analysis.
+
 ## Documentation Organization
 
 Documentation is organized into logical categories:
