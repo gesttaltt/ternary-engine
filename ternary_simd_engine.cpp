@@ -86,6 +86,7 @@
 #include <pybind11/numpy.h>
 #include "ternary_algebra.h"
 #include "ternary_errors.h"
+#include "ternary_cpu_detect.h"
 
 // MSVC compatibility: ssize_t is not standard C++
 #ifdef _MSC_VER
@@ -99,7 +100,8 @@ namespace py = pybind11;
 // Arrays >= threshold will use multi-threaded processing
 // OPT-PHASE3-01: Adaptive threshold scales with CPU core count
 // Formula: 32K elements per thread ensures good load balancing across CPU tiers
-static const ssize_t OMP_THRESHOLD = 32768 * std::thread::hardware_concurrency();
+// FIX: Clamp hardware_concurrency() to [1, 64] (can return 0 on some VMs)
+static const ssize_t OMP_THRESHOLD = 32768 * std::max(1u, std::min(64u, std::thread::hardware_concurrency()));
 
 // OPT-STREAM: Streaming store threshold (arrays exceeding L3 cache size)
 // Typical L3: 8-32 MB; use streaming stores for arrays > 1M elements (~1 MB)
@@ -244,6 +246,13 @@ static inline __m256i tnot_simd(__m256i a) {
 //
 // =============================================================================
 
+// --- Helper: Check if pointer is 32-byte aligned for streaming stores ---
+// FIX: Streaming stores (_mm256_stream_si256) require 32-byte alignment
+// NumPy arrays do not guarantee this, so we must check before using
+inline bool is_aligned_32(const void* ptr) {
+    return (reinterpret_cast<uintptr_t>(ptr) % 32) == 0;
+}
+
 // --- Unified Binary Operation Template ---
 template <bool Sanitize = true, typename SimdOp, typename ScalarOp>
 py::array_t<uint8_t> process_binary_array(
@@ -272,7 +281,8 @@ py::array_t<uint8_t> process_binary_array(
     // PATH 1: Large arrays → OpenMP parallel (NUMA-aware scheduling)
     if (n >= OMP_THRESHOLD) {
         ssize_t n_simd_blocks = (n / 32) * 32;
-        bool use_streaming = (n >= STREAM_THRESHOLD);
+        // FIX: Only use streaming stores if array is large AND output is 32-byte aligned
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(r_ptr);
 
         // OPT-NUMA: guided scheduling for multi-CCD CPUs (Ryzen/EPYC)
         // Guided schedule adapts chunk sizes dynamically
@@ -290,6 +300,7 @@ py::array_t<uint8_t> process_binary_array(
             __m256i vr = simd_op(va, vb);
 
             // OPT-STREAM: Use streaming stores for very large arrays to reduce cache pollution
+            // FIX: Alignment check performed above, safe to use streaming stores here
             if (use_streaming) {
                 _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
             } else {
@@ -342,7 +353,8 @@ py::array_t<uint8_t> process_unary_array(
     // PATH 1: Large arrays → OpenMP parallel (NUMA-aware scheduling)
     if (n >= OMP_THRESHOLD) {
         ssize_t n_simd_blocks = (n / 32) * 32;
-        bool use_streaming = (n >= STREAM_THRESHOLD);
+        // FIX: Only use streaming stores if array is large AND output is 32-byte aligned
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(r_ptr);
 
         // OPT-NUMA: guided scheduling for multi-CCD CPUs (Ryzen/EPYC)
         // Guided schedule adapts chunk sizes dynamically
@@ -358,6 +370,7 @@ py::array_t<uint8_t> process_unary_array(
             __m256i vr = simd_op(va);
 
             // OPT-STREAM: Use streaming stores for very large arrays to reduce cache pollution
+            // FIX: Alignment check performed above, safe to use streaming stores here
             if (use_streaming) {
                 _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
             } else {
@@ -416,9 +429,28 @@ py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
 }
 
 PYBIND11_MODULE(ternary_simd_engine, m) {
+    // FIX: Check for AVX2 support at module initialization
+    // This module requires AVX2 (Intel Haswell 2013+, AMD Excavator 2015+)
+    if (!has_avx2()) {
+        throw std::runtime_error(
+            "Ternary SIMD Engine requires AVX2 instruction set support.\n"
+            "Your CPU does not support AVX2. Detected ISA: " +
+            std::string(simd_level_name(detect_best_simd())) + "\n"
+            "Minimum requirement: Intel Haswell (2013+) or AMD Excavator (2015+)"
+        );
+    }
+
+    // Export operation functions
     m.def("tadd", &tadd_array);
     m.def("tmul", &tmul_array);
     m.def("tmin", &tmin_array);
     m.def("tmax", &tmax_array);
     m.def("tnot", &tnot_array);
+
+    // Export CPU capability detection functions
+    m.def("has_avx2", &has_avx2, "Check if CPU supports AVX2");
+    m.def("detect_simd_level", []() { return static_cast<int>(detect_best_simd()); },
+          "Detect best available SIMD level (0=None, 1=AVX2, 2=AVX512BW, 3=NEON, 4=SVE)");
+    m.def("simd_level_string", []() { return std::string(simd_level_name(detect_best_simd())); },
+          "Get human-readable SIMD level name");
 }
