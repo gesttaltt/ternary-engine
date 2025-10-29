@@ -45,6 +45,16 @@ constexpr bool SANITIZE = true;
 #endif
 
 // =============================================================================
+// HELPER: Check if pointer is 32-byte aligned for streaming stores
+// =============================================================================
+
+// FIX: Streaming stores (_mm256_stream_si256) require 32-byte alignment
+// NumPy arrays do not guarantee this, so we must check before using
+inline bool is_aligned_32(const void* ptr) {
+    return (reinterpret_cast<uintptr_t>(ptr) % 32) == 0;
+}
+
+// =============================================================================
 // UNIFIED BINARY ARRAY PROCESSING TEMPLATE (Reused from main engine)
 // =============================================================================
 
@@ -73,7 +83,8 @@ py::array_t<uint8_t> process_binary_array_fusion(
     // PATH 1: Large arrays → OpenMP parallel
     if (n >= OMP_THRESHOLD) {
         ssize_t n_simd_blocks = (n / 32) * 32;
-        bool use_streaming = (n >= STREAM_THRESHOLD);
+        // FIX: Only use streaming stores if array is large AND output is 32-byte aligned
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(r_ptr);
 
         #pragma omp parallel for schedule(guided, 4)
         for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
