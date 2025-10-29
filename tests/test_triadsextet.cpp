@@ -19,7 +19,7 @@
 #include <cassert>
 #include <vector>
 #include <chrono>
-#include "../ternary_triadsextet.h"
+#include "../ternary_engine/experimental/dense243/ternary_triadsextet.h"
 
 // ANSI color codes for terminal output
 #define COLOR_GREEN "\033[32m"

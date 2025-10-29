@@ -52,7 +52,7 @@
 #include <immintrin.h>
 #include <stdint.h>
 #include "ternary_dense243.h"
-#include "ternary_simd_kernels.h"  // For existing 2-bit SIMD operations
+#include "../../../ternary_core/simd/ternary_simd_kernels.h"  // For existing 2-bit SIMD operations
 
 // =============================================================================
 // Pre-broadcasted Extraction LUTs for AVX2
@@ -193,13 +193,9 @@ static inline __m256i dense243_pack_simd(
     __m256i o3_times_9 = _mm256_add_epi8(o3_times_3, _mm256_add_epi8(o3_times_3, o3_times_3));
     __m256i o3_times_27 = _mm256_add_epi8(o3_times_9, _mm256_add_epi8(o3_times_9, o3_times_9));
 
-    // o4*81 = o4*3*27
-    __m256i o4_times_3 = _mm256_add_epi8(o4, _mm256_add_epi8(o4, o4));
-    __m256i o4_times_27 = _mm256_add_epi8(o3_times_9, _mm256_add_epi8(o3_times_9, o3_times_9));  // Reuse o3 calculation pattern
-    // Actually o4*81: Let's compute directly
-    // 81 = 64 + 16 + 1 = (o4 << 6) + (o4 << 4) + o4
-    // But we can't shift bytes in AVX2, so use addition chain
     // o4*81 = o4*3*3*3*3 (four times multiply by 3)
+    // Follow same pattern as o3: build up using addition chains
+    __m256i o4_times_3 = _mm256_add_epi8(o4, _mm256_add_epi8(o4, o4));
     __m256i o4_times_9 = _mm256_add_epi8(o4_times_3, _mm256_add_epi8(o4_times_3, o4_times_3));
     __m256i o4_times_27 = _mm256_add_epi8(o4_times_9, _mm256_add_epi8(o4_times_9, o4_times_9));
     __m256i o4_times_81 = _mm256_add_epi8(o4_times_27, _mm256_add_epi8(o4_times_27, o4_times_27));

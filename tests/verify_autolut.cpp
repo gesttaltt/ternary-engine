@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include "../ternary_algebra.h"
+#include "../ternary_core/algebra/ternary_algebra.h"
 
 // Manual baseline LUTs (from BASELINE-PRE-AUTOLUT.md)
 static const uint8_t TADD_LUT_MANUAL[16] = {

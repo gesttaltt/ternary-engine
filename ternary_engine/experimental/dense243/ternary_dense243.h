@@ -46,7 +46,7 @@
 
 #include <stdint.h>
 #include <array>
-#include "ternary_lut_gen.h"  // For int_to_trit_constexpr, trit_to_int_constexpr
+#include "../../../ternary_core/algebra/ternary_lut_gen.h"  // For int_to_trit_constexpr, trit_to_int_constexpr
 
 // =============================================================================
 // Compile-time Helpers
