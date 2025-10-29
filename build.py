@@ -127,7 +127,8 @@ ext_modules = [
         include_dirs=[
             pybind11.get_include(),
             pybind11.get_include(user=True),
-            PROJECT_ROOT
+            PROJECT_ROOT,
+            os.path.join(PROJECT_ROOT, 'ternary_core')
         ],
         language='c++',
         extra_compile_args=compile_args,

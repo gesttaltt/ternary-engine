@@ -84,9 +84,9 @@
 #include <omp.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include "ternary_algebra.h"
+#include "ternary_core/algebra/ternary_algebra.h"
 #include "ternary_errors.h"
-#include "ternary_cpu_detect.h"
+#include "ternary_core/simd/ternary_cpu_detect.h"
 
 // MSVC compatibility: ssize_t is not standard C++
 #ifdef _MSC_VER

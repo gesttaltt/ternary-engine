@@ -56,9 +56,10 @@ else:
 ext_modules = [
     Pybind11Extension(
         "ternary_fusion_engine",
-        ["ternary_simd_engine_fusion.cpp"],
+        ["ternary_engine/experimental/fusion/ternary_simd_engine_fusion.cpp"],
         include_dirs=[
             str(Path(__file__).parent),  # Project root
+            str(Path(__file__).parent / "ternary_core"),  # Core kernel headers
         ],
         extra_compile_args=compile_args,
         extra_link_args=link_args,
