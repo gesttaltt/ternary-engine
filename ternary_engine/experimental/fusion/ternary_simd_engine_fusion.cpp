@@ -23,36 +23,9 @@
 #include "../../../ternary_core/algebra/ternary_algebra.h"
 #include "../../../ternary_errors.h"
 #include "../../../ternary_core/simd/ternary_fusion.h"
-
-// MSVC compatibility
-#ifdef _MSC_VER
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
+#include "../../../ternary_core/config/optimization_config.h"
 
 namespace py = pybind11;
-
-// Reuse optimization parameters from main engine
-// FIX: Clamp hardware_concurrency() to [1, 64] (can return 0 on some VMs)
-static const ssize_t OMP_THRESHOLD = 32768 * std::max(1u, std::min(64u, std::thread::hardware_concurrency()));
-static const ssize_t STREAM_THRESHOLD = 1000000;
-constexpr int PREFETCH_DIST = 512;
-
-#ifdef TERNARY_NO_SANITIZE
-constexpr bool SANITIZE = false;
-#else
-constexpr bool SANITIZE = true;
-#endif
-
-// =============================================================================
-// HELPER: Check if pointer is 32-byte aligned for streaming stores
-// =============================================================================
-
-// FIX: Streaming stores (_mm256_stream_si256) require 32-byte alignment
-// NumPy arrays do not guarantee this, so we must check before using
-inline bool is_aligned_32(const void* ptr) {
-    return (reinterpret_cast<uintptr_t>(ptr) % 32) == 0;
-}
 
 // =============================================================================
 // UNIFIED BINARY ARRAY PROCESSING TEMPLATE (Reused from main engine)

@@ -3,10 +3,11 @@
 // Copyright (c) 2025 Jonathan Verdun (Ternary Core Experimental Project)
 // Licensed under the Apache License, Version 2.0
 //
-// Compile: g++ -std=c++17 -O0 -I.. verify_autolut.cpp -o verify_autolut && ./verify_autolut
+// Compile: g++ -std=c++20 -O0 -I.. verify_autolut.cpp -o verify_autolut && ./verify_autolut
 
 #include <iostream>
 #include <iomanip>
+#include <bitset>
 #include "../ternary_core/algebra/ternary_algebra.h"
 
 // Manual baseline LUTs (from BASELINE-PRE-AUTOLUT.md)

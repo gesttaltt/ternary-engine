@@ -87,44 +87,13 @@
 #include "ternary_core/algebra/ternary_algebra.h"
 #include "ternary_errors.h"
 #include "ternary_core/simd/ternary_cpu_detect.h"
-
-// MSVC compatibility: ssize_t is not standard C++
-#ifdef _MSC_VER
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
+#include "ternary_core/config/optimization_config.h"
 
 namespace py = pybind11;
 
-// OPT-001: OpenMP threshold for large array parallelization
-// Arrays >= threshold will use multi-threaded processing
-// OPT-PHASE3-01: Adaptive threshold scales with CPU core count
-// Formula: 32K elements per thread ensures good load balancing across CPU tiers
-// FIX: Clamp hardware_concurrency() to [1, 64] (can return 0 on some VMs)
-static const ssize_t OMP_THRESHOLD = 32768 * std::max(1u, std::min(64u, std::thread::hardware_concurrency()));
-
-// OPT-STREAM: Streaming store threshold (arrays exceeding L3 cache size)
-// Typical L3: 8-32 MB; use streaming stores for arrays > 1M elements (~1 MB)
-// Non-temporal stores reduce cache pollution for memory-bound workloads
-static const ssize_t STREAM_THRESHOLD = 1000000;
-
-// OPT-PHASE3-03: Prefetch distance tuning
-// Prefetch stride for hiding memory latency (can be tuned per CPU family)
-// 512 bytes = 16 × 32-byte cache lines, optimal for Zen 2/4 and Raptor Lake
-// Adjust to 256 for older CPUs or 1024 for server-class processors
-constexpr int PREFETCH_DIST = 512;
-
-// OPT-PHASE3-04: Optional compile-time sanitization switch
-// Define TERNARY_NO_SANITIZE at compile time to disable input sanitization
-// for validated data pipelines (3-5% performance gain)
-// Example: c++ -DTERNARY_NO_SANITIZE -O3 ...
-#ifdef TERNARY_NO_SANITIZE
-constexpr bool SANITIZE = false;
-#else
-constexpr bool SANITIZE = true;
-#endif
-
-// --- LUT-Based SIMD Operations (OPT-061) ---
+// =============================================================================
+// LUT-Based SIMD Operations (OPT-061)
+// =============================================================================
 // Each operation uses _mm256_shuffle_epi8 for 32 parallel LUT lookups.
 // The LUTs are the same 16-entry tables used in scalar operations (ternary_algebra.h).
 
@@ -245,13 +214,6 @@ static inline __m256i tnot_simd(__m256i a) {
 // - Current validation: array size matching (binary ops), no validation needed (unary ops)
 //
 // =============================================================================
-
-// --- Helper: Check if pointer is 32-byte aligned for streaming stores ---
-// FIX: Streaming stores (_mm256_stream_si256) require 32-byte alignment
-// NumPy arrays do not guarantee this, so we must check before using
-inline bool is_aligned_32(const void* ptr) {
-    return (reinterpret_cast<uintptr_t>(ptr) % 32) == 0;
-}
 
 // --- Unified Binary Operation Template ---
 template <bool Sanitize = true, typename SimdOp, typename ScalarOp>
