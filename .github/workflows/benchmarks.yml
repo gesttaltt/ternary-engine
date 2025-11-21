@@ -85,26 +85,34 @@ jobs:
         path: benchmarks/results/
         retention-days: ${{ fromJSON(vars.BENCHMARK_RETENTION_DAYS || env.BENCHMARK_RETENTION_DAYS) }}
 
-    - name: Download baseline (if exists)
+    - name: Download baseline from main branch
       if: github.event_name == 'pull_request'
       continue-on-error: true
-      run: |
-        # Try to download baseline from main branch artifacts
-        echo "Checking for baseline benchmarks..."
-        # This would require storing baselines in repo or artifact storage
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: benchmarks.yml
+        branch: main
+        name: benchmark-results
+        path: benchmarks/results/baseline/
+        if_no_artifact_found: warn
 
     - name: Compare with baseline
       if: github.event_name == 'pull_request'
       continue-on-error: true
       run: |
-        # If baseline exists, run comparison
-        if [ -f "benchmarks/results/baseline/bench_results_*.json" ]; then
+        # Check if baseline was downloaded
+        if ls benchmarks/results/baseline/bench_results_*.json 1> /dev/null 2>&1; then
+          echo "Baseline found, running comparison..."
+          BASELINE_FILE=$(ls benchmarks/results/baseline/bench_results_*.json | head -n 1)
+          CURRENT_FILE=$(ls benchmarks/results/current/bench_results_*.json | head -n 1)
+
           python benchmarks/bench_compare.py \
-            benchmarks/results/baseline/bench_results_*.json \
-            benchmarks/results/current/bench_results_*.json \
+            "$BASELINE_FILE" \
+            "$CURRENT_FILE" \
             --threshold=5.0
         else
-          echo "No baseline found for comparison"
+          echo "⚠️ No baseline found - this is the first benchmark run or baseline artifact not available"
+          echo "Future PR comparisons will use this run as baseline"
         fi
 
     - name: Performance summary

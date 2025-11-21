@@ -17,9 +17,9 @@ Phase 4.1 Operations:
 import sys
 from pathlib import Path
 
-# Add project root and benchmarks to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-sys.path.insert(0, str(Path(__file__).parent))
+# Add project root to path (3 levels up: micro -> benchmarks -> project_root)
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 import numpy as np
 import platform

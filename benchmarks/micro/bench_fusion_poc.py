@@ -41,8 +41,9 @@ from dataclasses import dataclass
 from typing import List, Tuple
 import statistics
 
-# Add project root to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add project root to path (3 levels up: micro -> benchmarks -> project_root)
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
     import ternary_simd_engine as ternary
