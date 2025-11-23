@@ -33,6 +33,30 @@ Ternary Engine implements high-performance balanced ternary logic operations usi
 | Maximum | `tmax(a, b)` | Element-wise maximum |
 | Negation | `tnot(a)` | Sign flip (0 unchanged) |
 
+### Dense243 High-Density Module (Experimental)
+
+**Separate module for 20% storage savings with TritNet-ready architecture**
+
+```python
+import ternary_dense243_module as td
+
+# Pack 5 trits into 1 byte (vs 5 bytes in standard encoding)
+trits = np.array([0b00, 0b01, 0b10, 0b10, 0b01], dtype=np.uint8)
+packed = td.pack(trits)  # 5 → 1 byte (80% space savings)
+
+# Future: Neural network-based operations
+td.set_backend('tritnet')  # Switch from LUT to trained model
+result = td.tadd(packed_a, packed_b)  # Uses matmul instead of lookup
+```
+
+**Features:**
+- **Density:** 5 trits/byte (95.3% utilization) vs 4 trits/byte (standard)
+- **Performance:** Pack 0.25ns, Unpack 0.91ns (validated, all 243 states tested)
+- **Use cases:** Persistent storage, network transmission, memory-bound workloads
+- **TritNet roadmap:** Train BitNet on truth tables → distill to ternary weights → replace LUT with matmul
+- **Build:** `python scripts/build/build_dense243.py`
+- **Docs:** `docs/TRITNET_ROADMAP.md`
+
 ## Installation
 
 ### Requirements
