@@ -118,10 +118,11 @@ class SystemCapabilities:
         #     return False
 
     def _detect_fusion(self):
-        """Detect if fusion module is available"""
+        """Detect if fusion operations are available in main module"""
         try:
-            import ternary_fusion_engine
-            return True
+            import ternary_simd_engine
+            # Check if fusion operations exist in main module
+            return hasattr(ternary_simd_engine, 'fused_tnot_tadd')
         except:
             return False
 
@@ -163,7 +164,7 @@ class SystemCapabilities:
             else:
                 return "OpenMP tests unavailable"
         elif test_type == "fusion" and not self.can_run_fusion_tests:
-            return "Fusion module not built (run: python scripts/build/build_fusion.py build_ext --inplace)"
+            return "Fusion operations not available in ternary_simd_engine (build standard module first)"
         return None
 
 

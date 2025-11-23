@@ -548,7 +548,7 @@ rm -rf build/artifacts/standard/[0-9]*
 
 - [Architecture Overview](../architecture.md)
 - [Optimization Rationale](../optimization-complexity-rationale.md)
-- [PGO Technical Details](../PGO_README.md)
+- [PGO Technical Details](../pgo/README.md)
 
 ### Performance Analysis Tools
 

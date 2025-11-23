@@ -5,7 +5,7 @@ test_fusion.py - Test suite for operation fusion engine
 Copyright 2025 Ternary Engine Contributors
 Licensed under the Apache License, Version 2.0
 
-Tests correctness and behavior of fused operations in ternary_fusion_engine.
+Tests correctness and behavior of fused operations in ternary_simd_engine.
 Validates that fused operations produce identical results to separate operations.
 """
 
@@ -17,9 +17,9 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# Import both engines
+# Import engine (fusion operations now integrated into main module)
 import ternary_simd_engine as base
-import ternary_fusion_engine as fusion
+import ternary_simd_engine as fusion  # Fusion ops are now in main module
 
 # Encoding constants
 MINUS_ONE = 0b00

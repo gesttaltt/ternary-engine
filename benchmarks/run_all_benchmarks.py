@@ -28,8 +28,8 @@ import shutil
 
 
 PROJECT_ROOT = Path(__file__).parent.parent
-BUILD_SCRIPT = PROJECT_ROOT / "build.py"
-BUILD_PGO_SCRIPT = PROJECT_ROOT / "build_pgo.py"
+BUILD_SCRIPT = PROJECT_ROOT / "scripts" / "build" / "build.py"
+BUILD_PGO_SCRIPT = PROJECT_ROOT / "scripts" / "build" / "build_pgo.py"
 BENCH_SCRIPT = PROJECT_ROOT / "benchmarks" / "bench_phase0.py"
 COMPARE_SCRIPT = PROJECT_ROOT / "benchmarks" / "bench_compare.py"
 RESULTS_DIR = PROJECT_ROOT / "benchmarks" / "results"

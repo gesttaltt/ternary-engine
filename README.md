@@ -239,10 +239,10 @@ See **[TESTING.md](TESTING.md)** for comprehensive testing and CI/CD documentati
 Additional 5-15% performance gain:
 
 ```bash
-python build_pgo.py full
+python scripts/build/build_pgo.py full
 ```
 
-See [docs/PGO_README.md](docs/PGO_README.md) for details.
+See [docs/pgo/README.md](docs/pgo/README.md) for details.
 
 ### Compile-Time Options
 
