@@ -1,0 +1,9 @@
+# TritNet Datasets - Exclude large truth table files
+# These can be regenerated using: python scripts/tritnet/generate_truth_tables.py
+
+tritnet/*.json
+tritnet/*_truth_table.json
+
+# Keep README and summary
+!tritnet/README.md
+!tritnet/generation_summary.json
