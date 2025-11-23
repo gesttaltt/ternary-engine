@@ -10,6 +10,6 @@ flags = (["/O2","/GL","/arch:AVX2","/openmp","/std:c++17","/EHsc"]
          else ["-O3","-march=native","-fopenmp","-std=c++17"])
 link = ["/LTCG"] if platform.system()=="Windows" else ["-flto"]
 
-meta = build_module("ternary_simd_engine", ROOT/"ternary_simd_engine.cpp", flags, ART, link)
+meta = build_module("ternary_simd_engine", ROOT/"ternary_engine"/"ternary_simd_engine.cpp", flags, ART, link)
 meta["type"]="standard"
 print(json.dumps(meta, indent=2))

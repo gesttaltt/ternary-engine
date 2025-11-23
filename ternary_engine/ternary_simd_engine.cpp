@@ -84,10 +84,10 @@
 #include <omp.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include "ternary_core/algebra/ternary_algebra.h"
-#include "ternary_errors.h"
-#include "ternary_core/simd/ternary_cpu_detect.h"
-#include "ternary_core/config/optimization_config.h"
+#include "../ternary_core/algebra/ternary_algebra.h"
+#include "../ternary_core/common/ternary_errors.h"
+#include "../ternary_core/simd/ternary_cpu_detect.h"
+#include "../ternary_core/config/optimization_config.h"
 
 namespace py = pybind11;
 
