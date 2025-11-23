@@ -486,7 +486,7 @@ Verifies parallel scaling on multi-core systems.
 ### Standard Build
 
 ```bash
-python scripts/build/build.py
+python build/build.py
 ```
 
 Produces `ternary_simd_engine.cp312-win_amd64.pyd` (or `.so` on Linux) with fusion operations included.
@@ -494,7 +494,7 @@ Produces `ternary_simd_engine.cp312-win_amd64.pyd` (or `.so` on Linux) with fusi
 ### With Profile-Guided Optimization
 
 ```bash
-python scripts/build/build_pgo.py full
+python build/build_pgo.py full
 ```
 
 See [`docs/PGO_README.md`](../PGO_README.md) for details.

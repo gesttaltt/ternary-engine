@@ -153,13 +153,13 @@ Once Clang is installed:
 
 ```bash
 # Auto-detect (prefers Clang if available)
-python scripts/build/build_pgo_unified.py
+python build/build_pgo_unified.py
 
 # Force Clang
-python scripts/build/build_pgo_unified.py --clang
+python build/build_pgo_unified.py --clang
 
 # Force MSVC fallback (not recommended)
-python scripts/build/build_pgo_unified.py --msvc
+python build/build_pgo_unified.py --msvc
 ```
 
 ---
@@ -169,7 +169,7 @@ python scripts/build/build_pgo_unified.py --msvc
 ### Phase 1: Instrumentation Build
 
 ```bash
-python scripts/build/build_pgo_unified.py --clang --clean
+python build/build_pgo_unified.py --clang --clean
 ```
 
 **what_happens**:
@@ -277,7 +277,7 @@ find pgo_data -name "*.profraw"
 
 ```bash
 # Phase 1: Build instrumented
-python scripts/build/build_pgo_unified.py --clang
+python build/build_pgo_unified.py --clang
 
 # Phase 2: Run custom workload (instead of automatic)
 python my_custom_benchmark.py
@@ -285,7 +285,7 @@ python another_workload.py
 
 # Phase 3 & 4: Merge and rebuild
 llvm-profdata merge -output=pgo_data/merged.profdata pgo_data/profiles/*.profraw
-CPPFLAGS="-fprofile-use=pgo_data/merged.profdata" python scripts/build/build.py
+CPPFLAGS="-fprofile-use=pgo_data/merged.profdata" python build/build.py
 ```
 
 ### Analyze Profile Data
@@ -309,7 +309,7 @@ After PGO build, compare performance:
 cp ternary_simd_engine.cp312-win_amd64.pyd ternary_simd_engine_pgo.pyd
 
 # Standard build
-python scripts/build/build.py
+python build/build.py
 
 # Benchmark standard
 python benchmarks/bench_phase0.py > results_standard.txt

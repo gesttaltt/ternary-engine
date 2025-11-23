@@ -108,7 +108,7 @@ benchmarks/
 #### 2. Build Scripts (6 files)
 
 ```
-scripts/build/
+build/
 ├── build.py                     ✓ Standard optimized build
 ├── build_reference.py           ✓ Reference (no SIMD) build
 ├── build_pgo.py                 ✓ Profile-guided optimization
@@ -332,7 +332,7 @@ docs/
 
 1. **Create Competitive Benchmark Build Script**
    ```bash
-   scripts/build/build_competitive_benchmarks.py
+   build/build_competitive_benchmarks.py
    ```
    - Build engine for competitive benchmarks
    - Install PyTorch/Transformers dependencies

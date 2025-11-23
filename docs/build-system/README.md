@@ -10,7 +10,7 @@ This directory contains comprehensive documentation for the ternary-engine build
 | **PGO** | `build_pgo.py` | Performance-critical | 15-60x baseline | 8-10min |
 | **Reference** | `build_reference.py` | Benchmarking baseline | 1x baseline | 25-45s |
 
-All build scripts are located in `scripts/build/` and generate timestamped artifacts in `build/artifacts/`.
+All build scripts are located in `build/` and generate timestamped artifacts in `build/artifacts/`.
 
 ## Documentation Index
 
@@ -52,13 +52,13 @@ All build scripts are located in `scripts/build/` and generate timestamped artif
 
 ```bash
 # Most users: Production-ready standard build
-python scripts/build/build.py
+python build/build.py
 
 # Performance-critical applications: PGO build
-python scripts/build/build_pgo.py full
+python build/build_pgo.py full
 
 # Benchmarking/research: Reference baseline
-python scripts/build/build_reference.py
+python build/build_reference.py
 ```
 
 ### First-Time Setup
@@ -72,7 +72,7 @@ cl.exe /?      # Windows
 gcc --version  # Linux
 
 # 3. Build standard version
-python scripts/build/build.py
+python build/build.py
 
 # 4. Test
 python -c "import ternary_simd_engine; print('Build successful!')"
@@ -82,9 +82,9 @@ python -c "import ternary_simd_engine; print('Build successful!')"
 
 ```bash
 # Build all three versions for comparison
-python scripts/build/build_reference.py
-python scripts/build/build.py
-python scripts/build/build_pgo.py full
+python build/build_reference.py
+python build/build.py
+python build/build_pgo.py full
 
 # Run benchmarks
 python benchmarks/bench_phase0.py
@@ -229,20 +229,20 @@ ternary-engine/
 
 ```bash
 # Standard build (recommended for most cases)
-python scripts/build/build.py
+python build/build.py
 
 # Or PGO if performance critical
-python scripts/build/build_pgo.py full
+python build/build_pgo.py full
 ```
 
 ### Measuring Performance Impact
 
 ```bash
 # Build baseline
-python scripts/build/build_reference.py
+python build/build_reference.py
 
 # Build optimized
-python scripts/build/build.py
+python build/build.py
 
 # Compare
 python benchmarks/bench_phase0.py
@@ -252,13 +252,13 @@ python benchmarks/bench_phase0.py
 
 ```bash
 # Before changes
-python scripts/build/build.py
+python build/build.py
 python benchmarks/bench_phase0.py > before.txt
 
 # Make changes to ternary_simd_engine.cpp...
 
 # After changes
-python scripts/build/build.py
+python build/build.py
 python benchmarks/bench_phase0.py > after.txt
 
 # Compare
@@ -269,16 +269,16 @@ diff before.txt after.txt
 
 ```bash
 # Clean all build artifacts (recommended)
-python scripts/build/clean_all.py
+python build/clean_all.py
 
 # Preview what would be deleted
-python scripts/build/clean_all.py --dry-run
+python build/clean_all.py --dry-run
 
 # Keep latest builds
-python scripts/build/clean_all.py --keep-latest
+python build/clean_all.py --keep-latest
 
 # Keep recent benchmark results
-python scripts/build/clean_all.py --keep-results 5
+python build/clean_all.py --keep-results 5
 
 # See full documentation
 # docs/build-system/cleanup-system.md
@@ -452,9 +452,9 @@ When contributing changes to the build system:
 
 1. **Test all three builds:**
    ```bash
-   python scripts/build/build_reference.py
-   python scripts/build/build.py
-   python scripts/build/build_pgo.py full
+   python build/build_reference.py
+   python build/build.py
+   python build/build_pgo.py full
    ```
 
 2. **Verify performance:**
@@ -471,7 +471,7 @@ When contributing changes to the build system:
    - Linux (GCC/Clang)
    - macOS (Clang)
 
-5. **Update build paths**: Use `scripts/build/build.py` (not root-level `build.py`)
+5. **Update build paths**: Use `build/build.py` (not root-level `build.py`)
 
 ## FAQ
 
@@ -538,13 +538,13 @@ import ternary_simd_engine
 **A:** Use the comprehensive cleanup utility:
 ```bash
 # Clean all build artifacts
-python scripts/build/clean_all.py
+python build/clean_all.py
 
 # Keep latest builds to avoid rebuilding
-python scripts/build/clean_all.py --keep-latest
+python build/clean_all.py --keep-latest
 
 # Preview before cleaning
-python scripts/build/clean_all.py --dry-run
+python build/clean_all.py --dry-run
 ```
 
 See [Cleanup System Documentation](./cleanup-system.md) for full details.

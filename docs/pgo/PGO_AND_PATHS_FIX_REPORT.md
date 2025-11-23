@@ -47,16 +47,16 @@
 
 **problem**:
 - Two different `build_reference.py` files:
-  - `scripts/build/build_reference.py` (full-featured, correct)
+  - `build/build_reference.py` (full-featured, correct)
   - `build/scripts/build_reference.py` (template-based, outdated)
 
 **fix**:
 - Removed `build/scripts/build_reference.py`
-- Kept `scripts/build/build_reference.py` (the correct one)
+- Kept `build/build_reference.py` (the correct one)
 
 **verification**:
 ```bash
-ls -la scripts/build/build_reference.py  # ✅ EXISTS
+ls -la build/build_reference.py  # ✅ EXISTS
 ls -la build/scripts/build_reference.py  # ❌ REMOVED
 ```
 
@@ -72,7 +72,7 @@ build/scripts/          # Old location
   build_benchmark.py
   templates/
 
-scripts/build/          # New location
+build/          # New location
   build.py              # Standard build
   build_pgo.py          # PGO build
   build_fusion.py       # Fusion build
@@ -81,7 +81,7 @@ scripts/build/          # New location
 
 **after**:
 ```
-scripts/build/          # Canonical location
+build/          # Canonical location
   build.py              # ✅ Standard optimized
   build_pgo.py          # ✅ PGO (documented limitations)
   build_fusion.py       # ✅ Fusion engine
@@ -94,7 +94,7 @@ build/scripts/          # Legacy templates (kept for reference)
 ```
 
 **standardization**:
-- All user-facing build scripts in `scripts/build/`
+- All user-facing build scripts in `build/`
 - All scripts use same pattern (PROJECT_ROOT resolution, artifacts dir)
 - Consistent error handling and output formatting
 
@@ -294,7 +294,7 @@ PGO_AND_PATHS_FIX_REPORT.md      - This report
 
 ### Modified
 ```
-scripts/build/build_pgo.py
+build/build_pgo.py
   - Line 196-200: Added PogoSafeMode environment variable
   - Line 216-244: Added .pgc file search in multiple locations
   - Line 246-277: Added pgomgr explicit merge step
@@ -307,10 +307,10 @@ build/scripts/build_reference.py
 
 ### Verified Working
 ```
-scripts/build/build.py              ✅ Standard optimized build
-scripts/build/build_fusion.py       ✅ Fusion engine build
-scripts/build/build_pgo.py          ⚠️ Runs but no PGO benefit
-scripts/build/build_reference.py    ✅ Unoptimized baseline
+build/build.py              ✅ Standard optimized build
+build/build_fusion.py       ✅ Fusion engine build
+build/build_pgo.py          ⚠️ Runs but no PGO benefit
+build/build_reference.py    ✅ Unoptimized baseline
 
 benchmarks/reference_cpp.cpp        ✅ Created and builds
 tests/test_fusion.py                ✅ All tests pass

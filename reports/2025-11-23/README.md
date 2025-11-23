@@ -104,7 +104,7 @@ tnot      | 4,005x
 
 ```bash
 # 1. Build
-python scripts/build/build.py
+python build/build.py
 
 # 2. Test
 python tests/run_tests.py

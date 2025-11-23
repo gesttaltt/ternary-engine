@@ -60,7 +60,7 @@ result = td.tadd(packed_a, packed_b)  # Uses matmul instead of lookup
 - **Performance:** Pack 0.25ns, Unpack 0.91ns (validated, all 243 states tested)
 - **Use cases:** Persistent storage, network transmission, memory-bound workloads
 - **TritNet roadmap:** Train BitNet on truth tables → distill to ternary weights → replace LUT with matmul
-- **Build:** `python scripts/build/build_dense243.py`
+- **Build:** `python build/build_dense243.py`
 - **Docs:** `docs/TRITNET_ROADMAP.md`
 
 ### TritNet - Neural Network-Based Ternary Arithmetic (Experimental)
@@ -113,13 +113,13 @@ Output: TernaryLinear [hidden_size → 5]
 **Usage:**
 ```bash
 # Generate truth tables for all operations
-python scripts/tritnet/generate_truth_tables.py --all --output data/tritnet
+python models/tritnet/src/generate_truth_tables.py --output-dir models/datasets/tritnet
 
 # Train tnot operation (proof-of-concept)
-python scripts/tritnet/train_tritnet.py --operation tnot --hidden-size 8
+python models/tritnet/src/train_tritnet.py --operation tnot --hidden-size 8
 
-# Train all binary operations
-python scripts/tritnet/train_tritnet.py --all --output-dir models/tritnet
+# Train all binary operations (use run_tritnet.py for full workflow)
+python models/tritnet/run_tritnet.py --all
 ```
 
 **Performance Goals:**
@@ -137,7 +137,8 @@ python scripts/tritnet/train_tritnet.py --all --output-dir models/tritnet
 **Documentation:**
 - **[docs/TRITNET_ROADMAP.md](docs/TRITNET_ROADMAP.md)** - Implementation roadmap and technical architecture
 - **[docs/TRITNET_VISION.md](docs/TRITNET_VISION.md)** - Long-term vision and research goals
-- **[scripts/tritnet/](scripts/tritnet/)** - Training scripts and model definitions
+- **[models/tritnet/src/](models/tritnet/src/)** - Training scripts and model definitions
+- **[models/tritnet/run_tritnet.py](models/tritnet/run_tritnet.py)** - Unified TritNet workflow orchestration
 
 **Why This Matters:**
 Moving ternary computing from memory-bound (LUT) to compute-bound (matmul) enables:
@@ -159,7 +160,7 @@ Moving ternary computing from memory-bound (LUT) to compute-bound (matmul) enabl
 
 ```bash
 pip install pybind11 numpy
-python scripts/build/build.py
+python build/build.py
 python -c "import ternary_simd_engine; print('Success')"
 ```
 
@@ -181,7 +182,7 @@ c++ -O3 -march=native -mavx2 -flto -shared -std=c++17 -fPIC \
     -o ternary_simd_engine$(python3-config --extension-suffix)
 ```
 
-Note: OpenMP (`-fopenmp`) disabled by default due to documented CI crashes. For production use on Windows, use the validated build script: `python scripts/build/build.py`
+Note: OpenMP (`-fopenmp`) disabled by default due to documented CI crashes. For production use on Windows, use the validated build script: `python build/build.py`
 
 ## Usage
 
@@ -604,13 +605,13 @@ Additional 5-15% performance gain using Clang PGO (recommended) or MSVC fallback
 
 ```bash
 # Clang PGO (recommended - works with Python extensions)
-python scripts/build/build_pgo_unified.py --clang
+python build/build_pgo_unified.py --clang
 
 # Auto-detect (prefers Clang if available)
-python scripts/build/build_pgo_unified.py
+python build/build_pgo_unified.py
 
 # MSVC fallback (has known limitations)
-python scripts/build/build_pgo.py full
+python build/build_pgo.py full
 ```
 
 See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md](docs/pgo/CLANG_INSTALLATION.md) for details.

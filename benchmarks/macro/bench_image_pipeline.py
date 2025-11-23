@@ -27,7 +27,7 @@ try:
 except ImportError as e:
     print(f"ERROR: {e}")
     print("Build modules first:")
-    print("  python scripts/build/build.py")
+    print("  python build/build.py")
     sys.exit(1)
 
 print("\n" + "="*80)

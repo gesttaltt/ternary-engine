@@ -51,7 +51,7 @@ ternary-engine/
 │   ├── ffi/                   # C API for cross-language support
 │   └── profiling/             # VTune/NVTX integration
 ├── ternary_engine/            # Python bindings (17,588 lines)
-├── scripts/build/             # Build system
+├── build/             # Build system
 ├── benchmarks/                # Performance validation
 ├── tests/                     # Test suite
 ├── docs/                      # Documentation (56 files)
@@ -81,7 +81,7 @@ ternary-engine/
 
 #### Issue 1: Deprecated distutils Import (Python 3.12+ Incompatibility)
 
-**File:** `scripts/build/build_pgo_unified.py:109`
+**File:** `build/build_pgo_unified.py:109`
 
 **Problem:**
 ```python
@@ -200,7 +200,7 @@ These issues were documented but not addressed in this session:
 
 ### 3.1 Standard Optimized Build
 
-**Build Script:** `scripts/build/build.py`
+**Build Script:** `build/build.py`
 **Timestamp:** 2025-11-23 01:51:13
 **Status:** ✅ SUCCESS
 
@@ -655,7 +655,7 @@ Size        | tadd Throughput | Scaling Factor
 
 ```bash
 # 1. Build the module
-python scripts/build/build.py
+python build/build.py
 
 # 2. Run tests (optional)
 python tests/run_tests.py

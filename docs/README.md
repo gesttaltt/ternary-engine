@@ -15,7 +15,7 @@ This directory contains comprehensive documentation for the ternary-engine libra
 ✅ **`ternary_engine/`** - Main SIMD engine with fusion operations
 - Unified module with all core operations
 - Fusion operations available: `fused_tnot_tadd`, `fused_tnot_tmul`, `fused_tnot_tmin`, `fused_tnot_tmax`
-- Build via `scripts/build/build.py`
+- Build via `build/build.py`
 
 ⚠️ **Deprecated/Archived:**
 - **ternary_fusion_engine** - Merged into main `ternary_simd_engine` module (see MIGRATION_NOTES.md)
@@ -27,7 +27,7 @@ This directory contains comprehensive documentation for the ternary-engine libra
 - `ternary_core/simd/` - SIMD kernels, CPU detection, and fusion operations
 - `ternary_core/common/` - Common utilities and error handling
 - `ternary_engine/` - Main SIMD engine with Python bindings
-- `scripts/build/` - Build scripts
+- `build/` - Build scripts
 - `tests/` - Test suite
 - `legacy/` - Archived code (broken or deprecated features)
 
@@ -149,7 +149,7 @@ docs/
 3. Use `make_binary_lut()` or `make_unary_lut()` from `ternary_lut_gen.h`
 
 **Build the project:**
-1. Quick: `python scripts/build/build.py`
+1. Quick: `python build/build.py`
 2. Detailed: [Build System Overview](./build-system/README.md)
 3. PGO: [PGO_README.md](./PGO_README.md)
 
@@ -248,7 +248,7 @@ All documentation is released under Apache 2.0 (same as source code).
 - Merged fusion operations into main `ternary_simd_engine` module
 - Archived broken dense243 implementation to `legacy/`
 - Removed unused profiler infrastructure
-- Reorganized build scripts to `scripts/build/`
+- Reorganized build scripts to `build/`
 - Updated all documentation paths
 
 See `MIGRATION_NOTES.md` and `legacy/README.md` for migration details.

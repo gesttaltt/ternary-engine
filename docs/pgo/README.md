@@ -20,7 +20,7 @@ Profile-Guided Optimization uses actual runtime behavior to guide compiler optim
 ```bash
 # Install Clang (see CLANG_INSTALLATION.md)
 # Then run unified PGO build
-python scripts/build/build_pgo_unified.py --clang
+python build/build_pgo_unified.py --clang
 ```
 
 **expected_gain** - 5-15% performance improvement
@@ -30,14 +30,14 @@ python scripts/build/build_pgo_unified.py --clang
 
 ```bash
 # Automatically prefers Clang if available, falls back to MSVC
-python scripts/build/build_pgo_unified.py
+python build/build_pgo_unified.py
 ```
 
 ### MSVC Fallback
 
 ```bash
 # Has known limitations with Python extensions
-python scripts/build/build_pgo.py full
+python build/build_pgo.py full
 ```
 
 **note** - See PGO_LIMITATIONS.md for why MSVC PGO doesn't work well with Python
@@ -118,7 +118,7 @@ Source Code → Instrumented Binary → Run Workload → Profile Data
 ### Phase 1: Instrumentation Build
 
 ```bash
-CPPFLAGS="-fprofile-generate=pgo_data/profiles" python scripts/build/build.py
+CPPFLAGS="-fprofile-generate=pgo_data/profiles" python build/build.py
 ```
 
 **output** - `ternary_simd_engine.pyd` with profiling hooks
@@ -148,7 +148,7 @@ llvm-profdata merge -output=pgo_data/merged.profdata pgo_data/profiles/*.profraw
 ### Phase 4: Optimized Build
 
 ```bash
-CPPFLAGS="-fprofile-use=pgo_data/merged.profdata" python scripts/build/build.py
+CPPFLAGS="-fprofile-use=pgo_data/merged.profdata" python build/build.py
 ```
 
 **output** - PGO-optimized `ternary_simd_engine.pyd`
@@ -163,16 +163,16 @@ The `build_pgo_unified.py` script automates all 4 phases:
 
 ```bash
 # Full workflow (auto-detect compiler)
-python scripts/build/build_pgo_unified.py
+python build/build_pgo_unified.py
 
 # Force Clang
-python scripts/build/build_pgo_unified.py --clang
+python build/build_pgo_unified.py --clang
 
 # Force MSVC (not recommended)
-python scripts/build/build_pgo_unified.py --msvc
+python build/build_pgo_unified.py --msvc
 
 # Clean PGO data before starting
-python scripts/build/build_pgo_unified.py --clang --clean
+python build/build_pgo_unified.py --clang --clean
 ```
 
 ---
@@ -196,11 +196,11 @@ python scripts/build/build_pgo_unified.py --clang --clean
 
 ```bash
 # Build and benchmark standard
-python scripts/build/build.py
+python build/build.py
 python benchmarks/bench_phase0.py > standard.txt
 
 # Build and benchmark PGO
-python scripts/build/build_pgo_unified.py --clang
+python build/build_pgo_unified.py --clang
 python benchmarks/bench_phase0.py > pgo.txt
 
 # Compare results
@@ -256,7 +256,7 @@ find pgo_data -name "*.profraw"
 
 ```bash
 rm -rf pgo_data/
-python scripts/build/build_pgo_unified.py --clang --clean
+python build/build_pgo_unified.py --clang --clean
 ```
 
 ### MSVC Used Instead of Clang
@@ -266,7 +266,7 @@ python scripts/build/build_pgo_unified.py --clang --clean
 **solution**:
 ```bash
 # Force Clang
-python scripts/build/build_pgo_unified.py --clang
+python build/build_pgo_unified.py --clang
 
 # Verify Clang detected
 clang-cl --version
@@ -281,7 +281,7 @@ llvm-profdata --version
 
 ```bash
 # Phase 1: Build instrumented
-CPPFLAGS="-fprofile-generate=pgo_data/profiles" python scripts/build/build.py
+CPPFLAGS="-fprofile-generate=pgo_data/profiles" python build/build.py
 
 # Phase 2: Run custom workload
 python my_custom_benchmark.py
@@ -291,7 +291,7 @@ python another_important_workload.py
 llvm-profdata merge -output=pgo_data/merged.profdata pgo_data/profiles/*.profraw
 
 # Phase 4: Optimized build
-CPPFLAGS="-fprofile-use=pgo_data/merged.profdata" python scripts/build/build.py
+CPPFLAGS="-fprofile-use=pgo_data/merged.profdata" python build/build.py
 ```
 
 ### Analyze Profile Data
@@ -324,12 +324,12 @@ Clang uses profiles to optimize:
 
 **old_workflow**:
 ```bash
-python scripts/build/build_pgo.py full  # Doesn't collect profile data
+python build/build_pgo.py full  # Doesn't collect profile data
 ```
 
 **new_workflow**:
 ```bash
-python scripts/build/build_pgo_unified.py --clang  # Actually works
+python build/build_pgo_unified.py --clang  # Actually works
 ```
 
 **benefits**:
@@ -344,7 +344,7 @@ python scripts/build/build_pgo_unified.py --clang  # Actually works
 ```bash
 # Phase 1
 export CPPFLAGS="-fprofile-generate=profiles"
-python scripts/build/build.py
+python build/build.py
 
 # Phase 2
 python benchmarks/bench_phase0.py
@@ -354,12 +354,12 @@ llvm-profdata merge -output=merged.profdata profiles/*.profraw
 
 # Phase 4
 export CPPFLAGS="-fprofile-use=merged.profdata"
-python scripts/build/build.py
+python build/build.py
 ```
 
 **new_workflow** (automated):
 ```bash
-python scripts/build/build_pgo_unified.py --clang
+python build/build_pgo_unified.py --clang
 ```
 
 **benefits** - One command, automatic error handling, better UX

@@ -69,7 +69,7 @@ Fusion operations (`fused_tnot_tadd`, `fused_tnot_tmul`, `fused_tnot_tmin`, `fus
   ```
 
 **Option B: Separate Module**
-- Create `scripts/build/build_fusion.py`
+- Create `build/build_fusion.py`
 - Build standalone fusion module
 - Maintains backward compatibility with existing benchmark imports
 
@@ -438,7 +438,7 @@ Document profiler usage and add build flag for VTune integration.
 
 ## Detailed File-by-File Analysis
 
-### Build Scripts (`scripts/build/`)
+### Build Scripts (`build/`)
 
 | Script | Status | Issues | Priority |
 |--------|--------|--------|----------|

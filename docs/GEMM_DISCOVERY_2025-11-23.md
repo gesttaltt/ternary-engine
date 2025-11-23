@@ -295,11 +295,11 @@ PYBIND11_MODULE(ternary_tritnet_gemm, m) {
 ### Gap 2: No Build Script 🔴 **CRITICAL**
 
 **Problem:**
-No `scripts/build/build_tritnet_gemm.py` exists.
+No `build/build_tritnet_gemm.py` exists.
 
 **Required:**
 ```python
-# scripts/build/build_tritnet_gemm.py
+# build/build_tritnet_gemm.py
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup
 
@@ -497,7 +497,7 @@ uint8_t expected = 104;
 
 **Files to Create:**
 1. `ternary_engine/ternary_tritnet_gemm_module.cpp` - pybind11 wrapper
-2. `scripts/build/build_tritnet_gemm.py` - Build script
+2. `build/build_tritnet_gemm.py` - Build script
 3. `tests/test_tritnet_gemm.py` - Python unit tests
 
 **API Design:**

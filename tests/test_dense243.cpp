@@ -19,7 +19,7 @@
 #include <cassert>
 #include <vector>
 #include <chrono>
-#include "../ternary_engine/experimental/dense243/ternary_dense243.h"
+#include "../ternary_engine/lib/dense243/ternary_dense243.h"
 #include "../ternary_core/algebra/ternary_algebra.h"
 
 // ANSI color codes for terminal output

@@ -54,7 +54,7 @@ Ternary Engine includes integrated profiler support for performance analysis usi
 Zero overhead, no profiler annotations:
 
 ```bash
-python scripts/build/build.py
+python build/build.py
 ```
 
 **compiled_with** - No profiling macros
@@ -68,13 +68,13 @@ Enable Intel VTune annotations:
 ```bash
 CPPFLAGS="-DTERNARY_ENABLE_VTUNE" \
 LDFLAGS="-littnotify" \
-python scripts/build/build.py
+python build/build.py
 ```
 
 **Windows (MSVC):**
 ```cmd
 set CL=/DTERNARY_ENABLE_VTUNE
-python scripts/build/build.py
+python build/build.py
 ```
 
 Then link against VTune library (`ittnotify.lib`).
@@ -86,7 +86,7 @@ Enable NVIDIA Nsight annotations:
 ```bash
 CPPFLAGS="-DTERNARY_ENABLE_NVTX" \
 LDFLAGS="-lnvToolsExt" \
-python scripts/build/build.py
+python build/build.py
 ```
 
 ---
@@ -122,7 +122,7 @@ The engine annotates three critical execution paths:
 ```bash
 export CPPFLAGS="-DTERNARY_ENABLE_VTUNE"
 export LDFLAGS="-littnotify"
-python scripts/build/build.py
+python build/build.py
 ```
 
 ### 2. Run VTune Analysis

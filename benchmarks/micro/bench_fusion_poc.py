@@ -53,7 +53,7 @@ try:
 except ImportError as e:
     print("ERROR: Required modules not built.")
     print("\nPlease build first:")
-    print("  python scripts/build/build.py")
+    print("  python build/build.py")
     sys.exit(1)
 
 # =============================================================================

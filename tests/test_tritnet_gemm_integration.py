@@ -10,7 +10,7 @@ USAGE:
 
 REQUIREMENTS:
     - ternary_tritnet_gemm module must be built
-    - Run: python scripts/build/build_tritnet_gemm.py
+    - Run: python build/build_tritnet_gemm.py
 
 TESTS:
     1. Module availability check
@@ -45,7 +45,7 @@ def test_module_availability():
         return True
     else:
         print("❌ ternary_tritnet_gemm module NOT available")
-        print("   Build with: python scripts/build/build_tritnet_gemm.py")
+        print("   Build with: python build/build_tritnet_gemm.py")
         return False
 
 

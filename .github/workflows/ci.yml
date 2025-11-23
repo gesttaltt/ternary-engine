@@ -54,7 +54,7 @@ jobs:
         NUMPY_VERSION: ${{ secrets.NUMPY_VERSION || env.NUMPY_VERSION }}
 
     - name: Build module
-      run: python scripts/build/build.py
+      run: python build/build.py
       env:
         BUILD_VERBOSE: ${{ secrets.BUILD_VERBOSE || '0' }}
 

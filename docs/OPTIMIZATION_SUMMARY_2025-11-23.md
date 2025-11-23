@@ -75,8 +75,8 @@ Performed comprehensive analysis of the Ternary Engine codebase, focusing on:
 - ✅ Integration with `bench_phase0.py` for profiling workload
 
 **Files Reviewed:**
-- `scripts/build/build_pgo_unified.py` (391 lines) - excellent implementation
-- `scripts/build/build_pgo.py` (legacy MSVC) - superseded but retained for reference
+- `build/build_pgo_unified.py` (391 lines) - excellent implementation
+- `build/build_pgo.py` (legacy MSVC) - superseded but retained for reference
 
 ### 4. SIMD Vectorization Analysis ✅
 
@@ -230,7 +230,7 @@ grep -r "import ternary_fusion_engine" benchmarks/
 
 **Verified Configuration:**
 ```python
-# scripts/build/build_all.py:196-198
+# build/build_all.py:196-198
 if not args.no_dense243:
     results['dense243_build'] = build_dense243()
 ```
@@ -427,7 +427,7 @@ static inline __m256i binary_simd_op(__m256i a, __m256i b, __m256i lut) {
 ### Immediate Validation Needed ✅
 - [ ] **Build all modules:**
   ```bash
-  python scripts/build/build_all.py
+  python build/build_all.py
   ```
   Expected: Both `ternary_simd_engine` and `ternary_dense243_module` build successfully
 
@@ -569,7 +569,7 @@ Use Case       Storage        20% space savings
 2. **Validate All Changes**
    ```bash
    # Build everything
-   python scripts/build/build_all.py
+   python build/build_all.py
 
    # Test fusion benchmarks
    python benchmarks/bench_fusion.py

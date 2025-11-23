@@ -257,7 +257,7 @@ Avg Speedup: 7,197× vs Python
 ## Files Modified
 
 ```
-scripts/build/build_pgo.py
+build/build_pgo.py
   - Added .pgc file search logic
   - Added pgomgr merge step
   - Added environment variables

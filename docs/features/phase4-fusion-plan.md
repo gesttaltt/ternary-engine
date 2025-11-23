@@ -19,7 +19,7 @@
 **Migration:**
 - Old separate `ternary_fusion_engine` module has been merged into main module
 - See `MIGRATION_NOTES.md` for migration guide
-- Build via standard `scripts/build/build.py` (fusion included automatically)
+- Build via standard `build/build.py` (fusion included automatically)
 
 **Usage:**
 ```python

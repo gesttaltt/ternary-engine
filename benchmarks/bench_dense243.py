@@ -37,7 +37,7 @@ try:
     HAS_DENSE243 = True
 except ImportError:
     print("Warning: ternary_dense243 not available")
-    print("Build with: python scripts/build/build_dense243.py")
+    print("Build with: python build/build_dense243.py")
     HAS_DENSE243 = False
 
 

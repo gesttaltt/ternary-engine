@@ -68,7 +68,7 @@ Completed comprehensive project analysis and implemented all Priority 1 gaps ide
 - Encoding overhead quantified
 - Trade-off analysis for storage vs operations
 
-#### Created: `scripts/build/build_all.py` (216 lines)
+#### Created: `build/build_all.py` (216 lines)
 
 **Purpose:** Unified build script for entire project
 
@@ -81,12 +81,12 @@ Completed comprehensive project analysis and implemented all Priority 1 gaps ide
 
 **Usage:**
 ```bash
-python scripts/build/build_all.py            # Full build
-python scripts/build/build_all.py --quick    # Skip tests
-python scripts/build/build_all.py --clean    # Clean first
+python build/build_all.py            # Full build
+python build/build_all.py --quick    # Skip tests
+python build/build_all.py --clean    # Clean first
 ```
 
-#### Created: `scripts/build/build_competitive.py` (NEW - 220 lines)
+#### Created: `build/build_competitive.py` (NEW - 220 lines)
 
 **Purpose:** Prepare complete environment for competitive benchmarking
 
@@ -99,9 +99,9 @@ python scripts/build/build_all.py --clean    # Clean first
 
 **Usage:**
 ```bash
-python scripts/build/build_competitive.py              # Full prep
-python scripts/build/build_competitive.py --skip-deps  # Skip dependencies
-python scripts/build/build_competitive.py --skip-model # Skip model download
+python build/build_competitive.py              # Full prep
+python build/build_competitive.py --skip-deps  # Skip dependencies
+python build/build_competitive.py --skip-model # Skip model download
 ```
 
 ---
@@ -199,7 +199,7 @@ Layer model.layers.0.mlp.gate_proj:
 ### New Files Created (This Session)
 
 ```
-scripts/build/
+build/
 ├── build_all.py                       (216 lines) - NEW ✓
 └── build_competitive.py               (220 lines) - NEW ✓
 
@@ -217,7 +217,7 @@ reports/2025-11-23/
 ### Build Scripts Portfolio (Complete)
 
 ```
-scripts/build/
+build/
 ├── build.py                           (240 lines) - Standard optimized ✓
 ├── build_reference.py                 (~200 lines) - Reference (no SIMD) ✓
 ├── build_pgo.py                       (~250 lines) - Profile-guided optimization ✓
@@ -291,7 +291,7 @@ benchmarks/
 **1. Build Native Engine** 🔴 CRITICAL
 ```bash
 cd C:\Users\Gestalt\Desktop\ternary\repos\ternary-engine
-python scripts/build/build.py
+python build/build.py
 ```
 **Impact:** Unlocks real performance measurements
 **Timeline:** 1-2 hours (if no errors)
@@ -489,7 +489,7 @@ python bench_dense243.py
 
 1. **Build native engine** - Unlock real performance
    ```bash
-   python scripts/build/build.py
+   python build/build.py
    ```
 
 2. **Re-run competitive benchmarks** - Get real numbers
@@ -527,8 +527,8 @@ python bench_dense243.py
 
 ### New Build Scripts
 
-- Unified: `scripts/build/build_all.py`
-- Competitive: `scripts/build/build_competitive.py`
+- Unified: `build/build_all.py`
+- Competitive: `build/build_competitive.py`
 
 ### New Benchmarks
 

@@ -4,7 +4,7 @@
 
 The Ternary Engine build cleanup system provides comprehensive, automated cleanup of all build artifacts, temporary files, cached data, and benchmark results. This ensures fresh builds, accurate benchmarks, and prevents disk space accumulation.
 
-**Location:** `scripts/build/clean_all.py`
+**Location:** `build/clean_all.py`
 
 **Key Features:**
 - Removes all build artifacts across all build types
@@ -21,19 +21,19 @@ The Ternary Engine build cleanup system provides comprehensive, automated cleanu
 
 ```bash
 # Clean everything (most common use case)
-python scripts/build/clean_all.py
+python build/clean_all.py
 
 # Preview what would be deleted without actually deleting
-python scripts/build/clean_all.py --dry-run
+python build/clean_all.py --dry-run
 
 # Keep the latest build for each build type
-python scripts/build/clean_all.py --keep-latest
+python build/clean_all.py --keep-latest
 
 # Keep the 5 most recent benchmark result files
-python scripts/build/clean_all.py --keep-results 5
+python build/clean_all.py --keep-results 5
 
 # Include external temp directories (Windows)
-python scripts/build/clean_all.py --deep
+python build/clean_all.py --deep
 ```
 
 ### Integration with Benchmarks
@@ -45,7 +45,7 @@ The cleanup system is integrated into the benchmarking workflow:
 python benchmarks/run_all_benchmarks.py --clean
 
 # Equivalent to:
-python scripts/build/clean_all.py
+python build/clean_all.py
 python benchmarks/run_all_benchmarks.py
 ```
 
@@ -162,13 +162,13 @@ Old benchmark result files with configurable retention policy. By default, all r
 **Retention:**
 ```bash
 # Remove all benchmark results
-python scripts/build/clean_all.py --keep-results 0  # default
+python build/clean_all.py --keep-results 0  # default
 
 # Keep last 5 result files (both JSON and CSV)
-python scripts/build/clean_all.py --keep-results 5
+python build/clean_all.py --keep-results 5
 
 # Keep last 10 result files
-python scripts/build/clean_all.py --keep-results 10
+python build/clean_all.py --keep-results 10
 ```
 
 **Example:**
@@ -194,7 +194,7 @@ Windows-specific external temporary directories used to avoid MAX_PATH issues. O
 
 **Example:**
 ```bash
-python scripts/build/clean_all.py --deep
+python build/clean_all.py --deep
 ```
 
 ```
@@ -210,10 +210,10 @@ Cleaning External Temp Directories
 
 ```bash
 # Start of day: clean everything for fresh builds
-python scripts/build/clean_all.py
+python build/clean_all.py
 
 # Build standard version
-python scripts/build/build.py
+python build/build.py
 
 # Test
 python -c "import ternary_simd_engine; print('OK')"
@@ -223,10 +223,10 @@ python -c "import ternary_simd_engine; print('OK')"
 
 ```bash
 # Clean everything including old results
-python scripts/build/clean_all.py
+python build/clean_all.py
 
 # Build fresh
-python scripts/build/build.py
+python build/build.py
 
 # Run benchmarks
 python benchmarks/bench_phase0.py
@@ -236,10 +236,10 @@ python benchmarks/bench_phase0.py
 
 ```bash
 # Always start with clean slate
-python scripts/build/clean_all.py --quiet
+python build/clean_all.py --quiet
 
 # Build
-python scripts/build/build.py
+python build/build.py
 
 # Test
 python -m pytest tests/
@@ -252,20 +252,20 @@ python benchmarks/bench_phase0.py --quick
 
 ```bash
 # Preview what would be deleted
-python scripts/build/clean_all.py --dry-run
+python build/clean_all.py --dry-run
 
 # Clean but keep latest builds (saves rebuild time)
-python scripts/build/clean_all.py --keep-latest
+python build/clean_all.py --keep-latest
 
 # Keep recent benchmark data for comparison
-python scripts/build/clean_all.py --keep-results 10
+python build/clean_all.py --keep-results 10
 ```
 
 ### Complete System Reset
 
 ```bash
 # Nuclear option: clean everything including external temps
-python scripts/build/clean_all.py --deep
+python build/clean_all.py --deep
 
 # Verify clean state
 ls *.pyd 2>/dev/null || echo "Root clean"
@@ -280,7 +280,7 @@ Preserves the most recent timestamped build for each build type, removing all ol
 
 **Usage:**
 ```bash
-python scripts/build/clean_all.py --keep-latest
+python build/clean_all.py --keep-latest
 ```
 
 **Effect:**
@@ -296,7 +296,7 @@ Retains the N most recent benchmark result files (both JSON and CSV), removing a
 
 **Usage:**
 ```bash
-python scripts/build/clean_all.py --keep-results 5
+python build/clean_all.py --keep-results 5
 ```
 
 **Effect:**
@@ -313,7 +313,7 @@ Includes external temporary directories (Windows-specific) in the cleanup.
 
 **Usage:**
 ```bash
-python scripts/build/clean_all.py --deep
+python build/clean_all.py --deep
 ```
 
 **Effect:**
@@ -329,7 +329,7 @@ Previews what would be deleted without actually deleting anything. Shows size of
 
 **Usage:**
 ```bash
-python scripts/build/clean_all.py --dry-run
+python build/clean_all.py --dry-run
 ```
 
 **Output:**
@@ -353,7 +353,7 @@ Suppresses detailed output, showing only errors and final summary.
 
 **Usage:**
 ```bash
-python scripts/build/clean_all.py --quiet
+python build/clean_all.py --quiet
 ```
 
 **Use case:** Scripted/automated environments where minimal output is desired.
@@ -364,13 +364,13 @@ Options can be combined for fine-grained control:
 
 ```bash
 # Preview deep cleanup while keeping latest builds
-python scripts/build/clean_all.py --dry-run --deep --keep-latest
+python build/clean_all.py --dry-run --deep --keep-latest
 
 # Quiet cleanup keeping last 3 results
-python scripts/build/clean_all.py --quiet --keep-results 3
+python build/clean_all.py --quiet --keep-results 3
 
 # Complete cleanup except latest builds and 5 recent results
-python scripts/build/clean_all.py --keep-latest --keep-results 5
+python build/clean_all.py --keep-latest --keep-results 5
 ```
 
 ## Integration Points
@@ -384,7 +384,7 @@ The cleanup system is integrated into `benchmarks/run_all_benchmarks.py`:
 python benchmarks/run_all_benchmarks.py --clean
 
 # Equivalent to:
-python scripts/build/clean_all.py
+python build/clean_all.py
 python benchmarks/run_all_benchmarks.py
 ```
 
@@ -409,7 +409,7 @@ Build scripts automatically use `--inplace` which places modules in the project 
 # ternary_simd_engine.cp312-win_amd64.pyd created
 
 # cleanup system removes it
-# python scripts/build/clean_all.py
+# python build/clean_all.py
 ```
 
 ### PGO Workflow
@@ -422,8 +422,8 @@ The cleanup system consolidates PGO data from historical locations:
 # Current location: build/artifacts/pgo_data/
 
 # Cleanup removes all three to ensure fresh profiling
-python scripts/build/clean_all.py
-python scripts/build/build_pgo_unified.py
+python build/clean_all.py
+python build/build_pgo_unified.py
 ```
 
 ## Disk Space Impact
@@ -464,10 +464,10 @@ OSError: [WinError 206] The filename or extension is too long
 **Solution:**
 ```bash
 # Clean setuptools deep temp directories
-python scripts/build/clean_all.py
+python build/clean_all.py
 
 # If that fails, use deep cleanup
-python scripts/build/clean_all.py --deep
+python build/clean_all.py --deep
 ```
 
 **Prevention:**
@@ -499,7 +499,7 @@ taskkill /F /IM python.exe
 pkill python
 
 # Retry cleanup
-python scripts/build/clean_all.py
+python build/clean_all.py
 ```
 
 ### Dry-Run Shows 0 Items
@@ -527,13 +527,13 @@ ls benchmarks/results/*.json 2>/dev/null | wc -l
 **Solution:** Use retention flags:
 ```bash
 # Keep latest builds
-python scripts/build/clean_all.py --keep-latest
+python build/clean_all.py --keep-latest
 
 # Keep recent benchmark data
-python scripts/build/clean_all.py --keep-results 10
+python build/clean_all.py --keep-results 10
 
 # Both
-python scripts/build/clean_all.py --keep-latest --keep-results 10
+python build/clean_all.py --keep-latest --keep-results 10
 ```
 
 ## Best Practices
@@ -543,7 +543,7 @@ python scripts/build/clean_all.py --keep-latest --keep-results 10
 **For active development:**
 ```bash
 # Start of each work session
-python scripts/build/clean_all.py --keep-latest --keep-results 5
+python build/clean_all.py --keep-latest --keep-results 5
 ```
 
 **For benchmarking:**
@@ -555,7 +555,7 @@ python benchmarks/run_all_benchmarks.py --clean
 **For CI/CD:**
 ```bash
 # Always start fresh
-python scripts/build/clean_all.py --quiet
+python build/clean_all.py --quiet
 ```
 
 ### Disk Space Monitoring
@@ -565,12 +565,12 @@ python scripts/build/clean_all.py --quiet
 du -sh build/
 
 # Check what would be cleaned
-python scripts/build/clean_all.py --dry-run | tail -5
+python build/clean_all.py --dry-run | tail -5
 
 # Clean if over threshold
 SIZE=$(du -sm build/ | cut -f1)
 if [ $SIZE -gt 100 ]; then
-    python scripts/build/clean_all.py --keep-latest
+    python build/clean_all.py --keep-latest
 fi
 ```
 
@@ -580,16 +580,16 @@ Different retention strategies for different scenarios:
 
 ```bash
 # Development: Keep latest for quick iteration
-python scripts/build/clean_all.py --keep-latest
+python build/clean_all.py --keep-latest
 
 # Performance testing: Keep recent results for comparison
-python scripts/build/clean_all.py --keep-results 5
+python build/clean_all.py --keep-results 5
 
 # Release preparation: Complete cleanup
-python scripts/build/clean_all.py --deep
+python build/clean_all.py --deep
 
 # Continuous benchmarking: Balance between history and space
-python scripts/build/clean_all.py --keep-latest --keep-results 10
+python build/clean_all.py --keep-latest --keep-results 10
 ```
 
 ### Automation Examples
@@ -598,19 +598,19 @@ python scripts/build/clean_all.py --keep-latest --keep-results 10
 ```bash
 #!/bin/bash
 # .git/hooks/pre-commit
-python scripts/build/clean_all.py --quiet --keep-latest
+python build/clean_all.py --quiet --keep-latest
 ```
 
 **Scheduled task (Windows):**
 ```powershell
 # Daily cleanup at midnight
-schtasks /create /tn "TernaryCleanup" /tr "python C:\path\to\ternary-engine\scripts\build\clean_all.py --keep-latest" /sc daily /st 00:00
+schtasks /create /tn "TernaryCleanup" /tr "python C:\path\to\ternary-engine\build\clean_all.py --keep-latest" /sc daily /st 00:00
 ```
 
 **Cron job (Linux):**
 ```bash
 # Daily cleanup at midnight
-0 0 * * * cd /path/to/ternary-engine && python scripts/build/clean_all.py --keep-latest
+0 0 * * * cd /path/to/ternary-engine && python build/clean_all.py --keep-latest
 ```
 
 ## Implementation Details
@@ -707,14 +707,14 @@ Best practice: Wait for builds to complete before cleaning.
 
 Without `--keep-latest`:
 ```bash
-python scripts/build/clean_all.py
+python build/clean_all.py
 # Removes: all timestamped builds + latest/ directory
 # Result: build/artifacts/* completely empty
 ```
 
 With `--keep-latest`:
 ```bash
-python scripts/build/clean_all.py --keep-latest
+python build/clean_all.py --keep-latest
 # Removes: all but most recent timestamped build
 # Keeps: newest timestamped build + latest/ directory
 # Result: Can import module without rebuilding
@@ -781,4 +781,4 @@ For cleanup system issues:
 
 **Last updated:** 2025-11-23
 **Documentation version:** 1.0.0
-**Script location:** `scripts/build/clean_all.py`
+**Script location:** `build/clean_all.py`
