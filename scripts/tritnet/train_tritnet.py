@@ -40,7 +40,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "scripts" / "tritnet"))
 
 from ternary_layers import count_parameters, count_ternary_parameters
-from tritnet_model import TritNetUnary, TritNetBinary, save_tritnet_model
+from tritnet_model import TritNetUnary, TritNetUnaryDeep, TritNetBinary, save_tritnet_model
 
 
 def load_truth_table(operation: str, data_dir: Path) -> tuple:
@@ -90,6 +90,34 @@ def load_truth_table(operation: str, data_dir: Path) -> tuple:
     return X, Y
 
 
+def ternary_to_class_indices(values: torch.Tensor) -> torch.Tensor:
+    """
+    Convert ternary values {-1, 0, +1} to class indices {0, 1, 2}.
+
+    Args:
+        values: Ternary values [batch_size, 5] with values in {-1, 0, +1}
+
+    Returns:
+        Class indices [batch_size, 5] with values in {0, 1, 2}
+    """
+    # Map: -1 → 0, 0 → 1, +1 → 2
+    return (values + 1).long()
+
+
+def class_indices_to_ternary(indices: torch.Tensor) -> torch.Tensor:
+    """
+    Convert class indices {0, 1, 2} to ternary values {-1, 0, +1}.
+
+    Args:
+        indices: Class indices [batch_size, 5] with values in {0, 1, 2}
+
+    Returns:
+        Ternary values [batch_size, 5] with values in {-1, 0, +1}
+    """
+    # Map: 0 → -1, 1 → 0, 2 → +1
+    return indices.float() - 1
+
+
 def compute_accuracy(predictions: torch.Tensor, targets: torch.Tensor) -> float:
     """
     Compute exact match accuracy (all 5 trits must match).
@@ -112,6 +140,30 @@ def compute_accuracy(predictions: torch.Tensor, targets: torch.Tensor) -> float:
     return exact_matches.float().mean().item()
 
 
+def compute_accuracy_from_logits(logits: torch.Tensor, targets: torch.Tensor) -> float:
+    """
+    Compute exact match accuracy from cross-entropy logits.
+
+    Args:
+        logits: Predicted logits [batch_size, 5, 3] (3 classes per trit)
+        targets: Target ternary values [batch_size, 5]
+
+    Returns:
+        Accuracy as fraction in [0, 1]
+    """
+    # Get predicted class for each trit position
+    pred_classes = torch.argmax(logits, dim=2)  # [batch_size, 5]
+
+    # Convert to ternary values
+    pred_ternary = class_indices_to_ternary(pred_classes)
+
+    # Check if all 5 trits match for each sample
+    exact_matches = (pred_ternary == targets).all(dim=1)
+
+    # Return fraction of exact matches
+    return exact_matches.float().mean().item()
+
+
 def train_tritnet(
     operation: str,
     hidden_size: int,
@@ -120,7 +172,9 @@ def train_tritnet(
     threshold: float,
     seed: int,
     data_dir: Path,
-    output_dir: Path
+    output_dir: Path,
+    architecture: str = 'shallow',
+    loss_type: str = 'mse'
 ) -> dict:
     """
     Train TritNet model on a single operation.
@@ -134,6 +188,8 @@ def train_tritnet(
         seed: Random seed for reproducibility
         data_dir: Directory containing truth tables
         output_dir: Directory to save trained model
+        architecture: Architecture type ('shallow' or 'deep')
+        loss_type: Loss function ('mse' or 'crossentropy')
 
     Returns:
         Dictionary with training results
@@ -155,18 +211,37 @@ def train_tritnet(
 
     # Create model
     if is_unary:
-        model = TritNetUnary(hidden_size=hidden_size, threshold=threshold)
+        if architecture == 'deep':
+            model = TritNetUnaryDeep(hidden_size=hidden_size, threshold=threshold)
+            model_type = 'TritNetUnaryDeep'
+        else:
+            model = TritNetUnary(hidden_size=hidden_size, threshold=threshold)
+            model_type = 'TritNetUnary'
     else:
         model = TritNetBinary(hidden_size=hidden_size, threshold=threshold)
+        model_type = 'TritNetBinary'
 
     print(f"\nModel architecture:")
-    print(f"  Type: {'TritNetUnary' if is_unary else 'TritNetBinary'}")
+    print(f"  Type: {model_type}")
+    print(f"  Architecture: {architecture}")
     print(f"  Hidden size: {hidden_size}")
     print(f"  Total parameters: {count_parameters(model)}")
     print(f"  Quantization threshold: {threshold}")
+    print(f"  Loss function: {loss_type}")
 
     # Setup training
-    criterion = nn.MSELoss()
+    if loss_type == 'mse':
+        criterion = nn.MSELoss()
+        use_crossentropy = False
+    elif loss_type == 'crossentropy':
+        # TODO: Cross-entropy requires model output reshape to [batch, 5, 3]
+        # For now, using MSE. Cross-entropy is future work.
+        print("  WARNING: Cross-entropy not yet implemented, using MSE instead")
+        criterion = nn.MSELoss()
+        use_crossentropy = False
+    else:
+        raise ValueError(f"Unknown loss type: {loss_type}")
+
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     # Training loop
@@ -259,6 +334,9 @@ def train_tritnet(
         'seed': seed,
         'num_samples': num_samples,
         'ternary_counts': ternary_counts,
+        'architecture': architecture,
+        'loss_type': loss_type,
+        'model_type': model_type,
     }
 
     save_tritnet_model(model, model_path, metadata)
@@ -332,6 +410,20 @@ def main():
         default=PROJECT_ROOT / "models" / "tritnet",
         help="Directory to save trained models"
     )
+    parser.add_argument(
+        "--architecture",
+        type=str,
+        choices=['shallow', 'deep'],
+        default='shallow',
+        help="Network architecture (shallow: 2 hidden layers, deep: 4 hidden layers with skip connections)"
+    )
+    parser.add_argument(
+        "--loss",
+        type=str,
+        choices=['mse', 'crossentropy'],
+        default='mse',
+        help="Loss function (mse: regression loss, crossentropy: classification loss)"
+    )
 
     args = parser.parse_args()
 
@@ -375,7 +467,9 @@ def main():
                 threshold=args.threshold,
                 seed=args.seed,
                 data_dir=args.data_dir,
-                output_dir=args.output_dir
+                output_dir=args.output_dir,
+                architecture=args.architecture,
+                loss_type=args.loss
             )
             results[operation] = metadata
         except Exception as e:
