@@ -119,7 +119,6 @@ ext_modules = [
         ],
         extra_link_args=[
             '/LTCG:PGI',             # OPT-114: Generate instrumented code for profiling
-            f'/PGD:{{PGO_DATA_DIR}}\\\\ternary_simd_engine.pgd',  # Profile database location
         ],
     ),
 ]
@@ -193,35 +192,96 @@ def phase2_profile():
     print("\nRunning profiling workload...")
     print("(This will take ~8 minutes - running full benchmark suite)\n")
 
-    # Run the benchmark suite from project root
+    # Set environment variable for .pgc file output location
+    # MSVC PGO writes .pgc files to current directory by default,
+    # but we can redirect them using PogoSafeMode
+    env = os.environ.copy()
+    env['PogoSafeMode'] = '0'  # Allow PGO to work
+
+    # Run the benchmark suite from PROJECT_ROOT
+    # .pgc files will be written to PROJECT_ROOT by default
     benchmark_script = PROJECT_ROOT / "benchmarks" / "bench_phase0.py"
     result = subprocess.run(
         [sys.executable, str(benchmark_script)],
         cwd=str(PROJECT_ROOT),
-        capture_output=False
+        capture_output=False,
+        env=env
     )
 
     if result.returncode != 0:
         print("\n[FAIL] Profiling workload failed")
         sys.exit(1)
 
-    # Check if profile data was generated
-    pgc_files = list(PGO_DATA_DIR.glob("**/*.pgc")) if PGO_DATA_DIR.exists() else []
-    if not pgc_files:
-        print("\n[WARN] No .pgc files found in PGO data directory")
+    # Look for .pgc files in PROJECT_ROOT (where the instrumented binary ran)
+    pgc_files_root = list(PROJECT_ROOT.glob("*.pgc"))
+    pgc_files_pgo = list(PGO_DATA_DIR.glob("**/*.pgc")) if PGO_DATA_DIR.exists() else []
+    all_pgc_files = pgc_files_root + pgc_files_pgo
+
+    if not all_pgc_files:
+        print("\n[WARN] No .pgc files found")
+        print(f"   Searched in: {PROJECT_ROOT}")
+        print(f"   Searched in: {PGO_DATA_DIR}")
         print("   Profile data may not have been collected properly")
+        print("\n   This can happen if:")
+        print("   1. The instrumented module didn't run correctly")
+        print("   2. MSVC PGO environment is not set up")
+        print("   3. The /LTCG:PGI flag didn't take effect")
     else:
-        print(f"\n[OK] Found {len(pgc_files)} profile counter files:")
-        for pgc in pgc_files:
+        print(f"\n[OK] Found {len(all_pgc_files)} profile counter files:")
+        for pgc in all_pgc_files[:10]:  # Show first 10
             print(f"   - {pgc.name}")
+        if len(all_pgc_files) > 10:
+            print(f"   ... and {len(all_pgc_files) - 10} more")
+
+        # Move .pgc files to PGO_DATA_DIR if they're in PROJECT_ROOT
+        if pgc_files_root:
+            print(f"\n  Moving {len(pgc_files_root)} .pgc files to PGO data directory...")
+            PGO_DATA_DIR.mkdir(parents=True, exist_ok=True)
+            for pgc in pgc_files_root:
+                dest = PGO_DATA_DIR / pgc.name
+                shutil.move(str(pgc), str(dest))
+                print(f"   Moved: {pgc.name}")
+
+        # Merge .pgc files into .pgd using pgomgr
+        print(f"\n  Merging profile counters into database...")
+        pgomgr_path = Path("C:/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/VC/Tools/MSVC/14.50.35717/bin/HostX86/x64/pgomgr.exe")
+
+        if pgomgr_path.exists():
+            # pgomgr /merge <pgcfiles> <pgdfile>
+            # Build list of all .pgc files
+            pgc_list = list(PGO_DATA_DIR.glob("*.pgc"))
+            if pgc_list:
+                pgomgr_cmd = [str(pgomgr_path), "/merge"]
+                pgomgr_cmd.extend([str(pgc) for pgc in pgc_list])
+                pgomgr_cmd.append(str(PROFILE_DATA))
+
+                print(f"   Running: pgomgr /merge <{len(pgc_list)} files> {PROFILE_DATA.name}")
+                merge_result = subprocess.run(
+                    pgomgr_cmd,
+                    cwd=str(PGO_DATA_DIR),
+                    capture_output=True,
+                    text=True
+                )
+
+                if merge_result.returncode == 0:
+                    print(f"   [OK] Profile data merged successfully")
+                else:
+                    print(f"   [WARN] pgomgr merge had issues:")
+                    if merge_result.stdout:
+                        print(f"   {merge_result.stdout}")
+                    if merge_result.stderr:
+                        print(f"   {merge_result.stderr}")
+        else:
+            print(f"   [WARN] pgomgr.exe not found at: {pgomgr_path}")
+            print(f"   Profile data will not be merged")
 
     if PROFILE_DATA.exists():
         size_mb = PROFILE_DATA.stat().st_size / (1024 * 1024)
         print(f"\n[OK] Phase 2 complete: Profile data collected ({size_mb:.2f} MB)")
         print(f"   Location: {PROFILE_DATA}")
     else:
-        print(f"\n[WARN] Expected profile database not found at {PROFILE_DATA}")
-        print("   Continuing to Phase 3 anyway (MSVC may have written it elsewhere)")
+        print(f"\n[WARN] Profile database not found at {PROFILE_DATA}")
+        print("   PGO optimization may not work without profile data")
 
 def phase3_optimize():
     """Phase 3: Build optimized version using profile data"""
@@ -280,7 +340,7 @@ ext_modules = [
         ],
         extra_link_args=[
             '/LTCG:PGO',             # OPT-114: Use profile data for optimization
-            f'/PGD:{{PGO_DATA_DIR}}\\\\ternary_simd_engine.pgd',  # Profile database location
+            '/PGD:' + str(PGO_DATA_DIR / 'ternary_simd_engine.pgd').replace('\\\\', '/'),  # Profile database
         ],
     ),
 ]

@@ -190,6 +190,13 @@ def main():
             'required': True,
             'optional': False,
             'requires_capability': None
+        },
+        'fusion': {
+            'name': 'Operation Fusion Tests',
+            'script': TESTS_DIR / 'test_fusion.py',
+            'required': False,  # Experimental feature
+            'optional': True,
+            'requires_capability': 'fusion'
         }
     }
 

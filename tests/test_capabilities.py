@@ -34,9 +34,13 @@ class SystemCapabilities:
         # Detect OpenMP in compiled module
         self.has_openmp = self._detect_openmp()
 
+        # Detect fusion module
+        self.has_fusion = self._detect_fusion()
+
         # Determine test compatibility
         self.can_run_simd_tests = self.has_avx2
         self.can_run_openmp_tests = self.has_openmp and self.cpu_count > 1
+        self.can_run_fusion_tests = self.has_fusion
 
     def _detect_avx2(self):
         """Detect AVX2 CPU support"""
@@ -113,6 +117,14 @@ class SystemCapabilities:
         # except:
         #     return False
 
+    def _detect_fusion(self):
+        """Detect if fusion module is available"""
+        try:
+            import ternary_fusion_engine
+            return True
+        except:
+            return False
+
     def print_report(self):
         """Print a formatted capability report"""
         print("\n" + "="*70)
@@ -130,10 +142,12 @@ class SystemCapabilities:
 
         print(f"\nCompiled Features:")
         print(f"  OpenMP:       {'[YES]' if self.has_openmp else '[NO]'}")
+        print(f"  Fusion:       {'[YES]' if self.has_fusion else '[NO]'}")
 
         print(f"\nTest Compatibility:")
         print(f"  SIMD Tests:   {'[CAN RUN]' if self.can_run_simd_tests else '[SKIP]'}")
         print(f"  OpenMP Tests: {'[CAN RUN]' if self.can_run_openmp_tests else '[SKIP]'}")
+        print(f"  Fusion Tests: {'[CAN RUN]' if self.can_run_fusion_tests else '[SKIP]'}")
 
         print("\n" + "="*70)
 
@@ -148,6 +162,8 @@ class SystemCapabilities:
                 return "Single-core system (OpenMP requires multiple cores)"
             else:
                 return "OpenMP tests unavailable"
+        elif test_type == "fusion" and not self.can_run_fusion_tests:
+            return "Fusion module not built (run: python scripts/build/build_fusion.py build_ext --inplace)"
         return None
 
 
