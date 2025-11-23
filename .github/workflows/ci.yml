@@ -54,7 +54,7 @@ jobs:
         NUMPY_VERSION: ${{ secrets.NUMPY_VERSION || env.NUMPY_VERSION }}
 
     - name: Build module
-      run: python build.py
+      run: python scripts/build/build.py
       env:
         BUILD_VERBOSE: ${{ secrets.BUILD_VERBOSE || '0' }}
 
@@ -84,7 +84,7 @@ jobs:
       continue-on-error: true
 
     - name: Run tests
-      run: python run_tests.py --no-color
+      run: python tests/run_tests.py --no-color
       env:
         TEST_VERBOSE: ${{ secrets.TEST_VERBOSE || '0' }}
 

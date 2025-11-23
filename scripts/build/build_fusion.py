@@ -7,7 +7,7 @@ Licensed under the Apache License, Version 2.0
 Builds the operation fusion module for benchmarking and validation.
 
 USAGE: Run from project root directory:
-    python build_fusion.py build_ext --inplace
+    python scripts/build/build_fusion.py build_ext --inplace
 
 OUTPUT: ternary_fusion_engine.pyd (Windows) or .so (Linux/macOS)
 """
@@ -17,6 +17,9 @@ import platform
 from pathlib import Path
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup
+
+# Get project root (script is in scripts/build/)
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 
 # Determine compiler and platform-specific flags
 is_windows = sys.platform == "win32"
@@ -56,10 +59,10 @@ else:
 ext_modules = [
     Pybind11Extension(
         "ternary_fusion_engine",
-        ["ternary_engine/experimental/fusion/ternary_simd_engine_fusion.cpp"],
+        [str(PROJECT_ROOT / "ternary_engine" / "experimental" / "fusion" / "ternary_simd_engine_fusion.cpp")],
         include_dirs=[
-            str(Path(__file__).parent),  # Project root
-            str(Path(__file__).parent / "ternary_core"),  # Core kernel headers
+            str(PROJECT_ROOT),  # Project root
+            str(PROJECT_ROOT / "ternary_core"),  # Core kernel headers
         ],
         extra_compile_args=compile_args,
         extra_link_args=link_args,

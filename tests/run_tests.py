@@ -8,10 +8,10 @@ Licensed under the Apache License, Version 2.0
 Runs all test suites and provides unified reporting.
 
 Usage:
-    python run_tests.py              # Run all tests
-    python run_tests.py --quick      # Skip slow tests
-    python run_tests.py --verbose    # Detailed output
-    python run_tests.py --suite=<name>  # Run specific test suite
+    python tests/run_tests.py              # Run all tests
+    python tests/run_tests.py --quick      # Skip slow tests
+    python tests/run_tests.py --verbose    # Detailed output
+    python tests/run_tests.py --suite=<name>  # Run specific test suite
 """
 
 import sys
@@ -21,8 +21,9 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-PROJECT_ROOT = Path(__file__).parent.resolve()
-TESTS_DIR = PROJECT_ROOT / "tests"
+# Script is now in tests/ directory, go up one level to project root
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+TESTS_DIR = Path(__file__).parent.resolve()
 
 # Import capability detection
 sys.path.insert(0, str(TESTS_DIR))

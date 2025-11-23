@@ -7,7 +7,7 @@ Licensed under the Apache License, Version 2.0
 This provides an organized build system with timestamped artifacts.
 
 USAGE: Run from project root directory:
-    python build.py
+    python scripts/build/build.py
 
 Artifacts are organized in: build/artifacts/standard/{timestamp}/
 Latest build is copied to: build/artifacts/standard/latest/
@@ -20,8 +20,8 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# Get project root (script is at root level)
-PROJECT_ROOT = Path(__file__).parent.resolve()
+# Get project root (script is in scripts/build/)
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 ARTIFACTS_DIR = PROJECT_ROOT / "build" / "artifacts"
 
 # Generate timestamp for this build

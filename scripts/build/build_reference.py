@@ -14,7 +14,7 @@ PURPOSE: Fair performance comparison to measure actual optimization impact,
 not Python vs C++ differences.
 
 USAGE: Run from project root directory:
-    python build_reference.py
+    python scripts/build/build_reference.py
 
 Artifacts are organized in: build/artifacts/reference/{timestamp}/
 Latest build is copied to: build/artifacts/reference/latest/
@@ -27,8 +27,8 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# Get project root (script is at root level)
-PROJECT_ROOT = Path(__file__).parent.resolve()
+# Get project root (script is in scripts/build/)
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 ARTIFACTS_DIR = PROJECT_ROOT / "build" / "artifacts"
 
 # Generate timestamp for this build

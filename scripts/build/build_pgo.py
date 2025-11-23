@@ -10,11 +10,11 @@ This script implements a 3-phase PGO build process:
 3. Optimized build (use profile data for final optimization)
 
 Usage (run from project root):
-    python build_pgo.py instrument    # Phase 1: Build with instrumentation
-    python build_pgo.py profile       # Phase 2: Run profiling workload
-    python build_pgo.py optimize      # Phase 3: Build optimized version
-    python build_pgo.py clean         # Clean PGO artifacts
-    python build_pgo.py full          # Run all phases automatically
+    python scripts/build/build_pgo.py instrument    # Phase 1: Build with instrumentation
+    python scripts/build/build_pgo.py profile       # Phase 2: Run profiling workload
+    python scripts/build/build_pgo.py optimize      # Phase 3: Build optimized version
+    python scripts/build/build_pgo.py clean         # Clean PGO artifacts
+    python scripts/build/build_pgo.py full          # Run all phases automatically
 
 Artifacts are organized in:
   - build/artifacts/pgo/instrumented/{timestamp}/
@@ -30,8 +30,8 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# Get project root (script is at root level)
-PROJECT_ROOT = Path(__file__).parent.resolve()
+# Get project root (script is in scripts/build/)
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 ARTIFACTS_DIR = PROJECT_ROOT / "build" / "artifacts"
 
 # PGO base directory
