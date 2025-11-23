@@ -90,8 +90,19 @@
 #include "../ternary_core/simd/ternary_simd_kernels.h"
 #include "../ternary_core/simd/ternary_fusion.h"
 #include "../ternary_core/config/optimization_config.h"
+#include "../ternary_core/profiling/ternary_profiler.h"
 
 namespace py = pybind11;
+
+// =============================================================================
+// Profiler Integration (zero overhead when disabled)
+// =============================================================================
+// Global profiler domain and task names for performance analysis
+// Compile with -DTERNARY_ENABLE_VTUNE to enable VTune profiling
+TERNARY_PROFILE_DOMAIN(g_ternary_domain, "TernaryCore");
+TERNARY_PROFILE_TASK_NAME(g_task_omp, "OpenMP_Parallel");
+TERNARY_PROFILE_TASK_NAME(g_task_simd, "Serial_SIMD");
+TERNARY_PROFILE_TASK_NAME(g_task_tail, "Scalar_Tail");
 
 // =============================================================================
 // SIMD Kernels - Now imported from ternary_core/simd/ternary_simd_kernels.h
@@ -151,6 +162,7 @@ py::array_t<uint8_t> process_binary_array(
 
     // PATH 1: Large arrays → OpenMP parallel (NUMA-aware scheduling)
     if (n >= OMP_THRESHOLD) {
+        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_omp);
         ssize_t n_simd_blocks = (n / 32) * 32;
         // FIX: Only use streaming stores if array is large AND output is 32-byte aligned
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(r_ptr);
@@ -185,20 +197,27 @@ py::array_t<uint8_t> process_binary_array(
         }
 
         i = n_simd_blocks;
+        TERNARY_PROFILE_TASK_END(g_ternary_domain);
     }
     // PATH 2: Small arrays → Serial SIMD
     else {
+        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_simd);
         for (; i + 32 <= n; i += 32) {
             __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
             __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + i));
             __m256i vr = simd_op(va, vb);
             _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
         }
+        TERNARY_PROFILE_TASK_END(g_ternary_domain);
     }
 
     // PATH 3: Scalar tail
-    for (; i < n; ++i) {
-        r[i] = scalar_op(a[i], b[i]);
+    if (i < n) {
+        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_tail);
+        for (; i < n; ++i) {
+            r[i] = scalar_op(a[i], b[i]);
+        }
+        TERNARY_PROFILE_TASK_END(g_ternary_domain);
     }
 
     return out;
@@ -223,6 +242,7 @@ py::array_t<uint8_t> process_unary_array(
 
     // PATH 1: Large arrays → OpenMP parallel (NUMA-aware scheduling)
     if (n >= OMP_THRESHOLD) {
+        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_omp);
         ssize_t n_simd_blocks = (n / 32) * 32;
         // FIX: Only use streaming stores if array is large AND output is 32-byte aligned
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(r_ptr);
@@ -255,19 +275,26 @@ py::array_t<uint8_t> process_unary_array(
         }
 
         i = n_simd_blocks;
+        TERNARY_PROFILE_TASK_END(g_ternary_domain);
     }
     // PATH 2: Small arrays → Serial SIMD
     else {
+        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_simd);
         for (; i + 32 <= n; i += 32) {
             __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
             __m256i vr = simd_op(va);
             _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
         }
+        TERNARY_PROFILE_TASK_END(g_ternary_domain);
     }
 
     // PATH 3: Scalar tail
-    for (; i < n; ++i) {
-        r[i] = scalar_op(a[i]);
+    if (i < n) {
+        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_tail);
+        for (; i < n; ++i) {
+            r[i] = scalar_op(a[i]);
+        }
+        TERNARY_PROFILE_TASK_END(g_ternary_domain);
     }
 
     return out;
