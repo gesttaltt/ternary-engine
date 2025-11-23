@@ -1,0 +1,447 @@
+{
+  "timestamp_date": "2025-11-23T05:45:29.981170Z",
+  "hash_algorithm": "SHA512",
+  "project": "Ternary Engine",
+  "files": {
+    "benchmarks\\bench_compare.py": {
+      "sha512": "d676b3f48fe80fc5cb1b6ff956adc0f1e20fa862cc4baa70599eeab60489ec49c2a3eedb59bf8c15a298313d2efed584af8c3191a5f9a6304f0a49fbe24b583c",
+      "size_bytes": 8442,
+      "modified": "2025-11-21T09:59:02.072433"
+    },
+    "benchmarks\\bench_fusion.py": {
+      "sha512": "9f7820c55ca60b96d7528874b4674e6687ebd1aff54dcbcb1ed8ab5ffa18ebe65ff99d3e59f08aab4a4249f804a45858bef7be9401997623d079c819d6be9567",
+      "size_bytes": 9414,
+      "modified": "2025-11-22T22:19:36.064640"
+    },
+    "benchmarks\\bench_phase0.py": {
+      "sha512": "83b979af585537ae33645301b9b4a691a28f96bd1aabd9050cc8b0dcf81fdb2d80ff06e2362359c2809d0781bd2566bc46e048032cc2c4663deb919243122755",
+      "size_bytes": 16681,
+      "modified": "2025-11-23T02:22:28.864814"
+    },
+    "benchmarks\\benchmark_framework.py": {
+      "sha512": "00d74c1521de32a63bc5cc4bf38d8cb5565980063f10371b6643a9e6853969ac6b7747974957615e2619009bce077f06dbfd9b8b9b22948c469715051ce06f1e",
+      "size_bytes": 12597,
+      "modified": "2025-11-21T09:59:02.074452"
+    },
+    "benchmarks\\macro\\bench_image_pipeline.py": {
+      "sha512": "364f4144c3bae4f302e7c4f8fad213142bbce9040d6eb36f150d696eeba03304a7be93543207610110e401a64c70125dbcd2e6fb9d8d9a30929d4d29320b9b38",
+      "size_bytes": 9100,
+      "modified": "2025-11-21T09:59:02.079173"
+    },
+    "benchmarks\\macro\\bench_neural_layer.py": {
+      "sha512": "ba327cd00d284844a4cf20972b0630912c268b7b99b05e06057f6e88a2b697ec67ec316404ed4d8e3f4f7fb42963ff08a16396bd2e03e598b72b915c56bd3db8",
+      "size_bytes": 8082,
+      "modified": "2025-11-21T09:59:02.079694"
+    },
+    "benchmarks\\micro\\bench_fusion_phase41.py": {
+      "sha512": "4ef21496175365a32aa471c2c375c3768f935212c1314c81f42209f2c32e070f56688bf9f40aa3bf140610a1f05e03d8d07c01d980443e2186d36922053b6669",
+      "size_bytes": 9966,
+      "modified": "2025-11-21T13:43:32.988037"
+    },
+    "benchmarks\\micro\\bench_fusion_poc.py": {
+      "sha512": "237aaf73585f5721d438d64f2677a699fd00e3241f415fcf20a03462bf6ce83a111daa742d732facb5e459108a8b43cb057c15a506fc611760b70c0f63ceabbb",
+      "size_bytes": 15006,
+      "modified": "2025-11-21T13:43:52.069383"
+    },
+    "benchmarks\\micro\\bench_fusion_rigorous.py": {
+      "sha512": "37208a9baed8e1ab56d9079799c0f11a97abb8d372b6ef82b4959b57a48a42a9aa153b2fd137c253a2f9a331852384910e1eecef8359991648d75b330a77a0f9",
+      "size_bytes": 10423,
+      "modified": "2025-11-21T13:44:01.319411"
+    },
+    "benchmarks\\micro\\bench_fusion_simple.py": {
+      "sha512": "3dcdbb0fb1ddee3556d64aab99a284dabf56b0b0ba943d01a0ece6a48fee12e587fbb9b358587b53cf91915fcba30fb4584001eef9590caa1451e1734c07b5de",
+      "size_bytes": 4217,
+      "modified": "2025-11-21T13:43:42.357842"
+    },
+    "benchmarks\\run_all_benchmarks.py": {
+      "sha512": "f0f06eb189cbd22819c2c34b14782ea201fa27dc30e64b1ca718277e47c449a27f9ad387e2c6cb6f948bf9a1c3909ddbfb58acd9a38c9ba42fd0d6f2be7d9e25",
+      "size_bytes": 7646,
+      "modified": "2025-11-23T02:22:10.927794"
+    },
+    "build\\scripts\\build_benchmark.py": {
+      "sha512": "c16ac2b7f189d28befb548d41e150685e9c1582f1fe3f831709f952218025ac059910e6569e34ae372279251ea03522c9f82d79285e724d478bebc934f483c80",
+      "size_bytes": 695,
+      "modified": "2025-11-21T09:59:02.089501"
+    },
+    "build\\scripts\\build_standard.py": {
+      "sha512": "60bc018f7083a4780cf82edffab2249e180e95783bdde4d47410ad9c6669a4cceff57a0f9c14cb0d2f5dda776dcb911f4e25e82388df8194a5a830787ab50735",
+      "size_bytes": 604,
+      "modified": "2025-11-22T21:33:47.016811"
+    },
+    "build\\scripts\\templates\\__init__.py": {
+      "sha512": "91c48c7cc7ffa9d131ef1a2de2193704d7f9fc34a01a6de819212a9aebf219d02a44dc8dbfc77cab84c3c6e8fb07c14027334833744feee28ea0e707754ebce3",
+      "size_bytes": 25,
+      "modified": "2025-11-21T09:59:02.094595"
+    },
+    "build\\scripts\\templates\\ext_build.py": {
+      "sha512": "bd88277ecbbce9f67253b53330c05a018c76e8c8bc793523757588a9accaa07e7fb8f49350616e894d8955b822bc150e0d78e3cf24669d235cc515c2b8551913",
+      "size_bytes": 1285,
+      "modified": "2025-11-21T09:59:02.094595"
+    },
+    "CHANGELOG.md": {
+      "sha512": "ed26def1fc9c1b0c27e69c34ded35bdc29c73a5c6c845489a3a0d006078254b81f52ab54da9ca99223c0a0c7f0dea3e1b02ebe3aae58f71916c4cfe5cd7a2e50",
+      "size_bytes": 13210,
+      "modified": "2025-11-21T09:59:02.067881"
+    },
+    "datasets\\tritnet\\generation_summary.json": {
+      "sha512": "9577127eea939445055669d58095f4b3244ce5a1387cc7c404633f3e52d81f01500fe3942c191050d14ae43850190d7f8a559efe45019a9f408531e134a15829",
+      "size_bytes": 1021,
+      "modified": "2025-11-23T01:43:13.290428"
+    },
+    "datasets\\tritnet\\tadd_truth_table.json": {
+      "sha512": "e32fe2c3e0f9a2ea95ee5d79892d625d9917a1ce2c9af6c2e5fa207d63459994dcf6f663caa4c392ed760e0efa2434856d07dea207f3ecd67fd2cc500ab9445b",
+      "size_bytes": 20528275,
+      "modified": "2025-11-23T01:43:07.170491"
+    },
+    "datasets\\tritnet\\tmax_truth_table.json": {
+      "sha512": "5d75ba9f238ac6216accecd2d9111420e33cab279b3d4aa4775a992ad8843f52663f11fbfeb547c037346aa6c02a1de6ad0fbb57eecc509c5ce190d758ff38d6",
+      "size_bytes": 20481763,
+      "modified": "2025-11-23T01:43:13.268891"
+    },
+    "datasets\\tritnet\\tmin_truth_table.json": {
+      "sha512": "bfce438369f44cf8936c1240872aef184c2f6677c8982e370b735330e7f650aa5bcb5e10b63f7a17ec1968d3fe85c93fefc9283553f1571d9c620530c14e91b8",
+      "size_bytes": 20565715,
+      "modified": "2025-11-23T01:43:11.202492"
+    },
+    "datasets\\tritnet\\tmul_truth_table.json": {
+      "sha512": "151a53d6c27cbf9f26dc1c917f02a7f6739202176e3bbefeee6bf6ae5cb5f512205001ec944e668e31a075e57e4a509ecaf85463fea16d7f47efd1e7b8d6e984",
+      "size_bytes": 20502600,
+      "modified": "2025-11-23T01:43:09.172476"
+    },
+    "datasets\\tritnet\\tnot_truth_table.json": {
+      "sha512": "fcd6bb78a0f8fa224955de569a3c7ee88aa1dcfafda0038d1118c2f79b6afeedf49a4157e99b97603ef6b37e983ec9f792c0f8c805eb918b545a7b4865ea46ca",
+      "size_bytes": 61700,
+      "modified": "2025-11-23T01:43:13.288886"
+    },
+    "docs\\api-reference\\error-handling.md": {
+      "sha512": "3c0a17f5d80a0bfd4439128ef75e3c9c297c9838872a32a8ce8965b8dd709dddf4f55291bd3e5906b16d28e5eec4efc00a54d506a7ffd8e3b54c22c82b072d17",
+      "size_bytes": 10427,
+      "modified": "2025-11-21T09:59:02.101380"
+    },
+    "docs\\api-reference\\headers.md": {
+      "sha512": "b861f00e3d991fd73726acae93a0b258c053f8521e355186c63fe1c9bda29fcbda17f207bcf8d07015f33b4a91de60dc2d0fea944f4490771915ff020965b0ec",
+      "size_bytes": 2240,
+      "modified": "2025-11-21T09:59:02.101380"
+    },
+    "docs\\api-reference\\source-code-overview.md": {
+      "sha512": "aa680c90daf7e6212fc1fea86afeec3b055d8ab9a64aefd563c9578e426b02a34cced40eb4795d0dba4041042e9fa7ec0a93bfdb18e5901fda50519d5aa720b4",
+      "size_bytes": 22701,
+      "modified": "2025-11-22T23:24:44.993080"
+    },
+    "docs\\api-reference\\ternary-core-header.md": {
+      "sha512": "f33056776599ab1a234ed176a33080035d98f3b4a35cd4567fa57310a2036b5a0be485ef20ac0fbe244c53fc04822509835dc286fdd6fe6773c625ec4a8cb55f",
+      "size_bytes": 14175,
+      "modified": "2025-11-21T09:59:02.104223"
+    },
+    "docs\\api-reference\\ternary-core-simd.md": {
+      "sha512": "32728e221bedef425cae545325278155e4c89ea76e7826d1fcb128e63f9cd1cab124fa61c4e0f062c9dbc8b61dd91175d1d1d5eb9c6d12ee543fe73534d961b3",
+      "size_bytes": 21393,
+      "modified": "2025-11-21T09:59:02.104223"
+    },
+    "docs\\architecture\\architecture.md": {
+      "sha512": "68fa9697d98126a682d285b497908b8fe9bd16b9a4bd0209ebd15162f8a573d178c2f8611fde4369c3e0106f6eda4ef902b60c607d1b5a474db1c517eed971f3",
+      "size_bytes": 15628,
+      "modified": "2025-11-21T09:59:02.105742"
+    },
+    "docs\\architecture\\optimization-complexity-rationale.md": {
+      "sha512": "ca1c944e0f72487962de94a1fc194d5973fb9cbba09e92ea83bb28001f92939174c959a2aa5f66e9400397b1361f159d2e00176eabba49f681334cc52f48ee4e",
+      "size_bytes": 26531,
+      "modified": "2025-11-21T09:59:02.105742"
+    },
+    "docs\\architecture\\optimization-roadmap.md": {
+      "sha512": "685d1714a8fb8464fc88884311935336557ecbed80598f5b4af2a8d52d977d5e937aca0b4cf10ba943c42e2ddfe794e2a6829f1d468b755917c97615572e5346",
+      "size_bytes": 24217,
+      "modified": "2025-11-21T09:59:02.105742"
+    },
+    "docs\\build-system\\artifact-organization.md": {
+      "sha512": "dadaeba3872e67dabc53ce6f01c5b1328bda4e031e4da6909391d42fb10b1ff3fb37fb4b7e8a37ff6f8dcd3adcb4bcd28daa6500a9da1f4a2649ac95faa6e46d",
+      "size_bytes": 9989,
+      "modified": "2025-11-21T09:59:02.105742"
+    },
+    "docs\\build-system\\README.md": {
+      "sha512": "fb3573388fb351f4ffaa6096d8889441b7eedfe7f742b289b7531d531623c827ffc2b57cf52145bfda726120376ef70e97bd053ec74b9908bacfe2e14ecd372d",
+      "size_bytes": 17866,
+      "modified": "2025-11-22T23:30:19.729183"
+    },
+    "docs\\build-system\\setup-pgo.md": {
+      "sha512": "b74f8da07b41cf9f79196cb9461b42c5e8e22a5290949adacd14e8a357aa910b50df973b8e92fa3c50eae0bd9ad32e2767a9b7d7cbdb67134c774f38d413c814",
+      "size_bytes": 18374,
+      "modified": "2025-11-21T09:59:02.110144"
+    },
+    "docs\\build-system\\setup-reference.md": {
+      "sha512": "15120e4d226d470fe1dc29104377db18f0341ed304386ce19e029c38d856a4f41c10dac033a8d4e0502ed5ec4358cdd619599f0725b7f0d37223e947e7a34fd6",
+      "size_bytes": 15871,
+      "modified": "2025-11-21T09:59:02.110144"
+    },
+    "docs\\build-system\\setup-standard.md": {
+      "sha512": "317ce49e946cecb26cf2a054b357d1795b07d40e5a52160fbc5d9ef2bbb9abb2961d31a1befcb6eeb5a0b9385137cc789278ed41328d0b484b4b48ccc30b87d0",
+      "size_bytes": 13069,
+      "modified": "2025-11-21T09:59:02.110144"
+    },
+    "docs\\encoding-ecosystem.md": {
+      "sha512": "fca4bc0d916f3b7208ac258d9862c2e9bdbd47ec058f64106f19bd686b36144beb78f1084528ac2d1792ae38f0fd398c8a815192bbc1451df47296d1fcabff19",
+      "size_bytes": 14308,
+      "modified": "2025-11-21T09:59:02.110144"
+    },
+    "docs\\features\\micro-vs-macro-speedup.md": {
+      "sha512": "d61a40086c0de031d3cb56f88d83e17c1433ed3f0412666cf2566ca039aeba2b1b9f5094e3d8915a592675aa9b88d16d83ae4006dd3740aca53111428cfe22ee",
+      "size_bytes": 8661,
+      "modified": "2025-11-21T09:59:02.115103"
+    },
+    "docs\\features\\optimization-leverage-report.md": {
+      "sha512": "2db4cfc1b6184f469ed72ea22d67ebed77eb5103353995e21cfed4711ef2319904bec1fc3c4af7162e8b8745b05495b8aacc5fe3739330167179d4fe3192850a",
+      "size_bytes": 12966,
+      "modified": "2025-11-21T09:59:02.117117"
+    },
+    "docs\\features\\phase4-fusion-plan.md": {
+      "sha512": "0816f07c13bda7d1207aaf2a195d28c88b372bd2a814ae3508f29b123cef4f89b4ee8234f761845ae16484f69a20e499506ce00b69250f08af73dcf5b264c0b0",
+      "size_bytes": 36288,
+      "modified": "2025-11-22T23:23:51.875309"
+    },
+    "docs\\features\\phase4-poc-readme.md": {
+      "sha512": "de09e1e3649d6f806c8a1fd38f71acc4155e8f7ed3260f10d0bad46ad7b1db7a7769a31b6c385cbbde0c045449e8538b2ccd228d3dcc30bee16b201022b98d2b",
+      "size_bytes": 15763,
+      "modified": "2025-11-21T09:59:02.117117"
+    },
+    "docs\\general-readme.md": {
+      "sha512": "06ad4dcf815f14e398c1c863fe999337e73dac67daf297cf3703a971f6cee9aae4066a25ccd994bcdd43c99d7a39e870e571e2d6f8905f6cf331cc6cf89cbc22",
+      "size_bytes": 11347,
+      "modified": "2025-11-21T09:59:02.113078"
+    },
+    "docs\\historical\\BASELINE-PRE-AUTOLUT.md": {
+      "sha512": "66dcbfd376cb4d4982bc16905f6fa83e259cb368d6ca6869a127de87b23dfcb4acd87958942d42300f8152eb57e302797b4051360625404e8ad6b3a1473c3df1",
+      "size_bytes": 8155,
+      "modified": "2025-11-21T09:59:02.113078"
+    },
+    "docs\\ISSUE_OPENMP_CRASHES.md": {
+      "sha512": "062f6c02ceff2f85eb623b358697218640171393792993b26534f5403a14b58fbd7ad6ad91c04dd3c71822c9fa6076ce3bbf5727091edd7f6fb4596e3dcfe4f7",
+      "size_bytes": 11150,
+      "modified": "2025-11-21T09:59:02.097308"
+    },
+    "docs\\pgo\\CLANG_INSTALLATION.md": {
+      "sha512": "b9e2541271dd34433994bdd279dc4e0188838b26c011fcf6a1b46e81e078ab942dff3f37e19714b188cf476375f631f70dbdf27f6704ff510196706ba38e8ba8",
+      "size_bytes": 7268,
+      "modified": "2025-11-23T01:00:17.190417"
+    },
+    "docs\\pgo\\PGO_AND_PATHS_FIX_REPORT.md": {
+      "sha512": "486277444b4de451511ca540cdc0e24e4038800fd3ef48a90acd2232f64cf266426ef203a6339fb328030c6cab0abb6b5f05b01249d9b8f3be81e7db6296bdde",
+      "size_bytes": 10279,
+      "modified": "2025-11-22T22:50:30.132237"
+    },
+    "docs\\pgo\\PGO_LIMITATIONS.md": {
+      "sha512": "8cc4dc5527e6dc357bdfc4580358ff498e3af130782c706f53078276ae6b53cac705cd2a2df9a59b2df72116cbd70860a1a541d67b389320280664333933989b",
+      "size_bytes": 6845,
+      "modified": "2025-11-22T22:48:38.098080"
+    },
+    "docs\\pgo\\README.md": {
+      "sha512": "758ba1408915b49e0700e378fc76209f6d1bbbfb5141e12170b2b7cd46fefb2a5750d835ad88721316912ec3783df7288377c9f6b48b115b04471a4db01cccf2",
+      "size_bytes": 9372,
+      "modified": "2025-11-23T01:05:57.652165"
+    },
+    "docs\\profiling\\README.md": {
+      "sha512": "01972cb81d65748192d823718bf0ed9210fe0c253e2204ca93d7f3966f498ab7012a2154cd25e940ba5e72b12b8244feec93dd7a43546e1300ee8bc6f69f98bc",
+      "size_bytes": 7853,
+      "modified": "2025-11-23T00:08:46.958013"
+    },
+    "docs\\README.md": {
+      "sha512": "c7658c943149d94c3a36d9c6d117d07f06e634f8c495e8b1475325105272e6186e87da2d8b3a3703e25dae8a6c35fca4e11e8fd1aea6687b386298a87d3ed41f",
+      "size_bytes": 10812,
+      "modified": "2025-11-22T23:25:42.480342"
+    },
+    "docs\\t5-dense243-spec.md": {
+      "sha512": "9a6fbf751a9744dee26b558d19f0c86a8c57eaa66001322bc9c1d1ad3ccfb6bc34c08e658766cdaee66f7aa09ac23c72bb82485bea1b51c9e094a8aadf69b54e",
+      "size_bytes": 10727,
+      "modified": "2025-11-21T09:59:02.115103"
+    },
+    "docs\\triadsextet-spec.md": {
+      "sha512": "e2d69ed9adb0f74501edadff6addcd568de58dee1dabceccef1b1b68064594139b2181c337a1281d28646b93b310f15b131a21ead142a70805165d8cc6074d40",
+      "size_bytes": 17631,
+      "modified": "2025-11-21T09:59:02.115103"
+    },
+    "docs\\TRITNET_ROADMAP.md": {
+      "sha512": "961adc1748b651296a50aba755a15dd17e1a90f0d1f7b3d69c74de612d67d860f16b92c3ad8e477ff0375a8a4a3d615b4544934168714c7f98cb92e774b0a097",
+      "size_bytes": 16242,
+      "modified": "2025-11-23T01:34:26.290019"
+    },
+    "docs\\TRITNET_VISION.md": {
+      "sha512": "494e30f7d4f04cbdd32e217e6251079d4ac8501ec117d94d5363f9c953fd4e0ab386bb3b9550517f8bb7db297e5add9bc90b5dcb8379226d8550d55a1785c8e9",
+      "size_bytes": 24108,
+      "modified": "2025-11-23T01:59:03.177194"
+    },
+    "LICENSE": {
+      "sha512": "50fee24de9c683f7af002775a1b321d061f99a573abcd01d5018680e8e82c18ef9ad7107490827fd9ab3e1da61165370314bc3ed88a64a3a010fed542fb7e1c3",
+      "size_bytes": 11568,
+      "modified": "2025-11-21T09:59:02.068897"
+    },
+    "README.md": {
+      "sha512": "46f0ab865a7f1eb1e5f904b501232b5533ad4e3ae0ea1f10ce7e5049d1fcd1ce1ae23a892f174eb00a0c1354d38418e31846bab63113bf2f8bfaaaeb0dc31822",
+      "size_bytes": 14780,
+      "modified": "2025-11-23T02:21:40.810213"
+    },
+    "scripts\\run_tritnet.py": {
+      "sha512": "df1df10b0247702588dfa9907370742b8440e580b27cf919ab5c5cfbf3df90872a1d1650d713edd4b35b94ad749e55994e89c1fffeae54baa2f031f94b542e4c",
+      "size_bytes": 11578,
+      "modified": "2025-11-23T02:29:00.842940"
+    },
+    "scripts\\tritnet\\generate_truth_tables.py": {
+      "sha512": "60377f667f6f614a23eefd2ed23244c987936c2d5fc5059ccc22e01cc61220ab884a847e10a2e6dc41bb11fa56acd1b40351525096a7fd2d0de997be3d1bd8f5",
+      "size_bytes": 13352,
+      "modified": "2025-11-23T01:42:16.251192"
+    },
+    "scripts\\tritnet\\ternary_layers.py": {
+      "sha512": "517ac037b5a046be9b71e798084cdde5ea36446f8701ec1f49b27f34bd6fbe209a3aedeb1ef9b63a1b5b37c776558176ed2449c67c57fcf09cd8ba8cf754564c",
+      "size_bytes": 8890,
+      "modified": "2025-11-23T02:15:07.515794"
+    },
+    "scripts\\tritnet\\train_tritnet.py": {
+      "sha512": "55293759058c0dcc53f638d5e925559c8fd17831cf9232e769a0d2e7dd22259938b428e2d8233530224984e387628bfef481b8c63d08db185a6ef735392d8bfd",
+      "size_bytes": 14246,
+      "modified": "2025-11-23T02:18:21.141014"
+    },
+    "scripts\\tritnet\\tritnet_model.py": {
+      "sha512": "e914c6b00293fbbae91631284130e8b9fdff1e6e50e8711ecb25923cef6d18da0810c8483242e40efb58d4270bf8b6e50369056ddb23c429eacd7deb3ff5dc03",
+      "size_bytes": 11580,
+      "modified": "2025-11-23T02:16:34.272354"
+    },
+    "ternary_core\\algebra\\ternary_algebra.h": {
+      "sha512": "a07164e80b52c771246b95e3e5e1ec639a6742de8e509d1972de50fd37dd5c085e94429c7b7a3c8d45b53c83b91da83f5dd35905dbe237a3c4824e3fd96704ba",
+      "size_bytes": 5338,
+      "modified": "2025-11-21T09:59:02.120652"
+    },
+    "ternary_core\\algebra\\ternary_lut_gen.h": {
+      "sha512": "37f6acf91011d718343ad3d5d3039a1c631b4fb6f5682cccc14c22cfd6e20004fb2a5ff3b445a7cc8c8625b126cfa47b3718b0acdef87ee796bc5265e4a95134",
+      "size_bytes": 3889,
+      "modified": "2025-11-21T09:59:02.120652"
+    },
+    "ternary_core\\common\\ternary_errors.h": {
+      "sha512": "f010f3d10848b1d818649c3cb3501b209363f2005587caee5cd6af192232369e9b434e5ca70db92aa069a70755e656b2525ca3889c6bdd978913e9e81ea7a2ce",
+      "size_bytes": 4291,
+      "modified": "2025-11-21T09:59:02.130825"
+    },
+    "ternary_core\\config\\optimization_config.h": {
+      "sha512": "184955cce1be2bbc1a2bb7ca9dbbe6b16ccac97ae083775b27fa3f730645b67c368a3e104b94d4073047e5e81b8a8109cc9ebb894ffc40149748c1efd27c94b8",
+      "size_bytes": 5515,
+      "modified": "2025-11-21T09:59:02.120652"
+    },
+    "ternary_core\\core_api.h": {
+      "sha512": "4814f01bf1a74f307da051dbfad00433098b344c7d962e0c533b60e780cc0b31121e87b23e834358ba9f3bced5ab4e82dbba22238e6310d00f49d313c0c039ec",
+      "size_bytes": 3388,
+      "modified": "2025-11-21T09:59:02.122673"
+    },
+    "ternary_core\\ffi\\ternary_c_api.h": {
+      "sha512": "b3fea3767ce07f6a42c47a8c1ea7e220a74c58559a69ae856c23f2e0beb3d5718f813453d28a96db8e7df33a0352e0679a0561e028a1def76ecd6c1acb21f6ae",
+      "size_bytes": 8062,
+      "modified": "2025-11-21T09:59:02.122673"
+    },
+    "ternary_core\\profiling\\ternary_profiler.h": {
+      "sha512": "d114ef5124b5058783fd6a68287b1d1dcb4b5e0f926084a5480f1ffef6ac716bf66f5dc0f41d7d8bd579b1d62b995e2892b8405247afbe542758b586a29faf5b",
+      "size_bytes": 9825,
+      "modified": "2025-11-23T00:01:01.164718"
+    },
+    "ternary_core\\simd\\ternary_cpu_detect.h": {
+      "sha512": "fdaf33fb71aedcdaf035fe181084392928c7ed9db26d88d830d067de782444ab90fb477d2c6830306d5db3ef4abdc3c566bbe642880e45511e6afa00199b04cb",
+      "size_bytes": 6204,
+      "modified": "2025-11-21T09:59:02.122673"
+    },
+    "ternary_core\\simd\\ternary_fusion.h": {
+      "sha512": "c5f074831ff4915d95e2bdc712899445ecd5beb8134ab5957164309055620a57d116b18c106d11b60a329ff85a4452b4edb09308c54391d8a0f660eba7ad8fc8",
+      "size_bytes": 10782,
+      "modified": "2025-11-21T09:59:02.124678"
+    },
+    "ternary_core\\simd\\ternary_scalar_reference.h": {
+      "sha512": "19f21cbd4312251bae87929742c472b95c50447307fdee0381e03351c4ee2266c950de4242f8095ec293c73a409f9c429c743a8179d0666a4a6d44da43f6875e",
+      "size_bytes": 10024,
+      "modified": "2025-11-21T09:59:02.124678"
+    },
+    "ternary_core\\simd\\ternary_simd_kernels.h": {
+      "sha512": "c7e07ecb6be752a131b688ac94a72b478e2256367d7ba33dc8fc07f3c9356653831d887550a6c49fb30af4846619d3fc01eb7c72fe9792ef15ba4ae862094bb6",
+      "size_bytes": 3575,
+      "modified": "2025-11-21T09:59:02.126194"
+    },
+    "ternary_engine\\experimental\\dense243\\ternary_dense243.h": {
+      "sha512": "9a39040c01875089839bd3be2d972056409b702b2dc881e4c2f8077c4bdc1b40856d7b9dc764f4a4e69059e3c9cc94166013c243a17997529715df2528c25bfc",
+      "size_bytes": 10195,
+      "modified": "2025-11-21T09:59:02.127204"
+    },
+    "ternary_engine\\experimental\\dense243\\ternary_dense243_simd.h": {
+      "sha512": "b5791d2401a01d3ec4c49d69b06be60893ae08e2a207cebe939fe4169c74c37c897ec826c60c0edbac6255b6fa2563b799d3892798019c5cb232492c2318e194",
+      "size_bytes": 15684,
+      "modified": "2025-11-21T09:59:02.128776"
+    },
+    "ternary_engine\\experimental\\dense243\\ternary_triadsextet.h": {
+      "sha512": "134d5aa3eb6804781561aae8f1f9a75a9ed4882ec547b43dabf190be2562f7671eaf3c1f2ddce2dbb157d7ba54cc8859e113951dd9fea32a4e5cc81a0e3707b1",
+      "size_bytes": 15303,
+      "modified": "2025-11-21T09:59:02.129799"
+    },
+    "ternary_engine\\ternary_dense243_module.cpp": {
+      "sha512": "fe24b1f7728eabcb6044308dddafb907c69b4f6d8b9fcdeb32be51679441eed2873400d3eace824d25658df9b657542cff1f09324f23681644413b5fd49b8a81",
+      "size_bytes": 12604,
+      "modified": "2025-11-23T01:29:45.146458"
+    },
+    "ternary_engine\\ternary_simd_engine.cpp": {
+      "sha512": "99c4ad1f19d57c847124dd8a661eccf562794fb5fdc25c1a77162abb52aedb20adf2ddcd088c15af601b67a8b18d62a204e7e68f586a07ef7b2f898e4a942c14",
+      "size_bytes": 17588,
+      "modified": "2025-11-23T00:05:35.893111"
+    },
+    "tests\\compile_test.py": {
+      "sha512": "7e8c514652bd4ba04fd2fefdc458f2bb6505d22c492f8ffd2b2e3f74163fc021bf2f9682f642009c66e72fa5a3b1f02516cb8ec7fc59bb88381dcf34caf8e788",
+      "size_bytes": 3128,
+      "modified": "2025-11-21T09:59:02.134615"
+    },
+    "tests\\run_simd_harness.py": {
+      "sha512": "a45dbaf5bf63d743e1f34b65e3aab7d54673b3330a716ee5a5e38238fc8f896ab155c8decdfe63fcc23901d45ab4e9942a680e6071a7b9acffc574008c79e58d",
+      "size_bytes": 16819,
+      "modified": "2025-11-21T09:59:02.134615"
+    },
+    "tests\\run_tests.py": {
+      "sha512": "ce06765d1a1fa93d00dbcb352b27f27bc3c69e92db3da060ebef90d82ac13c0ae3880dacf03fd77c2774bb27fef1e7c556b4e5fb90c4f2d944942346233bd8e3",
+      "size_bytes": 9901,
+      "modified": "2025-11-22T22:22:21.157969"
+    },
+    "tests\\setup_test.py": {
+      "sha512": "fc61590936873850ddf9b45e106f393f55f436fa71dce2867eb611ecdfcd9729c7e00c1ab56ed67ee700c197c3f07621fce5fdbc33c91b8333fc2ae1bf4747bd",
+      "size_bytes": 623,
+      "modified": "2025-11-21T09:59:02.134615"
+    },
+    "tests\\test_capabilities.py": {
+      "sha512": "8b410b355ca7dcb5794cb09f5c6bfd8a7ce35780a9ae116060d0eb1027604d9500e3fc28580bf8336b55b563336a5552a8b21eb9d6db786ec3426faae113b7e5",
+      "size_bytes": 6660,
+      "modified": "2025-11-22T23:34:25.175815"
+    },
+    "tests\\test_errors.py": {
+      "sha512": "04836c21e4e4186447092247c6bb0beadfde66835c66ce6a4488e0aa9cab1b812f2bb9b421bf5a7e0b0ae5cba3678621289eeec35e2d1634981963758e0d66e5",
+      "size_bytes": 8847,
+      "modified": "2025-11-21T09:59:02.137525"
+    },
+    "tests\\test_fusion.py": {
+      "sha512": "dc2cae21d88d8a34f0b573360f56099bfe4f70dd617a053a6a9550513cf05d2c623de75c55d3f7cfd99360142761f11d2f4001dc880a25fd127231317067fe9f",
+      "size_bytes": 9758,
+      "modified": "2025-11-22T23:33:44.912231"
+    },
+    "tests\\test_omp.py": {
+      "sha512": "50ffd9cde06242b4f901fa7ded46b975d4fdb70db6bbcab152f4d4fa8d718eacc4946671ea2faceafb7bbae114071fda4a5073ef9b59d6c5da9553c23d888aa1",
+      "size_bytes": 2693,
+      "modified": "2025-11-21T09:59:02.139047"
+    },
+    "tests\\test_path_fixes.py": {
+      "sha512": "9924633967ce4ffe0f06f35bb165f0f0b4daf3c660cbaf0ec4a0c573f883eac1f9675667ba4a641f96b9e1558faf7e95ee80276502ed5f554e38085bfd2b2af1",
+      "size_bytes": 5730,
+      "modified": "2025-11-21T13:44:56.260656"
+    },
+    "tests\\test_phase0.py": {
+      "sha512": "0b53bdb6bf29eaed87dce36e3aeba7cf6aab6c3ef8b1ccf92a6c055543289fe1d075021669763cfe033c575bbb3200b0e71cd1f6bc353fa527b1baf52a25464f",
+      "size_bytes": 7633,
+      "modified": "2025-11-21T09:59:02.139047"
+    },
+    "tests\\test_simd_python.py": {
+      "sha512": "a0608e57d165bbb592325aaea95e2553b5075aeb58c8c26d66c7d817f8fff262783589e877eba68d4deec0600c7047f480ffff4dabd5d96b59db9432725e6b85",
+      "size_bytes": 561,
+      "modified": "2025-11-21T09:59:02.141085"
+    },
+    "tests\\test_simd_validation.py": {
+      "sha512": "f1fed8421698968ee29b77b7513435ee72878badb68d39d45496babdb10c067d64ab52ebcaf3bdd5351b4e271e1258cfd1a2215223ac67dbf685e6e6e41080dc",
+      "size_bytes": 10182,
+      "modified": "2025-11-21T09:59:02.141085"
+    }
+  }
+}
