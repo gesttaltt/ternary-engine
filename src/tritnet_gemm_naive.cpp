@@ -9,7 +9,7 @@
  */
 
 #include "../include/tritnet_gemm.h"
-#include "../include/dense243.h"
+#include "../ternary_engine/experimental/dense243/ternary_dense243.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -227,9 +227,9 @@ int tritnet_get_optimal_tile_size(int cache_level) {
  */
 double tritnet_benchmark_gemm(int M, int N, int K, int num_runs) {
     // Allocate test matrices
-    float* A = (float*)aligned_alloc(64, M * K * sizeof(float));
-    uint8_t* B = (uint8_t*)aligned_alloc(64, (K / 5) * N * sizeof(uint8_t));
-    float* C = (float*)aligned_alloc(64, M * N * sizeof(float));
+    float* A = (float*)aligned_alloc_impl(64, M * K * sizeof(float));
+    uint8_t* B = (uint8_t*)aligned_alloc_impl(64, (K / 5) * N * sizeof(uint8_t));
+    float* C = (float*)aligned_alloc_impl(64, M * N * sizeof(float));
 
     // Initialize with random data
     for (int i = 0; i < M * K; i++) {
@@ -249,9 +249,9 @@ double tritnet_benchmark_gemm(int M, int N, int K, int num_runs) {
     double avg_time_ms = 0.0;
 
     // Cleanup
-    free(A);
-    free(B);
-    free(C);
+    aligned_free_impl(A);
+    aligned_free_impl(B);
+    aligned_free_impl(C);
 
     return avg_time_ms;
 }
@@ -261,10 +261,10 @@ double tritnet_benchmark_gemm(int M, int N, int K, int num_runs) {
  */
 float tritnet_validate_gemm(int M, int N, int K) {
     // Allocate test matrices
-    float* A = (float*)aligned_alloc(64, M * K * sizeof(float));
-    uint8_t* B = (uint8_t*)aligned_alloc(64, (K / 5) * N * sizeof(uint8_t));
-    float* C_test = (float*)aligned_alloc(64, M * N * sizeof(float));
-    float* C_ref = (float*)aligned_alloc(64, M * N * sizeof(float));
+    float* A = (float*)aligned_alloc_impl(64, M * K * sizeof(float));
+    uint8_t* B = (uint8_t*)aligned_alloc_impl(64, (K / 5) * N * sizeof(uint8_t));
+    float* C_test = (float*)aligned_alloc_impl(64, M * N * sizeof(float));
+    float* C_ref = (float*)aligned_alloc_impl(64, M * N * sizeof(float));
 
     // Initialize with known data
     for (int i = 0; i < M * K; i++) {
@@ -290,21 +290,23 @@ float tritnet_validate_gemm(int M, int N, int K) {
     }
 
     // Cleanup
-    free(A);
-    free(B);
-    free(C_test);
-    free(C_ref);
+    aligned_free_impl(A);
+    aligned_free_impl(B);
+    aligned_free_impl(C_test);
+    aligned_free_impl(C_ref);
 
     return max_error;
 }
 
-// Aligned malloc implementation
-static inline void* aligned_alloc(size_t alignment, size_t size) {
+// Aligned malloc implementation (defined above functions that use it)
 #if defined(_WIN32)
-    return _aligned_malloc(size, alignment);
+    #define aligned_alloc_impl(alignment, size) _aligned_malloc(size, alignment)
+    #define aligned_free_impl(ptr) _aligned_free(ptr)
 #else
-    void* ptr = nullptr;
-    posix_memalign(&ptr, alignment, size);
-    return ptr;
+    static inline void* aligned_alloc_impl(size_t alignment, size_t size) {
+        void* ptr = nullptr;
+        posix_memalign(&ptr, alignment, size);
+        return ptr;
+    }
+    #define aligned_free_impl(ptr) free(ptr)
 #endif
-}
