@@ -19,9 +19,11 @@ build/
         ├── {timestamp}/      # Timestamped builds
         └── latest/           # Latest reference build
 
-Build scripts are at project root:
+Build scripts are in scripts/build/:
 - build.py              # Standard optimized build
+- build_dense243.py     # Dense243 module build
 - build_pgo.py          # Profile-Guided Optimization build
+- build_pgo_unified.py  # Unified PGO (Clang/MSVC)
 - build_reference.py    # Reference baseline build
 
 ```
@@ -33,7 +35,7 @@ Build scripts are at project root:
 From the project root:
 
 ```bash
-python build.py
+python scripts/build/build.py
 ```
 
 This produces an optimized build with:
@@ -47,7 +49,7 @@ This produces an optimized build with:
 For 5-15% additional performance:
 
 ```bash
-python build_pgo.py full
+python scripts/build/build_pgo.py full
 ```
 
 See `docs/PGO_README.md` for detailed PGO documentation.
@@ -57,7 +59,7 @@ See `docs/PGO_README.md` for detailed PGO documentation.
 For benchmarking and regression testing:
 
 ```bash
-python build_reference.py
+python scripts/build/build_reference.py
 ```
 
 ## Build Outputs
@@ -156,13 +158,19 @@ Required: Intel Haswell (2013+) or AMD Excavator (2015+)
 
 ## Build Scripts Documentation
 
-### build.py
+### scripts/build/build.py
 
 Standard optimized build with production flags. Outputs to `build/artifacts/standard/`.
 
-**Usage**: `python build.py`
+**Usage**: `python scripts/build/build.py`
 
-### build_pgo.py
+### scripts/build/build_dense243.py
+
+Dense243 module build (experimental, separate module).
+
+**Usage**: `python scripts/build/build_dense243.py`
+
+### scripts/build/build_pgo.py
 
 Three-phase Profile-Guided Optimization build:
 
@@ -170,15 +178,15 @@ Three-phase Profile-Guided Optimization build:
 2. **Profile phase**: Runs representative workload
 3. **Optimization phase**: Rebuilds with profile data
 
-**Usage**: `python build_pgo.py full` (or `instrument`, `profile`, `optimize` individually)
+**Usage**: `python scripts/build/build_pgo.py full` (or `instrument`, `profile`, `optimize` individually)
 
 See `docs/PGO_README.md` for details.
 
-### build_reference.py
+### scripts/build/build_reference.py
 
 Baseline build for benchmarking. Uses conservative optimizations for fair comparison.
 
-**Usage**: `python build_reference.py`
+**Usage**: `python scripts/build/build_reference.py`
 
 ## Related Documentation
 
