@@ -1,0 +1,20 @@
+# OpenTimestamps - Keep everything tracked for IP protection
+# Only ignore truly temporary files
+
+# Logs (keep actual logs for audit trail)
+logs/*.tmp
+
+# Temporary verification files
+*.tmp
+*.temp
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Note: We DO want to commit:
+# - timestamps/ directory (proof of when files existed)
+# - logs/ directory (audit trail)
+# - .ots files (blockchain proofs)
+# - manifest files (file hashes)

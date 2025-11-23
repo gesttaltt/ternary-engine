@@ -1,0 +1,14 @@
+# OpenTimestamps IP Protection System
+# Optional dependencies for blockchain timestamping
+
+# Core functionality works without any dependencies (uses Python stdlib)
+# Install these for full blockchain integration:
+
+# OpenTimestamps client for blockchain proof submission and verification
+opentimestamps-client>=0.7.0
+
+# Installation:
+# pip install -r requirements.txt
+#
+# Verification:
+# ots --version

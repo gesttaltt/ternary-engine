@@ -1,0 +1,52 @@
+{
+  "timestamp_config": {
+    "hash_algorithm": "sha512",
+    "calendar_server": "https://alice.btc.calendar.opentimestamps.org",
+    "backup_servers": [
+      "https://bob.btc.calendar.opentimestamps.org",
+      "https://finney.calendar.eternitywall.com"
+    ]
+  },
+  "files_to_timestamp": {
+    "source_code": [
+      "ternary_core/**/*.cpp",
+      "ternary_core/**/*.h",
+      "ternary_engine/**/*.cpp",
+      "ternary_engine/**/*.h"
+    ],
+    "critical_scripts": [
+      "scripts/**/*.py",
+      "benchmarks/**/*.py",
+      "tests/**/*.py"
+    ],
+    "documentation": [
+      "README.md",
+      "LICENSE",
+      "CHANGELOG.md",
+      "docs/**/*.md"
+    ],
+    "datasets": [
+      "datasets/**/*.json",
+      "datasets/**/*.csv"
+    ],
+    "build_configs": [
+      "build/**/*.py",
+      "CMakeLists.txt",
+      "setup.py"
+    ]
+  },
+  "exclude_patterns": [
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/*.pyd",
+    "**/build/**",
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/*.log"
+  ],
+  "timestamp_schedule": {
+    "major_releases": true,
+    "weekly_snapshots": true,
+    "on_demand": true
+  }
+}

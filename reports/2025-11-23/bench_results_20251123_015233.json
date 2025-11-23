@@ -1,0 +1,530 @@
+{
+  "metadata": {
+    "timestamp": "2025-11-23T01:51:47.528927",
+    "module": "ternary_simd_engine",
+    "numpy_version": "1.26.4",
+    "test_sizes": [
+      32,
+      100,
+      1000,
+      10000,
+      100000,
+      1000000,
+      10000000
+    ],
+    "warmup_iterations": 100,
+    "measured_iterations": 1000,
+    "hardware": {
+      "platform": "Windows",
+      "platform_release": "11",
+      "platform_version": "10.0.26100",
+      "architecture": "AMD64",
+      "processor": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+      "python_version": "3.12.6",
+      "cpu_count_logical": 12,
+      "omp_num_threads": 12,
+      "omp_threads_auto_set": true,
+      "cpu_model": "unknown",
+      "has_avx2": "unknown"
+    }
+  },
+  "results_optimized": [
+    {
+      "operation": "tadd",
+      "size": 32,
+      "time_ns_total": 1415300,
+      "iterations": 1000,
+      "time_ns_per_op": 1415.3,
+      "time_ns_per_elem": 44.228125,
+      "throughput_mops": 22.610047339786618
+    },
+    {
+      "operation": "tmul",
+      "size": 32,
+      "time_ns_total": 1387400,
+      "iterations": 1000,
+      "time_ns_per_op": 1387.4,
+      "time_ns_per_elem": 43.35625,
+      "throughput_mops": 23.06472538561338
+    },
+    {
+      "operation": "tmin",
+      "size": 32,
+      "time_ns_total": 1378000,
+      "iterations": 1000,
+      "time_ns_per_op": 1378.0,
+      "time_ns_per_elem": 43.0625,
+      "throughput_mops": 23.222060957910013
+    },
+    {
+      "operation": "tmax",
+      "size": 32,
+      "time_ns_total": 1370100,
+      "iterations": 1000,
+      "time_ns_per_op": 1370.1,
+      "time_ns_per_elem": 42.815625,
+      "throughput_mops": 23.35595941902051
+    },
+    {
+      "operation": "tnot",
+      "size": 32,
+      "time_ns_total": 1054200,
+      "iterations": 1000,
+      "time_ns_per_op": 1054.2,
+      "time_ns_per_elem": 32.94375,
+      "throughput_mops": 30.354771390627967
+    },
+    {
+      "operation": "tadd",
+      "size": 100,
+      "time_ns_total": 1399600,
+      "iterations": 1000,
+      "time_ns_per_op": 1399.6,
+      "time_ns_per_elem": 13.995999999999999,
+      "throughput_mops": 71.44898542440697
+    },
+    {
+      "operation": "tmul",
+      "size": 100,
+      "time_ns_total": 1425000,
+      "iterations": 1000,
+      "time_ns_per_op": 1425.0,
+      "time_ns_per_elem": 14.25,
+      "throughput_mops": 70.17543859649123
+    },
+    {
+      "operation": "tmin",
+      "size": 100,
+      "time_ns_total": 1426400,
+      "iterations": 1000,
+      "time_ns_per_op": 1426.4,
+      "time_ns_per_elem": 14.264000000000001,
+      "throughput_mops": 70.10656197420079
+    },
+    {
+      "operation": "tmax",
+      "size": 100,
+      "time_ns_total": 1425700,
+      "iterations": 1000,
+      "time_ns_per_op": 1425.7,
+      "time_ns_per_elem": 14.257,
+      "throughput_mops": 70.14098337658695
+    },
+    {
+      "operation": "tnot",
+      "size": 100,
+      "time_ns_total": 1065800,
+      "iterations": 1000,
+      "time_ns_per_op": 1065.8,
+      "time_ns_per_elem": 10.658,
+      "throughput_mops": 93.82623381497467
+    },
+    {
+      "operation": "tadd",
+      "size": 1000,
+      "time_ns_total": 1429300,
+      "iterations": 1000,
+      "time_ns_per_op": 1429.3,
+      "time_ns_per_elem": 1.4293,
+      "throughput_mops": 699.6431819771916
+    },
+    {
+      "operation": "tmul",
+      "size": 1000,
+      "time_ns_total": 1485100,
+      "iterations": 1000,
+      "time_ns_per_op": 1485.1,
+      "time_ns_per_elem": 1.4850999999999999,
+      "throughput_mops": 673.3553296074338
+    },
+    {
+      "operation": "tmin",
+      "size": 1000,
+      "time_ns_total": 1505200,
+      "iterations": 1000,
+      "time_ns_per_op": 1505.2,
+      "time_ns_per_elem": 1.5052,
+      "throughput_mops": 664.3635397289396
+    },
+    {
+      "operation": "tmax",
+      "size": 1000,
+      "time_ns_total": 1480400,
+      "iterations": 1000,
+      "time_ns_per_op": 1480.4,
+      "time_ns_per_elem": 1.4804000000000002,
+      "throughput_mops": 675.4931099702783
+    },
+    {
+      "operation": "tnot",
+      "size": 1000,
+      "time_ns_total": 1133000,
+      "iterations": 1000,
+      "time_ns_per_op": 1133.0,
+      "time_ns_per_elem": 1.133,
+      "throughput_mops": 882.6125330979701
+    },
+    {
+      "operation": "tadd",
+      "size": 10000,
+      "time_ns_total": 2151800,
+      "iterations": 1000,
+      "time_ns_per_op": 2151.8,
+      "time_ns_per_elem": 0.21518,
+      "throughput_mops": 4647.272051305883
+    },
+    {
+      "operation": "tmul",
+      "size": 10000,
+      "time_ns_total": 2191900,
+      "iterations": 1000,
+      "time_ns_per_op": 2191.9,
+      "time_ns_per_elem": 0.21919,
+      "throughput_mops": 4562.25192755144
+    },
+    {
+      "operation": "tmin",
+      "size": 10000,
+      "time_ns_total": 2291500,
+      "iterations": 1000,
+      "time_ns_per_op": 2291.5,
+      "time_ns_per_elem": 0.22915,
+      "throughput_mops": 4363.953742090334
+    },
+    {
+      "operation": "tmax",
+      "size": 10000,
+      "time_ns_total": 2980500,
+      "iterations": 1000,
+      "time_ns_per_op": 2980.5,
+      "time_ns_per_elem": 0.29805,
+      "throughput_mops": 3355.1417547391375
+    },
+    {
+      "operation": "tnot",
+      "size": 10000,
+      "time_ns_total": 2453800,
+      "iterations": 1000,
+      "time_ns_per_op": 2453.8,
+      "time_ns_per_elem": 0.24538000000000001,
+      "throughput_mops": 4075.3117613497434
+    },
+    {
+      "operation": "tadd",
+      "size": 100000,
+      "time_ns_total": 9042500,
+      "iterations": 1000,
+      "time_ns_per_op": 9042.5,
+      "time_ns_per_elem": 0.090425,
+      "throughput_mops": 11058.888581697538
+    },
+    {
+      "operation": "tmul",
+      "size": 100000,
+      "time_ns_total": 8821200,
+      "iterations": 1000,
+      "time_ns_per_op": 8821.2,
+      "time_ns_per_elem": 0.08821200000000001,
+      "throughput_mops": 11336.32612342992
+    },
+    {
+      "operation": "tmin",
+      "size": 100000,
+      "time_ns_total": 8178800,
+      "iterations": 1000,
+      "time_ns_per_op": 8178.8,
+      "time_ns_per_elem": 0.081788,
+      "throughput_mops": 12226.732527999218
+    },
+    {
+      "operation": "tmax",
+      "size": 100000,
+      "time_ns_total": 7347100,
+      "iterations": 1000,
+      "time_ns_per_op": 7347.1,
+      "time_ns_per_elem": 0.07347100000000001,
+      "throughput_mops": 13610.81242939391
+    },
+    {
+      "operation": "tnot",
+      "size": 100000,
+      "time_ns_total": 5972900,
+      "iterations": 1000,
+      "time_ns_per_op": 5972.9,
+      "time_ns_per_elem": 0.059729,
+      "throughput_mops": 16742.28599172931
+    },
+    {
+      "operation": "tadd",
+      "size": 1000000,
+      "time_ns_total": 33877900,
+      "iterations": 1000,
+      "time_ns_per_op": 33877.9,
+      "time_ns_per_elem": 0.0338779,
+      "throughput_mops": 29517.768220580376
+    },
+    {
+      "operation": "tmul",
+      "size": 1000000,
+      "time_ns_total": 33603200,
+      "iterations": 1000,
+      "time_ns_per_op": 33603.2,
+      "time_ns_per_elem": 0.0336032,
+      "throughput_mops": 29759.070564708123
+    },
+    {
+      "operation": "tmin",
+      "size": 1000000,
+      "time_ns_total": 34615500,
+      "iterations": 1000,
+      "time_ns_per_op": 34615.5,
+      "time_ns_per_elem": 0.0346155,
+      "throughput_mops": 28888.792592913578
+    },
+    {
+      "operation": "tmax",
+      "size": 1000000,
+      "time_ns_total": 33805200,
+      "iterations": 1000,
+      "time_ns_per_op": 33805.2,
+      "time_ns_per_elem": 0.0338052,
+      "throughput_mops": 29581.247855359532
+    },
+    {
+      "operation": "tnot",
+      "size": 1000000,
+      "time_ns_total": 28537400,
+      "iterations": 1000,
+      "time_ns_per_op": 28537.4,
+      "time_ns_per_elem": 0.0285374,
+      "throughput_mops": 35041.73470603489
+    },
+    {
+      "operation": "tadd",
+      "size": 10000000,
+      "time_ns_total": 2154942200,
+      "iterations": 1000,
+      "time_ns_per_op": 2154942.2,
+      "time_ns_per_elem": 0.21549422000000001,
+      "throughput_mops": 4640.4956940376405
+    },
+    {
+      "operation": "tmul",
+      "size": 10000000,
+      "time_ns_total": 2186063200,
+      "iterations": 1000,
+      "time_ns_per_op": 2186063.2,
+      "time_ns_per_elem": 0.21860632000000002,
+      "throughput_mops": 4574.433163688955
+    },
+    {
+      "operation": "tmin",
+      "size": 10000000,
+      "time_ns_total": 2177338200,
+      "iterations": 1000,
+      "time_ns_per_op": 2177338.2,
+      "time_ns_per_elem": 0.21773382000000002,
+      "throughput_mops": 4592.763770001371
+    },
+    {
+      "operation": "tmax",
+      "size": 10000000,
+      "time_ns_total": 2160877700,
+      "iterations": 1000,
+      "time_ns_per_op": 2160877.7,
+      "time_ns_per_elem": 0.21608777,
+      "throughput_mops": 4627.749178030761
+    },
+    {
+      "operation": "tnot",
+      "size": 10000000,
+      "time_ns_total": 1924463000,
+      "iterations": 1000,
+      "time_ns_per_op": 1924463.0,
+      "time_ns_per_elem": 0.1924463,
+      "throughput_mops": 5196.254747428244
+    }
+  ],
+  "results_baseline": [
+    {
+      "operation": "tadd",
+      "size": 32,
+      "time_ns_total": 19102500,
+      "iterations": 100,
+      "time_ns_per_op": 191025.0,
+      "time_ns_per_elem": 5969.53125,
+      "throughput_mops": 0.16751734066221696
+    },
+    {
+      "operation": "tmul",
+      "size": 32,
+      "time_ns_total": 19075500,
+      "iterations": 100,
+      "time_ns_per_op": 190755.0,
+      "time_ns_per_elem": 5961.09375,
+      "throughput_mops": 0.16775444942465467
+    },
+    {
+      "operation": "tmin",
+      "size": 32,
+      "time_ns_total": 19185800,
+      "iterations": 100,
+      "time_ns_per_op": 191858.0,
+      "time_ns_per_elem": 5995.5625,
+      "throughput_mops": 0.1667900217869466
+    },
+    {
+      "operation": "tmax",
+      "size": 32,
+      "time_ns_total": 19258200,
+      "iterations": 100,
+      "time_ns_per_op": 192582.0,
+      "time_ns_per_elem": 6018.1875,
+      "throughput_mops": 0.16616298511802766
+    },
+    {
+      "operation": "tnot",
+      "size": 32,
+      "time_ns_total": 10356200,
+      "iterations": 100,
+      "time_ns_per_op": 103562.0,
+      "time_ns_per_elem": 3236.3125,
+      "throughput_mops": 0.3089936463181476
+    },
+    {
+      "operation": "tadd",
+      "size": 100,
+      "time_ns_total": 58633100,
+      "iterations": 100,
+      "time_ns_per_op": 586331.0,
+      "time_ns_per_elem": 5863.31,
+      "throughput_mops": 0.17055212840528644
+    },
+    {
+      "operation": "tmul",
+      "size": 100,
+      "time_ns_total": 57823400,
+      "iterations": 100,
+      "time_ns_per_op": 578234.0,
+      "time_ns_per_elem": 5782.34,
+      "throughput_mops": 0.17294036670275356
+    },
+    {
+      "operation": "tmin",
+      "size": 100,
+      "time_ns_total": 58991000,
+      "iterations": 100,
+      "time_ns_per_op": 589910.0,
+      "time_ns_per_elem": 5899.1,
+      "throughput_mops": 0.16951738400773
+    },
+    {
+      "operation": "tmax",
+      "size": 100,
+      "time_ns_total": 58185300,
+      "iterations": 100,
+      "time_ns_per_op": 581853.0,
+      "time_ns_per_elem": 5818.53,
+      "throughput_mops": 0.17186471497096345
+    },
+    {
+      "operation": "tnot",
+      "size": 100,
+      "time_ns_total": 29495600,
+      "iterations": 100,
+      "time_ns_per_op": 294956.0,
+      "time_ns_per_elem": 2949.56,
+      "throughput_mops": 0.33903361857361775
+    },
+    {
+      "operation": "tadd",
+      "size": 1000,
+      "time_ns_total": 570929300,
+      "iterations": 100,
+      "time_ns_per_op": 5709293.0,
+      "time_ns_per_elem": 5709.293,
+      "throughput_mops": 0.17515303558601739
+    },
+    {
+      "operation": "tmul",
+      "size": 1000,
+      "time_ns_total": 565773800,
+      "iterations": 100,
+      "time_ns_per_op": 5657738.0,
+      "time_ns_per_elem": 5657.738,
+      "throughput_mops": 0.17674908240713869
+    },
+    {
+      "operation": "tmin",
+      "size": 1000,
+      "time_ns_total": 579981000,
+      "iterations": 100,
+      "time_ns_per_op": 5799810.0,
+      "time_ns_per_elem": 5799.81,
+      "throughput_mops": 0.17241944132652623
+    },
+    {
+      "operation": "tmax",
+      "size": 1000,
+      "time_ns_total": 581269700,
+      "iterations": 100,
+      "time_ns_per_op": 5812697.0,
+      "time_ns_per_elem": 5812.697,
+      "throughput_mops": 0.17203717998719012
+    },
+    {
+      "operation": "tnot",
+      "size": 1000,
+      "time_ns_total": 291102100,
+      "iterations": 100,
+      "time_ns_per_op": 2911021.0,
+      "time_ns_per_elem": 2911.021,
+      "throughput_mops": 0.34352208383244237
+    },
+    {
+      "operation": "tadd",
+      "size": 10000,
+      "time_ns_total": 6108487800,
+      "iterations": 100,
+      "time_ns_per_op": 61084878.0,
+      "time_ns_per_elem": 6108.4878,
+      "throughput_mops": 0.1637066378359633
+    },
+    {
+      "operation": "tmul",
+      "size": 10000,
+      "time_ns_total": 6107715700,
+      "iterations": 100,
+      "time_ns_per_op": 61077157.0,
+      "time_ns_per_elem": 6107.7157,
+      "throughput_mops": 0.16372733262617314
+    },
+    {
+      "operation": "tmin",
+      "size": 10000,
+      "time_ns_total": 6285209000,
+      "iterations": 100,
+      "time_ns_per_op": 62852090.0,
+      "time_ns_per_elem": 6285.209,
+      "throughput_mops": 0.15910369885870146
+    },
+    {
+      "operation": "tmax",
+      "size": 10000,
+      "time_ns_total": 6270015000,
+      "iterations": 100,
+      "time_ns_per_op": 62700150.0,
+      "time_ns_per_elem": 6270.015,
+      "throughput_mops": 0.15948925162061015
+    },
+    {
+      "operation": "tnot",
+      "size": 10000,
+      "time_ns_total": 3208137300,
+      "iterations": 100,
+      "time_ns_per_op": 32081373.0,
+      "time_ns_per_elem": 3208.1373,
+      "throughput_mops": 0.3117073574126643
+    }
+  ]
+}

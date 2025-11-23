@@ -3,17 +3,23 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![C++ Standard](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
-[![Performance](https://img.shields.io/badge/speedup-7315x-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
-[![Tests](https://img.shields.io/badge/tests-65%2F65%20passing-brightgreen)](https://github.com/gesttaltt/ternary-engine#testing)
+[![Performance](https://img.shields.io/badge/peak-35042%20Mops/s-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
+[![Speedup](https://img.shields.io/badge/speedup-8234x%20avg-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
+[![Platform](https://img.shields.io/badge/production-Windows%20x64-blue)](https://github.com/gesttaltt/ternary-engine#production-status)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 Production-grade balanced ternary arithmetic library with AVX2 SIMD vectorization, operation fusion, and Python bindings.
 
+## Production Status
+
+✅ **Windows x64:** Production-ready (validated 2025-11-23)
+⚠️ **Linux/macOS:** Experimental only (builds untested, CI disabled)
+
 ## Overview
 
-Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **7,315× average throughput** vs pure Python implementations (validated 2025-10-29).
+Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **peak throughput of 35,042 Mops/s** and **8,234× average speedup** vs pure Python implementations (validated 2025-11-23, Windows x64).
 
-**Balanced Ternary**: Three-valued logic system using {-1, 0, +1} with symmetric negative/positive representation. Applications include fractal generation, modulo-3 arithmetic, and specialized computational workflows.
+**Balanced Ternary**: Three-valued logic system using {-1, 0, +1} with symmetric negative/positive representation. Applications include edge detection for computer vision, fractal generation, modulo-3 arithmetic, and specialized computational workflows.
 
 ### Features
 
@@ -76,19 +82,23 @@ python -c "import ternary_simd_engine; print('Success')"
 
 ### Manual Compilation
 
-**Linux/macOS:**
+⚠️ **Warning:** Manual compilation commands below are provided for reference but have **NOT been tested** on Linux/macOS. Windows is the only validated production platform.
+
+**Windows (MSVC) - VALIDATED:**
 ```bash
-c++ -O3 -march=native -mavx2 -fopenmp -flto -shared -std=c++17 -fPIC \
+cl /O2 /GL /arch:AVX2 /std:c++17 /EHsc /LD ^
+   ternary_simd_engine.cpp /link /LTCG
+```
+
+**Linux/macOS - UNTESTED (use at own risk):**
+```bash
+c++ -O3 -march=native -mavx2 -flto -shared -std=c++17 -fPIC \
     $(python3 -m pybind11 --includes) \
     ternary_simd_engine.cpp \
     -o ternary_simd_engine$(python3-config --extension-suffix)
 ```
 
-**Windows (MSVC):**
-```bash
-cl /O2 /GL /arch:AVX2 /openmp /std:c++17 /EHsc /LD ^
-   ternary_simd_engine.cpp /link /LTCG
-```
+Note: OpenMP (`-fopenmp`) disabled by default due to documented CI crashes. For production use on Windows, use the validated build script: `python scripts/build/build.py`
 
 ## Usage
 
@@ -128,18 +138,29 @@ result = tc.tadd(trits, trits)
 
 ## Performance
 
-### Validated Benchmarks (2025-10-29)
+### Validated Benchmarks (2025-11-23, Windows x64, 12 cores)
 
-**Peak Throughput (100K elements):**
-- **tadd**: 13,047 Mops/s (0.077 ns/element) - 7,316× vs Python
-- **tmul**: 14,058 Mops/s (0.071 ns/element) - 7,584× vs Python
-- **tmin**: 13,447 Mops/s (0.074 ns/element) - 8,681× vs Python
-- **tmax**: 13,341 Mops/s (0.075 ns/element) - 8,127× vs Python
-- **tnot**: 18,518 Mops/s (0.054 ns/element) - 4,767× vs Python
+**Peak Throughput (1,000,000 elements):**
+- **tadd**: 29,518 Mops/s (0.034 ns/element) - 8,234× avg speedup vs Python
+- **tmul**: 29,759 Mops/s (0.034 ns/element) - 8,055× avg speedup vs Python
+- **tmin**: 28,889 Mops/s (0.035 ns/element) - 7,959× avg speedup vs Python
+- **tmax**: 29,581 Mops/s (0.034 ns/element) - 6,378× avg speedup vs Python
+- **tnot**: **35,042 Mops/s** (0.029 ns/element) - 4,005× avg speedup vs Python ⭐
 
-**Average Speedup: 7,315×** (validated with statistical rigor)
+**Peak Performance: 35,042 Mops/s** (35 billion operations/second)
+**Average Speedup: 8,234×** vs pure Python (measured on arrays ≤10K elements)
+**Maximum Speedup: 28,388×** (tadd, 10K elements)
 
 *(Mops/s = Million operations/second)*
+
+**Scaling Behavior:**
+- Small arrays (32 elements): 23-30 Mops/s, 135-141× speedup
+- Medium arrays (1K elements): 664-883 Mops/s, 2,569-3,995× speedup
+- Large arrays (100K elements): 11,059-16,742 Mops/s
+- Optimal size (1M elements): 28,889-35,042 Mops/s (peak performance)
+- Huge arrays (10M elements): 4,574-5,196 Mops/s (memory bandwidth limited)
+
+See [reports/2025-11-23/COMPREHENSIVE_REPORT.md](reports/2025-11-23/COMPREHENSIVE_REPORT.md) for complete benchmark analysis.
 
 ### Operation Fusion (Phase 4.0 - Validated)
 
@@ -203,12 +224,13 @@ Root level:
 
 ### Deployment Status
 
-✅ **Production-Ready** (ternary_core/):
-- Core algebra system (65/65 tests passing)
-- SIMD kernels (AVX2, validated 2025-10-29)
+✅ **Production-Ready** (ternary_core/, Windows x64 only):
+- Core algebra system (16 test functions, all passing)
+- SIMD kernels (AVX2, validated 2025-11-23)
 - CPU feature detection (runtime ISA dispatch)
 - C FFI layer (cross-language ready)
 - Operation fusion Phase 4.0 (1.6-15.5× validated speedup)
+- Performance validated: 35,042 Mops/s peak throughput
 
 ✅ **Validated & Ready** (ternary_engine/experimental/):
 - **Dense243 encoding** (all 243 states validated, 0.25 ns pack, 0.91 ns unpack)
@@ -286,7 +308,7 @@ See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md
 
 **Current**: v1.0.0 - Production-ready kernel with validated experimental features
 
-**Completed (v1.0 - Validated 2025-10-29)**:
+**Completed (v1.0 - Validated 2025-11-23)**:
 - ✅ Clean kernel/engine separation (ternary_core/ vs ternary_engine/)
 - ✅ Runtime CPU detection and graceful fallback
 - ✅ Alignment validation for streaming stores (fixes segfault risk)
@@ -295,8 +317,9 @@ See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md
 - ✅ **TriadSextet encoding** (all 27 states validated)
 - ✅ **Operation fusion Phase 4.0** (1.6-15.5× validated speedup with statistical rigor)
 - ✅ C FFI layer (cross-language ready)
-- ✅ Comprehensive testing (65/65 C++ tests, 2/2 Python tests passing)
-- ✅ Performance benchmarking (7,315× average speedup validated)
+- ✅ Comprehensive testing (16 test functions, all passing on Windows x64)
+- ✅ Performance benchmarking (35,042 Mops/s peak, 8,234× average speedup validated)
+- ✅ Build system fixes (Python 3.12+ compatibility, OMP_NUM_THREADS auto-config)
 
 **In Progress**:
 - 🔧 Phase 4.1 fusion validation (fused_tnot_tmul/tmin/tmax - implementation complete)
@@ -349,5 +372,6 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 ---
 
 **Version**: 1.0.0
-**Status**: Production (ternary_core/), Experimental (ternary_engine/)
-**Updated**: 2025-10-29
+**Status**: Production (Windows x64), Experimental (Linux/macOS, ternary_engine/)
+**Updated**: 2025-11-23
+**Platform**: Windows x64 (validated), Linux/macOS (untested)
