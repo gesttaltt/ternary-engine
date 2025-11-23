@@ -551,7 +551,7 @@ ed2bfdc FEAT: Add comprehensive build cleanup system and fix path inconsistencie
 2. **Scalar implementation** - Branch-free LUT in ternary_algebra.h
 3. **LUT generation** - Compile-time constexpr in ternary_lut_gen.h
 4. **SIMD kernel** - AVX2 vectorization in ternary_simd_kernels.h
-5. **Python binding** - pybind11 wrapper in ternary_simd_engine.cpp
+5. **Python binding** - pybind11 wrapper in bindings_core_ops.cpp
 6. **Correctness tests** - Comprehensive test coverage
 7. **Performance benchmark** - Validate speedup vs Python
 8. **Documentation** - API docs with examples
@@ -749,6 +749,7 @@ pip install matplotlib transformers
 - What is the deployment status (production/validated/pending)?
 - What phase is this (for fusion operations)?
 - When should we promote to production?
+- Does this belong in ternary_core/ (kernel) or ternary_engine/lib/ (library)?
 
 ---
 

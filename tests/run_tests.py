@@ -26,7 +26,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 TESTS_DIR = Path(__file__).parent.resolve()
 
 # Import capability detection
-sys.path.insert(0, str(TESTS_DIR))
+sys.path.insert(0, str(TESTS_DIR / 'python'))
 try:
     from test_capabilities import detect_capabilities
     CAPABILITIES_AVAILABLE = True
@@ -168,32 +168,32 @@ def main():
     if not check_module_built():
         return 1
 
-    # Define test suites
+    # Define test suites (now in python/ subdirectory)
     test_suites = {
         'phase0': {
             'name': 'Phase 0 Correctness Tests',
-            'script': TESTS_DIR / 'test_phase0.py',
+            'script': TESTS_DIR / 'python' / 'test_phase0.py',
             'required': True,
             'optional': False,
             'requires_capability': None
         },
         'omp': {
             'name': 'OpenMP Parallelization Tests',
-            'script': TESTS_DIR / 'test_omp.py',
+            'script': TESTS_DIR / 'python' / 'test_omp.py',
             'required': False,  # Optional on platforms without OpenMP
             'optional': True,
             'requires_capability': 'openmp'
         },
         'errors': {
             'name': 'Error Handling & Edge Cases',
-            'script': TESTS_DIR / 'test_errors.py',
+            'script': TESTS_DIR / 'python' / 'test_errors.py',
             'required': True,
             'optional': False,
             'requires_capability': None
         },
         'fusion': {
             'name': 'Operation Fusion Tests',
-            'script': TESTS_DIR / 'test_fusion.py',
+            'script': TESTS_DIR / 'python' / 'test_fusion.py',
             'required': False,  # Experimental feature
             'optional': True,
             'requires_capability': 'fusion'
