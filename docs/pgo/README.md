@@ -1,355 +1,381 @@
-# Profile-Guided Optimization (PGO) - Ternary Engine
+# Profile-Guided Optimization (PGO) for Ternary Engine
 
-**Status**: ✅ IMPLEMENTED
-**Date**: 2025-10-11
-**Phase**: 0 (Compiler Optimizations)
+**Doc-Type:** PGO Documentation Hub · Version 2.0 · Date 2025-11-23
 
 ---
 
-## What is PGO?
+## Overview
 
-Profile-Guided Optimization uses **actual runtime behavior** to guide compiler optimizations:
+Profile-Guided Optimization uses actual runtime behavior to guide compiler optimizations, providing 5-15% additional performance gains on top of the already-optimized baseline.
 
-1. **Instrument**: Build code with profiling instrumentation
-2. **Profile**: Run representative workloads to collect runtime data
-3. **Optimize**: Rebuild using collected data to optimize hot paths
-
-**Expected Benefits**:
-- 5-15% performance improvement in hot paths
-- Better function inlining decisions
-- Improved branch prediction
-- Optimized register allocation based on actual usage
+**recommended** - Use Clang PGO (works perfectly with Python extensions)
+**fallback** - MSVC PGO available but has known DLL lifecycle limitations
 
 ---
 
 ## Quick Start
 
-### Option 1: Automated Full PGO Build
+### Recommended: Clang PGO
 
 ```bash
-python build_pgo.py full
+# Install Clang (see CLANG_INSTALLATION.md)
+# Then run unified PGO build
+python scripts/build/build_pgo_unified.py --clang
 ```
 
-This runs all 3 phases automatically (~10-15 minutes total).
+**expected_gain** - 5-15% performance improvement
+**works_with** - Python extensions (no DLL limitations)
 
-### Option 2: Manual Step-by-Step
+### Auto-Detect
 
 ```bash
-# Phase 1: Build with instrumentation (~2 minutes)
-python build_pgo.py instrument
-
-# Phase 2: Run profiling workload (~8 minutes)
-python build_pgo.py profile
-
-# Phase 3: Build optimized version (~2 minutes)
-python build_pgo.py optimize
+# Automatically prefers Clang if available, falls back to MSVC
+python scripts/build/build_pgo_unified.py
 ```
 
-### Clean PGO Data
+### MSVC Fallback
 
 ```bash
-python build_pgo.py clean
+# Has known limitations with Python extensions
+python scripts/build/build_pgo.py full
 ```
+
+**note** - See PGO_LIMITATIONS.md for why MSVC PGO doesn't work well with Python
 
 ---
 
-## Detailed Usage
+## Documentation Files
+
+### CLANG_INSTALLATION.md
+
+Complete installation guide for Clang on Windows, Linux, and macOS.
+
+**contents**:
+- Why Clang for PGO
+- Platform-specific installation instructions
+- Verification steps
+- Troubleshooting common issues
+
+### PGO_LIMITATIONS.md
+
+Technical analysis of MSVC PGO limitations with Python extensions.
+
+**contents**:
+- Root cause: DLL lifecycle and .pgc file generation
+- Why MSVC PGO fails with Python extensions
+- Attempted fixes and why they don't work
+- Clang as the solution
+
+### PGO_AND_PATHS_FIX_REPORT.md
+
+Historical report documenting PGO infrastructure improvements.
+
+**contents**:
+- MSVC PGO enhancement attempts
+- Path reorganization
+- Build script consolidation
+
+---
+
+## Clang vs MSVC PGO
+
+| Feature | Clang PGO | MSVC PGO |
+|---------|-----------|----------|
+| **Works with Python Extensions** | ✅ Yes | ❌ No (DLL unload issue) |
+| **Profile Collection** | ✅ Immediate (.profraw) | ❌ Requires DLL unload (.pgc) |
+| **Cross-Platform** | ✅ Windows, Linux, macOS | ❌ Windows only |
+| **Performance Gain** | ✅ 5-15% | N/A (no profile data collected) |
+| **Setup Complexity** | ✅ Simple | ⚠️ Complex |
+| **Maintenance** | ✅ Active | ⚠️ Deprecated |
+
+**recommendation** - Always use Clang PGO when possible
+
+---
+
+## How PGO Works
+
+### Traditional Compilation
+
+```
+Source Code → Compiler Optimizations → Binary
+             (based on static analysis)
+```
+
+### Profile-Guided Optimization
+
+```
+Source Code → Instrumented Binary → Run Workload → Profile Data
+                                                         ↓
+                              Optimized Binary ← Compiler (guided by profiles)
+```
+
+**key_benefit** - Compiler knows which code paths are hot, optimizes accordingly
+
+---
+
+## Clang PGO Workflow (4 Phases)
 
 ### Phase 1: Instrumentation Build
 
 ```bash
-python build_pgo.py instrument
+CPPFLAGS="-fprofile-generate=pgo_data/profiles" python scripts/build/build.py
 ```
 
-**What it does**:
-- Compiles code with `/LTCG:PGI` flag (Profile-Guided Instrumentation)
-- Creates `pgo_data/` directory for profile storage
-- Generates instrumented module that records runtime behavior
-
-**Output**:
-- `ternary_simd_engine.cp312-win_amd64.pyd` (instrumented)
-- `pgo_data/ternary_simd_engine.pgd` (profile database, empty)
+**output** - `ternary_simd_engine.pyd` with profiling hooks
+**overhead** - ~10% slower than standard build
+**purpose** - Collect runtime statistics
 
 ### Phase 2: Profile Collection
 
 ```bash
-python build_pgo.py profile
+python benchmarks/bench_phase0.py --quick
 ```
 
-**What it does**:
-- Runs `benchmarks/bench_phase0.py` (full benchmark suite)
-- Collects runtime profiling data during execution
-- Stores profile counters in `.pgc` files
-- Merges counters into profile database
+**output** - `.profraw` files in `pgo_data/profiles/`
+**writes** - Immediately during execution (no DLL unload needed)
+**duration** - ~2-5 minutes
 
-**Duration**: ~8 minutes (full benchmark suite)
-
-**Output**:
-- `*.pgc` files (profile counter data)
-- Updated `pgo_data/ternary_simd_engine.pgd` (contains profile data)
-
-**Representative Workload**: The benchmark suite covers:
-- Small arrays (8-31 elements) → scalar code paths
-- Medium arrays (32-1K elements) → SIMD code paths
-- Large arrays (1M+ elements) → OpenMP threaded paths
-- All 5 operations (tadd, tmul, tmin, tmax, tnot)
-
-### Phase 3: Optimized Build
+### Phase 3: Profile Merging
 
 ```bash
-python build_pgo.py optimize
+llvm-profdata merge -output=pgo_data/merged.profdata pgo_data/profiles/*.profraw
 ```
 
-**What it does**:
-- Compiles code with `/LTCG:PGO` flag (Profile-Guided Optimization)
-- Uses collected profile data to optimize:
-  - Function inlining (inline frequently called functions)
-  - Branch prediction (optimize for common code paths)
-  - Code layout (arrange hot code together for cache locality)
-  - Register allocation (prioritize frequently accessed variables)
+**output** - `pgo_data/merged.profdata`
+**format** - Binary profile database
+**size** - Typically 100-500 KB
 
-**Output**:
-- `ternary_simd_engine.cp312-win_amd64.pyd` (PGO-optimized)
+### Phase 4: Optimized Build
+
+```bash
+CPPFLAGS="-fprofile-use=pgo_data/merged.profdata" python scripts/build/build.py
+```
+
+**output** - PGO-optimized `ternary_simd_engine.pyd`
+**optimization** - Hot paths inlined, cold paths optimized for size
+**result** - 5-15% faster than standard build
 
 ---
 
-## Verification
+## Unified Script (Automatic)
 
-### Before PGO (Baseline)
-
-```bash
-# Build without PGO
-python build.py
-
-# Run benchmark
-python benchmarks/bench_phase0.py
-```
-
-### After PGO
+The `build_pgo_unified.py` script automates all 4 phases:
 
 ```bash
-# Build with PGO
-python build_pgo.py full
+# Full workflow (auto-detect compiler)
+python scripts/build/build_pgo_unified.py
 
-# Run benchmark again
-python benchmarks/bench_phase0.py
+# Force Clang
+python scripts/build/build_pgo_unified.py --clang
+
+# Force MSVC (not recommended)
+python scripts/build/build_pgo_unified.py --msvc
+
+# Clean PGO data before starting
+python scripts/build/build_pgo_unified.py --clang --clean
 ```
+
+---
+
+## Performance Analysis
 
 ### Expected Improvements
 
-Based on MSVC PGO documentation:
-- **Hot paths**: 5-15% speedup
-- **Code layout**: Better instruction cache utilization
-- **Branch prediction**: 10-30% fewer branch mispredictions
-- **Overall**: 3-10% average performance improvement
+**baseline** - Standard build: 7,000-19,000× vs Pure Python
+**pgo_gain** - Additional 5-15% on top of baseline
+**total** - ~7,350-21,850× vs Pure Python
 
-**Caveat**: Improvements depend on workload predictability. If runtime behavior matches profiling workload, gains are significant. If behavior differs, gains are minimal.
+### Hottest Code Paths (PGO Benefits Most)
 
----
+1. **SIMD loop dispatch** - Branch prediction improvement
+2. **Array size thresholds** - Better inlining decisions
+3. **Scalar tail handling** - Optimized for rare case
+4. **Type checking** - Reduced overhead in hot paths
 
-## Technical Details
+### Benchmark Validation
 
-### MSVC PGO Flags
+```bash
+# Build and benchmark standard
+python scripts/build/build.py
+python benchmarks/bench_phase0.py > standard.txt
 
-**Phase 1 (Instrumentation)**:
-```python
-extra_link_args=[
-    '/LTCG:PGI',     # Link-Time Code Generation: Profile-Guided Instrumentation
-    '/PGD:pgo_data/ternary_simd_engine.pgd',  # Profile database location
-]
+# Build and benchmark PGO
+python scripts/build/build_pgo_unified.py --clang
+python benchmarks/bench_phase0.py > pgo.txt
+
+# Compare results
+diff standard.txt pgo.txt
 ```
-
-**Phase 3 (Optimization)**:
-```python
-extra_link_args=[
-    '/LTCG:PGO',     # Link-Time Code Generation: Profile-Guided Optimization
-    '/PGD:pgo_data/ternary_simd_engine.pgd',  # Use this profile database
-]
-```
-
-### Profile Data Files
-
-| File | Description |
-|------|-------------|
-| `*.pgc` | Profile counter data (generated during profiling) |
-| `*.pgd` | Profile database (merged from .pgc files) |
-| `pgo_data/` | Directory containing all profile data |
-
-### PGO vs LTO
-
-**Common Confusion**: `/GL` + `/LTCG` are **Link-Time Optimization (LTO)**, not PGO.
-
-| Feature | LTO | PGO |
-|---------|-----|-----|
-| **What** | Optimizes across compilation units | Uses runtime profiling data |
-| **Flags** | `/GL` + `/LTCG` | `/LTCG:PGI` → `/LTCG:PGO` |
-| **Benefit** | 5-20% (compile-time analysis) | 5-15% (runtime-guided) |
-| **Cost** | Longer build time | 3-phase build + profiling run |
-| **Data** | None required | Requires representative workload |
-
-**Both are enabled** in PGO builds (PGO builds on top of LTO).
 
 ---
 
 ## Troubleshooting
 
-### Problem: No profile data collected
+### Clang Not Found
 
-**Symptoms**:
-- No `*.pgc` files after Phase 2
-- Empty or missing `*.pgd` file
+**symptom** - `❌ ERROR: Clang or llvm-profdata not found`
 
-**Solutions**:
-1. Check instrumented module was used:
-   ```bash
-   python -c "import ternary_simd_engine; print(ternary_simd_engine.__file__)"
-   ```
-2. Verify profiling workload ran successfully
-3. Check PGO directory exists: `pgo_data/`
+**solution** - See CLANG_INSTALLATION.md for platform-specific instructions
 
-### Problem: Build fails in Phase 1 or 3
+**quick_install**:
+- **Windows:** https://releases.llvm.org/download.html
+- **Linux:** `sudo apt install clang llvm`
+- **macOS:** `brew install llvm`
 
-**Symptoms**:
-- Linker errors about `/LTCG` or `/PGD`
+### No .profraw Files Generated
 
-**Solutions**:
-1. Ensure MSVC is installed (not MinGW)
-2. Check Visual Studio version supports PGO (2015+)
-3. Try absolute path for `/PGD`: `/PGD:C:/path/to/pgo_data/...`
+**symptom** - Phase 3 fails with "No .profraw files found"
 
-### Problem: No performance improvement
+**possible_causes**:
+1. Benchmarks didn't run successfully
+2. Profile directory doesn't exist
+3. Insufficient disk space
 
-**Possible Reasons**:
-1. **Workload mismatch**: Profiling workload differs from actual usage
-   - Solution: Run Phase 2 with your actual use case
-2. **Already optimal**: Code already well-optimized (Phase 0 + 0.5)
-   - Expected: PGO gives diminishing returns on top of existing optimizations
-3. **Cache-bound**: Performance limited by memory, not CPU
-   - PGO cannot improve memory bandwidth
-
----
-
-## Integration with Regular Build
-
-### Option 1: Always use PGO (Recommended for releases)
-
-Replace `build.py` with:
+**solution**:
 ```bash
-python build_pgo.py full
+# Check profile directory
+ls pgo_data/profiles/
+
+# Manually run benchmarks
+python benchmarks/bench_phase0.py --quick
+
+# Verify .profraw files
+find pgo_data -name "*.profraw"
 ```
 
-### Option 2: Conditional PGO
+### Profile Merge Fails
 
-Add environment variable check:
-```python
-# In build.py
-import os
-use_pgo = os.environ.get('USE_PGO', '0') == '1'
+**symptom** - `llvm-profdata merge` errors
 
-if use_pgo:
-    extra_link_args.append('/LTCG:PGO')
-else:
-    extra_link_args.append('/LTCG')
-```
+**error**: `Malformed instrumentation profile data`
 
-Build with PGO:
+**solution**:
+- Delete `pgo_data/` directory
+- Ensure same Clang version for all phases
+- Rebuild from Phase 1
+
 ```bash
-set USE_PGO=1
-python build.py
+rm -rf pgo_data/
+python scripts/build/build_pgo_unified.py --clang --clean
 ```
 
-### Option 3: Separate PGO builds
+### MSVC Used Instead of Clang
 
-Keep `build.py` for development builds (fast iteration).
-Use `build_pgo.py` for release builds (maximum performance).
+**symptom** - Script uses MSVC even though Clang is installed
+
+**solution**:
+```bash
+# Force Clang
+python scripts/build/build_pgo_unified.py --clang
+
+# Verify Clang detected
+clang-cl --version
+llvm-profdata --version
+```
 
 ---
 
-## Benchmarking PGO Impact
+## Advanced Usage
 
-### Methodology
+### Custom Profiling Workload
 
-1. **Baseline** (No PGO):
-   ```bash
-   python build.py
-   python benchmarks/bench_phase0.py > results_baseline.json
-   ```
+```bash
+# Phase 1: Build instrumented
+CPPFLAGS="-fprofile-generate=pgo_data/profiles" python scripts/build/build.py
 
-2. **With PGO**:
-   ```bash
-   python build_pgo.py full
-   python benchmarks/bench_phase0.py > results_pgo.json
-   ```
+# Phase 2: Run custom workload
+python my_custom_benchmark.py
+python another_important_workload.py
 
-3. **Compare**:
-   ```python
-   import json
-   baseline = json.load(open("results_baseline.json"))
-   pgo = json.load(open("results_pgo.json"))
+# Phase 3: Merge profiles
+llvm-profdata merge -output=pgo_data/merged.profdata pgo_data/profiles/*.profraw
 
-   improvement = (baseline["peak_throughput"] - pgo["peak_throughput"]) / baseline["peak_throughput"]
-   print(f"PGO improvement: {improvement*100:.1f}%")
-   ```
+# Phase 4: Optimized build
+CPPFLAGS="-fprofile-use=pgo_data/merged.profdata" python scripts/build/build.py
+```
 
-### Expected Results
+### Analyze Profile Data
 
-Based on similar projects with PGO:
-- **Small arrays** (<32 elements): 0-5% (scalar, limited optimization potential)
-- **Medium arrays** (32-1K): 5-15% (SIMD hot paths benefit most)
-- **Large arrays** (>100K): 3-8% (memory-bound, less CPU optimization impact)
+```bash
+# View function coverage
+llvm-profdata show --all-functions pgo_data/merged.profdata
+
+# Detailed summary
+llvm-profdata show --detailed-summary pgo_data/merged.profdata
+
+# Top hot functions
+llvm-profdata show --topn=10 pgo_data/merged.profdata
+```
+
+### Profile-Specific Optimizations
+
+Clang uses profiles to optimize:
+
+1. **Function inlining** - Inline hot functions, don't inline cold ones
+2. **Branch prediction** - Optimize likely branches, move unlikely code out of hot path
+3. **Register allocation** - Prioritize registers for frequently-used variables
+4. **Code layout** - Group hot code together for better cache locality
 
 ---
 
-## Maintenance
+## Migration Guide
 
-### When to Re-profile
+### From MSVC PGO (Old)
 
-Re-run PGO after:
-- ✅ **Major code changes** (new algorithms, loop restructuring)
-- ✅ **New CPU architecture** (different branch prediction behavior)
-- ✅ **Workload changes** (different array sizes, operation mixes)
-
-Do NOT re-profile after:
-- ❌ Minor bug fixes
-- ❌ Comment changes
-- ❌ Variable renames
-
-### Profile Data Versioning
-
-Profile data is **compiler-specific** and **code-specific**:
-- Different MSVC versions → different profile format
-- Different source code → profile data invalid
-
-**Best Practice**: Regenerate profile data for each release build.
-
----
-
-## GCC/Clang PGO (Future)
-
-For cross-platform PGO support, add GCC/Clang flags:
-
-**GCC/Clang Phase 1** (Instrumentation):
-```python
-extra_compile_args=['-fprofile-generate'],
-extra_link_args=['-fprofile-generate']
+**old_workflow**:
+```bash
+python scripts/build/build_pgo.py full  # Doesn't collect profile data
 ```
 
-**GCC/Clang Phase 3** (Optimization):
-```python
-extra_compile_args=['-fprofile-use'],
-extra_link_args=['-fprofile-use']
+**new_workflow**:
+```bash
+python scripts/build/build_pgo_unified.py --clang  # Actually works
 ```
+
+**benefits**:
+- Profile data actually collected
+- 5-15% real performance gain
+- Cross-platform support
+- Simpler workflow
+
+### From Manual Clang PGO
+
+**old_workflow** (manual):
+```bash
+# Phase 1
+export CPPFLAGS="-fprofile-generate=profiles"
+python scripts/build/build.py
+
+# Phase 2
+python benchmarks/bench_phase0.py
+
+# Phase 3
+llvm-profdata merge -output=merged.profdata profiles/*.profraw
+
+# Phase 4
+export CPPFLAGS="-fprofile-use=merged.profdata"
+python scripts/build/build.py
+```
+
+**new_workflow** (automated):
+```bash
+python scripts/build/build_pgo_unified.py --clang
+```
+
+**benefits** - One command, automatic error handling, better UX
 
 ---
 
 ## References
 
-- [MSVC Profile-Guided Optimization](https://docs.microsoft.com/en-us/cpp/build/profile-guided-optimizations)
-- [GCC Profile-Guided Optimization](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html#index-fprofile-generate)
-- [Clang Profile-Guided Optimization](https://clang.llvm.org/docs/UsersManual.html#profile-guided-optimization)
+**Clang PGO Documentation:** https://clang.llvm.org/docs/UsersManual.html#profile-guided-optimization
+
+**llvm-profdata Manual:** https://llvm.org/docs/CommandGuide/llvm-profdata.html
+
+**LLVM Downloads:** https://releases.llvm.org/download.html
+
+**PGO Best Practices:** https://llvm.org/docs/HowToBuildWithPGO.html
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2025-10-11
-**Status**: OPT-114 fully implemented and documented
+**Version:** 2.0 · **Date:** 2025-11-23 · **Status:** Production-Ready · **Recommended:** Clang PGO

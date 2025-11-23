@@ -236,13 +236,20 @@ See **[TESTING.md](TESTING.md)** for comprehensive testing and CI/CD documentati
 
 ### Profile-Guided Optimization
 
-Additional 5-15% performance gain:
+Additional 5-15% performance gain using Clang PGO (recommended) or MSVC fallback:
 
 ```bash
+# Clang PGO (recommended - works with Python extensions)
+python scripts/build/build_pgo_unified.py --clang
+
+# Auto-detect (prefers Clang if available)
+python scripts/build/build_pgo_unified.py
+
+# MSVC fallback (has known limitations)
 python scripts/build/build_pgo.py full
 ```
 
-See [docs/pgo/README.md](docs/pgo/README.md) for details.
+See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md](docs/pgo/CLANG_INSTALLATION.md) for details.
 
 ### Compile-Time Options
 
