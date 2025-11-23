@@ -4,23 +4,17 @@ This directory contains code that has been deprecated or removed from active dev
 
 ## Contents
 
-### dense243_broken/
-**Status:** Broken - Removed from experimental (2025-11-22)
+### ~~dense243_broken/~~ (RESTORED - 2025-11-23)
+**Status:** ✅ Restored to `ternary_engine/experimental/dense243/`
 
-**Original Purpose:** T5-Dense243 high-density encoding (5 trits/byte, 95.3% density)
+**Why Restored:**
+- All tests passing (10/10) - functionality was never broken
+- Critical bug fix completed (2025-10-29)
+- Performance validated: Pack 0.25ns, Unpack 0.91ns
+- TritNet integration planned (neural network-based operations)
 
-**Why Removed:**
-- Documented as broken in CHANGELOG.md and COMMERCIABILITY_ASSESSMENT.md
-- Failed to deliver promised performance benefits
-- Added complexity without validated use cases
-- Tests exist but functionality is non-working
-
-**If You Need This:**
-- Tests are in `tests/test_dense243.cpp`
-- Original headers preserved for reference
-- Reconsider only if compelling use case emerges with proper validation
-
-**Alternative:** Use standard 2-bit encoding (4 trits/byte) which is production-validated
+**New Location:** `ternary_engine/experimental/dense243/`
+**Module:** `ternary_dense243_module` (separate from main engine)
 
 ---
 
