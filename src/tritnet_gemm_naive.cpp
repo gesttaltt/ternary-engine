@@ -13,6 +13,19 @@
 #include <string.h>
 #include <stdlib.h>
 
+// Platform-specific aligned memory allocation (must be defined early)
+#if defined(_WIN32)
+    #define aligned_alloc_impl(alignment, size) _aligned_malloc(size, alignment)
+    #define aligned_free_impl(ptr) _aligned_free(ptr)
+#else
+    static inline void* aligned_alloc_impl(size_t alignment, size_t size) {
+        void* ptr = nullptr;
+        posix_memalign(&ptr, alignment, size);
+        return ptr;
+    }
+    #define aligned_free_impl(ptr) free(ptr)
+#endif
+
 // Configuration
 static int g_num_threads = 0;  // 0 = auto-detect
 
@@ -297,16 +310,3 @@ float tritnet_validate_gemm(int M, int N, int K) {
 
     return max_error;
 }
-
-// Aligned malloc implementation (defined above functions that use it)
-#if defined(_WIN32)
-    #define aligned_alloc_impl(alignment, size) _aligned_malloc(size, alignment)
-    #define aligned_free_impl(ptr) _aligned_free(ptr)
-#else
-    static inline void* aligned_alloc_impl(size_t alignment, size_t size) {
-        void* ptr = nullptr;
-        posix_memalign(&ptr, alignment, size);
-        return ptr;
-    }
-    #define aligned_free_impl(ptr) free(ptr)
-#endif
