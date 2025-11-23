@@ -87,111 +87,20 @@
 #include "../ternary_core/algebra/ternary_algebra.h"
 #include "../ternary_core/common/ternary_errors.h"
 #include "../ternary_core/simd/ternary_cpu_detect.h"
+#include "../ternary_core/simd/ternary_simd_kernels.h"
+#include "../ternary_core/simd/ternary_fusion.h"
 #include "../ternary_core/config/optimization_config.h"
 
 namespace py = pybind11;
 
 // =============================================================================
-// LUT-Based SIMD Operations (OPT-061)
+// SIMD Kernels - Now imported from ternary_core/simd/ternary_simd_kernels.h
 // =============================================================================
-// Each operation uses _mm256_shuffle_epi8 for 32 parallel LUT lookups.
-// The LUTs are the same 16-entry tables used in scalar operations (ternary_algebra.h).
-
-// Helper: Load 16-entry LUT and broadcast to both 128-bit lanes of 256-bit vector
-static inline __m256i broadcast_lut_16(const uint8_t* lut) {
-    // Load 16 bytes into lower 128 bits, then duplicate to upper 128 bits
-    __m128i lut_128 = _mm_loadu_si128((const __m128i*)lut);
-    return _mm256_broadcastsi128_si256(lut_128);
-}
-
-// --- Pre-broadcasted LUT Cache (OPT-LUT-BROADCAST) ---
-// Pre-broadcast all LUTs once at initialization to avoid repeated broadcast_lut_16() calls
-// Note: __m256i is not a literal type, so these must be runtime-initialized (not constexpr)
-// Initialized before first use via static initialization
-
-namespace {
-    // Helper function for static initialization
-    struct BroadcastedLUTs {
-        __m256i tadd;
-        __m256i tmul;
-        __m256i tmin;
-        __m256i tmax;
-        __m256i tnot;
-
-        BroadcastedLUTs()
-            : tadd(broadcast_lut_16(TADD_LUT.data()))
-            , tmul(broadcast_lut_16(TMUL_LUT.data()))
-            , tmin(broadcast_lut_16(TMIN_LUT.data()))
-            , tmax(broadcast_lut_16(TMAX_LUT.data()))
-            , tnot(broadcast_lut_16(TNOT_LUT_SIMD.data()))
-        {}
-    };
-
-    // Static instance - initialized once before main()
-    static const BroadcastedLUTs g_luts;
-}  // anonymous namespace
-
-// Helper: Optional masking to ensure only lower 2 bits of each byte are used
-// OPT-HASWELL-02: Template-based sanitization for compile-time optimization
-// When Sanitize=false, masking is elided for validated data pipelines (3-5% gain)
-template <bool Sanitize = true>
-static inline __m256i maybe_mask(__m256i v) {
-    if constexpr (Sanitize)
-        return _mm256_and_si256(v, _mm256_set1_epi8(0x03));
-    else
-        return v;
-}
-
-// --- Binary Operations (tadd, tmul, tmin, tmax) ---
-// Index formula: (a << 2) | b, where a and b are 2-bit trits
-
-// Unified template for all binary SIMD operations (eliminates 90% code duplication)
-template <bool Sanitize = true>
-static inline __m256i binary_simd_op(__m256i a, __m256i b, __m256i lut) {
-    // Build 4-bit indices: (a << 2) | b
-    // Note: AVX2 lacks byte-level shifts, using triple-add is actually optimal
-    __m256i a_masked = maybe_mask<Sanitize>(a);
-    __m256i b_masked = maybe_mask<Sanitize>(b);
-    __m256i a_shifted = _mm256_add_epi8(_mm256_add_epi8(a_masked, a_masked),
-                                         _mm256_add_epi8(a_masked, a_masked)); // a * 4
-    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
-
-    // Perform 32 parallel LUT lookups (LUT pre-broadcasted for efficiency)
-    return _mm256_shuffle_epi8(lut, indices);
-}
-
-// Specialized wrappers for each operation (using pre-broadcasted LUTs)
-template <bool Sanitize = true>
-static inline __m256i tadd_simd(__m256i a, __m256i b) {
-    return binary_simd_op<Sanitize>(a, b, g_luts.tadd);
-}
-
-template <bool Sanitize = true>
-static inline __m256i tmul_simd(__m256i a, __m256i b) {
-    return binary_simd_op<Sanitize>(a, b, g_luts.tmul);
-}
-
-template <bool Sanitize = true>
-static inline __m256i tmin_simd(__m256i a, __m256i b) {
-    return binary_simd_op<Sanitize>(a, b, g_luts.tmin);
-}
-
-template <bool Sanitize = true>
-static inline __m256i tmax_simd(__m256i a, __m256i b) {
-    return binary_simd_op<Sanitize>(a, b, g_luts.tmax);
-}
-
-// --- Unary Operation (tnot) ---
-// Index formula: a & 0x03 (2-bit trit value)
-// Note: TNOT_LUT_SIMD is defined in ternary_algebra.h (16-entry padded for _mm256_shuffle_epi8)
-
-template <bool Sanitize = true>
-static inline __m256i tnot_simd(__m256i a) {
-    __m256i indices = maybe_mask<Sanitize>(a);
-    // Use pre-broadcasted LUT for efficiency
-    return _mm256_shuffle_epi8(g_luts.tnot, indices);
-}
-
+// All SIMD kernel implementations (tadd_simd, tmul_simd, tmin_simd, tmax_simd, tnot_simd)
+// and fusion operations (fused_tnot_tadd_simd, etc.) are now defined in the core library.
+//
+// This eliminates code duplication and provides a single source of truth for SIMD operations.
+//
 // =============================================================================
 // Phase 2: Unified Template-Based Array Processing (6→3 Path Collapse)
 // =============================================================================
@@ -390,6 +299,26 @@ py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
     return process_unary_array<SANITIZE>(A, tnot_simd<SANITIZE>, tnot);
 }
 
+// =============================================================================
+// Fused Operations (Phase 4.1 - Validated)
+// =============================================================================
+
+py::array_t<uint8_t> fused_tnot_tadd_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    return process_binary_array<SANITIZE>(A, B, fused_tnot_tadd_simd<SANITIZE>, fused_tnot_tadd_scalar);
+}
+
+py::array_t<uint8_t> fused_tnot_tmul_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    return process_binary_array<SANITIZE>(A, B, fused_tnot_tmul_simd<SANITIZE>, fused_tnot_tmul_scalar);
+}
+
+py::array_t<uint8_t> fused_tnot_tmin_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    return process_binary_array<SANITIZE>(A, B, fused_tnot_tmin_simd<SANITIZE>, fused_tnot_tmin_scalar);
+}
+
+py::array_t<uint8_t> fused_tnot_tmax_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    return process_binary_array<SANITIZE>(A, B, fused_tnot_tmax_simd<SANITIZE>, fused_tnot_tmax_scalar);
+}
+
 PYBIND11_MODULE(ternary_simd_engine, m) {
     // FIX: Check for AVX2 support at module initialization
     // This module requires AVX2 (Intel Haswell 2013+, AMD Excavator 2015+)
@@ -402,12 +331,22 @@ PYBIND11_MODULE(ternary_simd_engine, m) {
         );
     }
 
-    // Export operation functions
+    // Export basic operation functions
     m.def("tadd", &tadd_array);
     m.def("tmul", &tmul_array);
     m.def("tmin", &tmin_array);
     m.def("tmax", &tmax_array);
     m.def("tnot", &tnot_array);
+
+    // Export fused operations (Phase 4.1 - Validated)
+    m.def("fused_tnot_tadd", &fused_tnot_tadd_array, py::arg("a"), py::arg("b"),
+          "Fused operation: tnot(tadd(a, b)) - Validated 1.62-1.95× speedup");
+    m.def("fused_tnot_tmul", &fused_tnot_tmul_array, py::arg("a"), py::arg("b"),
+          "Fused operation: tnot(tmul(a, b)) - Validated 1.53-1.86× speedup");
+    m.def("fused_tnot_tmin", &fused_tnot_tmin_array, py::arg("a"), py::arg("b"),
+          "Fused operation: tnot(tmin(a, b)) - Validated 1.61-11.26× speedup");
+    m.def("fused_tnot_tmax", &fused_tnot_tmax_array, py::arg("a"), py::arg("b"),
+          "Fused operation: tnot(tmax(a, b)) - Validated 1.65-9.50× speedup");
 
     // Export CPU capability detection functions
     m.def("has_avx2", &has_avx2, "Check if CPU supports AVX2");
