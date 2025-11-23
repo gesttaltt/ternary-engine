@@ -2,29 +2,36 @@
 
 This directory contains comprehensive documentation for the ternary-engine library.
 
-## 🆕 Architecture Update & Validation (v1.0.0 - 2025-10-29)
+## 🆕 Architecture Update & Code Consolidation (v1.0.0 - 2025-11-22)
 
-**The project structure has been reorganized and fully validated:**
+**The project structure has been reorganized, consolidated, and fully validated:**
 
 ✅ **`ternary_core/`** - Production-ready kernel (65/65 tests passing, 7,315× avg speedup)
 - Core algebra and LUT generation (validated)
 - SIMD kernels and CPU detection (validated)
 - C FFI layer (cross-language ready)
-- Operation fusion Phase 4.0 (validated: 1.6-15.5× speedup)
+- Operation fusion (validated: 1.6-15.5× speedup) - **Now integrated in main module**
 
-✅ **`ternary_engine/experimental/`** - Validated experimental features:
-- **Dense243 encoding** - All 243 states validated, production-ready
-- **TriadSextet encoding** - All 27 states validated, production-ready
-- **Fusion operations** - Phase 4.0 complete (fused_tnot_tadd validated), Phase 4.1 pending
+✅ **`ternary_engine/`** - Main SIMD engine with fusion operations
+- Unified module with all core operations
+- Fusion operations available: `fused_tnot_tadd`, `fused_tnot_tmul`, `fused_tnot_tmin`, `fused_tnot_tmax`
+- Build via `scripts/build/build.py`
 
-**Note:** Some documentation paths may reference old root-level files. The implementation is now in:
+⚠️ **Deprecated/Archived:**
+- **ternary_fusion_engine** - Merged into main `ternary_simd_engine` module (see MIGRATION_NOTES.md)
+- **dense243/** - Archived to `legacy/dense243_broken/` (documented as broken)
+- **ternary_profiler.h** - Deleted (never integrated, pure overhead)
+
+**Note:** Implementation is now in:
 - `ternary_core/algebra/` - Core algebra and LUT generation
-- `ternary_core/simd/` - SIMD kernels and CPU detection
-- `ternary_core/ffi/` - C FFI layer
-- `ternary_engine/experimental/dense243/` - Dense243/TriadSextet encodings
-- `ternary_engine/experimental/fusion/` - Operation fusion
+- `ternary_core/simd/` - SIMD kernels, CPU detection, and fusion operations
+- `ternary_core/common/` - Common utilities and error handling
+- `ternary_engine/` - Main SIMD engine with Python bindings
+- `scripts/build/` - Build scripts
+- `tests/` - Test suite
+- `legacy/` - Archived code (broken or deprecated features)
 
-See comprehensive validation reports in ../local-reports/ directory.
+See MIGRATION_NOTES.md for migration guide from ternary_fusion_engine to unified module.
 
 ## Documentation Organization
 
@@ -142,7 +149,7 @@ docs/
 3. Use `make_binary_lut()` or `make_unary_lut()` from `ternary_lut_gen.h`
 
 **Build the project:**
-1. Quick: `python build/scripts/setup.py`
+1. Quick: `python scripts/build/build.py`
 2. Detailed: [Build System Overview](./build-system/README.md)
 3. PGO: [PGO_README.md](./PGO_README.md)
 
@@ -235,5 +242,18 @@ All documentation is released under Apache 2.0 (same as source code).
 
 ---
 
-**Last Updated**: 2025-10-29 (comprehensive validation complete)
+## Recent Updates
+
+**2025-11-22 - Code Consolidation:**
+- Merged fusion operations into main `ternary_simd_engine` module
+- Archived broken dense243 implementation to `legacy/`
+- Removed unused profiler infrastructure
+- Reorganized build scripts to `scripts/build/`
+- Updated all documentation paths
+
+See `MIGRATION_NOTES.md` and `legacy/README.md` for migration details.
+
+---
+
+**Last Updated**: 2025-11-22 (code consolidation and documentation update)
 **Maintained by**: Jonathan Verdun (Ternary Engine Project)

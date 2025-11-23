@@ -10,7 +10,7 @@ This directory contains comprehensive documentation for the ternary-engine build
 | **PGO** | `build_pgo.py` | Performance-critical | 15-60x baseline | 8-10min |
 | **Reference** | `build_reference.py` | Benchmarking baseline | 1x baseline | 25-45s |
 
-All build scripts are located at project root and generate timestamped artifacts in `build/artifacts/`.
+All build scripts are located in `scripts/build/` and generate timestamped artifacts in `build/artifacts/`.
 
 ## Documentation Index
 
@@ -46,13 +46,13 @@ All build scripts are located at project root and generate timestamped artifacts
 
 ```bash
 # Most users: Production-ready standard build
-python build.py
+python scripts/build/build.py
 
 # Performance-critical applications: PGO build
-python build_pgo.py full
+python scripts/build/build_pgo.py full
 
 # Benchmarking/research: Reference baseline
-python build_reference.py
+python scripts/build/build_reference.py
 ```
 
 ### First-Time Setup
@@ -66,7 +66,7 @@ cl.exe /?      # Windows
 gcc --version  # Linux
 
 # 3. Build standard version
-python build.py
+python scripts/build/build.py
 
 # 4. Test
 python -c "import ternary_simd_engine; print('Build successful!')"
@@ -76,9 +76,9 @@ python -c "import ternary_simd_engine; print('Build successful!')"
 
 ```bash
 # Build all three versions for comparison
-python build_reference.py
-python build.py
-python build_pgo.py full
+python scripts/build/build_reference.py
+python scripts/build/build.py
+python scripts/build/build_pgo.py full
 
 # Run benchmarks
 python benchmarks/bench_phase0.py
@@ -91,28 +91,32 @@ python benchmarks/bench_phase0.py
 ```
 ternary-engine/
 ├── build/
-│   ├── artifacts/              # All build outputs
-│   │   ├── standard/           # Standard optimized builds
-│   │   │   ├── YYYYMMDD_HHMMSS/
-│   │   │   │   ├── temp/       # Intermediate (.obj, .lib, .exp)
-│   │   │   │   └── output/     # Final (.pyd)
-│   │   │   └── latest/         # Most recent build
-│   │   ├── pgo/                # Profile-guided builds
-│   │   │   ├── instrumented/
-│   │   │   ├── optimized/
-│   │   │   ├── pgo_data/
-│   │   │   └── latest/
-│   │   └── reference/          # Baseline builds
-│   │       ├── YYYYMMDD_HHMMSS/
-│   │       └── latest/
-│   │
-│   └── scripts/                # Build scripts
-│       ├── setup.py            # Standard build
-│       ├── setup_pgo.py        # PGO build (3-phase)
-│       └── setup_reference.py  # Reference build
+│   └── artifacts/              # All build outputs
+│       ├── standard/           # Standard optimized builds
+│       │   ├── YYYYMMDD_HHMMSS/
+│       │   │   ├── temp/       # Intermediate (.obj, .lib, .exp)
+│       │   │   └── output/     # Final (.pyd)
+│       │   └── latest/         # Most recent build
+│       ├── pgo/                # Profile-guided builds
+│       │   ├── instrumented/
+│       │   ├── optimized/
+│       │   ├── pgo_data/
+│       │   └── latest/
+│       └── reference/          # Baseline builds
+│           ├── YYYYMMDD_HHMMSS/
+│           └── latest/
+│
+├── scripts/
+│   └── build/                  # Build scripts
+│       ├── build.py            # Standard build
+│       ├── build_pgo.py        # PGO build (3-phase)
+│       └── build_reference.py  # Reference build
+│
+├── tests/                      # Test suite
+│   └── run_tests.py            # Test runner
 │
 ├── docs/
-│   └── build/                  # Build documentation (this directory)
+│   └── build-system/           # Build documentation (this directory)
 │       ├── README.md           # This file
 │       ├── artifact-organization.md
 │       ├── setup-standard.md
@@ -219,20 +223,20 @@ ternary-engine/
 
 ```bash
 # Standard build (recommended for most cases)
-python build.py
+python scripts/build/build.py
 
 # Or PGO if performance critical
-python build_pgo.py full
+python scripts/build/build_pgo.py full
 ```
 
 ### Measuring Performance Impact
 
 ```bash
 # Build baseline
-python build_reference.py
+python scripts/build/build_reference.py
 
 # Build optimized
-python build.py
+python scripts/build/build.py
 
 # Compare
 python benchmarks/bench_phase0.py
@@ -242,13 +246,13 @@ python benchmarks/bench_phase0.py
 
 ```bash
 # Before changes
-python build.py
+python scripts/build/build.py
 python benchmarks/bench_phase0.py > before.txt
 
 # Make changes to ternary_simd_engine.cpp...
 
 # After changes
-python build.py
+python scripts/build/build.py
 python benchmarks/bench_phase0.py > after.txt
 
 # Compare
@@ -262,7 +266,7 @@ diff before.txt after.txt
 rm -rf build/artifacts/
 
 # Clean only PGO artifacts
-python build_pgo.py clean
+python scripts/build/build_pgo.py clean
 
 # Keep only latest builds
 find build/artifacts/*/[0-9]* -maxdepth 0 -type d | \
@@ -437,9 +441,9 @@ When contributing changes to the build system:
 
 1. **Test all three builds:**
    ```bash
-   python build_reference.py
-   python build.py
-   python build_pgo.py full
+   python scripts/build/build_reference.py
+   python scripts/build/build.py
+   python scripts/build/build_pgo.py full
    ```
 
 2. **Verify performance:**
@@ -455,6 +459,8 @@ When contributing changes to the build system:
    - Windows (MSVC)
    - Linux (GCC/Clang)
    - macOS (Clang)
+
+5. **Update build paths**: Use `scripts/build/build.py` (not root-level `build.py`)
 
 ## FAQ
 

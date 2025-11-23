@@ -8,7 +8,7 @@ This document provides a high-level overview of the pure source code files in th
 
 ## Core Source Files
 
-The library consists of **four primary source files** that implement the complete balanced ternary logic system:
+The library consists of **five primary components** that implement the complete balanced ternary logic system with fusion operations:
 
 ### 1. `ternary_lut_gen.h` - Compile-Time LUT Generation Framework
 
@@ -61,6 +61,8 @@ The library consists of **four primary source files** that implement the complet
 
 **Purpose**: Domain-specific exception types for ternary operations
 
+**Location**: `ternary_core/common/ternary_errors.h`
+
 **Key Components**:
 - `TernaryError` - Base exception class
 - `ArraySizeMismatchError` - Binary operation size validation
@@ -72,6 +74,22 @@ The library consists of **four primary source files** that implement the complet
 **Size**: 120 lines
 **Dependencies**: `<stdexcept>`, `<string>`
 **Design Principle**: YAGNI - minimal exception set, expand only when needed
+
+### 5. Fusion Operations (Integrated in Main Module)
+
+**Purpose**: Fused operation chains for improved performance
+
+**Location**: `ternary_core/simd/ternary_fusion.h`
+
+**Key Operations**:
+- `fused_tnot_tadd(a, b)` - Single-pass tnot(tadd(a, b))
+- `fused_tnot_tmul(a, b)` - Single-pass tnot(tmul(a, b))
+- `fused_tnot_tmin(a, b)` - Single-pass tnot(tmin(a, b))
+- `fused_tnot_tmax(a, b)` - Single-pass tnot(tmax(a, b))
+
+**Performance**: 1.53-11.26× speedup vs separate operations (eliminates intermediate memory traffic)
+
+**Note**: Previously in separate `ternary_fusion_engine` module, now integrated into main `ternary_simd_engine` module (2025-11-22 consolidation)
 
 ---
 
@@ -468,18 +486,18 @@ Verifies parallel scaling on multi-core systems.
 ### Standard Build
 
 ```bash
-python build/scripts/setup.py build_ext --inplace
+python scripts/build/build.py
 ```
 
-Produces `ternary_simd_engine.cp312-win_amd64.pyd` (or `.so` on Linux).
+Produces `ternary_simd_engine.cp312-win_amd64.pyd` (or `.so` on Linux) with fusion operations included.
 
 ### With Profile-Guided Optimization
 
 ```bash
-python build/scripts/setup_pgo.py
+python scripts/build/build_pgo.py full
 ```
 
-See [`docs/PGO_README.md`](./PGO_README.md) for details.
+See [`docs/PGO_README.md`](../PGO_README.md) for details.
 
 ---
 

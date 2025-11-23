@@ -46,7 +46,7 @@ Ternary Engine implements high-performance balanced ternary logic operations usi
 
 ```bash
 pip install pybind11 numpy
-python build.py
+python scripts/build/build.py
 python -c "import ternary_simd_engine; print('Success')"
 ```
 
