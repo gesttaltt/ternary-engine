@@ -47,12 +47,13 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
     import ternary_simd_engine as ternary
-    import ternary_fusion_engine as fusion
+    # Fusion operations are integrated into main engine (ternary_simd_engine)
+    # Aliasing for compatibility with benchmark structure
+    fusion = ternary
 except ImportError as e:
     print("ERROR: Required modules not built.")
     print("\nPlease build first:")
-    print("  python build.py build_ext --inplace")
-    print("  python build_fusion.py build_ext --inplace")
+    print("  python scripts/build/build.py")
     sys.exit(1)
 
 # =============================================================================

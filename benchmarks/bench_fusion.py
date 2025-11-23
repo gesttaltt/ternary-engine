@@ -21,7 +21,10 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import ternary_simd_engine as base
-import ternary_fusion_engine as fusion
+
+# Fusion operations are integrated into main engine (ternary_simd_engine)
+# Aliasing for compatibility with benchmark structure
+fusion = base
 
 # Test array sizes
 DEFAULT_SIZES = [32, 100, 1_000, 10_000, 100_000, 1_000_000]
