@@ -72,10 +72,12 @@
 #define TERNARY_CORE_HAS_FFI           1  // C FFI layer
 #define TERNARY_CORE_HAS_FUSION_POC    1  // Phase 4.0 fusion (tnot_tadd)
 
+// Validated features (awaiting integration)
+#define TERNARY_CORE_HAS_FUSION_SUITE  1  // ✓ VALIDATED 2025-10-29: Phase 4.1 (avg 2.80× speedup, min 1.53×)
+
 // Experimental features (not included in core API)
-#define TERNARY_CORE_HAS_DENSE243      0  // Dense243 encoding (✓ VALIDATED 2025-10-29: All 65 tests passed - ready for production use)
-#define TERNARY_CORE_HAS_OPENMP        0  // OpenMP threading (experimental)
+#define TERNARY_CORE_HAS_DENSE243      0  // Dense243 in ternary_engine/lib/, not ternary_core/
+#define TERNARY_CORE_HAS_OPENMP        0  // OpenMP threading (root cause fixed, needs CI validation)
 #define TERNARY_CORE_HAS_STREAMING     0  // Non-temporal stores (experimental)
-#define TERNARY_CORE_HAS_FUSION_SUITE  0  // Full fusion suite (pending validation)
 
 #endif // TERNARY_CORE_API_H
