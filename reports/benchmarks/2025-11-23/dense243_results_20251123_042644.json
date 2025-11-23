@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "timestamp": "2025-11-23T04:26:44.522529",
+    "has_standard": true,
+    "has_dense243": false
+  },
+  "memory_efficiency": {
+    "sizes": [
+      1000,
+      10000,
+      100000,
+      1000000
+    ],
+    "standard_bytes": [
+      1000,
+      10000,
+      100000,
+      1000000
+    ],
+    "dense243_bytes": [
+      200,
+      2000,
+      20000,
+      200000
+    ],
+    "reduction_factor": [
+      5.0,
+      5.0,
+      5.0,
+      5.0
+    ]
+  },
+  "encoding_performance": {},
+  "operation_performance": {},
+  "summary": {}
+}
