@@ -197,6 +197,13 @@ def main():
             'required': False,  # Experimental feature
             'optional': True,
             'requires_capability': 'fusion'
+        },
+        'tritnet_gemm': {
+            'name': 'TritNet GEMM Integration Tests',
+            'script': TESTS_DIR / 'python' / 'test_tritnet_gemm_integration.py',
+            'required': False,  # Optional module
+            'optional': True,
+            'requires_capability': None  # Will check for module in test itself
         }
     }
 
