@@ -70,8 +70,21 @@ def get_cpu_info() -> Dict:
     except:
         info['cpu_count_logical'] = 'unknown'
 
-    # Get OMP_NUM_THREADS if set
-    info['omp_num_threads'] = os.environ.get('OMP_NUM_THREADS', 'default')
+    # Get OMP_NUM_THREADS if set, otherwise set to cpu_count for consistency
+    omp_threads = os.environ.get('OMP_NUM_THREADS')
+    if omp_threads is None:
+        # Set to logical CPU count for consistent results
+        cpu_count = os.cpu_count()
+        if cpu_count:
+            os.environ['OMP_NUM_THREADS'] = str(cpu_count)
+            info['omp_num_threads'] = cpu_count
+            info['omp_threads_auto_set'] = True
+        else:
+            info['omp_num_threads'] = 'default'
+            info['omp_threads_auto_set'] = False
+    else:
+        info['omp_num_threads'] = omp_threads
+        info['omp_threads_auto_set'] = False
 
     # Platform-specific CPU detection
     if platform.system() == 'Linux':
@@ -279,16 +292,25 @@ def run_benchmark_suite(sizes: List[int], verbose: bool = True) -> Dict:
         print(f"  Architecture: {hw_info.get('architecture', 'unknown')}")
         print(f"  Logical CPUs: {hw_info.get('cpu_count_logical', 'unknown')}")
         print(f"  AVX2 Support: {hw_info.get('has_avx2', 'unknown')}")
-        print(f"  OMP Threads: {hw_info.get('omp_num_threads', 'default')}")
+        omp_note = " (auto-set)" if hw_info.get('omp_threads_auto_set', False) else ""
+        print(f"  OMP Threads: {hw_info.get('omp_num_threads', 'default')}{omp_note}")
 
         # Warn if AVX2 not detected
         if hw_info.get('has_avx2') == False:
             print("\n  WARNING: AVX2 not detected! Performance will be severely degraded.")
             print("  This module requires AVX2 support (Intel Haswell 2013+ or AMD Excavator 2015+)")
 
-        print(f"\nTest sizes: {sizes}")
-        print(f"Warmup iterations: {WARMUP_ITERATIONS}")
-        print(f"Measured iterations: {MEASURED_ITERATIONS}")
+        # Performance consistency warnings
+        print(f"\nBenchmark Configuration:")
+        print(f"  Test sizes: {sizes}")
+        print(f"  Warmup iterations: {WARMUP_ITERATIONS}")
+        print(f"  Measured iterations: {MEASURED_ITERATIONS}")
+
+        print(f"\nPerformance Notes:")
+        print(f"  - Results may vary with CPU frequency scaling and power states")
+        print(f"  - For most consistent results, disable CPU frequency scaling")
+        print(f"  - Close other applications to minimize background interference")
+
         print("\n" + "-" * 80)
 
     for size in sizes:
@@ -404,7 +426,7 @@ def main():
     parser = argparse.ArgumentParser(description='Ternary Engine Benchmark Suite')
     parser.add_argument('--quick', action='store_true',
                        help='Run quick benchmark with fewer sizes')
-    parser.add_argument('--output', type=str, default='benchmarks/results',
+    parser.add_argument('--output', type=str, default=None,
                        help='Output directory for results (default: benchmarks/results)')
     parser.add_argument('--quiet', action='store_true',
                        help='Minimal output')
@@ -423,8 +445,11 @@ def main():
     # Run benchmark suite
     results = run_benchmark_suite(sizes, verbose=verbose)
 
-    # Save results
-    output_dir = PROJECT_ROOT / args.output
+    # Save results (use default path if not specified)
+    if args.output:
+        output_dir = PROJECT_ROOT / args.output
+    else:
+        output_dir = PROJECT_ROOT / "benchmarks" / "results"
     save_results(results, output_dir)
 
     # Print summary

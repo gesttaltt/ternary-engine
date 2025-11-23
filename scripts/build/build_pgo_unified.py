@@ -39,7 +39,8 @@ from datetime import datetime
 # Get project root (script is in scripts/build/)
 PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 BUILD_ARTIFACTS = PROJECT_ROOT / "build" / "artifacts"
-PGO_DATA_DIR = PROJECT_ROOT / "pgo_data"
+# Use consistent PGO data location under build/artifacts
+PGO_DATA_DIR = BUILD_ARTIFACTS / "pgo_data"
 
 # Benchmarking integration
 BENCHMARK_SCRIPT = PROJECT_ROOT / "benchmarks" / "bench_phase0.py"
@@ -103,15 +104,8 @@ def detect_msvc():
         # Check for common MSVC paths
         import platform
         if platform.system() == "Windows":
-            # On Windows, if setuptools can find MSVC, we have it
-            # Try importing distutils which sets up MSVC
-            try:
-                from distutils import msvc9compiler
-                return True
-            except:
-                pass
-
-            # Alternative: Check VS installation paths
+            # On Windows, check for VS installation directly
+            # distutils is deprecated and removed in Python 3.12+
             vs_paths = [
                 r"C:\Program Files (x86)\Microsoft Visual Studio",
                 r"C:\Program Files\Microsoft Visual Studio"
@@ -120,6 +114,14 @@ def detect_msvc():
                 if Path(base).exists():
                     # Found VS installation
                     return True
+
+            # Alternative: Try to detect via setuptools
+            try:
+                # setuptools._distutils is the maintained replacement
+                from setuptools._distutils import msvc
+                return True
+            except:
+                pass
         return False
     except:
         return False

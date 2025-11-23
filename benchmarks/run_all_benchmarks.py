@@ -29,9 +29,10 @@ import shutil
 
 PROJECT_ROOT = Path(__file__).parent.parent
 BUILD_SCRIPT = PROJECT_ROOT / "scripts" / "build" / "build.py"
-BUILD_PGO_SCRIPT = PROJECT_ROOT / "scripts" / "build" / "build_pgo.py"
+BUILD_PGO_SCRIPT = PROJECT_ROOT / "scripts" / "build" / "build_pgo_unified.py"
 BENCH_SCRIPT = PROJECT_ROOT / "benchmarks" / "bench_phase0.py"
 COMPARE_SCRIPT = PROJECT_ROOT / "benchmarks" / "bench_compare.py"
+CLEAN_SCRIPT = PROJECT_ROOT / "scripts" / "build" / "clean_all.py"
 RESULTS_DIR = PROJECT_ROOT / "benchmarks" / "results"
 
 
@@ -56,25 +57,17 @@ def run_command(cmd: list, description: str) -> bool:
 
 
 def clean_builds():
-    """Clean all build artifacts"""
+    """Clean all build artifacts using comprehensive cleanup utility"""
     print("Cleaning build artifacts...")
 
-    # Remove build artifacts
-    artifacts_dir = PROJECT_ROOT / "build" / "artifacts"
-    if artifacts_dir.exists():
-        print(f"  Removing: {artifacts_dir}")
-        shutil.rmtree(artifacts_dir)
+    # Use the comprehensive cleanup utility
+    cmd = [sys.executable, str(CLEAN_SCRIPT)]
+    result = subprocess.run(cmd, cwd=str(PROJECT_ROOT))
 
-    # Remove .pyd files from root
-    for pyd_file in PROJECT_ROOT.glob("*.pyd"):
-        print(f"  Removing: {pyd_file}")
-        pyd_file.unlink()
-
-    for so_file in PROJECT_ROOT.glob("*.so"):
-        print(f"  Removing: {so_file}")
-        so_file.unlink()
-
-    print("✅ Cleanup complete")
+    if result.returncode != 0:
+        print("⚠️  Cleanup had some issues, but continuing...")
+    else:
+        print("✅ Cleanup complete")
 
 
 def build_standard() -> bool:
