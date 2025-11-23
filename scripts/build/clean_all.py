@@ -4,8 +4,18 @@ clean_all.py - Comprehensive cleanup utility for Ternary Engine build artifacts
 Copyright 2025 Ternary Engine Contributors
 Licensed under the Apache License, Version 2.0
 
-Cleans all build artifacts, temporary files, and cached data to ensure
-fresh builds and accurate benchmarks.
+Cleans all build artifacts, temporary files, cached data, and deprecated files
+to ensure fresh builds and accurate benchmarks.
+
+Cleanup targets:
+- Build artifacts (build/artifacts/*)
+- Setuptools temp directories (build/temp.*, build/lib.*)
+- PGO profile data (all locations)
+- Root compiled modules (*.pyd, *.so)
+- Deprecated build scripts (build/scripts/)
+- Python cache (__pycache__, *.pyc)
+- Benchmark results (benchmarks/results/)
+- External temp dirs (C:/Temp/ternary_*) with --deep
 
 Usage:
     python scripts/build/clean_all.py                    # Clean all build artifacts
@@ -250,6 +260,43 @@ class CleanupManager:
             if kept_count > 0:
                 print(f"\n  [KEPT] {kept_count} most recent result file(s)")
 
+    def clean_deprecated_scripts(self):
+        """Clean deprecated build/scripts directory"""
+        self.print_section("Cleaning Deprecated Build Scripts")
+
+        # Old location of build scripts (now in scripts/build/)
+        deprecated_dir = PROJECT_ROOT / "build" / "scripts"
+        if deprecated_dir.exists():
+            self.remove_path(deprecated_dir, "build/scripts (deprecated)")
+        else:
+            if self.verbose:
+                print("  No deprecated build scripts found")
+
+    def clean_python_cache(self):
+        """Clean Python cache files and directories"""
+        self.print_section("Cleaning Python Cache")
+
+        found = False
+
+        # Remove __pycache__ directories
+        for pycache_dir in PROJECT_ROOT.rglob("__pycache__"):
+            # Skip virtual environments
+            if "venv" in str(pycache_dir) or ".venv" in str(pycache_dir):
+                continue
+            self.remove_path(pycache_dir, str(pycache_dir.relative_to(PROJECT_ROOT)))
+            found = True
+
+        # Remove .pyc files
+        for pyc_file in PROJECT_ROOT.rglob("*.pyc"):
+            # Skip virtual environments
+            if "venv" in str(pyc_file) or ".venv" in str(pyc_file):
+                continue
+            self.remove_path(pyc_file, str(pyc_file.relative_to(PROJECT_ROOT)))
+            found = True
+
+        if not found and self.verbose:
+            print("  No Python cache files found")
+
     def print_summary(self):
         """Print cleanup summary"""
         print(f"\n{'='*70}")
@@ -299,6 +346,8 @@ def main():
     cleaner.clean_setuptools_dirs()
     cleaner.clean_pgo_data()
     cleaner.clean_root_modules()
+    cleaner.clean_deprecated_scripts()
+    cleaner.clean_python_cache()
     cleaner.clean_benchmark_results(keep_count=args.keep_results)
 
     if args.deep:

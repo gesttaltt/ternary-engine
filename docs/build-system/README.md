@@ -16,25 +16,31 @@ All build scripts are located in `scripts/build/` and generate timestamped artif
 
 ### Core Documentation
 
-1. **[Artifact Organization](./artifact-organization.md)**
+1. **[Cleanup System (clean_all.py)](./cleanup-system.md)** ⭐ NEW
+   - Comprehensive build artifact cleanup
+   - Automated cleanup strategies
+   - Disk space management
+   - Integration with benchmarking
+
+2. **[Artifact Organization](./artifact-organization.md)**
    - Directory structure and naming conventions
    - Artifact types and their purposes
    - Disk space management
    - Retention policies
 
-2. **[Standard Build (build.py)](./setup-standard.md)**
+3. **[Standard Build (build.py)](./setup-standard.md)**
    - Production-ready optimized build
    - AVX2 SIMD + OpenMP + LUT optimizations
    - Quick start and usage guide
    - Technical implementation details
 
-3. **[PGO Build (build_pgo.py)](./setup-pgo.md)**
+4. **[PGO Build (build_pgo.py)](./setup-pgo.md)**
    - Profile-Guided Optimization (3-phase build)
    - 5-15% additional performance gain
    - Detailed phase-by-phase walkthrough
    - Custom profiling workflows
 
-4. **[Reference Build (build_reference.py)](./setup-reference.md)**
+5. **[Reference Build (build_reference.py)](./setup-reference.md)**
    - Unoptimized baseline for benchmarking
    - Fair performance comparisons
    - Measuring optimization impact
@@ -262,15 +268,20 @@ diff before.txt after.txt
 ### Cleaning Build Artifacts
 
 ```bash
-# Clean all build artifacts
-rm -rf build/artifacts/
+# Clean all build artifacts (recommended)
+python scripts/build/clean_all.py
 
-# Clean only PGO artifacts
-python scripts/build/build_pgo.py clean
+# Preview what would be deleted
+python scripts/build/clean_all.py --dry-run
 
-# Keep only latest builds
-find build/artifacts/*/[0-9]* -maxdepth 0 -type d | \
-  sort -r | tail -n +6 | xargs rm -rf
+# Keep latest builds
+python scripts/build/clean_all.py --keep-latest
+
+# Keep recent benchmark results
+python scripts/build/clean_all.py --keep-results 5
+
+# See full documentation
+# docs/build-system/cleanup-system.md
 ```
 
 ## Environment Requirements
@@ -524,16 +535,19 @@ import ternary_simd_engine
 
 ### Q: How do I clean up old builds?
 
-**A:** Use cleanup strategies from [Artifact Organization](./artifact-organization.md#artifact-lifecycle):
+**A:** Use the comprehensive cleanup utility:
 ```bash
-# Keep last 5 builds
-find build/artifacts/standard -maxdepth 1 -type d -name "202*" | \
-  sort -r | tail -n +6 | xargs rm -rf
+# Clean all build artifacts
+python scripts/build/clean_all.py
 
-# Or clean all except latest
-rm -rf build/artifacts/standard/[0-9]*
-# (latest/ is preserved)
+# Keep latest builds to avoid rebuilding
+python scripts/build/clean_all.py --keep-latest
+
+# Preview before cleaning
+python scripts/build/clean_all.py --dry-run
 ```
+
+See [Cleanup System Documentation](./cleanup-system.md) for full details.
 
 ## Additional Resources
 
