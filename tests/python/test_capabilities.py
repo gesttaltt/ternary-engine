@@ -98,24 +98,23 @@ class SystemCapabilities:
     def _detect_openmp(self):
         """Detect if OpenMP was compiled into the module
 
-        NOTE: As of 2025-10-15, OpenMP tests crash on GitHub Actions CI
-        runners despite successful compilation. See docs/ISSUE_OPENMP_CRASHES.md
-        for details. Returning False to skip tests until issue is resolved.
+        NOTE: As of 2025-11-23, OpenMP root cause fixed and re-enabled.
+        Tests gracefully fall back if issues detected.
+        Previous issue: GitHub Actions CI crashes (2025-10-15)
         """
-        # Temporarily disabled due to CI crashes (see ISSUE_OPENMP_CRASHES.md)
-        return False
-
-        # Original detection code (commented out until crashes resolved):
-        # try:
-        #     import ternary_simd_engine as tc
-        #     import numpy as np
-        #     test_size = 200000  # Above OpenMP threshold
-        #     a = np.zeros(test_size, dtype=np.uint8)
-        #     b = np.zeros(test_size, dtype=np.uint8)
-        #     result = tc.tadd(a, b)
-        #     return True
-        # except:
-        #     return False
+        try:
+            import ternary_simd_engine as tc
+            import numpy as np
+            # Test with large array (above OMP_THRESHOLD = 100K)
+            test_size = 200000
+            a = np.zeros(test_size, dtype=np.uint8)
+            b = np.zeros(test_size, dtype=np.uint8)
+            result = tc.tadd(a, b)
+            # If we get here without crashing, OpenMP is working
+            return True
+        except Exception as e:
+            # Graceful fallback if module missing or OpenMP issues
+            return False
 
     def _detect_fusion(self):
         """Detect if fusion operations are available in main module"""

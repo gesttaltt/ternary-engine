@@ -14,7 +14,8 @@ import numpy as np
 from pathlib import Path
 
 # Add project root to path (modules are in project root)
-PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+# File is in tests/python/, so go up 3 levels: test_fusion.py -> python/ -> tests/ -> project root
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import engine (fusion operations now integrated into main module)

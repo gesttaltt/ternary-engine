@@ -24,10 +24,11 @@ from pathlib import Path
 import numpy as np
 import torch
 
-# Add parent directory to path (for modules in root)
-ROOT_DIR = Path(__file__).parent.parent
+# Add project root to path (for modules in root)
+# File is in tests/python/, so go up 3 levels: test -> python/ -> tests/ -> project root
+ROOT_DIR = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT_DIR))  # For ternary_tritnet_gemm module
-sys.path.insert(0, str(ROOT_DIR / "scripts" / "tritnet"))  # For ternary_layers
+sys.path.insert(0, str(ROOT_DIR / "models" / "tritnet" / "src"))  # For ternary_layers
 
 from ternary_layers import TernaryLinear, GEMM_AVAILABLE
 
