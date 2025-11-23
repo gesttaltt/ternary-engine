@@ -137,6 +137,11 @@ class CustomBuildExt(build_ext):
 # Setup
 # =============================================================================
 
+# Force build_ext command if no command specified
+if len(sys.argv) == 1:
+    sys.argv.append("build_ext")
+    sys.argv.append("--inplace")
+
 setup(
     name="ternary_dense243_module",
     version="1.0.0",

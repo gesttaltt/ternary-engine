@@ -114,13 +114,15 @@ class TernaryLinear(nn.Module):
         in_features: int,
         out_features: int,
         bias: bool = False,
-        threshold: float = 0.5
+        threshold: float = 0.5,
+        quantize_weights: bool = False  # NEW: Control quantization
     ):
         super().__init__()
 
         self.in_features = in_features
         self.out_features = out_features
         self.threshold = threshold
+        self.quantize_weights = quantize_weights  # Only quantize if enabled
 
         # Full-precision weights for training
         self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
@@ -133,15 +135,16 @@ class TernaryLinear(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        """Initialize weights with small random values."""
-        # Use smaller initialization for ternary weights
-        nn.init.normal_(self.weight, mean=0.0, std=0.1)
+        """Initialize weights with values that don't all quantize to zero."""
+        # Use larger initialization so weights span {-1, 0, +1} range
+        # With threshold=0.5, need std > 0.5 to avoid all-zero quantization
+        nn.init.normal_(self.weight, mean=0.0, std=1.0)
         if self.bias is not None:
             nn.init.zeros_(self.bias)
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass with ternary weight quantization.
+        Forward pass with optional ternary weight quantization.
 
         Args:
             input: Input tensor [batch_size, in_features]
@@ -149,11 +152,15 @@ class TernaryLinear(nn.Module):
         Returns:
             Output tensor [batch_size, out_features]
         """
-        # Quantize weights to ternary using STE
-        weight_ternary = StraightThroughEstimator.apply(self.weight, self.threshold)
+        # Only quantize weights if enabled (for post-training quantization)
+        if self.quantize_weights:
+            weight_to_use = StraightThroughEstimator.apply(self.weight, self.threshold)
+        else:
+            # Use full-precision weights during training
+            weight_to_use = self.weight
 
         # Standard linear transformation
-        return F.linear(input, weight_ternary, self.bias)
+        return F.linear(input, weight_to_use, self.bias)
 
     def extra_repr(self) -> str:
         """String representation for debugging."""

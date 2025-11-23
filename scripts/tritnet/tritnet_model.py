@@ -62,13 +62,14 @@ class TritNetUnary(nn.Module):
 
         self.hidden_size = hidden_size
         self.threshold = threshold
+        self.apply_activation = False  # Don't apply during training
 
         # Network layers
         self.layer1 = TernaryLinear(5, hidden_size, bias=False, threshold=threshold)
         self.layer2 = TernaryLinear(hidden_size, hidden_size, bias=False, threshold=threshold)
         self.layer3 = TernaryLinear(hidden_size, 5, bias=False, threshold=threshold)
 
-        # Ternary activation
+        # Ternary activation (only for inference)
         self.activation = TernaryActivation()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -81,17 +82,18 @@ class TritNetUnary(nn.Module):
         Returns:
             Output tensor [batch_size, 5] with values in {-1, 0, +1}
         """
-        # Layer 1
+        # Layer 1 (NO activation - allow gradients to flow)
         x = self.layer1(x)
-        x = self.activation(x)
 
-        # Layer 2
+        # Layer 2 (NO activation - allow gradients to flow)
         x = self.layer2(x)
-        x = self.activation(x)
 
         # Output layer
         x = self.layer3(x)
-        x = self.activation(x)
+
+        # Only apply activation during inference, not training
+        if self.apply_activation:
+            x = self.activation(x)
 
         return x
 
@@ -131,13 +133,14 @@ class TritNetBinary(nn.Module):
 
         self.hidden_size = hidden_size
         self.threshold = threshold
+        self.apply_activation = False  # Don't apply during training
 
         # Network layers
         self.layer1 = TernaryLinear(10, hidden_size, bias=False, threshold=threshold)
         self.layer2 = TernaryLinear(hidden_size, hidden_size, bias=False, threshold=threshold)
         self.layer3 = TernaryLinear(hidden_size, 5, bias=False, threshold=threshold)
 
-        # Ternary activation
+        # Ternary activation (only for inference)
         self.activation = TernaryActivation()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -151,17 +154,18 @@ class TritNetBinary(nn.Module):
         Returns:
             Output tensor [batch_size, 5] with values in {-1, 0, +1}
         """
-        # Layer 1
+        # Layer 1 (NO activation - allow gradients to flow)
         x = self.layer1(x)
-        x = self.activation(x)
 
-        # Layer 2
+        # Layer 2 (NO activation - allow gradients to flow)
         x = self.layer2(x)
-        x = self.activation(x)
 
         # Output layer
         x = self.layer3(x)
-        x = self.activation(x)
+
+        # Only apply activation during inference, not training
+        if self.apply_activation:
+            x = self.activation(x)
 
         return x
 

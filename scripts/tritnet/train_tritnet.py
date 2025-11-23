@@ -95,13 +95,14 @@ def compute_accuracy(predictions: torch.Tensor, targets: torch.Tensor) -> float:
     Compute exact match accuracy (all 5 trits must match).
 
     Args:
-        predictions: Predicted ternary values [batch_size, 5]
+        predictions: Predicted values [batch_size, 5] (continuous during training)
         targets: Target ternary values [batch_size, 5]
 
     Returns:
         Accuracy as fraction in [0, 1]
     """
-    # Round predictions to nearest ternary value
+    # Quantize predictions to ternary values {-1, 0, +1}
+    # During training, predictions are continuous, so we need to discretize them
     pred_ternary = torch.sign(predictions)
 
     # Check if all 5 trits match for each sample
