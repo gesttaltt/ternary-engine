@@ -445,6 +445,213 @@ After fixes, validate:
 
 ---
 
+## Proposed Architecture Restructuring
+
+### Motivation
+
+The current codebase suffers from:
+1. **Fragmented source code** - ternary_core/ and ternary_engine/ artificially separated
+2. **Overnesting overhead** - C headers and C++ codebases at depth 2-4 with fragile `../../../` includes
+3. **Broken import patterns** - 27 files with inconsistent sys.path manipulations
+4. **CI complexity** - Split directories complicate build paths and testing
+5. **Hot path inefficiency** - Core SIMD operations require traversing multiple directories
+
+### Proposed Structure
+
+```
+ternary-engine/
+├── src/                       # Centralized source code (NEW)
+│   ├── core/                  # Production kernel (from ternary_core/)
+│   │   ├── algebra/           # Scalar ops + LUT generation
+│   │   ├── simd/              # SIMD kernels + fusion
+│   │   ├── ffi/               # C API
+│   │   ├── common/            # Errors, config
+│   │   └── profiling/         # VTune annotations
+│   ├── engine/                # Python bindings (from ternary_engine/)
+│   │   ├── bindings_core_ops.cpp
+│   │   ├── bindings_dense243.cpp
+│   │   ├── bindings_tritnet_gemm.cpp
+│   │   └── dense243/          # Dense243 library (from lib/dense243/)
+│   └── README.md              # Source organization guide
+│
+├── build/                     # Build system (KEEP SEPARATE)
+│   ├── build.py               # All build scripts remain here
+│   ├── build_dense243.py
+│   ├── build_tritnet_gemm.py
+│   ├── build_reference.py
+│   ├── build_all.py
+│   └── artifacts/             # Build outputs
+│
+├── tests/                     # Testing (KEEP SEPARATE)
+│   ├── python/                # Python integration tests
+│   ├── cpp/                   # C++ unit tests
+│   └── run_tests.py           # Unified test runner
+│
+├── benchmarks/                # Benchmarking (KEEP SEPARATE)
+│   ├── micro/                 # Microbenchmarks
+│   ├── macro/                 # Neural workloads
+│   └── bench_phase0.py        # Core benchmark suite
+│
+├── models/                    # LLM/Neural Network Integration (KEEP SEPARATE)
+│   ├── tritnet/               # TritNet training + GEMM
+│   ├── bitnet/                # BitNet reference (3rd party)
+│   └── datasets/              # Training datasets
+│
+├── docs/                      # Documentation
+├── reports/                   # Analysis reports
+└── *.pyd                      # Built Python modules (root)
+```
+
+### Key Changes
+
+**1. Centralize Source Code → src/**
+- Move `ternary_core/` → `src/core/`
+- Move `ternary_engine/` → `src/engine/`
+- Move `ternary_engine/lib/dense243/` → `src/engine/dense243/`
+
+**Benefits:**
+- Single source tree reduces import complexity
+- C++ includes become `src/core/algebra/ternary_algebra.h` (no `../../../`)
+- Build scripts point to single `src/` directory
+- CI can cache `src/` as single unit
+
+**2. Keep build/, benchmarks/, tests/ Separate**
+- These are **workflows**, not source code
+- Build scripts run from `build/` and output to `build/artifacts/`
+- Tests run from `tests/` and import from root
+- Benchmarks run from `benchmarks/` and import from root
+
+**Rationale:**
+- Clear separation: source vs tooling
+- Build artifacts don't pollute source tree
+- Each workflow has dedicated directory
+
+**3. Keep models/ Separate at Root**
+- models/ contains LLM/neural-net integration and experimentation
+- TritNet training, GEMM implementations, dataset generation
+- Third-party integrations (BitNet reference)
+
+**Rationale:**
+- Avoid mixing AI research with core arithmetic library
+- models/ is experimental, src/ is production
+- Different development lifecycle (research vs engineering)
+
+### Migration Impact
+
+**Files to Move:** ~50 files
+- ternary_core/ (8 headers, 2 cpp) → src/core/
+- ternary_engine/ (3 cpp, 4 headers in lib/) → src/engine/
+
+**Includes to Update:** 4 critical fragile includes
+```cpp
+// BEFORE
+#include "../../../ternary_core/algebra/ternary_lut_gen.h"
+
+// AFTER
+#include "src/core/algebra/ternary_lut_gen.h"
+```
+
+**Build Scripts to Update:** 5 scripts
+- build/build.py
+- build/build_dense243.py
+- build/build_tritnet_gemm.py
+- build/build_reference.py
+- build/build_all.py
+
+All change `include_dirs = ["ternary_core", "ternary_engine"]` to `include_dirs = ["src"]`
+
+**Tests to Update:** 27 Python files with sys.path
+```python
+# BEFORE (inconsistent patterns)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# AFTER (standard pattern)
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+sys.path.insert(0, str(PROJECT_ROOT))
+```
+
+**CI Impact:** Minimal
+- GitHub Actions workflows point to same entry points (build/build.py, tests/run_tests.py)
+- Caching strategy improves (single src/ directory)
+
+### Implementation Plan
+
+**Phase 1: Create src/ Structure (15 minutes)**
+```bash
+mkdir src
+mkdir src/core
+mkdir src/engine
+
+# Move core
+mv ternary_core/* src/core/
+
+# Move engine
+mv ternary_engine/*.cpp src/engine/
+mv ternary_engine/lib/dense243 src/engine/
+```
+
+**Phase 2: Fix Includes (30 minutes)**
+- Update 4 fragile C++ includes in src/engine/dense243/
+- Update build scripts to use `include_dirs = ["src"]`
+- Update pybind11 bindings to reference `src/core/`, `src/engine/`
+
+**Phase 3: Standardize Python Imports (1 hour)**
+- Update 27 files to use standard PROJECT_ROOT pattern
+- All files now import from root (no sys.path issues)
+- Update CONTRIBUTING.md with new src/ structure
+
+**Phase 4: Validate (30 minutes)**
+```bash
+# Rebuild all modules
+python build/build_all.py
+
+# Run all tests
+python tests/run_tests.py
+
+# Run benchmarks
+python benchmarks/bench_phase0.py
+```
+
+**Total Effort:** 2-2.5 hours
+
+### Benefits Summary
+
+| Benefit | Current | After Restructuring |
+|---------|---------|---------------------|
+| Max nesting depth | 4 levels | 3 levels |
+| Fragile C++ includes | 4 (`../../../`) | 0 (use `src/`) |
+| Inconsistent sys.path | 27 files, 5 patterns | 0 (standard pattern) |
+| Build include_dirs | 3 separate paths | 1 path (`src/`) |
+| CI cache units | 2 directories | 1 directory (`src/`) |
+| Import path clarity | Confusing (core vs engine) | Clear (`src/core`, `src/engine`) |
+
+### Risks & Mitigations
+
+**Risk 1: Breaking existing workflows**
+- **Mitigation:** Entry points unchanged (build/build.py, tests/run_tests.py)
+- External users import modules from root (no change)
+
+**Risk 2: Documentation becomes outdated**
+- **Mitigation:** Update all docs/ and .claude/ in same commit
+- Add migration guide in CHANGELOG.md
+
+**Risk 3: Git history harder to follow**
+- **Mitigation:** Use `git mv` to preserve history
+- Document in commit message with old → new path mappings
+
+### Decision Required
+
+**Recommendation:** Execute this restructuring **before** Phase 3 matmul optimization
+- Reduces technical debt now
+- Provides clean foundation for new matmul code
+- Easier to integrate TritNet with unified src/ structure
+
+**Alternative:** Execute **after** matmul optimization
+- Less disruption during critical development
+- But perpetuates existing fragility
+
+---
+
 ## Architecture Validation
 
 The codebase follows excellent separation of concerns:
