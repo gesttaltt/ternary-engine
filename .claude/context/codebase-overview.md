@@ -92,9 +92,9 @@ ternary-engine/
 - **ternary_simd_engine.cpp** - Python bindings via pybind11
 
 ### TritNet (Experimental)
-- **scripts/tritnet/ternary_layers.py** - Ternary quantization layers
-- **scripts/tritnet/tritnet_model.py** - Model architectures (TritNetUnary, TritNetBinary)
-- **scripts/tritnet/train_tritnet.py** - Training pipeline
+- **models/tritnet/src/ternary_layers.py** - Ternary quantization layers
+- **models/tritnet/src/tritnet_model.py** - Model architectures (TritNetUnary, TritNetBinary)
+- **models/tritnet/src/train_tritnet.py** - Training pipeline
 
 ### Build System
 - **build/build.py** - Standard optimized build
@@ -167,7 +167,7 @@ python run_tests.py
 python benchmarks/bench_phase0.py
 
 # TritNet training
-python scripts/tritnet/train_tritnet.py --operation tnot
+python models/tritnet/src/train_tritnet.py --operation tnot
 
 # Clean
 python build/clean_all.py

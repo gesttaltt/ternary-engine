@@ -3,28 +3,28 @@ Work with TritNet neural network-based ternary arithmetic.
 **Generate truth tables** (required before training):
 ```bash
 # Generate all operations
-python scripts/tritnet/generate_truth_tables.py --all --output datasets/tritnet
+python models/tritnet/src/generate_truth_tables.py --all --output datasets/tritnet
 
 # Generate specific operation
-python scripts/tritnet/generate_truth_tables.py --operation tnot --output datasets/tritnet
+python models/tritnet/src/generate_truth_tables.py --operation tnot --output datasets/tritnet
 ```
 
 **Train TritNet models**:
 ```bash
 # Train tnot (proof-of-concept, Phase 2A)
-python scripts/tritnet/train_tritnet.py --operation tnot --hidden-size 8
+python models/tritnet/src/train_tritnet.py --operation tnot --hidden-size 8
 
 # Train all binary operations (Phase 2B)
-python scripts/tritnet/train_tritnet.py --all --output-dir models/tritnet
+python models/tritnet/src/train_tritnet.py --all --output-dir models/tritnet
 
 # Train specific operation
-python scripts/tritnet/train_tritnet.py --operation tadd --hidden-size 16
+python models/tritnet/src/train_tritnet.py --operation tadd --hidden-size 16
 ```
 
 **Unified workflow** (orchestrated):
 ```bash
 # Complete TritNet workflow
-python scripts/run_tritnet.py --all
+python models/tritnet/run_tritnet.py --all
 ```
 
 Training outputs:

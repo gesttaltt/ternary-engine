@@ -109,7 +109,7 @@ Sample format:
 ### Implementation
 
 ```python
-# scripts/tritnet/generate_truth_tables.py
+# models/tritnet/src/generate_truth_tables.py
 
 import numpy as np
 import json
@@ -212,7 +212,7 @@ Output Layer: 5 ternary outputs
 ### Training Script (using bitnet.cpp)
 
 ```python
-# scripts/tritnet/train_bitnet.py
+# models/tritnet/src/train_bitnet.py
 
 import torch
 import bitnet  # Assuming bitnet.cpp Python bindings

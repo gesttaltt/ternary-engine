@@ -264,7 +264,7 @@ GEMM is C++ only. No pybind11 bindings to expose to Python/TritNet.
 
 **Current State:**
 ```python
-# scripts/tritnet/ternary_layers.py:163
+# models/tritnet/src/ternary_layers.py:163
 def forward(self, input):
     return F.linear(input, weight_to_use, self.bias)
     # ↑ Uses PyTorch FP32 matmul, NOT ternary-optimized GEMM

@@ -139,7 +139,7 @@ static inline __m256i fused_tnot_tadd_simd(__m256i a, __m256i b) {
 
 **Current TritNet Architecture:**
 ```python
-# scripts/tritnet/tritnet_model.py
+# models/tritnet/src/tritnet_model.py
 
 class TritNetUnary(nn.Module):
     # Input: 5 trits → Hidden: 8 neurons → Output: 5 trits

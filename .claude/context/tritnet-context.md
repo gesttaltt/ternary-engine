@@ -88,7 +88,7 @@ Output: TernaryLinear [8 → 5]
 ```
 
 **Parameters:** 5×8 + 8×8 + 8×5 = 144 ternary weights
-**File:** scripts/tritnet/tritnet_model.py (TritNetUnary class)
+**File:** models/tritnet/src/tritnet_model.py (TritNetUnary class)
 
 #### TritNetBinary (for tadd, tmul, tmin, tmax)
 
@@ -107,7 +107,7 @@ Output: TernaryLinear [16 → 5]
 ```
 
 **Parameters:** 10×16 + 16×16 + 16×5 = 496 ternary weights
-**File:** scripts/tritnet/tritnet_model.py (TritNetBinary class)
+**File:** models/tritnet/src/tritnet_model.py (TritNetBinary class)
 
 ### Ternary Quantization
 
@@ -148,7 +148,7 @@ class StraightThroughEstimator(torch.autograd.Function):
 - Backward: Gradients flow to full-precision weights
 - Update: Full-precision weights updated, then re-quantized
 
-**File:** scripts/tritnet/ternary_layers.py (StraightThroughEstimator class)
+**File:** models/tritnet/src/ternary_layers.py (StraightThroughEstimator class)
 
 ## Training Process
 
@@ -168,15 +168,15 @@ class StraightThroughEstimator(torch.autograd.Function):
 
 **Generation script:**
 ```bash
-python scripts/tritnet/generate_truth_tables.py --all --output datasets/tritnet
+python models/tritnet/src/generate_truth_tables.py --all --output datasets/tritnet
 ```
 
 **Total dataset:** 236,439 samples, 78.33 MB
-**File:** scripts/tritnet/generate_truth_tables.py
+**File:** models/tritnet/src/generate_truth_tables.py
 
 ### Training Workflow
 
-**Script:** scripts/tritnet/train_tritnet.py
+**Script:** models/tritnet/src/train_tritnet.py
 
 **Steps:**
 1. Load truth table dataset
@@ -188,7 +188,7 @@ python scripts/tritnet/generate_truth_tables.py --all --output datasets/tritnet
 
 **Training command:**
 ```bash
-python scripts/tritnet/train_tritnet.py --operation tnot --hidden-size 8 --epochs 100
+python models/tritnet/src/train_tritnet.py --operation tnot --hidden-size 8 --epochs 100
 ```
 
 **Success criteria:**
@@ -220,7 +220,7 @@ checkpoint = {
 - models/tritnet/tritnet_tnot.tritnet (3,959 bytes)
 - models/tritnet/tritnet_tnot_history.json (1.1 MB training metrics)
 
-**File:** scripts/tritnet/tritnet_model.py (save_tritnet_model, load_tritnet_model)
+**File:** models/tritnet/src/tritnet_model.py (save_tritnet_model, load_tritnet_model)
 
 ## Development Phases
 
@@ -325,10 +325,10 @@ checkpoint = {
 ### File Organization
 
 **Training infrastructure:**
-- scripts/tritnet/generate_truth_tables.py (13,352 bytes)
-- scripts/tritnet/train_tritnet.py (14,357 bytes)
-- scripts/tritnet/ternary_layers.py (9,335 bytes)
-- scripts/tritnet/tritnet_model.py (12,012 bytes)
+- models/tritnet/src/generate_truth_tables.py (13,352 bytes)
+- models/tritnet/src/train_tritnet.py (14,357 bytes)
+- models/tritnet/src/ternary_layers.py (9,335 bytes)
+- models/tritnet/src/tritnet_model.py (12,012 bytes)
 
 **Datasets:**
 - datasets/tritnet/tnot_truth_table.json (243 samples)
@@ -520,7 +520,7 @@ weights = model.get_quantized_weights()
 
 ### Internal Documentation
 
-- [scripts/tritnet/README.md](../../scripts/tritnet/README.md) - TritNet training guide
+- [models/tritnet/src/README.md](../../models/tritnet/src/README.md) - TritNet training guide
 - [docs/TRITNET_ROADMAP.md](../../docs/TRITNET_ROADMAP.md) - Implementation roadmap (if exists)
 - [docs/TRITNET_VISION.md](../../docs/TRITNET_VISION.md) - Long-term vision (if exists)
 

@@ -185,7 +185,7 @@ Current TritNet uses PyTorch's full-precision `F.linear()` for matmul. No SIMD-o
 
 **Current State:**
 ```python
-# scripts/tritnet/ternary_layers.py:163
+# models/tritnet/src/ternary_layers.py:163
 def forward(self, input):
     return F.linear(input, weight_to_use, self.bias)
     # ↑ Uses PyTorch FP32/FP16 matmul, not ternary-optimized
@@ -225,7 +225,7 @@ def ternary_matmul_simple(X, W):
 **Files to Create/Modify:**
 - `ternary_core/simd/ternary_matmul_kernels.h` (new)
 - `ternary_engine/ternary_simd_engine.cpp` (add tmatmul binding)
-- `scripts/tritnet/ternary_layers.py` (use ternary matmul)
+- `models/tritnet/src/ternary_layers.py` (use ternary matmul)
 
 ---
 

@@ -380,11 +380,11 @@ python benchmarks/bench_phase0.py
 
 ### File Organization
 
-**scripts/tritnet/generate_truth_tables.py** - Dataset generation
-**scripts/tritnet/ternary_layers.py** - PyTorch ternary layers
-**scripts/tritnet/tritnet_model.py** - Model architectures
-**scripts/tritnet/train_tritnet.py** - Training orchestration
-**scripts/run_tritnet.py** - Unified workflow
+**models/tritnet/src/generate_truth_tables.py** - Dataset generation
+**models/tritnet/src/ternary_layers.py** - PyTorch ternary layers
+**models/tritnet/src/tritnet_model.py** - Model architectures
+**models/tritnet/src/train_tritnet.py** - Training orchestration
+**models/tritnet/run_tritnet.py** - Unified workflow
 
 ---
 
@@ -764,7 +764,7 @@ pip install matplotlib transformers
 **Architecture** - [docs/architecture/](../docs/architecture/)
 **Build system** - [docs/build-system/](../docs/build-system/)
 **PGO guide** - [docs/pgo/](../docs/pgo/)
-**TritNet** - [scripts/tritnet/](../scripts/tritnet/)
+**TritNet** - [models/tritnet/src/](../models/tritnet/src/)
 **Competitive benchmarks** - [benchmarks/COMPETITIVE_BENCHMARKS.md](../benchmarks/COMPETITIVE_BENCHMARKS.md)
 
 ### External Resources
