@@ -198,6 +198,49 @@ def int_to_trit(value: int) -> int:
     """
 ```
 
+### Import Path Convention
+
+All Python scripts that import project modules should use this standard pattern:
+
+```python
+from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+sys.path.insert(0, str(PROJECT_ROOT))
+```
+
+**Why this pattern:**
+- Consistent across the entire codebase
+- Readable and maintainable
+- Platform-independent (works on Windows, Linux, macOS)
+- Explicit about what's being added to sys.path
+- Uses `.resolve()` to get absolute paths
+
+**Anti-patterns to avoid:**
+```python
+# DON'T: Chained os.path calls (hard to read)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# DON'T: Relative string paths (fragile)
+sys.path.insert(0, '..')
+
+# DON'T: Multiple sys.path additions (causes import confusion)
+sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, str(ROOT_DIR / "models" / "tritnet" / "src"))
+```
+
+**For files at different depths:**
+- **Depth 2** (e.g., `build/build.py`): `PROJECT_ROOT = Path(__file__).parent.parent.resolve()`
+- **Depth 3** (e.g., `tests/python/test_phase0.py`): `PROJECT_ROOT = Path(__file__).parent.parent.resolve()`
+- **Depth 4** (e.g., `models/tritnet/src/train_tritnet.py`): `PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()`
+
+This ensures all scripts add the project root to `sys.path`, enabling imports like:
+```python
+import ternary_simd_engine as tc
+from models.tritnet.src.ternary_layers import TernaryLinear
+```
+
 ## Testing Requirements
 
 ### Correctness Tests (Required)
