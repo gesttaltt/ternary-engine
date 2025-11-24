@@ -138,7 +138,7 @@ ext_modules = [
 
 setup(
     name='ternary_simd_engine',
-    version='0.1.0',
+    version='1.1.0',
     author='Ternary Engine Team',
     description='AVX2-optimized ternary logic operations with Phase 0 LUT optimizations',
     ext_modules=ext_modules,
