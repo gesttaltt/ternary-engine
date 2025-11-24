@@ -26,31 +26,31 @@
 
 static void scalar_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
     for (size_t i = 0; i < n; i++) {
-        dst[i] = tnot_lut(src[i]);
+        dst[i] = tnot(src[i]);
     }
 }
 
 static void scalar_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     for (size_t i = 0; i < n; i++) {
-        dst[i] = tadd_lut(a[i], b[i]);
+        dst[i] = tadd(a[i], b[i]);
     }
 }
 
 static void scalar_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     for (size_t i = 0; i < n; i++) {
-        dst[i] = tmul_lut(a[i], b[i]);
+        dst[i] = tmul(a[i], b[i]);
     }
 }
 
 static void scalar_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     for (size_t i = 0; i < n; i++) {
-        dst[i] = tmax_lut(a[i], b[i]);
+        dst[i] = tmax(a[i], b[i]);
     }
 }
 
 static void scalar_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     for (size_t i = 0; i < n; i++) {
-        dst[i] = tmin_lut(a[i], b[i]);
+        dst[i] = tmin(a[i], b[i]);
     }
 }
 

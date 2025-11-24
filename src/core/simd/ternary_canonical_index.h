@@ -80,14 +80,8 @@ static const uint8_t CANON_INDEX_SCALAR[3][3] = {
 // Component A LUT (32 bytes for AVX2 register)
 // Maps trit value to its contribution to combined index
 // Value i → i * 3
+// Pattern: [0,3,6,0] repeated 8 times for 32 bytes
 alignas(32) static const uint8_t CANON_A_LUT_256[32] = {
-    // For 2-bit trits: 00=-1(→0), 01=0(→1), 10=+1(→2), 11=invalid
-    0,   // 0×3 = 0  (trit -1)
-    3,   // 1×3 = 3  (trit 0)
-    6,   // 2×3 = 6  (trit +1)
-    0,   // invalid (treat as -1)
-
-    // Repeat pattern for all 32 bytes (SIMD register width)
     0, 3, 6, 0,  0, 3, 6, 0,
     0, 3, 6, 0,  0, 3, 6, 0,
     0, 3, 6, 0,  0, 3, 6, 0,
@@ -97,13 +91,8 @@ alignas(32) static const uint8_t CANON_A_LUT_256[32] = {
 // Component B LUT (32 bytes for AVX2 register)
 // Maps trit value to its contribution to combined index
 // Value i → i (identity)
+// Pattern: [0,1,2,0] repeated 8 times for 32 bytes
 alignas(32) static const uint8_t CANON_B_LUT_256[32] = {
-    0,   // trit -1 (0)
-    1,   // trit 0  (1)
-    2,   // trit +1 (2)
-    0,   // invalid
-
-    // Repeat pattern
     0, 1, 2, 0,  0, 1, 2, 0,
     0, 1, 2, 0,  0, 1, 2, 0,
     0, 1, 2, 0,  0, 1, 2, 0,

@@ -36,7 +36,7 @@ static void avx2_v1_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
 
     // Handle remaining elements with scalar fallback
     for (; i < n; i++) {
-        dst[i] = tnot_lut(src[i]);
+        dst[i] = tnot(src[i]);
     }
 }
 
@@ -51,7 +51,7 @@ static void avx2_v1_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     }
 
     for (; i < n; i++) {
-        dst[i] = tadd_lut(a[i], b[i]);
+        dst[i] = tadd(a[i], b[i]);
     }
 }
 
@@ -66,7 +66,7 @@ static void avx2_v1_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     }
 
     for (; i < n; i++) {
-        dst[i] = tmul_lut(a[i], b[i]);
+        dst[i] = tmul(a[i], b[i]);
     }
 }
 
@@ -81,7 +81,7 @@ static void avx2_v1_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     }
 
     for (; i < n; i++) {
-        dst[i] = tmax_lut(a[i], b[i]);
+        dst[i] = tmax(a[i], b[i]);
     }
 }
 
@@ -96,7 +96,7 @@ static void avx2_v1_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     }
 
     for (; i < n; i++) {
-        dst[i] = tmin_lut(a[i], b[i]);
+        dst[i] = tmin(a[i], b[i]);
     }
 }
 
@@ -142,7 +142,7 @@ static const TernaryBackend g_avx2_v1_backend = {
 // Registration
 // ============================================================================
 
-extern "C" void ternary_register_avx2_v1_backend(void) {
+void ternary_register_avx2_v1_backend(void) {
     ternary_backend_register(&g_avx2_v1_backend);
 }
 

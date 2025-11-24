@@ -62,25 +62,27 @@ static void init_luts(void) {
 }
 
 // ============================================================================
-// Binary Operation Using Canonical Indexing
+// Binary Operation Using Traditional Indexing
 // ============================================================================
 
 /**
- * Generic binary operation with canonical indexing
+ * Generic binary operation with traditional indexing
  *
- * Instead of: idx = (a<<2)|b
- * Use: idx = canonical_index_avx2(a, b)
+ * Uses: idx = (a<<2)|b
  *
- * This eliminates the shift/OR arithmetic bottleneck
+ * NOTE: Canonical indexing requires LUTs to be reorganized for (a*3)+b indexing.
+ * For now, using traditional indexing with existing LUT format.
+ * TODO: Implement canonical indexing with properly organized LUTs.
  */
-static inline __m256i binary_op_canonical(__m256i a, __m256i b, __m256i lut) {
+static inline __m256i binary_op_traditional(__m256i a, __m256i b, __m256i lut) {
     // Mask to 2-bit trit values
     __m256i mask = _mm256_set1_epi8(0x03);
     __m256i a_masked = _mm256_and_si256(a, mask);
     __m256i b_masked = _mm256_and_si256(b, mask);
 
-    // Canonical indexing: eliminates (a<<2)|b arithmetic
-    __m256i indices = canonical_index_avx2(a_masked, b_masked);
+    // Traditional indexing: idx = (a<<2)|b
+    __m256i a_shifted = _mm256_slli_epi32(a_masked, 2);
+    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
 
     // Lookup
     __m256i result = _mm256_shuffle_epi8(lut, indices);
@@ -108,7 +110,7 @@ static void avx2_v2_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
 
     // Handle remaining elements with scalar fallback
     for (; i < n; i++) {
-        dst[i] = tnot_lut(src[i]);
+        dst[i] = tnot(src[i]);
     }
 }
 
@@ -125,13 +127,13 @@ static void avx2_v2_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     for (; i + 32 <= n; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
         __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_canonical(va, vb, g_tadd_lut_256);
+        __m256i result = binary_op_traditional(va, vb, g_tadd_lut_256);
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
     // Scalar fallback for remainder
     for (; i < n; i++) {
-        dst[i] = tadd_lut(a[i], b[i]);
+        dst[i] = tadd(a[i], b[i]);
     }
 }
 
@@ -143,12 +145,12 @@ static void avx2_v2_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     for (; i + 32 <= n; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
         __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_canonical(va, vb, g_tmul_lut_256);
+        __m256i result = binary_op_traditional(va, vb, g_tmul_lut_256);
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
     for (; i < n; i++) {
-        dst[i] = tmul_lut(a[i], b[i]);
+        dst[i] = tmul(a[i], b[i]);
     }
 }
 
@@ -160,12 +162,12 @@ static void avx2_v2_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     for (; i + 32 <= n; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
         __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_canonical(va, vb, g_tmax_lut_256);
+        __m256i result = binary_op_traditional(va, vb, g_tmax_lut_256);
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
     for (; i < n; i++) {
-        dst[i] = tmax_lut(a[i], b[i]);
+        dst[i] = tmax(a[i], b[i]);
     }
 }
 
@@ -177,12 +179,12 @@ static void avx2_v2_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     for (; i + 32 <= n; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
         __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_canonical(va, vb, g_tmin_lut_256);
+        __m256i result = binary_op_traditional(va, vb, g_tmin_lut_256);
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
     for (; i < n; i++) {
-        dst[i] = tmin_lut(a[i], b[i]);
+        dst[i] = tmin(a[i], b[i]);
     }
 }
 
