@@ -129,9 +129,11 @@ static const TernaryBackend g_avx2_v1_backend = {
     .tmax = avx2_v1_tmax,
     .tmin = avx2_v1_tmin,
 
-    // Fusion operations (not implemented)
-    .tadd_tmul = NULL,
-    .tmul_tadd = NULL,
+    // Fusion operations (not supported in AVX2_v1)
+    .fused_tnot_tadd = NULL,
+    .fused_tnot_tmul = NULL,
+    .fused_tnot_tmin = NULL,
+    .fused_tnot_tmax = NULL,
 
     // Advanced operations
     .tand = NULL,
