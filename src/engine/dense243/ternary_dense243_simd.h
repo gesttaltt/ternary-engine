@@ -52,7 +52,7 @@
 #include <immintrin.h>
 #include <stdint.h>
 #include "ternary_dense243.h"
-#include "../../../ternary_core/simd/ternary_simd_kernels.h"  // For existing 2-bit SIMD operations
+#include "core/simd/ternary_simd_kernels.h"  // For existing 2-bit SIMD operations
 
 // =============================================================================
 // Pre-broadcasted Extraction LUTs for AVX2

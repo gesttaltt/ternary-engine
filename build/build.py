@@ -123,12 +123,12 @@ else:
 ext_modules = [
     Extension(
         'ternary_simd_engine',
-        [os.path.join(PROJECT_ROOT, 'ternary_engine', 'bindings_core_ops.cpp')],
+        [os.path.join(PROJECT_ROOT, 'src', 'engine', 'bindings_core_ops.cpp')],
         include_dirs=[
             pybind11.get_include(),
             pybind11.get_include(user=True),
             PROJECT_ROOT,
-            os.path.join(PROJECT_ROOT, 'ternary_core')
+            os.path.join(PROJECT_ROOT, 'src')
         ],
         language='c++',
         extra_compile_args=compile_args,

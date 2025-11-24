@@ -52,12 +52,14 @@ This project follows the principle of **technical accuracy and professional obje
 
 ```
 ternary-engine/
-├── *.h, *.cpp          # Core source files (DO NOT NEST)
+├── src/                # Centralized source code
+│   ├── core/           # Production kernel (algebra, SIMD, FFI)
+│   └── engine/         # Python bindings and libraries
 ├── docs/               # Documentation (organized by category)
 ├── tests/              # Test suite
 ├── benchmarks/         # Performance benchmarks
 ├── build/              # Build system and artifacts
-├── avx512-future-support/  # Future multi-ISA support
+├── models/             # LLM/Neural Network integration (TritNet, etc.)
 └── local-reports/      # Development notes (not in git)
 ```
 

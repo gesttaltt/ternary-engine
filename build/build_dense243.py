@@ -81,11 +81,10 @@ else:
 ext_modules = [
     Pybind11Extension(
         "ternary_dense243_module",
-        [str(PROJECT_ROOT / "ternary_engine" / "bindings_dense243.cpp")],
+        [str(PROJECT_ROOT / "src" / "engine" / "bindings_dense243.cpp")],
         include_dirs=[
             str(PROJECT_ROOT),
-            str(PROJECT_ROOT / "ternary_core"),
-            str(PROJECT_ROOT / "ternary_engine"),
+            str(PROJECT_ROOT / "src"),
         ],
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,

@@ -6,13 +6,13 @@ This directory contains comprehensive documentation for the ternary-engine libra
 
 **The project structure has been reorganized, consolidated, and fully validated:**
 
-✅ **`ternary_core/`** - Production-ready kernel (65/65 tests passing, 7,315× avg speedup)
+✅ **`src/core/`** - Production-ready kernel (65/65 tests passing, 7,315× avg speedup)
 - Core algebra and LUT generation (validated)
 - SIMD kernels and CPU detection (validated)
 - C FFI layer (cross-language ready)
 - Operation fusion (validated: 1.6-15.5× speedup) - **Now integrated in main module**
 
-✅ **`ternary_engine/`** - Main SIMD engine with fusion operations
+✅ **`src/engine/`** - Main SIMD engine with fusion operations
 - Unified module with all core operations
 - Fusion operations available: `fused_tnot_tadd`, `fused_tnot_tmul`, `fused_tnot_tmin`, `fused_tnot_tmax`
 - Build via `build/build.py`
@@ -23,10 +23,10 @@ This directory contains comprehensive documentation for the ternary-engine libra
 - **ternary_profiler.h** - Deleted (never integrated, pure overhead)
 
 **Note:** Implementation is now in:
-- `ternary_core/algebra/` - Core algebra and LUT generation
-- `ternary_core/simd/` - SIMD kernels, CPU detection, and fusion operations
-- `ternary_core/common/` - Common utilities and error handling
-- `ternary_engine/` - Main SIMD engine with Python bindings
+- `src/core/algebra/` - Core algebra and LUT generation
+- `src/core/simd/` - SIMD kernels, CPU detection, and fusion operations
+- `src/core/common/` - Common utilities and error handling
+- `src/engine/` - Main SIMD engine with Python bindings
 - `build/` - Build scripts
 - `tests/` - Test suite
 - `legacy/` - Archived code (broken or deprecated features)

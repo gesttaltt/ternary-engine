@@ -87,13 +87,13 @@ This configuration defines **project-level standards** for the Ternary Engine co
 
 ### Directory Structure
 
-**ternary_core/** - Production-ready kernel (mathematically stable, validated)
+**src/core/** - Production-ready kernel (mathematically stable, validated)
 - algebra/ - Scalar operations + LUTs
 - simd/ - SIMD acceleration (AVX2)
 - ffi/ - Cross-language FFI
 - core_api.h - Unified entry point
 
-**ternary_engine/** - Python bindings and library code
+**src/engine/** - Python bindings and library code
 - bindings_core_ops.cpp - Python module for core SIMD operations (ternary_simd_engine)
 - bindings_dense243.cpp - Python module for Dense243 encoding (ternary_dense243_module)
 - bindings_tritnet_gemm.cpp - Python module for TritNet GEMM operations
@@ -110,7 +110,7 @@ This configuration defines **project-level standards** for the Ternary Engine co
 
 ### Deployment Status Markers
 
-**Production-Ready (ternary_core/)** - Windows x64 validated, mathematically stable
+**Production-Ready (src/core/)** - Windows x64 validated, mathematically stable
 **Validated & Ready (experimental/)** - All tests passing, awaiting integration
 **Pending Validation (experimental/)** - Implementation complete, benchmarks pending
 **Broken/Deprecated (legacy/)** - Archived, do not use
@@ -213,13 +213,13 @@ OUTPUT: Description of outputs
 
 ### Kernel vs Engine Separation
 
-**ternary_core/** - Production-ready, mathematically stable code
+**src/core/** - Production-ready, mathematically stable code
 - Only validated, proven implementations
 - Comprehensive test coverage required
 - Performance validated with benchmarks
 - Clear deployment status documentation
 
-**ternary_engine/lib/** - Reusable library code for Python modules
+**src/engine/lib/** - Reusable library code for Python modules
 - Implementation complete with validated performance
 - Contains headers and utilities used by multiple bindings
 - Example: lib/dense243/ for high-density encoding
@@ -266,9 +266,9 @@ Example: `process_binary_array<Sanitize>()` replaced 6 separate implementations
 ### Critical Performance Paths
 
 **DO NOT modify without benchmarking:**
-- ternary_core/algebra/ternary_algebra.h (scalar operations)
-- ternary_core/simd/ternary_simd_kernels.h (SIMD operations)
-- ternary_engine/bindings_core_ops.cpp (Python bindings for core operations)
+- src/core/algebra/ternary_algebra.h (scalar operations)
+- src/core/simd/ternary_simd_kernels.h (SIMD operations)
+- src/engine/bindings_core_ops.cpp (Python bindings for core operations)
 
 **Benchmark methodology:**
 - Use build/build.py for standard optimized build
@@ -726,7 +726,7 @@ pip install matplotlib transformers
 
 **Architecture:**
 - Is this change consistent with the kernel/engine separation?
-- Does this belong in ternary_core/ (proven) or ternary_engine/experimental/ (pending)?
+- Does this belong in src/core/ (proven) or src/engine/experimental/ (pending)?
 - Have we validated this approach on Windows x64?
 
 **Performance:**
@@ -749,7 +749,7 @@ pip install matplotlib transformers
 - What is the deployment status (production/validated/pending)?
 - What phase is this (for fusion operations)?
 - When should we promote to production?
-- Does this belong in ternary_core/ (kernel) or ternary_engine/lib/ (library)?
+- Does this belong in src/core/ (kernel) or src/engine/lib/ (library)?
 
 ---
 

@@ -22,7 +22,7 @@ Input → Neural Network (matmul) → Output
 
 ### Layer 0: Compile-Time LUT Generation
 
-**File:** `ternary_core/algebra/ternary_lut_gen.h`
+**File:** `src/core/algebra/ternary_lut_gen.h`
 **Purpose:** Generate lookup tables at compile time
 **Key concept:** Algorithm-as-documentation
 
@@ -45,7 +45,7 @@ constexpr auto TADD_LUT = generate_lut<compute_tadd>();
 
 ### Layer 1: Scalar Operations
 
-**File:** `ternary_core/algebra/ternary_algebra.h`
+**File:** `src/core/algebra/ternary_algebra.h`
 **Purpose:** Branch-free scalar operations using LUTs
 **Encoding:** 2-bit per trit (0b00=-1, 0b01=0, 0b10=+1)
 
@@ -61,7 +61,7 @@ FORCE_INLINE uint8_t tadd_scalar(uint8_t a, uint8_t b) {
 
 ### Layer 2: SIMD Vectorization
 
-**File:** `ternary_core/simd/ternary_simd_kernels.h`
+**File:** `src/core/simd/ternary_simd_kernels.h`
 **Purpose:** Process 32 trits in parallel via AVX2
 **Instruction:** `_mm256_shuffle_epi8` (LUT within 256-bit register)
 
@@ -78,7 +78,7 @@ __m256i tadd_simd_32(__m256i a, __m256i b) {
 
 ### Layer 3: Operation Fusion
 
-**File:** `ternary_core/simd/ternary_fusion.h`
+**File:** `src/core/simd/ternary_fusion.h`
 **Purpose:** Combine multiple operations to reduce memory traffic
 
 ```cpp
@@ -116,7 +116,7 @@ py::array_t<uint8_t> tadd(py::array_t<uint8_t> a, py::array_t<uint8_t> b) {
 
 ### Layer 5: Runtime Safety
 
-**File:** `ternary_core/simd/ternary_cpu_detect.h`
+**File:** `src/core/simd/ternary_cpu_detect.h`
 **Purpose:** Graceful degradation and validation
 
 **CPU Detection:**
@@ -145,7 +145,7 @@ max_threads = std::min(omp_get_max_threads(), hardware_concurrency);
 
 ## Kernel vs Engine Separation
 
-### Production Kernel (ternary_core/)
+### Production Kernel (src/core/)
 
 **Deployment status:** Production-ready (Windows x64 validated)
 **Criteria:**
@@ -155,12 +155,12 @@ max_threads = std::min(omp_get_max_threads(), hardware_concurrency);
 - Clear documentation with validation dates
 
 **Files:**
-- ternary_core/algebra/ - Core operations
-- ternary_core/simd/ - SIMD kernels
-- ternary_core/ffi/ - C FFI layer
-- ternary_core/core_api.h - Unified entry point
+- src/core/algebra/ - Core operations
+- src/core/simd/ - SIMD kernels
+- src/core/ffi/ - C FFI layer
+- src/core/core_api.h - Unified entry point
 
-### Experimental Engine (ternary_engine/)
+### Experimental Engine (src/engine/)
 
 **Deployment status:** Pending validation
 **Criteria:**

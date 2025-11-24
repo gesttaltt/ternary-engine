@@ -310,7 +310,7 @@ Implement TritNet inference in C++ for integration with dense243 module.
 ### Implementation
 
 ```cpp
-// ternary_engine/experimental/tritnet/tritnet_inference.h
+// src/engine/experimental/tritnet/tritnet_inference.h
 
 #ifndef TRITNET_INFERENCE_H
 #define TRITNET_INFERENCE_H
@@ -385,7 +385,7 @@ std::array<int8_t, 5> TritNetModel::forward(const std::array<int8_t, 10>& inputs
 ### Integration with Dense243 Module
 
 ```cpp
-// ternary_engine/ternary_dense243_module.cpp (updated)
+// src/engine/ternary_dense243_module.cpp (updated)
 
 // Global TritNet models (loaded at module init)
 static std::unique_ptr<TritNetModel> g_tritnet_tadd;
@@ -558,7 +558,7 @@ py::array_t<uint8_t> binary_op_dense243(...) {
 - **BitNet:** https://github.com/microsoft/BitNet
 - **bitnet.cpp:** https://github.com/microsoft/BitBLAS
 - **Dense243 spec:** `docs/t5-dense243-spec.md`
-- **Module README:** `ternary_engine/experimental/dense243/README.md`
+- **Module README:** `src/engine/experimental/dense243/README.md`
 
 ---
 

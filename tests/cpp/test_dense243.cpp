@@ -19,8 +19,8 @@
 #include <cassert>
 #include <vector>
 #include <chrono>
-#include "../ternary_engine/lib/dense243/ternary_dense243.h"
-#include "../ternary_core/algebra/ternary_algebra.h"
+#include "../src/engine/dense243/ternary_dense243.h"
+#include "../src/core/algebra/ternary_algebra.h"
 
 // ANSI color codes for terminal output
 #define COLOR_GREEN "\033[32m"

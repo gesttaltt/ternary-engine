@@ -106,7 +106,7 @@ def build_module(naive_only=False, verbose=False, clean=False):
 
     # Source files
     sources = [
-        "ternary_engine/bindings_tritnet_gemm.cpp",
+        "src/engine/bindings_tritnet_gemm.cpp",
         "models/tritnet/gemm/tritnet_gemm_naive.cpp",
     ]
 
@@ -120,9 +120,8 @@ def build_module(naive_only=False, verbose=False, clean=False):
     # Include directories
     include_dirs = [
         "models/tritnet/gemm",
-        "ternary_core",
-        "ternary_engine",
-        "ternary_engine/lib/dense243",
+        "src",
+        "src/engine/dense243",
     ]
 
     # Get compiler flags

@@ -59,7 +59,7 @@
 
 #include <stdint.h>
 #include <array>
-#include "../../../ternary_core/algebra/ternary_lut_gen.h"  // For int_to_trit_constexpr, trit_to_int_constexpr
+#include "core/algebra/ternary_lut_gen.h"  // For int_to_trit_constexpr, trit_to_int_constexpr
 
 // =============================================================================
 // Type Definitions
@@ -265,7 +265,7 @@ constexpr size_t triadsextet_bytes_for_trits(size_t num_trits) {
 // Ternary Operations on TriadSextet (via 2-bit transcoding)
 // =============================================================================
 
-#include "../../../ternary_core/algebra/ternary_algebra.h"  // For tadd, tmul, etc.
+#include "core/algebra/ternary_algebra.h"  // For tadd, tmul, etc.
 
 // TriadSextet addition (via unpack → 2-bit operation → repack)
 static inline triadsextet_t triadsextet_tadd(triadsextet_t sa, triadsextet_t sb) {

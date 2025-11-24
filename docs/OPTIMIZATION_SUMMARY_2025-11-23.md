@@ -27,8 +27,8 @@ Performed comprehensive analysis of the Ternary Engine codebase, focusing on:
 
 **Analyzed:**
 - 16 C++ files (4,730 LOC total)
-- Production kernel: 1,977 LOC (`ternary_core/`)
-- Experimental engine: 1,753 LOC (`ternary_engine/`)
+- Production kernel: 1,977 LOC (`src/core/`)
+- Experimental engine: 1,753 LOC (`src/engine/`)
 - 8 build scripts
 - 15+ benchmark scripts
 
@@ -254,7 +254,7 @@ if not args.no_dense243:
 4. **Missing Proper Ternary Matrix Multiplication** (Not Fixed - Recommend Phase 3)
    - Current: PyTorch FP32 matmul
    - Potential: 10-20× speedup with SIMD ternary matmul
-   - Files to create: `ternary_core/simd/ternary_matmul_kernels.h`
+   - Files to create: `src/core/simd/ternary_matmul_kernels.h`
 
 5. **Dense243 SIMD Pack Inefficiency** (Not Critical - Acceptable)
    - 30+ additions for packing vs 5 shuffles for unpacking
@@ -392,7 +392,7 @@ static inline __m256i binary_simd_op(__m256i a, __m256i b, __m256i lut) {
 
 ### Phase 2: High-Priority Enhancements (2-4 weeks)
 4. **Implement Ternary Matrix Multiplication SIMD**
-   - Create `ternary_core/simd/ternary_matmul_kernels.h`
+   - Create `src/core/simd/ternary_matmul_kernels.h`
    - Add `tmatmul()` Python binding
    - Integrate into TritNet (`ternary_layers.py`)
    - Expected: 10-20× speedup for small matrices

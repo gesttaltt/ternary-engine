@@ -102,11 +102,12 @@ PGO_DATA_DIR = r"{PGO_DATA_DIR}"
 ext_modules = [
     Extension(
         'ternary_simd_engine',
-        [os.path.join(PROJECT_ROOT, 'ternary_engine', 'ternary_simd_engine.cpp')],
+        [os.path.join(PROJECT_ROOT, 'src', 'engine', 'bindings_core_ops.cpp')],
         include_dirs=[
             pybind11.get_include(),
             pybind11.get_include(user=True),
-            PROJECT_ROOT
+            PROJECT_ROOT,
+            os.path.join(PROJECT_ROOT, 'src')
         ],
         language='c++',
         extra_compile_args=[
@@ -323,11 +324,12 @@ PGO_DATA_DIR = r"{PGO_DATA_DIR}"
 ext_modules = [
     Extension(
         'ternary_simd_engine',
-        [os.path.join(PROJECT_ROOT, 'ternary_engine', 'ternary_simd_engine.cpp')],
+        [os.path.join(PROJECT_ROOT, 'src', 'engine', 'bindings_core_ops.cpp')],
         include_dirs=[
             pybind11.get_include(),
             pybind11.get_include(user=True),
-            PROJECT_ROOT
+            PROJECT_ROOT,
+            os.path.join(PROJECT_ROOT, 'src')
         ],
         language='c++',
         extra_compile_args=[

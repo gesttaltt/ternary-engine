@@ -61,7 +61,7 @@ The library consists of **five primary components** that implement the complete 
 
 **Purpose**: Domain-specific exception types for ternary operations
 
-**Location**: `ternary_core/common/ternary_errors.h`
+**Location**: `src/core/common/ternary_errors.h`
 
 **Key Components**:
 - `TernaryError` - Base exception class
@@ -79,7 +79,7 @@ The library consists of **five primary components** that implement the complete 
 
 **Purpose**: Fused operation chains for improved performance
 
-**Location**: `ternary_core/simd/ternary_fusion.h`
+**Location**: `src/core/simd/ternary_fusion.h`
 
 **Key Operations**:
 - `fused_tnot_tadd(a, b)` - Single-pass tnot(tadd(a, b))

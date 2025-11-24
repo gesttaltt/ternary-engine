@@ -676,7 +676,7 @@ class CleanupManager:
 - `benchmarks/results/` (benchmark data)
 - `pgo_data/`, `build/artifacts/pgo_data/` (profiling data)
 
-Source directories (`ternary_engine/`, `ternary_core/`, etc.) are never touched.
+Source directories (`src/engine/`, `src/core/`, etc.) are never touched.
 
 ---
 

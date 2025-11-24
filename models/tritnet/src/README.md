@@ -449,7 +449,7 @@ pip install matplotlib seaborn pandas scikit-learn
 - **Vision & Goals:** `docs/TRITNET_VISION.md`
 - **Implementation Roadmap:** `docs/TRITNET_ROADMAP.md`
 - **Dataset Documentation:** `models/datasets/tritnet/README.md`
-- **Dense243 Module:** `ternary_engine/experimental/dense243/README.md`
+- **Dense243 Module:** `src/engine/experimental/dense243/README.md`
 - **Scripts Overview:** `scripts/README.md`
 
 ---

@@ -43,12 +43,12 @@
 #include <cstdint>
 
 // Dense243 implementation
-#include "lib/dense243/ternary_dense243.h"
-#include "lib/dense243/ternary_dense243_simd.h"
+#include "dense243/ternary_dense243.h"
+#include "dense243/ternary_dense243_simd.h"
 
 // Core ternary algebra (for 2-bit ↔ dense243 conversion)
-#include "../ternary_core/algebra/ternary_algebra.h"
-#include "../ternary_core/common/ternary_errors.h"
+#include "core/algebra/ternary_algebra.h"
+#include "core/common/ternary_errors.h"
 
 namespace py = pybind11;
 

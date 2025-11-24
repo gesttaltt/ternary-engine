@@ -211,11 +211,11 @@ void tritnet_gemm_kernel_avx2_8x(
 
 **Root Cause:**
 The `dense243.h` header was never created. Dense243 implementation lives in:
-- `ternary_engine/experimental/dense243/ternary_dense243.h`
+- `src/engine/experimental/dense243/ternary_dense243.h`
 
 **Fix Applied:**
 ```cpp
-#include "../ternary_engine/experimental/dense243/ternary_dense243.h"  // ✅ Correct path
+#include "../src/engine/experimental/dense243/ternary_dense243.h"  // ✅ Correct path
 ```
 
 ### Issue 2: Undefined `aligned_alloc()` ⚠️ → ✅ **FIXED**
@@ -306,7 +306,7 @@ from setuptools import setup
 ext_modules = [
     Pybind11Extension(
         "ternary_tritnet_gemm",
-        ["ternary_engine/ternary_tritnet_gemm_module.cpp",
+        ["src/engine/ternary_tritnet_gemm_module.cpp",
          "src/tritnet_gemm_naive.cpp",
          "src/tritnet_gemm_avx2.cpp"],
         include_dirs=["include", "ternary_core", "ternary_engine"],
@@ -496,7 +496,7 @@ uint8_t expected = 104;
 ### Phase 2: Create Python Bindings 🔴 **NEXT**
 
 **Files to Create:**
-1. `ternary_engine/ternary_tritnet_gemm_module.cpp` - pybind11 wrapper
+1. `src/engine/ternary_tritnet_gemm_module.cpp` - pybind11 wrapper
 2. `build/build_tritnet_gemm.py` - Build script
 3. `tests/test_tritnet_gemm.py` - Python unit tests
 

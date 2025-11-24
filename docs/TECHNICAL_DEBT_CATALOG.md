@@ -50,7 +50,7 @@ import ternary_fusion_engine as fusion  # ← MODULE NOT BUILT
 
 **Root Cause:**
 Fusion operations (`fused_tnot_tadd`, `fused_tnot_tmul`, `fused_tnot_tmin`, `fused_tnot_tmax`) are:
-- ✅ Implemented in `ternary_core/simd/ternary_fusion.h` (validated Phase 4.0/4.1)
+- ✅ Implemented in `src/core/simd/ternary_fusion.h` (validated Phase 4.0/4.1)
 - ✅ Exposed in main `ternary_simd_engine` module (lines 333-347, 369-376)
 - ❌ NOT built as separate `ternary_fusion_engine` module
 
@@ -117,7 +117,7 @@ Standardize all benchmark imports to use existing modules:
 **Problem:**
 `process_binary_array()` (87 lines) and `process_unary_array()` (54 lines) share ~70% identical code.
 
-**Location:** `ternary_engine/ternary_simd_engine.cpp:138-301`
+**Location:** `src/engine/ternary_simd_engine.cpp:138-301`
 
 **Duplication Analysis:**
 ```cpp
@@ -218,13 +218,13 @@ def ternary_matmul_simple(X, W):
 
 4. **Integration Path:**
    - Add `tmatmul()` to `ternary_simd_engine.cpp`
-   - Create SIMD kernel in `ternary_core/simd/ternary_matmul_kernels.h`
+   - Create SIMD kernel in `src/core/simd/ternary_matmul_kernels.h`
    - Expose to Python via pybind11
    - Update TritNet to use ternary matmul
 
 **Files to Create/Modify:**
-- `ternary_core/simd/ternary_matmul_kernels.h` (new)
-- `ternary_engine/ternary_simd_engine.cpp` (add tmatmul binding)
+- `src/core/simd/ternary_matmul_kernels.h` (new)
+- `src/engine/ternary_simd_engine.cpp` (add tmatmul binding)
 - `models/tritnet/src/ternary_layers.py` (use ternary matmul)
 
 ---
@@ -234,7 +234,7 @@ def ternary_matmul_simple(X, W):
 **Problem:**
 `dense243_pack_simd()` uses ~30 addition operations to compute base-243 encoding.
 
-**Location:** `ternary_engine/experimental/dense243/ternary_dense243_simd.h:143-211`
+**Location:** `src/engine/experimental/dense243/ternary_dense243_simd.h:143-211`
 
 **Current Implementation:**
 ```cpp
@@ -396,7 +396,7 @@ VTune profiler hooks exist but not integrated into main workflow.
 
 **Status:**
 ```cpp
-// ternary_core/profiling/ternary_profiler.h exists
+// src/core/profiling/ternary_profiler.h exists
 // Hooks in ternary_simd_engine.cpp (lines 102-106, 165, 200, etc.)
 // But: No documentation on how to use, no build script integration
 ```
@@ -497,7 +497,7 @@ def forward(self, input: torch.Tensor) -> torch.Tensor:
 **Ternary Matrix Multiplication SIMD Kernel:**
 
 ```cpp
-// ternary_core/simd/ternary_matmul_kernels.h
+// src/core/simd/ternary_matmul_kernels.h
 
 // Compute C = A @ B where A, B contain ternary values {-1, 0, +1}
 // A: [M, K] matrix (row-major)

@@ -187,11 +187,11 @@ Look for:
 
 Profiler macros are integrated into the main engine:
 
-**Location:** `ternary_engine/ternary_simd_engine.cpp`
+**Location:** `src/engine/ternary_simd_engine.cpp`
 
 **Global Declarations:**
 ```cpp
-#include "../ternary_core/profiling/ternary_profiler.h"
+#include "../src/core/profiling/ternary_profiler.h"
 
 TERNARY_PROFILE_DOMAIN(g_ternary_domain, "TernaryCore");
 TERNARY_PROFILE_TASK_NAME(g_task_omp, "OpenMP_Parallel");
@@ -297,7 +297,7 @@ nm ternary_simd_engine.so | grep __itt
 For custom code using the Ternary Engine:
 
 ```cpp
-#include "ternary_core/profiling/ternary_profiler.h"
+#include "src/core/profiling/ternary_profiler.h"
 
 TERNARY_PROFILE_DOMAIN(my_domain, "MyApplication");
 TERNARY_PROFILE_TASK_NAME(my_task, "CustomOperation");

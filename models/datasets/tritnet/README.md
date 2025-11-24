@@ -256,7 +256,7 @@ See `docs/TRITNET_ROADMAP.md` for complete implementation plan.
 ## References
 
 - **TritNet Roadmap:** `docs/TRITNET_ROADMAP.md`
-- **Dense243 Module:** `ternary_engine/experimental/dense243/`
+- **Dense243 Module:** `src/engine/experimental/dense243/`
 - **Generator Script:** `models/tritnet/src/generate_truth_tables.py`
 - **BitNet Repository:** https://github.com/microsoft/BitNet
 - **BitNet Paper:** https://arxiv.org/abs/2310.11453

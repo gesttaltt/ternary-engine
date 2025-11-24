@@ -14,7 +14,7 @@ Production-grade balanced ternary arithmetic library achieving:
 
 ```
 ternary-engine/
-├── ternary_core/              # Production kernel (Windows x64 validated)
+├── src/core/              # Production kernel (Windows x64 validated)
 │   ├── algebra/               # Core ternary operations
 │   │   ├── ternary_lut_gen.h      # Compile-time LUT generation (111 lines)
 │   │   └── ternary_algebra.h      # Scalar ops + LUTs (143 lines)
@@ -26,7 +26,7 @@ ternary-engine/
 │   │   └── ternary_c_api.h        # C FFI layer (255 lines)
 │   └── core_api.h             # Unified entry point
 │
-├── ternary_engine/            # Experimental features
+├── src/engine/            # Experimental features
 │   └── experimental/
 │       ├── dense243/          # High-density encoding (validated)
 │       └── fusion/            # Operation fusion (Phase 4.0 validated)
@@ -78,7 +78,7 @@ ternary-engine/
 │   └── templates/                 # Code templates
 │
 └── Root level files
-    ├── ternary_simd_engine.cpp    # Main engine (uses ternary_core/)
+    ├── ternary_simd_engine.cpp    # Main engine (uses src/core/)
     ├── README.md                  # Project overview
     ├── TESTING.md                 # Testing guide
     └── CONTRIBUTING.md            # Development guidelines
@@ -87,8 +87,8 @@ ternary-engine/
 ## Key Files by Purpose
 
 ### Core Implementation (Production)
-- **ternary_core/algebra/ternary_algebra.h** - Scalar operations, branch-free LUTs
-- **ternary_core/simd/ternary_simd_kernels.h** - AVX2 SIMD (32 parallel operations)
+- **src/core/algebra/ternary_algebra.h** - Scalar operations, branch-free LUTs
+- **src/core/simd/ternary_simd_kernels.h** - AVX2 SIMD (32 parallel operations)
 - **ternary_simd_engine.cpp** - Python bindings via pybind11
 
 ### TritNet (Experimental)
