@@ -9,7 +9,7 @@
  */
 
 #include "tritnet_gemm.h"
-#include "../ternary_engine/experimental/dense243/ternary_dense243.h"
+#include "ternary_dense243.h"  // Resolved via ternary_engine/lib/dense243 in include_dirs
 #include <string.h>
 #include <stdlib.h>
 

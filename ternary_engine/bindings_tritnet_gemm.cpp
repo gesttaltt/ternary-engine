@@ -10,7 +10,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include "../include/tritnet_gemm.h"
+#include "tritnet_gemm.h"  // Resolved via include_dirs in build script
 #include <stdexcept>
 
 namespace py = pybind11;

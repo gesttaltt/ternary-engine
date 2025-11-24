@@ -83,6 +83,26 @@ def build_dense243():
         "Building ternary_dense243"
     )
 
+def build_tritnet_gemm():
+    """Build TritNet GEMM module"""
+    print_header("BUILDING TRITNET GEMM")
+
+    build_script = PROJECT_ROOT / "build" / "build_tritnet_gemm.py"
+    return run_command(
+        [sys.executable, str(build_script)],
+        "Building ternary_tritnet_gemm"
+    )
+
+def build_reference():
+    """Build reference baseline (optional)"""
+    print_header("BUILDING REFERENCE BASELINE")
+
+    build_script = PROJECT_ROOT / "build" / "build_reference.py"
+    return run_command(
+        [sys.executable, str(build_script)],
+        "Building reference_cpp"
+    )
+
 def run_phase0_tests():
     """Run Phase 0 validation tests"""
     print_header("RUNNING PHASE 0 VALIDATION")
@@ -173,6 +193,8 @@ def main():
     parser.add_argument('--clean', action='store_true', help='Clean before building')
     parser.add_argument('--quick', action='store_true', help='Skip tests')
     parser.add_argument('--no-dense243', action='store_true', help='Skip Dense243 build')
+    parser.add_argument('--no-tritnet-gemm', action='store_true', help='Skip TritNet GEMM build')
+    parser.add_argument('--no-reference', action='store_true', help='Skip reference baseline build')
 
     args = parser.parse_args()
 
@@ -197,14 +219,22 @@ def main():
     if not args.no_dense243:
         results['dense243_build'] = build_dense243()
 
-    # Step 4: Run Phase 0 tests (optional)
+    # Step 4: Build TritNet GEMM (optional)
+    if not args.no_tritnet_gemm:
+        results['tritnet_gemm_build'] = build_tritnet_gemm()
+
+    # Step 5: Build reference baseline (optional)
+    if not args.no_reference:
+        results['reference_build'] = build_reference()
+
+    # Step 6: Run Phase 0 tests (optional)
     if not args.quick and results.get('standard_build', False):
         results['phase0_tests'] = run_phase0_tests()
 
-    # Step 5: Check competitive dependencies
+    # Step 7: Check competitive dependencies
     results['competitive_deps'] = check_competitive_deps()
 
-    # Step 6: Generate report
+    # Step 8: Generate report
     success = generate_build_report(results)
 
     # Exit with appropriate code
