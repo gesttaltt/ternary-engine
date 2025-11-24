@@ -3,6 +3,7 @@ local-reports/
 local/
 
 # Benchmark results (except baseline)
+results/
 benchmarks/results/*
 !benchmarks/results/phase0_20251011_215139.json
 
