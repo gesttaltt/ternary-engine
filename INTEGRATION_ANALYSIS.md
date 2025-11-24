@@ -576,43 +576,351 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 ### Implementation Plan
 
-**Phase 1: Create src/ Structure (15 minutes)**
+**Phase 1: Create src/ Structure and Move Files (10 minutes)**
 ```bash
+# Create directory structure
 mkdir src
 mkdir src/core
 mkdir src/engine
 
-# Move core
-mv ternary_core/* src/core/
+# Move core (using git mv to preserve history)
+git mv ternary_core/algebra src/core/
+git mv ternary_core/simd src/core/
+git mv ternary_core/ffi src/core/
+git mv ternary_core/common src/core/
+git mv ternary_core/profiling src/core/
+git mv ternary_core/config src/core/
+git mv ternary_core/core_api.h src/core/
 
-# Move engine
-mv ternary_engine/*.cpp src/engine/
-mv ternary_engine/lib/dense243 src/engine/
+# Move engine bindings
+git mv ternary_engine/bindings_core_ops.cpp src/engine/
+git mv ternary_engine/bindings_dense243.cpp src/engine/
+git mv ternary_engine/bindings_tritnet_gemm.cpp src/engine/
+
+# Move dense243 library
+git mv ternary_engine/lib/dense243 src/engine/
+
+# Remove empty directories
+rmdir ternary_core
+rmdir ternary_engine/lib
+rmdir ternary_engine
 ```
 
-**Phase 2: Fix Includes (30 minutes)**
-- Update 4 fragile C++ includes in src/engine/dense243/
-- Update build scripts to use `include_dirs = ["src"]`
-- Update pybind11 bindings to reference `src/core/`, `src/engine/`
+**Phase 2: Update Build Scripts (15 minutes)**
 
-**Phase 3: Standardize Python Imports (1 hour)**
-- Update 27 files to use standard PROJECT_ROOT pattern
-- All files now import from root (no sys.path issues)
-- Update CONTRIBUTING.md with new src/ structure
+**2A. Update build/build.py (lines 126, 131):**
+```python
+# OLD
+sources=[os.path.join(PROJECT_ROOT, 'ternary_engine', 'bindings_core_ops.cpp')],
+include_dirs=[
+    os.path.join(PROJECT_ROOT, 'ternary_core')
+]
 
-**Phase 4: Validate (30 minutes)**
+# NEW
+sources=[os.path.join(PROJECT_ROOT, 'src', 'engine', 'bindings_core_ops.cpp')],
+include_dirs=[
+    os.path.join(PROJECT_ROOT, 'src')
+]
+```
+
+**2B. Update build/build_dense243.py (lines 84, 87-88):**
+```python
+# OLD
+[str(PROJECT_ROOT / "ternary_engine" / "bindings_dense243.cpp")],
+include_dirs=[
+    str(PROJECT_ROOT / "ternary_core"),
+    str(PROJECT_ROOT / "ternary_engine"),
+]
+
+# NEW
+[str(PROJECT_ROOT / "src" / "engine" / "bindings_dense243.cpp")],
+include_dirs=[
+    str(PROJECT_ROOT / "src"),
+]
+```
+
+**2C. Update build/build_tritnet_gemm.py (lines 109, 123-125):**
+```python
+# OLD
+"ternary_engine/bindings_tritnet_gemm.cpp",
+include_dirs=[
+    "ternary_core",
+    "ternary_engine",
+    "ternary_engine/lib/dense243",
+]
+
+# NEW
+"src/engine/bindings_tritnet_gemm.cpp",
+include_dirs=[
+    "src",
+    "models/tritnet/gemm",  # tritnet_gemm.h location
+]
+```
+
+**2D. Update build/build_pgo.py (lines 105, 326):**
+```python
+# OLD
+[os.path.join(PROJECT_ROOT, 'ternary_engine', 'ternary_simd_engine.cpp')]
+
+# NEW
+[os.path.join(PROJECT_ROOT, 'src', 'engine', 'bindings_core_ops.cpp')]
+```
+Note: build_pgo.py references old ternary_simd_engine.cpp which doesn't exist - should be bindings_core_ops.cpp
+
+**Phase 3: Update C++ Binding Includes (20 minutes)**
+
+**3A. Update src/engine/bindings_core_ops.cpp (lines 87-93):**
+```cpp
+// OLD
+#include "../ternary_core/algebra/ternary_algebra.h"
+#include "../ternary_core/common/ternary_errors.h"
+#include "../ternary_core/simd/ternary_cpu_detect.h"
+#include "../ternary_core/simd/ternary_simd_kernels.h"
+#include "../ternary_core/simd/ternary_fusion.h"
+#include "../ternary_core/config/optimization_config.h"
+#include "../ternary_core/profiling/ternary_profiler.h"
+
+// NEW
+#include "src/core/algebra/ternary_algebra.h"
+#include "src/core/common/ternary_errors.h"
+#include "src/core/simd/ternary_cpu_detect.h"
+#include "src/core/simd/ternary_simd_kernels.h"
+#include "src/core/simd/ternary_fusion.h"
+#include "src/core/config/optimization_config.h"
+#include "src/core/profiling/ternary_profiler.h"
+```
+
+**3B. Update src/engine/bindings_dense243.cpp (lines 46-47, 50-51):**
+```cpp
+// OLD
+#include "lib/dense243/ternary_dense243.h"
+#include "lib/dense243/ternary_dense243_simd.h"
+#include "../ternary_core/algebra/ternary_algebra.h"
+#include "../ternary_core/common/ternary_errors.h"
+
+// NEW
+#include "dense243/ternary_dense243.h"
+#include "dense243/ternary_dense243_simd.h"
+#include "src/core/algebra/ternary_algebra.h"
+#include "src/core/common/ternary_errors.h"
+```
+
+**Phase 4: Update Dense243 Library Includes (15 minutes)**
+
+**4A. Update src/engine/dense243/ternary_dense243.h (line 49):**
+```cpp
+// OLD
+#include "../../../ternary_core/algebra/ternary_lut_gen.h"
+
+// NEW
+#include "src/core/algebra/ternary_lut_gen.h"
+```
+
+**4B. Update src/engine/dense243/ternary_dense243_simd.h (line 55):**
+```cpp
+// OLD
+#include "../../../ternary_core/simd/ternary_simd_kernels.h"
+
+// NEW
+#include "src/core/simd/ternary_simd_kernels.h"
+```
+
+**4C. Update src/engine/dense243/ternary_triadsextet.h (lines 62, 268):**
+```cpp
+// OLD
+#include "../../../ternary_core/algebra/ternary_lut_gen.h"
+// ... line 268 ...
+#include "../../../ternary_core/algebra/ternary_algebra.h"
+
+// NEW
+#include "src/core/algebra/ternary_lut_gen.h"
+// ... line 268 ...
+#include "src/core/algebra/ternary_algebra.h"
+```
+
+**Phase 5: Update C++ Test Includes (10 minutes)**
+
+**5A. Update tests/cpp/test_dense243.cpp (lines 22-23):**
+```cpp
+// OLD
+#include "../ternary_engine/lib/dense243/ternary_dense243.h"
+#include "../ternary_core/algebra/ternary_algebra.h"
+
+// NEW
+#include "../src/engine/dense243/ternary_dense243.h"
+#include "../src/core/algebra/ternary_algebra.h"
+```
+
+**5B. Update tests/cpp/test_luts.cpp (line 21):**
+```cpp
+// OLD
+#include "../ternary_core/algebra/ternary_algebra.h"
+
+// NEW
+#include "../src/core/algebra/ternary_algebra.h"
+```
+
+**5C. Update tests/cpp/test_simd_correctness.cpp (lines 24-25):**
+```cpp
+// OLD
+#include "../ternary_core/simd/ternary_simd_kernels.h"
+#include "../ternary_core/simd/ternary_scalar_reference.h"
+
+// NEW
+#include "../src/core/simd/ternary_simd_kernels.h"
+#include "../src/core/simd/ternary_scalar_reference.h"
+```
+
+**5D. Update tests/cpp/test_triadsextet.cpp (line 22):**
+```cpp
+// OLD
+#include "../ternary_engine/lib/dense243/ternary_triadsextet.h"
+
+// NEW
+#include "../src/engine/dense243/ternary_triadsextet.h"
+```
+
+**5E. Update tests/cpp/verify_autolut.cpp (line 11):**
+```cpp
+// OLD
+#include "../ternary_core/algebra/ternary_algebra.h"
+
+// NEW
+#include "../src/core/algebra/ternary_algebra.h"
+```
+
+**Phase 6: Update Models/TritNet Build Include (5 minutes)**
+
+**6A. Update models/tritnet/gemm/tritnet_gemm_naive.cpp:**
+Already includes "ternary_dense243.h" which is resolved via build script include_dirs.
+Build script already updated in Phase 2C to include src/ directory.
+
+**Phase 7: Update Documentation (30 minutes)**
+
+**7A. Update 12 docs/ files:**
+- docs/TRITNET_ROADMAP.md
+- docs/TECHNICAL_DEBT_CATALOG.md
+- docs/README.md
+- docs/profiling/README.md
+- docs/OPTIMIZATION_SUMMARY_2025-11-23.md
+- docs/GEMM_DISCOVERY_2025-11-23.md
+- docs/features/optimization-leverage-report.md
+- docs/build-system/cleanup-system.md
+- docs/BITNET_INTEGRATION_STRATEGY.md
+- docs/BITNET_ARCHITECTURE_ANALYSIS.md
+- docs/architecture/architecture.md
+- docs/api-reference/source-code-overview.md
+
+Find/replace all occurrences:
+- `ternary_core/` → `src/core/`
+- `ternary_engine/` → `src/engine/`
+
+**7B. Update 3 .claude/ context files:**
+- .claude/context/codebase-overview.md
+- .claude/context/architecture.md
+- .claude/CLAUDE.md
+
+Same find/replace as above.
+
+**7C. Update 3 models/ documentation files:**
+- models/datasets/tritnet/README.md
+- models/tritnet/src/README.md
+- benchmarks/COMPETITIVE_BENCHMARKS.md
+
+Same find/replace as above.
+
+**7D. Update CONTRIBUTING.md:**
+Replace directory structure diagram with new src/ structure.
+
+**Phase 8: Standardize Python Imports (1 hour)**
+
+Update 27 Python files with inconsistent sys.path patterns (see NESTING_ANALYSIS_REPORT.md for full list):
+
+**Standard pattern for all files:**
+```python
+from pathlib import Path
+import sys
+
+# Adjust parent count based on file depth
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()  # Depth 3
+# OR
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()  # Depth 4
+
+sys.path.insert(0, str(PROJECT_ROOT))
+```
+
+**Files to update:**
+- benchmarks/*.py (6 files)
+- benchmarks/micro/*.py (9 files)
+- benchmarks/macro/*.py (2 files)
+- tests/python/*.py (6 files)
+- build/build_tritnet_gemm.py (1 file)
+- opentimestamps/*.py (2 files)
+- models/tritnet/src/*.py (needs verification)
+
+**Phase 9: Validate and Test (30 minutes)**
+
 ```bash
-# Rebuild all modules
+# Clean all previous builds
+python build/clean_all.py
+
+# Rebuild all modules with new paths
 python build/build_all.py
+
+# Expected outputs in root:
+# - ternary_simd_engine.cp312-win_amd64.pyd
+# - ternary_dense243_module.cp312-win_amd64.pyd
+# - ternary_tritnet_gemm.cp312-win_amd64.pyd
+# - reference_cpp.cp312-win_amd64.pyd
 
 # Run all tests
 python tests/run_tests.py
 
-# Run benchmarks
+# Run core benchmarks
 python benchmarks/bench_phase0.py
+
+# Verify performance (should match previous baselines)
+python benchmarks/bench_fusion.py
 ```
 
-**Total Effort:** 2-2.5 hours
+**Phase 10: Commit and Document (15 minutes)**
+
+```bash
+# Stage all changes
+git add -A
+
+# Commit with detailed migration message
+git commit -m "REFACTOR: Centralize source code into src/ directory
+
+Migrated ternary_core/ and ternary_engine/ to unified src/ structure:
+- src/core/ (from ternary_core/)
+- src/engine/ (from ternary_engine/)
+
+Files moved: 52 files (using git mv to preserve history)
+
+Path updates:
+- 4 build scripts: include_dirs = ['src']
+- 3 binding files: #include 'src/core/...'
+- 4 dense243 files: Fixed ../../../ fragile includes
+- 6 C++ test files: #include '../src/...'
+- 30+ documentation files: Updated all references
+- 27 Python files: Standardized sys.path patterns
+
+Benefits:
+- Reduced nesting depth: 4 → 3 levels
+- Eliminated 4 fragile ../../../ includes
+- Unified build include paths
+- Improved CI caching
+
+Validation: All tests passing, performance unchanged
+
+Breaking changes: None (external API unchanged)"
+
+# Push to remote
+git push origin main
+```
+
+**Total Effort:** 2.5-3 hours (comprehensive with validation)
 
 ### Benefits Summary
 
