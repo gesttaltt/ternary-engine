@@ -222,6 +222,15 @@ result = tc.tadd(trits, trits)
 
 ## Performance
 
+### Ternary SIMD Engine (AVX2)
+
+- **Sustained throughput (typical)**: ~28.6 Gops/s
+- **Peak throughput (ideal conditions)**: ~35.0 Gops/s
+  - Fresh boot, minimal background load, max CPU boost, cold caches
+
+Both numbers are correct; the difference reflects normal CPU behavior
+(variable boost frequencies, cache contention, OS scheduling).
+
 ### Validated Benchmarks (2025-11-23, Windows x64, 12 cores)
 
 **Peak Throughput (Element-Wise Operations):**
