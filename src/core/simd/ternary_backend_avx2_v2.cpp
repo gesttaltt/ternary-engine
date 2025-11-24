@@ -1,15 +1,20 @@
 /**
- * ternary_backend_avx2_v2.c - AVX2 Backend with v1.2.0 Optimizations
+ * ternary_backend_avx2_v2.cpp - AVX2 Backend with v1.2.0 Optimizations
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
  *
  * AVX2 backend featuring v1.2.0 optimizations:
- * - Canonical indexing (eliminates shift/OR)
- * - Dual-shuffle XOR (parallel execution)
+ * - Canonical indexing (✅ ENABLED - eliminates shift/OR arithmetic)
+ * - Dual-shuffle XOR (future enhancement)
  * - LUT-256B support (future)
  *
  * Performance target: 35-45 Gops/s stable (30-40% over v1)
+ *
+ * v1.3.0 Changes:
+ * - Switched from traditional indexing idx=(a<<2)|b to canonical idx=(a*3)+b
+ * - Using canonical LUTs from ternary_canonical_lut.h
+ * - Expected 12-18% performance improvement over traditional indexing
  */
 
 #include "ternary_backend_interface.h"
@@ -19,7 +24,8 @@
 #include "ternary_canonical_index.h"
 #include "ternary_dual_shuffle.h"
 #include "../simd/ternary_cpu_detect.h"
-#include "../algebra/ternary_algebra.h"
+#include "../algebra/ternary_algebra.h"        // Scalar operations for fallback
+#include "../algebra/ternary_canonical_lut.h"  // Canonical LUTs
 #include <immintrin.h>
 #include <stdbool.h>
 #include <string.h>
@@ -34,57 +40,63 @@ static inline __m256i broadcast_lut_16(const uint8_t* lut) {
 }
 
 // ============================================================================
-// Pre-broadcasted LUTs (Traditional Encoding)
+// Pre-broadcasted LUTs (Canonical Indexing)
 // ============================================================================
 
-static __m256i g_tadd_lut_256;
-static __m256i g_tmul_lut_256;
-static __m256i g_tmax_lut_256;
-static __m256i g_tmin_lut_256;
-static __m256i g_tnot_lut_256;
+static __m256i g_tadd_canonical_lut_256;
+static __m256i g_tmul_canonical_lut_256;
+static __m256i g_tmax_canonical_lut_256;
+static __m256i g_tmin_canonical_lut_256;
+static __m256i g_tnot_canonical_lut_256;
 
-static bool g_luts_initialized = false;
+static bool g_canonical_luts_initialized = false;
 
-static void init_luts(void) {
-    if (g_luts_initialized) return;
+static void init_canonical_luts(void) {
+    if (g_canonical_luts_initialized) return;
 
-    // Traditional 16-byte LUTs from ternary_algebra.h
-    g_tadd_lut_256 = broadcast_lut_16(TADD_LUT.data());
-    g_tmul_lut_256 = broadcast_lut_16(TMUL_LUT.data());
-    g_tmax_lut_256 = broadcast_lut_16(TMAX_LUT.data());
-    g_tmin_lut_256 = broadcast_lut_16(TMIN_LUT.data());
-    g_tnot_lut_256 = broadcast_lut_16(TNOT_LUT_SIMD.data());
+    // Canonical 16-byte LUTs from ternary_canonical_lut.h
+    // These LUTs are organized for idx=(a*3)+b indexing
+    g_tadd_canonical_lut_256 = broadcast_lut_16(TADD_CANONICAL_LUT.data());
+    g_tmul_canonical_lut_256 = broadcast_lut_16(TMUL_CANONICAL_LUT.data());
+    g_tmax_canonical_lut_256 = broadcast_lut_16(TMAX_CANONICAL_LUT.data());
+    g_tmin_canonical_lut_256 = broadcast_lut_16(TMIN_CANONICAL_LUT.data());
+    g_tnot_canonical_lut_256 = broadcast_lut_16(TNOT_CANONICAL_LUT.data());
 
-    // Initialize dual-shuffle LUTs (when available)
-    // init_dual_shuffle_luts();  // TODO: Enable when LUTs are properly defined
+    // Initialize dual-shuffle LUTs (future enhancement)
+    // init_dual_shuffle_luts();  // TODO: Enable for additional performance
 
-    g_luts_initialized = true;
+    g_canonical_luts_initialized = true;
 }
 
 // ============================================================================
-// Binary Operation Using Traditional Indexing
+// Binary Operation Using Canonical Indexing
 // ============================================================================
 
 /**
- * Generic binary operation with traditional indexing
+ * Generic binary operation with canonical indexing
  *
- * Uses: idx = (a<<2)|b
+ * Uses: idx = (a*3)+b via canonical_index_avx2()
  *
- * NOTE: Canonical indexing requires LUTs to be reorganized for (a*3)+b indexing.
- * For now, using traditional indexing with existing LUT format.
- * TODO: Implement canonical indexing with properly organized LUTs.
+ * This eliminates the shift/OR arithmetic bottleneck:
+ * - Old: idx = (a<<2)|b  (dependent chain: shift → OR → shuffle)
+ * - New: idx = canonical_index_avx2(a,b)  (parallel shuffles → add)
+ *
+ * Expected performance gain: 12-18% improvement
  */
-static inline __m256i binary_op_traditional(__m256i a, __m256i b, __m256i lut) {
+static inline __m256i binary_op_canonical(__m256i a, __m256i b, __m256i lut) {
     // Mask to 2-bit trit values
     __m256i mask = _mm256_set1_epi8(0x03);
     __m256i a_masked = _mm256_and_si256(a, mask);
     __m256i b_masked = _mm256_and_si256(b, mask);
 
-    // Traditional indexing: idx = (a<<2)|b
-    __m256i a_shifted = _mm256_slli_epi32(a_masked, 2);
-    __m256i indices = _mm256_or_si256(a_shifted, b_masked);
+    // Canonical indexing: idx = (a*3)+b
+    // This function from ternary_canonical_index.h performs:
+    // - dual-shuffle to get components: contrib_a = shuffle(CANON_A, a)
+    //                                   contrib_b = shuffle(CANON_B, b)
+    // - combine with ADD: indices = contrib_a + contrib_b
+    __m256i indices = canonical_index_avx2(a_masked, b_masked);
 
-    // Lookup
+    // Lookup with canonical index
     __m256i result = _mm256_shuffle_epi8(lut, indices);
 
     return result;
@@ -95,7 +107,7 @@ static inline __m256i binary_op_traditional(__m256i a, __m256i b, __m256i lut) {
 // ============================================================================
 
 static void avx2_v2_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
-    init_luts();
+    init_canonical_luts();
 
     __m256i mask = _mm256_set1_epi8(0x03);
     size_t i = 0;
@@ -104,7 +116,7 @@ static void avx2_v2_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
     for (; i + 32 <= n; i += 32) {
         __m256i a = _mm256_loadu_si256((const __m256i*)(src + i));
         __m256i indices = _mm256_and_si256(a, mask);
-        __m256i result = _mm256_shuffle_epi8(g_tnot_lut_256, indices);
+        __m256i result = _mm256_shuffle_epi8(g_tnot_canonical_lut_256, indices);
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
@@ -119,7 +131,7 @@ static void avx2_v2_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
 // ============================================================================
 
 static void avx2_v2_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
-    init_luts();
+    init_canonical_luts();
 
     size_t i = 0;
 
@@ -127,7 +139,7 @@ static void avx2_v2_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     for (; i + 32 <= n; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
         __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_traditional(va, vb, g_tadd_lut_256);
+        __m256i result = binary_op_canonical(va, vb, g_tadd_canonical_lut_256);
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
@@ -138,14 +150,14 @@ static void avx2_v2_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 }
 
 static void avx2_v2_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
-    init_luts();
+    init_canonical_luts();
 
     size_t i = 0;
 
     for (; i + 32 <= n; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
         __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_traditional(va, vb, g_tmul_lut_256);
+        __m256i result = binary_op_canonical(va, vb, g_tmul_canonical_lut_256);
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
@@ -155,14 +167,14 @@ static void avx2_v2_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 }
 
 static void avx2_v2_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
-    init_luts();
+    init_canonical_luts();
 
     size_t i = 0;
 
     for (; i + 32 <= n; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
         __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_traditional(va, vb, g_tmax_lut_256);
+        __m256i result = binary_op_canonical(va, vb, g_tmax_canonical_lut_256);
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
@@ -172,14 +184,14 @@ static void avx2_v2_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 }
 
 static void avx2_v2_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
-    init_luts();
+    init_canonical_luts();
 
     size_t i = 0;
 
     for (; i + 32 <= n; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
         __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_traditional(va, vb, g_tmin_lut_256);
+        __m256i result = binary_op_canonical(va, vb, g_tmin_canonical_lut_256);
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
