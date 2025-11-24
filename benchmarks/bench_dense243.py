@@ -33,10 +33,10 @@ except ImportError:
     HAS_STANDARD = False
 
 try:
-    import ternary_dense243 as td243
+    import ternary_dense243_module as td243
     HAS_DENSE243 = True
 except ImportError:
-    print("Warning: ternary_dense243 not available")
+    print("Warning: ternary_dense243_module not available")
     print("Build with: python build/build_dense243.py")
     HAS_DENSE243 = False
 
