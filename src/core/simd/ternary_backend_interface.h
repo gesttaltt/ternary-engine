@@ -212,6 +212,15 @@ void ternary_dispatch_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, siz
 void ternary_dispatch_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
 void ternary_dispatch_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
 
+/**
+ * Fusion operations dispatch (Phase 4.1)
+ * These eliminate intermediate arrays for performance
+ */
+void ternary_dispatch_fused_tnot_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+void ternary_dispatch_fused_tnot_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+void ternary_dispatch_fused_tnot_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+void ternary_dispatch_fused_tnot_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+
 // ============================================================================
 // Backend Initialization
 // ============================================================================

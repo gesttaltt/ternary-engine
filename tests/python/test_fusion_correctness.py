@@ -50,9 +50,12 @@ def test_fusion_correctness():
     tb.init()
 
     # Test on all backends that support fusion
+    # TERNARY_CAP_FUSION = 0x0020 from backend_interface.h
+    TERNARY_CAP_FUSION = 0x0020
+
     backends_to_test = []
     for backend in tb.list_backends():
-        if 'FUSION' in backend.capabilities:
+        if backend.capabilities & TERNARY_CAP_FUSION:
             backends_to_test.append(backend.name)
 
     print(f"\nBackends with fusion support: {backends_to_test}")

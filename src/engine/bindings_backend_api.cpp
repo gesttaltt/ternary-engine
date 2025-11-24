@@ -237,6 +237,90 @@ py::array_t<uint8_t> dispatch_tmin(py::array_t<uint8_t> A, py::array_t<uint8_t> 
 }
 
 // ============================================================================
+// Fusion Operations Dispatch (Phase 4.1)
+// ============================================================================
+
+/**
+ * Dispatch fused tnot(tadd(a, b)) through backend system
+ */
+py::array_t<uint8_t> dispatch_fused_tnot_tadd(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    auto a = A.unchecked<1>();
+    auto b = B.unchecked<1>();
+    py::ssize_t n = A.size();
+
+    if (A.size() != B.size()) {
+        throw std::invalid_argument("fused_tnot_tadd: array size mismatch");
+    }
+
+    py::array_t<uint8_t> result(n);
+    auto r = result.mutable_unchecked<1>();
+
+    ternary_dispatch_fused_tnot_tadd(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+
+    return result;
+}
+
+/**
+ * Dispatch fused tnot(tmul(a, b)) through backend system
+ */
+py::array_t<uint8_t> dispatch_fused_tnot_tmul(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    auto a = A.unchecked<1>();
+    auto b = B.unchecked<1>();
+    py::ssize_t n = A.size();
+
+    if (A.size() != B.size()) {
+        throw std::invalid_argument("fused_tnot_tmul: array size mismatch");
+    }
+
+    py::array_t<uint8_t> result(n);
+    auto r = result.mutable_unchecked<1>();
+
+    ternary_dispatch_fused_tnot_tmul(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+
+    return result;
+}
+
+/**
+ * Dispatch fused tnot(tmin(a, b)) through backend system
+ */
+py::array_t<uint8_t> dispatch_fused_tnot_tmin(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    auto a = A.unchecked<1>();
+    auto b = B.unchecked<1>();
+    py::ssize_t n = A.size();
+
+    if (A.size() != B.size()) {
+        throw std::invalid_argument("fused_tnot_tmin: array size mismatch");
+    }
+
+    py::array_t<uint8_t> result(n);
+    auto r = result.mutable_unchecked<1>();
+
+    ternary_dispatch_fused_tnot_tmin(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+
+    return result;
+}
+
+/**
+ * Dispatch fused tnot(tmax(a, b)) through backend system
+ */
+py::array_t<uint8_t> dispatch_fused_tnot_tmax(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
+    auto a = A.unchecked<1>();
+    auto b = B.unchecked<1>();
+    py::ssize_t n = A.size();
+
+    if (A.size() != B.size()) {
+        throw std::invalid_argument("fused_tnot_tmax: array size mismatch");
+    }
+
+    py::array_t<uint8_t> result(n);
+    auto r = result.mutable_unchecked<1>();
+
+    ternary_dispatch_fused_tnot_tmax(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+
+    return result;
+}
+
+// ============================================================================
 // Module Definition
 // ============================================================================
 
@@ -295,6 +379,23 @@ PYBIND11_MODULE(ternary_backend, m) {
     m.def("tmin", &dispatch_tmin,
           py::arg("a"), py::arg("b"),
           "Ternary MIN via backend dispatch");
+
+    // Fusion operations (Phase 4.1)
+    m.def("fused_tnot_tadd", &dispatch_fused_tnot_tadd,
+          py::arg("a"), py::arg("b"),
+          "Fused tnot(tadd(a, b)) - eliminates intermediate array");
+
+    m.def("fused_tnot_tmul", &dispatch_fused_tnot_tmul,
+          py::arg("a"), py::arg("b"),
+          "Fused tnot(tmul(a, b)) - eliminates intermediate array");
+
+    m.def("fused_tnot_tmin", &dispatch_fused_tnot_tmin,
+          py::arg("a"), py::arg("b"),
+          "Fused tnot(tmin(a, b)) - eliminates intermediate array");
+
+    m.def("fused_tnot_tmax", &dispatch_fused_tnot_tmax,
+          py::arg("a"), py::arg("b"),
+          "Fused tnot(tmax(a, b)) - eliminates intermediate array");
 
     // BackendInfo class for Python
     py::class_<BackendInfoPython>(m, "BackendInfo")
