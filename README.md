@@ -3,8 +3,8 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![C++ Standard](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
-[![Performance](https://img.shields.io/badge/peak-35042%20Mops/s-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
-[![Speedup](https://img.shields.io/badge/speedup-8234x%20avg-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
+[![Performance](https://img.shields.io/badge/peak-28585%20Mops/s-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
+[![Speedup](https://img.shields.io/badge/speedup-6976x%20avg-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
 [![Platform](https://img.shields.io/badge/production-Windows%20x64-blue)](https://github.com/gesttaltt/ternary-engine#production-status)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -12,12 +12,12 @@ Production-grade balanced ternary arithmetic library with AVX2 SIMD vectorizatio
 
 ## Production Status
 
-✅ **Windows x64:** Production-ready (validated 2025-11-23)
+✅ **Windows x64:** Production-ready (validated 2025-11-24)
 ⚠️ **Linux/macOS:** Experimental only (builds untested, CI disabled)
 
 ## Overview
 
-Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **peak throughput of 35,042 Mops/s** and **8,234× average speedup** vs pure Python implementations (validated 2025-11-23, Windows x64).
+Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **peak throughput of 28,585 Mops/s** and **6,976× average speedup** vs pure Python implementations (validated 2025-11-24, Windows x64).
 
 **Balanced Ternary**: Three-valued logic system using {-1, 0, +1} with symmetric negative/positive representation. Applications include fractal generation, modulo-3 arithmetic, and specialized computational workflows. **Future potential**: Computer vision edge detection (experimental POC in development - see roadmap).
 
