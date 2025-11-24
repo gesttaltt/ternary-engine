@@ -377,8 +377,8 @@ We've been solving the **wrong problem**:
 - `models/tritnet/tritnet_tnot_history.json` - Complete training history (5000 epochs)
 
 ### Code
-- `scripts/tritnet/tritnet_model.py` - Added TritNetUnaryDeep class with skip connections
-- `scripts/tritnet/train_tritnet.py` - Added architecture/loss selection parameters
+- `models/tritnet/src/tritnet_model.py` - Added TritNetUnaryDeep class with skip connections
+- `models/tritnet/src/train_tritnet.py` - Added architecture/loss selection parameters
 
 ---
 

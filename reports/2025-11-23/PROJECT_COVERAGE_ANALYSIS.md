@@ -149,7 +149,7 @@ tests/
 #### 4. TritNet Scripts (5 files)
 
 ```
-scripts/tritnet/
+models/tritnet/src/
 ├── generate_truth_tables.py     ✓ Truth table generation
 ├── ternary_layers.py            ✓ TritNet layers
 ├── train_tritnet.py             ✓ Training script
@@ -528,7 +528,7 @@ ternary_engine/experimental/dense243/
 
 **2. TritNet Components** (Priority: HIGH):
 ```
-scripts/tritnet/
+models/tritnet/src/
 ├── generate_truth_tables.py     ✗ No performance benchmarks
 ├── train_tritnet.py             ✗ No training performance tracking
 ├── tritnet_model.py             ✗ No inference benchmarks

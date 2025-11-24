@@ -361,10 +361,10 @@ final = sign(lut_result + nn_correction)
 - Best result: 25.93% accuracy (hidden_size=8, ternary weights)
 
 ### Code Artifacts
-- `scripts/tritnet/ternary_layers.py` - Custom ternary layers (tested ✓)
-- `scripts/tritnet/tritnet_model.py` - Model architectures (tested ✓)
-- `scripts/tritnet/train_tritnet.py` - Training pipeline (tested ✓)
-- `scripts/run_tritnet.py` - Orchestration script (tested ✓)
+- `models/tritnet/src/ternary_layers.py` - Custom ternary layers (tested ✓)
+- `models/tritnet/src/tritnet_model.py` - Model architectures (tested ✓)
+- `models/tritnet/src/train_tritnet.py` - Training pipeline (tested ✓)
+- `models/tritnet/run_tritnet.py` - Orchestration script (tested ✓)
 
 ---
 

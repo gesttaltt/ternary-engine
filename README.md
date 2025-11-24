@@ -537,7 +537,7 @@ pip install torch transformers
 **TritNet (Neural Network-Based Arithmetic):** ⭐ New!
 - **[docs/TRITNET_ROADMAP.md](docs/TRITNET_ROADMAP.md)** - Implementation roadmap and technical architecture
 - **[docs/TRITNET_VISION.md](docs/TRITNET_VISION.md)** - Long-term vision and research goals
-- **[scripts/tritnet/](scripts/tritnet/)** - Training scripts and model definitions
+- **[models/tritnet/src/](models/tritnet/src/)** - Training scripts and model definitions
 
 **Competitive Benchmarking:** ⭐ New!
 - **[COMPETITIVE_ANALYSIS.md](COMPETITIVE_ANALYSIS.md)** - Complete competitive analysis, gap assessment, and viability evaluation ⭐

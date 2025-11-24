@@ -180,7 +180,7 @@ assert result[0] == expected_output, "Truth table mismatch!"
 ## Generation Details
 
 ### Generator Script
-- **Location:** `scripts/tritnet/generate_truth_tables.py`
+- **Location:** `models/tritnet/src/generate_truth_tables.py`
 - **Version:** 1.0.0
 - **Module Used:** `ternary_dense243_module` v1.0.0
 - **Backend:** LUT (lookup table based)
@@ -257,7 +257,7 @@ See `docs/TRITNET_ROADMAP.md` for complete implementation plan.
 
 - **TritNet Roadmap:** `docs/TRITNET_ROADMAP.md`
 - **Dense243 Module:** `ternary_engine/experimental/dense243/`
-- **Generator Script:** `scripts/tritnet/generate_truth_tables.py`
+- **Generator Script:** `models/tritnet/src/generate_truth_tables.py`
 - **BitNet Repository:** https://github.com/microsoft/BitNet
 - **BitNet Paper:** https://arxiv.org/abs/2310.11453
 
@@ -288,7 +288,7 @@ for op in ['tadd', 'tmul', 'tmin', 'tmax', 'tnot']:
 "
 
 # Verify sample correctness
-python scripts/tritnet/generate_truth_tables.py --help
+python models/tritnet/src/generate_truth_tables.py --help
 ```
 
 ---
