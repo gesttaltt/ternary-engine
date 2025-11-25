@@ -210,6 +210,25 @@ This saturation breaks XOR decomposability because:
 
 ---
 
+## Future Work: Encoding Optimization Using Unused Bits
+
+**Research Direction:** Explore encoding schemes that utilize the unused bit pattern (0b11) in our 2-bit representation for computational carries, signs, and intermediate states.
+
+**Concept:**
+- Current: 0b00=-1, 0b01=0, 0b10=+1, 0b11=unused
+- Proposed: Use 0b11 for sign/carry encoding, similar to dense243 packing (5 trits/byte)
+- Implementation would use "temporal harness" through hardware clock cycles to deterministically encode computational carries
+- Would affect not only XOR decomposition but also matrix multiplication operations
+
+**Impact:**
+- Potential for true XOR-decomposability with different encoding
+- Could enable higher arithmetic packing density
+- Requires careful design of carry propagation through temporal stages
+
+**Status:** Deferred for future research - current ADD-based approach is working and proven.
+
+---
+
 ## Conclusions
 
 ### Phase 3.2 Status: ✅ COMPLETE
