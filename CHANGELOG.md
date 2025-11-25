@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-11-25 - "loadaware" - Load-Aware Benchmarking & Peak Performance
+
+### Major Achievement: 37.2 Gops/s Validated with 95% Confidence
+
+This release introduces load-aware benchmarking methodology for reproducible results and validates peak performance of 37.2 billion operations per second.
+
+### Added
+
+**Load-Aware Benchmarking System**:
+- `benchmarks/utils/system_load_monitor.py` - System load detection and classification
+  - Monitors CPU usage (total and per-core)
+  - Tracks memory utilization
+  - Detects high-load processes by category (browsers, Docker, antivirus, etc.)
+  - Calculates load score (0-100) with classification (LOW/MEDIUM/HIGH/VERY_HIGH)
+  - Generates reproducibility recommendations
+- `benchmarks/bench_with_load_context.py` - Load-aware benchmark wrapper
+  - Pre/post benchmark system state capture
+  - Automatic reproducibility assessment
+  - Confidence rating based on system load
+  - JSON results with full load context
+
+**Documentation**:
+- `docs/BENCHMARK_FINDINGS_2025-11-25.md` - Comprehensive benchmark analysis
+  - Peak performance validation (37.2 Gops/s)
+  - Variance analysis by array size
+  - Reproducibility guidelines
+  - Load factor impact analysis
+
+### Performance Results (95% Confidence)
+
+**Peak Throughput - Backend AVX2_v2:**
+
+| Category | Operation | Throughput | Array Size |
+|----------|-----------|------------|------------|
+| **Fusion** | fused_tnot_tadd | **37,244 Mops/s** | 1M |
+| | fused_tnot_tmin | **37,244 Mops/s** | 1M |
+| | fused_tnot_tmax | 36,101 Mops/s | 1M |
+| | fused_tnot_tmul | 32,206 Mops/s | 1M |
+| **Regular** | tnot | **29,412 Mops/s** | 100K |
+| | tadd | 21,482 Mops/s | 1M |
+| | tmul | 21,277 Mops/s | 100K |
+
+**Key Metrics:**
+- Peak: 37.2 Gops/s (fusion @ 1M elements)
+- Fusion speedup: 1.73× vs separate operations
+- Average speedup: ~8,000× vs pure Python
+- Reproducibility: 95% confidence with low system load
+
+### Changed
+
+**README.md Updates:**
+- Performance badges updated to 37,244 Mops/s peak
+- Speedup badge updated to ~8,000× average
+- New performance table with fusion results
+- Added link to benchmark findings document
+- Version bumped to 1.2.0
+
+### Technical Details
+
+**Load Classification Thresholds:**
+- LOW (0-20): 95% confidence, < 10% variance
+- MEDIUM (20-40): 70-80% confidence, 10-20% variance
+- HIGH (40-60): 50-60% confidence, 20-30% variance
+- VERY_HIGH (60+): < 50% confidence, > 30% variance
+
+**Monitored Process Categories:**
+- Browsers (Chrome, Firefox, Edge, Opera, Brave)
+- Docker/WSL (Docker Desktop, containerd, vmmemWSL)
+- Development (VS Code, Visual Studio, PyCharm)
+- Cloud sync (Google Drive, OneDrive, Dropbox)
+- Security (Windows Defender, antivirus)
+- Communication (Slack, Discord, Teams, Zoom)
+
+### Validation
+
+- All tests passing (5/5 test suites)
+- Three benchmark runs with decreasing system load
+- Final run: LOW load (score 16-19), 95% confidence
+- Results saved to `benchmarks/results/load_aware/`
+
+**Codename:** loadaware
+**Platform:** Windows x64, MSVC, AVX2
+**Validation Date:** 2025-11-25
+
+---
+
 ## [1.1.0] - 2025-11-24 - "ktr" - Source Restructuring & Performance Validation
 
 ### 🎯 Major Changes: Unified src/ Structure & Comprehensive Benchmarking

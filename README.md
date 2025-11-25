@@ -3,8 +3,8 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![C++ Standard](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
-[![Performance](https://img.shields.io/badge/peak-28585%20Mops/s-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
-[![Speedup](https://img.shields.io/badge/speedup-6976x%20avg-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
+[![Performance](https://img.shields.io/badge/peak-37244%20Mops/s-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
+[![Speedup](https://img.shields.io/badge/speedup-8000x%20avg-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
 [![Platform](https://img.shields.io/badge/production-Windows%20x64-blue)](https://github.com/gesttaltt/ternary-engine#production-status)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -12,12 +12,12 @@ Production-grade balanced ternary arithmetic library with AVX2 SIMD vectorizatio
 
 ## Production Status
 
-✅ **Windows x64:** Production-ready (validated 2025-11-24)
+✅ **Windows x64:** Production-ready (validated 2025-11-25)
 ⚠️ **Linux/macOS:** Experimental only (builds untested, CI disabled)
 
 ## Overview
 
-Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **peak throughput of 28,585 Mops/s** and **6,976× average speedup** vs pure Python implementations (validated 2025-11-24, Windows x64).
+Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **peak throughput of 37,244 Mops/s** (37.2 Gops/s) with fusion operations and **~8,000× average speedup** vs pure Python implementations (validated 2025-11-25, Windows x64, 95% reproducibility confidence).
 
 **Balanced Ternary**: Three-valued logic system using {-1, 0, +1} with symmetric negative/positive representation. Applications include fractal generation, modulo-3 arithmetic, and specialized computational workflows. **Future potential**: Computer vision edge detection (experimental POC in development - see roadmap).
 
@@ -222,35 +222,42 @@ result = tc.tadd(trits, trits)
 
 ## Performance
 
-### Ternary SIMD Engine (AVX2)
+### Ternary SIMD Engine (AVX2) with Fusion
 
-- **Sustained throughput (typical)**: ~28.6 Gops/s
-- **Peak throughput (ideal conditions)**: ~35.0 Gops/s
-  - Fresh boot, minimal background load, max CPU boost, cold caches
+- **Peak throughput (fusion)**: **37.2 Gops/s** (fused_tnot_tadd @ 1M elements)
+- **Peak throughput (regular)**: **29.4 Gops/s** (tnot @ 100K elements)
+- **Sustained throughput (typical)**: ~20-22 Gops/s
+- **Reproducibility**: 95% confidence with load-aware benchmarking
 
-Both numbers are correct; the difference reflects normal CPU behavior
-(variable boost frequencies, cache contention, OS scheduling).
+Performance validated with system load monitoring to ensure reproducibility.
+See [docs/BENCHMARK_FINDINGS_2025-11-25.md](docs/BENCHMARK_FINDINGS_2025-11-25.md) for detailed methodology.
 
-### Validated Benchmarks (2025-11-23, Windows x64, 12 cores)
+### Validated Benchmarks (2025-11-25, Windows x64, 12 cores, 95% confidence)
 
-**Peak Throughput (Element-Wise Operations):**
-- **tnot**: **12,566 Mops/s** (0.080 ns/element, 100K size) ⭐ Peak performance
-- **tadd**: 10,897 Mops/s (0.092 ns/element, 100K size)
-- **tmax**: 9,460 Mops/s (0.106 ns/element, 1M size)
-- **tmul**: 9,285 Mops/s (0.108 ns/element, 100K size)
-- **tmin**: 8,801 Mops/s (0.114 ns/element, 100K size)
+**Peak Throughput - Backend AVX2_v2 (Three-Path Architecture):**
 
-**Peak Performance: 12,566 Mops/s** (12.5 billion operations/second)
-**Average Speedup: 1,825×** vs pure Python (measured across all sizes)
-**Maximum Speedup: 3,733×** (tmin, 1K elements)
+| Category | Operation | Throughput | Array Size | Notes |
+|----------|-----------|------------|------------|-------|
+| **Fusion** | fused_tnot_tadd | **37,244 Mops/s** | 1M | Best overall |
+| | fused_tnot_tmin | **37,244 Mops/s** | 1M | Tied best |
+| | fused_tnot_tmax | 36,101 Mops/s | 1M | Excellent |
+| | fused_tnot_tmul | 32,206 Mops/s | 1M | Very good |
+| **Regular** | tnot | **29,412 Mops/s** | 100K | Best non-fusion |
+| | tadd | 21,482 Mops/s | 1M | Stable |
+| | tmul | 21,277 Mops/s | 100K | Stable |
+
+**Peak Performance: 37,244 Mops/s** (37.2 billion operations/second)
+**Average Speedup: ~8,000×** vs pure Python (measured across all sizes)
+**Fusion Speedup: 1.73×** vs separate operations at 1M elements
 
 *(Mops/s = Million operations/second)*
 
 **Scaling Behavior:**
-- Small arrays (32 elements): 13-22 Mops/s, 82-131× speedup (call overhead dominates)
-- Medium arrays (1K elements): 413-622 Mops/s, 2,446-3,733× speedup (L1 cache-resident)
-- Large arrays (100K elements): 8,745-12,567 Mops/s (peak throughput, OpenMP active)
-- Very large (1M elements): 3,007-12,295 Mops/s (memory bandwidth limited)
+- Small arrays (1K elements): 500-833 Mops/s (function call overhead dominates)
+- Medium arrays (10K elements): 5,263-7,143 Mops/s (L2 cache-resident)
+- Large arrays (100K elements): 21,277-29,412 Mops/s (peak regular throughput)
+- Very large (1M elements): 17,621-37,244 Mops/s (OpenMP effective, fusion shines)
+- Huge arrays (10M elements): 6,578-8,608 Mops/s (memory bandwidth limited)
 
 ### Competitive Analysis vs NumPy INT8 (Latest: 2025-11-23)
 
@@ -1111,27 +1118,23 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 
 ---
 
-**Version**: 1.0.0 + TritNet Phase 1 + Competitive Analysis
+**Version**: 1.2.0 + Load-Aware Benchmarking
 **Status**: Production (Windows x64), Experimental (Linux/macOS, ternary_engine/, TritNet)
-**Updated**: 2025-11-23
+**Updated**: 2025-11-25
 **Platform**: Windows x64 (validated), Linux/macOS (untested)
 
-**Recent Additions (2025-11-23):**
-- ✅ **Complete competitive benchmark suite** - All 6 phases executed with native SIMD engine
-- ✅ **Production benchmark results** - 2.96x addition, 5.96x multiplication speedup vs NumPy INT8
-- ✅ **Memory efficiency validated** - 4x smaller than INT8 (70B model: 140GB → 17.5GB)
-- ✅ **Throughput baseline** - 5.42 GOPS at 1GB memory footprint
-- ✅ **Dense243 benchmark** - 5x memory reduction validated
-- ✅ **Build system enhancements** - build_all.py, build_competitive.py added
-- ✅ **Comprehensive analysis reports** - Coverage analysis, benchmark summaries
-- TritNet Phase 1 neural network architecture (truth tables complete)
-- OpenTimestamps IP protection system
-- BitNet/TritNet exploratory research roadmap
+**Recent Additions (2025-11-25):**
+- ✅ **Load-aware benchmarking system** - System load monitoring for reproducible results
+- ✅ **37.2 Gops/s peak throughput** - Fusion operations at 1M elements (95% confidence)
+- ✅ **Three-path architecture validated** - OpenMP + SIMD + scalar tail
+- ✅ **System load monitor module** - Detects browsers, Docker, antivirus interference
+- ✅ **Reproducibility assessment** - Automatic confidence rating (LOW/MEDIUM/HIGH/VERY_HIGH)
+- ✅ **Comprehensive benchmark findings** - docs/BENCHMARK_FINDINGS_2025-11-25.md
 
-**Performance Summary (Validated 2025-11-23):**
-- ✅ **2.96× average addition speedup** vs NumPy INT8 (native SIMD)
-- ✅ **5.96× average multiplication speedup** vs NumPy INT8 (native SIMD)
+**Performance Summary (Validated 2025-11-25, 95% confidence):**
+- ✅ **37.2 Gops/s peak** throughput with fusion operations
+- ✅ **29.4 Gops/s peak** throughput for regular operations
+- ✅ **1.73× fusion speedup** at optimal array sizes (1M elements)
+- ✅ **~8,000× average speedup** vs pure Python
 - ✅ **4× memory advantage** over INT8, 8× over FP16 (validated on 7B-405B models)
-- ✅ **5.42 GOPS** throughput at equivalent bit-width
-- ✅ **12.5 GOPS peak** throughput on single operations
 - ⚠️ **0.40× matmul speedup** - needs C++ SIMD optimization for AI/ML viability

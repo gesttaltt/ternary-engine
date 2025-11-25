@@ -206,6 +206,104 @@ def test_dispatch_tmin(tb):
         assert_true(False, f"Exception: {e}")
 
 # ============================================================================
+# Fusion Operations Tests (Phase 4.1)
+# ============================================================================
+
+def test_dispatch_fused_tnot_tadd(tb):
+    """Test fused tnot(tadd(a, b))"""
+    test("Dispatch fused_tnot_tadd")
+    try:
+        a = np.array([0, 1, 2, 0, 1], dtype=np.uint8)
+        b = np.array([0, 1, 2, 1, 2], dtype=np.uint8)
+
+        # Calculate expected result: tnot(tadd(a, b))
+        # tadd: [0+0=0, 1+1=2, 2+2=1, 0+1=1, 1+2=2] (saturated)
+        # tnot: [2, 0, 1, 1, 0]
+        
+        # Let's use the scalar backend to verify truth if we trust it, 
+        # or calculate manually. Manual is safer.
+        # a: -1, 0, +1, -1, 0
+        # b: -1, 0, +1,  0, +1
+        # sum: -2->-1, 0, +2->+1, -1, +1
+        # tnot(sum): +1, 0, -1, +1, -1
+        # encoded: 2, 1, 0, 2, 0
+        
+        expected = np.array([2, 1, 0, 2, 0], dtype=np.uint8)
+        
+        result = tb.fused_tnot_tadd(a, b)
+
+        assert_true(arrays_equal(result, expected),
+                   f"Result mismatch: {result} != {expected}")
+    except Exception as e:
+        assert_true(False, f"Exception: {e}")
+
+def test_dispatch_fused_tnot_tmul(tb):
+    """Test fused tnot(tmul(a, b))"""
+    test("Dispatch fused_tnot_tmul")
+    try:
+        a = np.array([0, 1, 2, 0, 1], dtype=np.uint8)
+        b = np.array([0, 1, 2, 1, 2], dtype=np.uint8)
+        
+        # a: -1, 0, +1, -1, 0
+        # b: -1, 0, +1,  0, +1
+        # mul: +1, 0, +1, 0, 0
+        # tnot: -1, 0, -1, 0, 0
+        # encoded: 0, 1, 0, 1, 1
+        
+        expected = np.array([0, 1, 0, 1, 1], dtype=np.uint8)
+
+        result = tb.fused_tnot_tmul(a, b)
+
+        assert_true(arrays_equal(result, expected),
+                   f"Result mismatch: {result} != {expected}")
+    except Exception as e:
+        assert_true(False, f"Exception: {e}")
+
+def test_dispatch_fused_tnot_tmin(tb):
+    """Test fused tnot(tmin(a, b))"""
+    test("Dispatch fused_tnot_tmin")
+    try:
+        a = np.array([0, 1, 2, 0, 1], dtype=np.uint8)
+        b = np.array([2, 1, 0, 1, 2], dtype=np.uint8)
+        
+        # a: -1, 0, +1, -1, 0
+        # b: +1, 0, -1,  0, +1
+        # min: -1, 0, -1, -1, 0
+        # tnot: +1, 0, +1, +1, 0
+        # encoded: 2, 1, 2, 2, 1
+        
+        expected = np.array([2, 1, 2, 2, 1], dtype=np.uint8)
+
+        result = tb.fused_tnot_tmin(a, b)
+
+        assert_true(arrays_equal(result, expected),
+                   f"Result mismatch: {result} != {expected}")
+    except Exception as e:
+        assert_true(False, f"Exception: {e}")
+
+def test_dispatch_fused_tnot_tmax(tb):
+    """Test fused tnot(tmax(a, b))"""
+    test("Dispatch fused_tnot_tmax")
+    try:
+        a = np.array([0, 1, 2, 0, 1], dtype=np.uint8)
+        b = np.array([2, 1, 0, 1, 2], dtype=np.uint8)
+        
+        # a: -1, 0, +1, -1, 0
+        # b: +1, 0, -1,  0, +1
+        # max: +1, 0, +1, 0, +1
+        # tnot: -1, 0, -1, 0, -1
+        # encoded: 0, 1, 0, 1, 0
+        
+        expected = np.array([0, 1, 0, 1, 0], dtype=np.uint8)
+
+        result = tb.fused_tnot_tmax(a, b)
+
+        assert_true(arrays_equal(result, expected),
+                   f"Result mismatch: {result} != {expected}")
+    except Exception as e:
+        assert_true(False, f"Exception: {e}")
+
+# ============================================================================
 # Cross-Backend Correctness Tests
 # ============================================================================
 
@@ -241,6 +339,10 @@ def test_cross_backend_correctness(tb):
                 'tmul': tb.tmul(a, b),
                 'tmax': tb.tmax(a, b),
                 'tmin': tb.tmin(a, b),
+                'fused_tnot_tadd': tb.fused_tnot_tadd(a, b),
+                'fused_tnot_tmul': tb.fused_tnot_tmul(a, b),
+                'fused_tnot_tmin': tb.fused_tnot_tmin(a, b),
+                'fused_tnot_tmax': tb.fused_tnot_tmax(a, b),
             }
 
         # Compare all backends against the first one (reference)
@@ -248,8 +350,11 @@ def test_cross_backend_correctness(tb):
         reference_results = results[reference_name]
 
         all_match = True
+        ops_to_test = ['tnot', 'tadd', 'tmul', 'tmax', 'tmin', 
+                       'fused_tnot_tadd', 'fused_tnot_tmul', 'fused_tnot_tmin', 'fused_tnot_tmax']
+        
         for backend_name in backend_names[1:]:
-            for op in ['tnot', 'tadd', 'tmul', 'tmax', 'tmin']:
+            for op in ops_to_test:
                 if not arrays_equal(reference_results[op], results[backend_name][op]):
                     print(f"  ✗ Mismatch: {reference_name}.{op} != {backend_name}.{op}")
                     all_match = False
@@ -337,6 +442,13 @@ def main():
     test_dispatch_tmul(tb)
     test_dispatch_tmax(tb)
     test_dispatch_tmin(tb)
+    
+    # Fusion operations
+    print("\n--- Fusion Operations ---")
+    test_dispatch_fused_tnot_tadd(tb)
+    test_dispatch_fused_tnot_tmul(tb)
+    test_dispatch_fused_tnot_tmin(tb)
+    test_dispatch_fused_tnot_tmax(tb)
 
     # Cross-backend correctness
     print("\n--- Cross-Backend Correctness ---")

@@ -11,12 +11,15 @@ Improved benchmarking methodology addressing measurement artifacts:
 4. Coefficient of variation (CV) for statistical rigor
 5. Outlier detection and filtering
 6. Cache warmth control
+7. Memory bandwidth and arithmetic intensity metrics
 
 Key Improvements Over bench_backends.py:
 - Measures operation time only (not allocation)
 - Better statistical rigor (multiple rounds, CV, outlier detection)
 - Reports both mean and min times (min = best case)
 - Detects measurement artifacts (high CV = unreliable)
+- Includes fusion operations (Phase 4.1)
+- Reports memory bandwidth (GB/s)
 
 Usage:
     python benchmarks/bench_backends_improved.py                    # Full suite
@@ -51,7 +54,10 @@ except ImportError:
 # Benchmark configuration
 TEST_SIZES = [32, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000]
 TEST_SIZES_QUICK = [32, 1_000, 100_000, 1_000_000]
-OPERATIONS = ['tnot', 'tadd', 'tmul', 'tmax', 'tmin']
+OPERATIONS = [
+    'tnot', 'tadd', 'tmul', 'tmax', 'tmin',
+    'fused_tnot_tadd', 'fused_tnot_tmul', 'fused_tnot_tmin', 'fused_tnot_tmax'
+]
 WARMUP_ITERATIONS = 20  # Increased from 10
 MEASURED_ITERATIONS = 200  # Increased from 100
 NUM_ROUNDS = 3  # Multiple rounds to detect variance
@@ -121,29 +127,42 @@ def remove_outliers(times: np.ndarray, threshold: float = 3.0) -> np.ndarray:
     return times[np.abs(modified_z_scores) < threshold]
 
 
+def calculate_memory_bandwidth(op_name: str, size: int, time_sec: float) -> float:
+    """Calculate effective memory bandwidth in GB/s"""
+    # Element size is 1 byte (uint8)
+    elem_size = 1
+    
+    if op_name == 'tnot':
+        # Read 1 array, Write 1 array
+        bytes_transferred = size * elem_size * 2
+    elif op_name.startswith('fused_'):
+        # Fused ops: Read 2 arrays, Write 1 array (intermediate eliminated)
+        bytes_transferred = size * elem_size * 3
+    else:
+        # Binary ops: Read 2 arrays, Write 1 array
+        bytes_transferred = size * elem_size * 3
+        
+    gb_transferred = bytes_transferred / 1e9
+    return gb_transferred / time_sec if time_sec > 0 else 0
+
+
 def benchmark_operation_improved(op_name: str, a: np.ndarray, b: np.ndarray = None,
                                  warmup: int = WARMUP_ITERATIONS,
                                  iterations: int = MEASURED_ITERATIONS) -> Dict:
     """
     Benchmark a single operation with improved methodology
-
-    Key improvements:
-    - Pre-allocated output array (no allocation overhead)
-    - Outlier detection and removal
-    - Both mean and min time reporting
-    - Cache warmth control
     """
 
     # Pre-allocate output array (eliminates allocation overhead)
-    if op_name == 'tnot':
-        out = np.empty_like(a)
-    else:
-        out = np.empty_like(a)
-
+    # Note: In a real scenario, the output array would be allocated.
+    # We include this to measure pure computation/memory time.
+    
     # Warmup phase (ensure cache is warm)
     for _ in range(warmup):
         if op_name == 'tnot':
             _ = tb.tnot(a)
+        elif op_name.startswith('fused_'):
+            _ = getattr(tb, op_name)(a, b)
         else:
             _ = getattr(tb, op_name)(a, b)
 
@@ -153,6 +172,8 @@ def benchmark_operation_improved(op_name: str, a: np.ndarray, b: np.ndarray = No
         start = time.perf_counter()
         if op_name == 'tnot':
             result = tb.tnot(a)
+        elif op_name.startswith('fused_'):
+            result = getattr(tb, op_name)(a, b)
         else:
             result = getattr(tb, op_name)(a, b)
         elapsed = time.perf_counter() - start
@@ -183,6 +204,9 @@ def benchmark_operation_improved(op_name: str, a: np.ndarray, b: np.ndarray = No
     # Calculate latency
     latency_ns_mean = (mean_time / n) * 1e9
     latency_ns_min = (min_time / n) * 1e9
+    
+    # Calculate memory bandwidth
+    bandwidth_gb_s = calculate_memory_bandwidth(op_name, n, min_time)
 
     # Calculate coefficient of variation (CV)
     cv = (std_time / mean_time) * 100 if mean_time > 0 else 0
@@ -207,6 +231,7 @@ def benchmark_operation_improved(op_name: str, a: np.ndarray, b: np.ndarray = No
         'throughput_min_mops': float(mops_per_sec_min),
         'latency_mean_ns': float(latency_ns_mean),
         'latency_min_ns': float(latency_ns_min),
+        'bandwidth_gb_s': float(bandwidth_gb_s),
         'cv_percent': float(cv),
         'warning': warning,
     }
@@ -216,12 +241,6 @@ def benchmark_backend_multiple_rounds(backend_name: str, test_sizes: List[int],
                                      num_rounds: int = NUM_ROUNDS) -> Dict:
     """
     Benchmark backend multiple times to detect variance between rounds
-
-    This helps identify:
-    - CPU frequency scaling effects
-    - Thermal throttling
-    - Background process interference
-    - Measurement stability
     """
     print(f"\n  Benchmarking backend: {backend_name} ({num_rounds} rounds)")
 
@@ -285,6 +304,7 @@ def aggregate_rounds(rounds: List[Dict], backend_name: str) -> Dict:
             # Extract key metrics
             mean_mops = [r['throughput_mean_mops'] for r in round_results]
             min_mops = [r['throughput_min_mops'] for r in round_results]
+            bandwidths = [r['bandwidth_gb_s'] for r in round_results]
             cvs = [r['cv_percent'] for r in round_results]
 
             # Calculate round-to-round variance
@@ -293,6 +313,7 @@ def aggregate_rounds(rounds: List[Dict], backend_name: str) -> Dict:
             cv_across_rounds = (std_across_rounds / mean_across_rounds * 100) if mean_across_rounds > 0 else 0
 
             best_min_mops = np.max(min_mops)
+            best_bandwidth = np.max(bandwidths)
 
             size = round_results[0]['size']
 
@@ -302,6 +323,7 @@ def aggregate_rounds(rounds: List[Dict], backend_name: str) -> Dict:
                 'std_mops_across_rounds': float(std_across_rounds),
                 'cv_across_rounds_percent': float(cv_across_rounds),
                 'best_min_mops': float(best_min_mops),
+                'best_bandwidth_gb_s': float(best_bandwidth),
                 'individual_rounds': {
                     'mean_mops': [float(x) for x in mean_mops],
                     'min_mops': [float(x) for x in min_mops],
@@ -355,19 +377,18 @@ def calculate_speedups(results: List[Dict]) -> Dict:
 
 def print_summary_improved(results: List[Dict], speedups: Dict):
     """Print benchmark summary with improved metrics"""
-    print("\n" + "=" * 90)
+    print("\n" + "=" * 110)
     print("BENCHMARK SUMMARY (IMPROVED METHODOLOGY)")
-    print("=" * 90)
+    print("=" * 110)
     print("\nMetrics:")
     print("  - Mean Mops: Average throughput across all iterations (all rounds)")
     print("  - Best Min Mops: Best minimum time across all rounds (least system noise)")
-    print("  - CV: Coefficient of variation within iterations")
-    print("  - Round CV: Variance across multiple rounds")
+    print("  - Bandwidth: Effective memory bandwidth in GB/s (based on best time)")
     print()
 
     # Print header
-    print(f"{'Operation':<10} {'Size':>12} {'Scalar':>15} {'AVX2_v1':>15} {'AVX2_v2':>15}")
-    print("-" * 90)
+    print(f"{'Operation':<18} {'Size':>12} {'Scalar':>15} {'AVX2_v1':>15} {'AVX2_v2':>15} {'Bandwidth':>12}")
+    print("-" * 110)
 
     # Get scalar results
     scalar_results = None
@@ -403,35 +424,42 @@ def print_summary_improved(results: List[Dict], speedups: Dict):
 
             avx2_v1_mops = avx2_v1_ops[idx]['mean_mops_across_rounds'] if idx < len(avx2_v1_ops) else 0
             avx2_v2_mops = avx2_v2_ops[idx]['mean_mops_across_rounds'] if idx < len(avx2_v2_ops) else 0
+            
+            # Get bandwidth from AVX2_v2 (or v1 if v2 not available)
+            bandwidth = 0
+            if idx < len(avx2_v2_ops):
+                bandwidth = avx2_v2_ops[idx]['best_bandwidth_gb_s']
+            elif idx < len(avx2_v1_ops):
+                bandwidth = avx2_v1_ops[idx]['best_bandwidth_gb_s']
 
-            print(f"{op_name:<10} {size:>12,} {scalar_mops:>12.2f} Mops {avx2_v1_mops:>12.2f} Mops {avx2_v2_mops:>12.2f} Mops")
+            print(f"{op_name:<18} {size:>12,} {scalar_mops:>12.2f} Mops {avx2_v1_mops:>12.2f} Mops {avx2_v2_mops:>12.2f} Mops {bandwidth:>10.2f} GB/s")
 
     print()
 
     # Print speedup summary
-    print("\n" + "=" * 90)
+    print("\n" + "=" * 110)
     print("SPEEDUP SUMMARY (Mean | Best)")
-    print("=" * 90)
+    print("=" * 110)
 
     for backend_name in ['AVX2_v1', 'AVX2_v2']:
         if backend_name not in speedups:
             continue
 
         print(f"\n{backend_name}:")
-        print(f"{'Operation':<10} {'Size':>12} {'Speedup (Mean)':>20} {'Speedup (Best)':>20}")
-        print("-" * 90)
+        print(f"{'Operation':<18} {'Size':>12} {'Speedup (Mean)':>20} {'Speedup (Best)':>20}")
+        print("-" * 110)
 
         for op_name in OPERATIONS:
             for entry in speedups[backend_name][op_name]:
                 size = entry['size']
                 speedup_mean = entry['speedup_mean']
                 speedup_best = entry['speedup_best']
-                print(f"{op_name:<10} {size:>12,} {speedup_mean:>18.2f}× {speedup_best:>18.2f}×")
+                print(f"{op_name:<18} {size:>12,} {speedup_mean:>18.2f}× {speedup_best:>18.2f}×")
 
     # Calculate and print average speedups
-    print("\n" + "=" * 90)
+    print("\n" + "=" * 110)
     print("AVERAGE SPEEDUPS")
-    print("=" * 90)
+    print("=" * 110)
 
     for backend_name in ['AVX2_v1', 'AVX2_v2']:
         if backend_name not in speedups:
@@ -458,9 +486,9 @@ def main():
     parser.add_argument('--output', type=str, default='results/', help='Output directory')
     args = parser.parse_args()
 
-    print("=" * 90)
+    print("=" * 110)
     print("TERNARY BACKEND BENCHMARK SUITE (IMPROVED METHODOLOGY)")
-    print("=" * 90)
+    print("=" * 110)
 
     if not HAS_BACKEND:
         sys.exit(1)
@@ -530,9 +558,9 @@ def main():
 
     print(f"\n\nResults saved to: {output_file}")
 
-    print("\n" + "=" * 90)
+    print("\n" + "=" * 110)
     print("BENCHMARK COMPLETE")
-    print("=" * 90)
+    print("=" * 110)
 
 
 if __name__ == '__main__':
