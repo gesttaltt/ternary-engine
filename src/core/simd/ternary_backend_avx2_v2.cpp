@@ -27,7 +27,10 @@
 #include "../simd/ternary_cpu_detect.h"
 #include "../algebra/ternary_algebra.h"        // Scalar operations for fallback
 #include "../algebra/ternary_canonical_lut.h"  // Canonical LUTs
+#include "../config/optimization_config.h"      // OMP_THRESHOLD, STREAM_THRESHOLD, PREFETCH_DIST
 #include <immintrin.h>
+#include <xmmintrin.h>                         // _mm_prefetch
+#include <omp.h>                               // OpenMP parallelization
 #include <stdbool.h>
 #include <string.h>
 
@@ -58,6 +61,17 @@ static void init_canonical_luts(void) {
     // init_dual_shuffle_luts();  // TODO: Enable for additional performance
 
     g_canonical_luts_initialized = true;
+}
+
+// ============================================================================
+// Helper Functions for Three-Path Architecture
+// ============================================================================
+
+/**
+ * Check if pointer is 32-byte aligned (required for streaming stores)
+ */
+static inline bool is_aligned_32(const void* ptr) {
+    return (reinterpret_cast<uintptr_t>(ptr) & 31) == 0;
 }
 
 // ============================================================================
@@ -127,15 +141,51 @@ static void avx2_v2_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 
     size_t i = 0;
 
-    // Process 32 trits at a time with canonical indexing
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_canonical(va, vb, g_tadd_canonical_lut_256);
-        _mm256_storeu_si256((__m256i*)(dst + i), result);
+    // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
+    // Migrated from bindings_core_ops.cpp:process_binary_array
+    if (n >= OMP_THRESHOLD) {
+        size_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
+
+        #pragma omp parallel for schedule(guided, 4)
+        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            // OPT-PREFETCH: Hide memory latency
+            if (idx + PREFETCH_DIST < n_simd_blocks) {
+                _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
+                _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
+            }
+
+            // SIMD operation with canonical indexing
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + idx));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + idx));
+            __m256i result = binary_op_canonical(va, vb, g_tadd_canonical_lut_256);
+
+            // OPT-STREAM: Reduce cache pollution on large arrays
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(dst + idx), result);
+            } else {
+                _mm256_storeu_si256((__m256i*)(dst + idx), result);
+            }
+        }
+
+        // Memory fence after streaming stores
+        if (use_streaming) {
+            _mm_sfence();
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
+            __m256i result = binary_op_canonical(va, vb, g_tadd_canonical_lut_256);
+            _mm256_storeu_si256((__m256i*)(dst + i), result);
+        }
     }
 
-    // Scalar fallback for remainder
+    // PATH 3: Scalar tail
     for (; i < n; i++) {
         dst[i] = tadd(a[i], b[i]);
     }
