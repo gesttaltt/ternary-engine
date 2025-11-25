@@ -118,15 +118,46 @@ static void avx2_v2_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
     __m256i mask = _mm256_set1_epi8(0x03);
     size_t i = 0;
 
-    // Process 32 trits at a time
-    for (; i + 32 <= n; i += 32) {
-        __m256i a = _mm256_loadu_si256((const __m256i*)(src + i));
-        __m256i indices = _mm256_and_si256(a, mask);
-        __m256i result = _mm256_shuffle_epi8(g_tnot_canonical_lut_256, indices);
-        _mm256_storeu_si256((__m256i*)(dst + i), result);
+    // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
+    if (n >= OMP_THRESHOLD) {
+        size_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
+
+        #pragma omp parallel for schedule(guided, 4)
+        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            // Prefetch for unary operation (only one input)
+            if (idx + PREFETCH_DIST < n_simd_blocks) {
+                _mm_prefetch((const char*)(src + idx + PREFETCH_DIST), _MM_HINT_T0);
+            }
+
+            __m256i a = _mm256_loadu_si256((const __m256i*)(src + idx));
+            __m256i indices = _mm256_and_si256(a, mask);
+            __m256i result = _mm256_shuffle_epi8(g_tnot_canonical_lut_256, indices);
+
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(dst + idx), result);
+            } else {
+                _mm256_storeu_si256((__m256i*)(dst + idx), result);
+            }
+        }
+
+        if (use_streaming) {
+            _mm_sfence();
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i a = _mm256_loadu_si256((const __m256i*)(src + i));
+            __m256i indices = _mm256_and_si256(a, mask);
+            __m256i result = _mm256_shuffle_epi8(g_tnot_canonical_lut_256, indices);
+            _mm256_storeu_si256((__m256i*)(dst + i), result);
+        }
     }
 
-    // Handle remaining elements with scalar fallback
+    // PATH 3: Scalar tail
     for (; i < n; i++) {
         dst[i] = tnot(src[i]);
     }
@@ -196,13 +227,46 @@ static void avx2_v2_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 
     size_t i = 0;
 
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_canonical(va, vb, g_tmul_canonical_lut_256);
-        _mm256_storeu_si256((__m256i*)(dst + i), result);
+    // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
+    if (n >= OMP_THRESHOLD) {
+        size_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
+
+        #pragma omp parallel for schedule(guided, 4)
+        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            if (idx + PREFETCH_DIST < n_simd_blocks) {
+                _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
+                _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
+            }
+
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + idx));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + idx));
+            __m256i result = binary_op_canonical(va, vb, g_tmul_canonical_lut_256);
+
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(dst + idx), result);
+            } else {
+                _mm256_storeu_si256((__m256i*)(dst + idx), result);
+            }
+        }
+
+        if (use_streaming) {
+            _mm_sfence();
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
+            __m256i result = binary_op_canonical(va, vb, g_tmul_canonical_lut_256);
+            _mm256_storeu_si256((__m256i*)(dst + i), result);
+        }
     }
 
+    // PATH 3: Scalar tail
     for (; i < n; i++) {
         dst[i] = tmul(a[i], b[i]);
     }
@@ -213,13 +277,46 @@ static void avx2_v2_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 
     size_t i = 0;
 
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_canonical(va, vb, g_tmax_canonical_lut_256);
-        _mm256_storeu_si256((__m256i*)(dst + i), result);
+    // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
+    if (n >= OMP_THRESHOLD) {
+        size_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
+
+        #pragma omp parallel for schedule(guided, 4)
+        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            if (idx + PREFETCH_DIST < n_simd_blocks) {
+                _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
+                _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
+            }
+
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + idx));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + idx));
+            __m256i result = binary_op_canonical(va, vb, g_tmax_canonical_lut_256);
+
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(dst + idx), result);
+            } else {
+                _mm256_storeu_si256((__m256i*)(dst + idx), result);
+            }
+        }
+
+        if (use_streaming) {
+            _mm_sfence();
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
+            __m256i result = binary_op_canonical(va, vb, g_tmax_canonical_lut_256);
+            _mm256_storeu_si256((__m256i*)(dst + i), result);
+        }
     }
 
+    // PATH 3: Scalar tail
     for (; i < n; i++) {
         dst[i] = tmax(a[i], b[i]);
     }
@@ -230,13 +327,46 @@ static void avx2_v2_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 
     size_t i = 0;
 
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = binary_op_canonical(va, vb, g_tmin_canonical_lut_256);
-        _mm256_storeu_si256((__m256i*)(dst + i), result);
+    // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
+    if (n >= OMP_THRESHOLD) {
+        size_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
+
+        #pragma omp parallel for schedule(guided, 4)
+        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            if (idx + PREFETCH_DIST < n_simd_blocks) {
+                _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
+                _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
+            }
+
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + idx));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + idx));
+            __m256i result = binary_op_canonical(va, vb, g_tmin_canonical_lut_256);
+
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(dst + idx), result);
+            } else {
+                _mm256_storeu_si256((__m256i*)(dst + idx), result);
+            }
+        }
+
+        if (use_streaming) {
+            _mm_sfence();
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
+            __m256i result = binary_op_canonical(va, vb, g_tmin_canonical_lut_256);
+            _mm256_storeu_si256((__m256i*)(dst + i), result);
+        }
     }
 
+    // PATH 3: Scalar tail
     for (; i < n; i++) {
         dst[i] = tmin(a[i], b[i]);
     }
@@ -282,15 +412,46 @@ static void avx2_v2_tadd_dual_shuffle(uint8_t* dst, const uint8_t* a, const uint
 static void avx2_v2_fused_tnot_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     size_t i = 0;
 
-    // Process 32 trits at a time with SIMD fusion
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = fused_tnot_tadd_simd<false>(va, vb);  // No sanitization needed
-        _mm256_storeu_si256((__m256i*)(dst + i), result);
+    // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
+    if (n >= OMP_THRESHOLD) {
+        size_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
+
+        #pragma omp parallel for schedule(guided, 4)
+        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            if (idx + PREFETCH_DIST < n_simd_blocks) {
+                _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
+                _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
+            }
+
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + idx));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + idx));
+            __m256i result = fused_tnot_tadd_simd<false>(va, vb);
+
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(dst + idx), result);
+            } else {
+                _mm256_storeu_si256((__m256i*)(dst + idx), result);
+            }
+        }
+
+        if (use_streaming) {
+            _mm_sfence();
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
+            __m256i result = fused_tnot_tadd_simd<false>(va, vb);
+            _mm256_storeu_si256((__m256i*)(dst + i), result);
+        }
     }
 
-    // Scalar fallback for remainder
+    // PATH 3: Scalar tail
     for (; i < n; i++) {
         dst[i] = fused_tnot_tadd_scalar(a[i], b[i]);
     }
@@ -303,13 +464,46 @@ static void avx2_v2_fused_tnot_tadd(uint8_t* dst, const uint8_t* a, const uint8_
 static void avx2_v2_fused_tnot_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     size_t i = 0;
 
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = fused_tnot_tmul_simd<false>(va, vb);
-        _mm256_storeu_si256((__m256i*)(dst + i), result);
+    // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
+    if (n >= OMP_THRESHOLD) {
+        size_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
+
+        #pragma omp parallel for schedule(guided, 4)
+        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            if (idx + PREFETCH_DIST < n_simd_blocks) {
+                _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
+                _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
+            }
+
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + idx));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + idx));
+            __m256i result = fused_tnot_tmul_simd<false>(va, vb);
+
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(dst + idx), result);
+            } else {
+                _mm256_storeu_si256((__m256i*)(dst + idx), result);
+            }
+        }
+
+        if (use_streaming) {
+            _mm_sfence();
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
+            __m256i result = fused_tnot_tmul_simd<false>(va, vb);
+            _mm256_storeu_si256((__m256i*)(dst + i), result);
+        }
     }
 
+    // PATH 3: Scalar tail
     for (; i < n; i++) {
         dst[i] = fused_tnot_tmul_scalar(a[i], b[i]);
     }
@@ -322,13 +516,46 @@ static void avx2_v2_fused_tnot_tmul(uint8_t* dst, const uint8_t* a, const uint8_
 static void avx2_v2_fused_tnot_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     size_t i = 0;
 
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = fused_tnot_tmin_simd<false>(va, vb);
-        _mm256_storeu_si256((__m256i*)(dst + i), result);
+    // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
+    if (n >= OMP_THRESHOLD) {
+        size_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
+
+        #pragma omp parallel for schedule(guided, 4)
+        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            if (idx + PREFETCH_DIST < n_simd_blocks) {
+                _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
+                _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
+            }
+
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + idx));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + idx));
+            __m256i result = fused_tnot_tmin_simd<false>(va, vb);
+
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(dst + idx), result);
+            } else {
+                _mm256_storeu_si256((__m256i*)(dst + idx), result);
+            }
+        }
+
+        if (use_streaming) {
+            _mm_sfence();
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
+            __m256i result = fused_tnot_tmin_simd<false>(va, vb);
+            _mm256_storeu_si256((__m256i*)(dst + i), result);
+        }
     }
 
+    // PATH 3: Scalar tail
     for (; i < n; i++) {
         dst[i] = fused_tnot_tmin_scalar(a[i], b[i]);
     }
@@ -341,13 +568,46 @@ static void avx2_v2_fused_tnot_tmin(uint8_t* dst, const uint8_t* a, const uint8_
 static void avx2_v2_fused_tnot_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     size_t i = 0;
 
-    for (; i + 32 <= n; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = fused_tnot_tmax_simd<false>(va, vb);
-        _mm256_storeu_si256((__m256i*)(dst + i), result);
+    // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
+    if (n >= OMP_THRESHOLD) {
+        size_t n_simd_blocks = (n / 32) * 32;
+        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
+
+        #pragma omp parallel for schedule(guided, 4)
+        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+            if (idx + PREFETCH_DIST < n_simd_blocks) {
+                _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
+                _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
+            }
+
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + idx));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + idx));
+            __m256i result = fused_tnot_tmax_simd<false>(va, vb);
+
+            if (use_streaming) {
+                _mm256_stream_si256((__m256i*)(dst + idx), result);
+            } else {
+                _mm256_storeu_si256((__m256i*)(dst + idx), result);
+            }
+        }
+
+        if (use_streaming) {
+            _mm_sfence();
+        }
+
+        i = n_simd_blocks;
+    }
+    // PATH 2: Small arrays → Serial SIMD
+    else {
+        for (; i + 32 <= n; i += 32) {
+            __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
+            __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
+            __m256i result = fused_tnot_tmax_simd<false>(va, vb);
+            _mm256_storeu_si256((__m256i*)(dst + i), result);
+        }
     }
 
+    // PATH 3: Scalar tail
     for (; i < n; i++) {
         dst[i] = fused_tnot_tmax_scalar(a[i], b[i]);
     }
