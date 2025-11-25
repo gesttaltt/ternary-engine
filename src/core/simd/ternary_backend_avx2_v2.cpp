@@ -64,17 +64,6 @@ static void init_canonical_luts(void) {
 }
 
 // ============================================================================
-// Helper Functions for Three-Path Architecture
-// ============================================================================
-
-/**
- * Check if pointer is 32-byte aligned (required for streaming stores)
- */
-static inline bool is_aligned_32(const void* ptr) {
-    return (reinterpret_cast<uintptr_t>(ptr) & 31) == 0;
-}
-
-// ============================================================================
 // Binary Operation Using Canonical Indexing
 // ============================================================================
 
@@ -120,11 +109,11 @@ static void avx2_v2_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
 
     // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
     if (n >= OMP_THRESHOLD) {
-        size_t n_simd_blocks = (n / 32) * 32;
+        ssize_t n_simd_blocks = static_cast<ssize_t>((n / 32) * 32);
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
 
         #pragma omp parallel for schedule(guided, 4)
-        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             // Prefetch for unary operation (only one input)
             if (idx + PREFETCH_DIST < n_simd_blocks) {
                 _mm_prefetch((const char*)(src + idx + PREFETCH_DIST), _MM_HINT_T0);
@@ -175,11 +164,11 @@ static void avx2_v2_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
     // Migrated from bindings_core_ops.cpp:process_binary_array
     if (n >= OMP_THRESHOLD) {
-        size_t n_simd_blocks = (n / 32) * 32;
+        ssize_t n_simd_blocks = static_cast<ssize_t>((n / 32) * 32);
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
 
         #pragma omp parallel for schedule(guided, 4)
-        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             // OPT-PREFETCH: Hide memory latency
             if (idx + PREFETCH_DIST < n_simd_blocks) {
                 _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
@@ -229,11 +218,11 @@ static void avx2_v2_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 
     // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
     if (n >= OMP_THRESHOLD) {
-        size_t n_simd_blocks = (n / 32) * 32;
+        ssize_t n_simd_blocks = static_cast<ssize_t>((n / 32) * 32);
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
 
         #pragma omp parallel for schedule(guided, 4)
-        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             if (idx + PREFETCH_DIST < n_simd_blocks) {
                 _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
                 _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
@@ -279,11 +268,11 @@ static void avx2_v2_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 
     // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
     if (n >= OMP_THRESHOLD) {
-        size_t n_simd_blocks = (n / 32) * 32;
+        ssize_t n_simd_blocks = static_cast<ssize_t>((n / 32) * 32);
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
 
         #pragma omp parallel for schedule(guided, 4)
-        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             if (idx + PREFETCH_DIST < n_simd_blocks) {
                 _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
                 _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
@@ -329,11 +318,11 @@ static void avx2_v2_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
 
     // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
     if (n >= OMP_THRESHOLD) {
-        size_t n_simd_blocks = (n / 32) * 32;
+        ssize_t n_simd_blocks = static_cast<ssize_t>((n / 32) * 32);
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
 
         #pragma omp parallel for schedule(guided, 4)
-        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             if (idx + PREFETCH_DIST < n_simd_blocks) {
                 _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
                 _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
@@ -414,11 +403,11 @@ static void avx2_v2_fused_tnot_tadd(uint8_t* dst, const uint8_t* a, const uint8_
 
     // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
     if (n >= OMP_THRESHOLD) {
-        size_t n_simd_blocks = (n / 32) * 32;
+        ssize_t n_simd_blocks = static_cast<ssize_t>((n / 32) * 32);
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
 
         #pragma omp parallel for schedule(guided, 4)
-        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             if (idx + PREFETCH_DIST < n_simd_blocks) {
                 _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
                 _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
@@ -466,11 +455,11 @@ static void avx2_v2_fused_tnot_tmul(uint8_t* dst, const uint8_t* a, const uint8_
 
     // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
     if (n >= OMP_THRESHOLD) {
-        size_t n_simd_blocks = (n / 32) * 32;
+        ssize_t n_simd_blocks = static_cast<ssize_t>((n / 32) * 32);
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
 
         #pragma omp parallel for schedule(guided, 4)
-        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             if (idx + PREFETCH_DIST < n_simd_blocks) {
                 _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
                 _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
@@ -518,11 +507,11 @@ static void avx2_v2_fused_tnot_tmin(uint8_t* dst, const uint8_t* a, const uint8_
 
     // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
     if (n >= OMP_THRESHOLD) {
-        size_t n_simd_blocks = (n / 32) * 32;
+        ssize_t n_simd_blocks = static_cast<ssize_t>((n / 32) * 32);
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
 
         #pragma omp parallel for schedule(guided, 4)
-        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             if (idx + PREFETCH_DIST < n_simd_blocks) {
                 _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
                 _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
@@ -570,11 +559,11 @@ static void avx2_v2_fused_tnot_tmax(uint8_t* dst, const uint8_t* a, const uint8_
 
     // PATH 1: Large arrays → OpenMP parallel with prefetch and streaming
     if (n >= OMP_THRESHOLD) {
-        size_t n_simd_blocks = (n / 32) * 32;
+        ssize_t n_simd_blocks = static_cast<ssize_t>((n / 32) * 32);
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(dst);
 
         #pragma omp parallel for schedule(guided, 4)
-        for (size_t idx = 0; idx < n_simd_blocks; idx += 32) {
+        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
             if (idx + PREFETCH_DIST < n_simd_blocks) {
                 _mm_prefetch((const char*)(a + idx + PREFETCH_DIST), _MM_HINT_T0);
                 _mm_prefetch((const char*)(b + idx + PREFETCH_DIST), _MM_HINT_T0);
