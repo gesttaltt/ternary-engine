@@ -7,6 +7,185 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Analysis - 2025-11-25 - GEMM Performance Root Cause Analysis
+
+**Context:** GEMM v1.0.0 exists (from TritNet v1.0.0 based on BitNet b1.58) but is functionally complete yet unoptimized.
+
+**Root Cause Identified:** Comprehensive statistical analysis identified missing SIMD vectorization (56× impact), OpenMP parallelization (2× impact), and cache blocking (3× impact) as primary bottlenecks. GEMM achieves 0.37 Gops/s vs 20-30 Gops/s target.
+
+**Added:**
+- `reports/reasons.md` - Comprehensive root cause analysis report
+  - 5 isolated component benchmarks
+  - Cross-correlation analysis of 3 data sources
+  - Causality isolation (7 hypotheses tested)
+  - Hierarchical bottleneck ranking with expected gains
+  - Statistical evidence: GEMM is compute-bound, NOT memory-bound (4,311× below bandwidth limit)
+  - Optimization roadmap: SIMD → OpenMP → Cache blocking → 20-40 Gops/s
+- `benchmarks/bench_gemm_isolated.py` - Component isolation benchmark (5 test suites)
+- `benchmarks/bench_gemm.py` - Full GEMM performance benchmark
+- `benchmarks/results/bench_gemm_isolated_20251125_141722.json` - Isolated benchmark data
+- `benchmarks/results/bench_gemm_results_20251125_134017.json` - Full benchmark data
+
+**Updated:**
+- `docs/PHASE_4_MATRIX_MULTIPLICATION_STATUS.md` - Added origin story, performance analysis, optimization roadmap
+- `docs/BENCHMARK_RESULTS_2025-11-25.md` - Updated with root cause findings
+- `README.md` - Updated matrix multiplication status section
+
+**Key Findings:**
+- GEMM v1.0.0 origins: Built by TritNet v1.0.0 based on BitNet b1.58 (Microsoft's production ternary model)
+- Critical gap: TritNet v1.0.0 has NOT applied Ternary Engine optimization learnings
+- Performance: 0.24-0.39 Gops/s actual vs 20-30 Gops/s target (56-125× below)
+- Correctness: ✅ All tests passing, mathematically validated
+- Root cause: Missing AVX2 SIMD (primary), OpenMP (secondary), cache blocking (tertiary)
+- Dense243 overhead: Only 2.5-11% (NOT the bottleneck)
+
+**Decision:** Do NOT merge GEMM to main Ternary Kernel yet. User creating separate project for detailed optimization exploration.
+
+---
+
+## [1.3.0] - 2025-11-25 - "fusion" - Operation Fusion & Dual-Shuffle Optimization
+
+### Major Achievement: Phase 3.2 & 3.3 Complete - Structurally Sound Optimization Foundation
+
+This release completes Phase 3.2 (dual-shuffle optimization with canonical indexing) and Phase 3.3 (operation fusion baseline), establishing a structurally sound foundation for future neural network-based fusion expansion.
+
+### Added
+
+**Phase 3.3: Operation Fusion Baseline**:
+- 4 Binary→Unary fusion patterns (structurally complete):
+  - `fused_tnot_tadd` - tnot(tadd(a, b)) - 8.61× average speedup
+  - `fused_tnot_tmul` - tnot(tmul(a, b)) - 7.12× average speedup
+  - `fused_tnot_tmin` - tnot(tmin(a, b)) - 8.29× average speedup
+  - `fused_tnot_tmax` - tnot(tmax(a, b)) - 2.72× average speedup
+- Three-path architecture: OpenMP + SIMD + scalar fallback
+- Comprehensive validation: 16/16 tests passing
+- `docs/PHASE_3.3_FUSION_BASELINE.md` - Complete fusion strategy documentation
+
+**Phase 3.2: Dual-Shuffle Optimization**:
+- Canonical indexing with ADD-combining already implemented and working
+- Dual-shuffle approach: Two parallel shuffles + ADD (not XOR)
+- Performance: 12-18% improvement over traditional shift/OR indexing
+- File: `src/core/simd/ternary_canonical_index.h`
+- `docs/PHASE_3.2_DUAL_SHUFFLE_ANALYSIS.md` - Comprehensive analysis document
+- `tests/python/test_dual_shuffle_validation.py` - XOR decomposability validation
+
+**Future Work Documentation**:
+- Neural network-based fusion expansion strategy
+- Unused bit encoding optimization (0b11 pattern for carry/sign)
+- Temporal harness through hardware clock cycles
+- Integration plan for continuous manifold mapping (3^9 operations)
+
+### Performance Results
+
+**Fusion Operations (Large Arrays - 1M elements):**
+
+| Operation | Small Arrays | Large Arrays | Peak Speedup |
+|-----------|-------------|--------------|--------------|
+| fused_tnot_tadd | 1.7-2.0× | 28.8× | 32.48× |
+| fused_tnot_tmul | 1.8-2.4× | 22.1× | 28.05× |
+| fused_tnot_tmin | 1.8-2.3× | 26.8× | 35.34× |
+| fused_tnot_tmax | 1.7-2.4× | 4.4× | 14.57× |
+
+**Key Metrics:**
+- Average fusion speedup: 7-28× (array size dependent)
+- Best case: 35.34× speedup (fused_tnot_tmin @ 1M elements)
+- Small arrays: 1.7-2.4× (eliminated intermediate allocation)
+- Large arrays: 22-35× (memory traffic reduction + OpenMP)
+
+**Canonical Indexing Performance:**
+- 12-18% improvement over shift/OR indexing
+- Two parallel shuffles execute independently
+- ADD combining on different execution port (no contention)
+- Works for ALL operations (tadd, tmul, tmin, tmax)
+
+### Changed
+
+**Optimization Strategy:**
+- Established 4-fusion baseline as structurally sound foundation
+- Deferred 24+ pattern combinatorial expansion to neural network approach
+- Documented XOR variant as not viable with current encoding
+- Added future work on temporal carry encoding using unused bits
+
+**Documentation Updates:**
+- Phase 3.2 marked complete (dual-shuffle ADD working)
+- Phase 3.3 marked complete (4-fusion baseline validated)
+- Added neural network integration architecture
+- Documented unused bit encoding for future research
+
+### Technical Details
+
+**Why 4 Fusions is Structurally Sound:**
+1. Complete coverage of Binary→Unary pattern
+2. Proven 7-35× speedup validated
+3. Production-ready with full test coverage
+4. Maintainable without combinatorial explosion
+
+**Why Manual Expansion is Infeasible:**
+- Binary→Binary: 16 patterns (4×4)
+- 3-op chains: 64 patterns (4×4×4)
+- 4-op chains: 256 patterns (grows exponentially)
+- Manual implementation: ~50 lines per pattern × N²
+- Test explosion: O(N²) growth
+
+**Future Neural Network Approach:**
+- User has separate project mapping 3^9 = 19,683 ternary operations
+- Continuous differentiable manifold representation
+- Learned fusion generation (replaces manual implementation)
+- Enables arbitrary N-operation chains
+- Integration after discrete foundation complete
+
+**Dual-Shuffle Variants:**
+- ADD-combining: ✅ Working, 12-18% gain, all operations
+- XOR-combining: ❌ Not viable (saturating ops break XOR decomposability)
+- Future encoding: Use 0b11 for carry/sign with temporal harness
+
+### Validation
+
+**Phase 3.3 Fusion:**
+- 16/16 correctness tests passing
+- All 9 input combinations validated ({-1,0,+1} × {-1,0,+1})
+- Performance benchmarks across 4 array sizes (1K, 10K, 100K, 1M)
+- Statistical rigor: 50 iterations, outlier removal, median-based
+
+**Phase 3.2 Canonical Indexing:**
+- Already working in production since Phase 3.1
+- Used by all binary operations via `binary_op_canonical()`
+- Dual-shuffle + ADD approach validated
+- XOR variant tested and documented as not viable
+
+**Platform:**
+- Windows x64 with MSVC
+- AVX2 SIMD (32 parallel trits)
+- OpenMP parallelization (for arrays ≥100K elements)
+
+### Breaking Changes
+
+None - All changes are internal optimizations. External API unchanged.
+
+### Known Issues
+
+- XOR-based dual-shuffle not viable with current 2-bit encoding
+- Binary→Binary fusion patterns (16) deferred to neural network approach
+- Unary→Binary fusion patterns (4) low priority (commutative with Binary→Unary)
+
+### Roadmap
+
+**Completed:**
+- ✅ Phase 3.2: Dual-shuffle optimization (ADD-based canonical indexing)
+- ✅ Phase 3.3: Fusion operations baseline (4 patterns validated)
+
+**Next:**
+- Phase 4: Matrix multiplication (TritNet GEMM integration)
+- Phase 5: Platform expansion (Linux/macOS validation)
+- Phase 6: Production hardening (CI/CD, benchmarking)
+- Phase 7: Neural network fusion integration (future)
+
+**Codename:** fusion
+**Platform:** Windows x64, MSVC, AVX2
+**Validation Date:** 2025-11-25
+
+---
+
 ## [1.2.0] - 2025-11-25 - "loadaware" - Load-Aware Benchmarking & Peak Performance
 
 ### Major Achievement: 37.2 Gops/s Validated with 95% Confidence
@@ -512,4 +691,4 @@ This release establishes a clear architectural boundary between the validated ke
 
 **Maintained by**: Jonathan Verdun (Ternary Engine Project)
 **License**: Apache 2.0
-**Last Updated**: 2025-10-13
+**Last Updated**: 2025-11-25

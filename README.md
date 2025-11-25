@@ -906,19 +906,22 @@ pip install torch transformers
 
 **AI/ML Workload Limitations (as of 2025-11-23):**
 
-⚠️ **Matrix Multiplication Gap:**
-- Current implementation: Element-wise operations only (tadd, tmul, etc.)
-- Missing: Optimized C++ SIMD matrix-vector/matrix-matrix multiply (gemv/gemm)
-- Impact: Cannot fairly compete with NumPy BLAS on AI/ML workloads yet
-- Status: **Exploratory research path via BitNet/TritNet integration** (see roadmap)
+⚠️ **Matrix Multiplication Status (Updated 2025-11-25):**
+- **Implementation:** GEMM v1.0.0 exists (from TritNet v1.0.0 based on BitNet b1.58)
+- **Correctness:** ✅ All tests passing, mathematically validated
+- **Performance:** ❌ 0.37 Gops/s vs 20-30 Gops/s target (56-125× below target)
+- **Root cause identified:** Missing SIMD (56×), OpenMP (2×), cache blocking (3×)
+- **Status:** ⚠️ **Functional but unoptimized - separate optimization project required**
 
 **What This Means:**
-- ✅ **Excellent for element-wise operations** - validated 3-9× faster than NumPy
-- ✅ **Proven memory advantage** - 4× smaller than INT8
-- ⚠️ **Neural network inference** - Exploratory research phase (TritNet/BitNet path)
-- ⚠️ **Cannot yet claim "AI-ready"** - matmul implementation in research
+- ✅ **Excellent for element-wise operations** - 20,756 Mops/s peak validated
+- ✅ **Proven memory advantage** - 4× smaller than INT8, Dense243 format working
+- ⚠️ **Matrix multiplication** - Implementation exists but needs optimization (GEMM v1.0.0)
+- ⚠️ **Cannot yet claim "AI-ready"** - GEMM performance gap blocks AI/ML viability
 
-**Honest Assessment:** Strong foundation for ternary computing with world-class element-wise performance. AI/ML viability depends on ongoing research into learned matmul approaches (TritNet/BitNet integration).
+**Root Cause Analysis:** Comprehensive statistical analysis complete (see `reports/reasons.md`). GEMM v1.0.0 was built from BitNet b1.58 baseline without applying Ternary Engine optimization techniques (SIMD, AVX2, OpenMP). Optimization roadmap: SIMD → OpenMP → Cache blocking → 20-40 Gops/s target.
+
+**Next Steps:** User creating separate project for detailed GEMM optimization exploration. Do NOT merge to main kernel until performance targets met.
 
 See [COMPETITIVE_ANALYSIS.md](COMPETITIVE_ANALYSIS.md) for detailed gap analysis and commercial viability assessment.
 
@@ -950,9 +953,9 @@ See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md
 
 ## Roadmap
 
-**Current**: v1.0.0 - Production-ready kernel with validated experimental features + TritNet Phase 1
+**Current**: v1.3.0 - Production-ready kernel with operation fusion baseline + TritNet Phase 1
 
-**Completed (v1.0 - Validated 2025-11-23)**:
+**Completed (v1.3 - Validated 2025-11-25)**:
 
 **Core Engine:**
 - ✅ Clean kernel/engine separation (ternary_core/ vs ternary_engine/)
@@ -961,10 +964,12 @@ See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md
 - ✅ Hardware concurrency clamping (fixes VM crashes)
 - ✅ **Dense243 encoding** (all 243 states validated, critical bug fixed)
 - ✅ **TriadSextet encoding** (all 27 states validated)
+- ✅ **Phase 3.2: Dual-shuffle optimization** (12-18% gain via canonical indexing, ADD-based)
+- ✅ **Phase 3.3: Operation fusion baseline** (4 Binary→Unary patterns, 7-35× speedup, 16/16 tests passing)
 - ✅ **Operation fusion Phase 4.0** (1.6-15.5× validated speedup with statistical rigor)
 - ✅ C FFI layer (cross-language ready)
 - ✅ Comprehensive testing (16 test functions, all passing on Windows x64)
-- ✅ Performance benchmarking (35,042 Mops/s peak, 8,234× average speedup validated)
+- ✅ Performance benchmarking (37,244 Mops/s peak, ~8,000× average speedup validated)
 - ✅ Build system fixes (Python 3.12+ compatibility, OMP_NUM_THREADS auto-config)
 
 **TritNet (Neural Network-Based Arithmetic):**
@@ -1118,18 +1123,19 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 
 ---
 
-**Version**: 1.2.0 + Load-Aware Benchmarking
+**Version**: 1.3.0 - Operation Fusion & Dual-Shuffle Optimization
 **Status**: Production (Windows x64), Experimental (Linux/macOS, ternary_engine/, TritNet)
 **Updated**: 2025-11-25
 **Platform**: Windows x64 (validated), Linux/macOS (untested)
 
 **Recent Additions (2025-11-25):**
+- ✅ **Phase 3.3: Operation fusion baseline** - 4 Binary→Unary patterns (7-35× speedup, 16/16 tests)
+- ✅ **Phase 3.2: Dual-shuffle optimization** - Canonical indexing with ADD (12-18% gain)
+- ✅ **Neural network fusion integration** - Future expansion strategy documented
 - ✅ **Load-aware benchmarking system** - System load monitoring for reproducible results
 - ✅ **37.2 Gops/s peak throughput** - Fusion operations at 1M elements (95% confidence)
 - ✅ **Three-path architecture validated** - OpenMP + SIMD + scalar tail
-- ✅ **System load monitor module** - Detects browsers, Docker, antivirus interference
-- ✅ **Reproducibility assessment** - Automatic confidence rating (LOW/MEDIUM/HIGH/VERY_HIGH)
-- ✅ **Comprehensive benchmark findings** - docs/BENCHMARK_FINDINGS_2025-11-25.md
+- ✅ **Comprehensive documentation** - Phase 3.2/3.3 analysis, fusion baseline, future work
 
 **Performance Summary (Validated 2025-11-25, 95% confidence):**
 - ✅ **37.2 Gops/s peak** throughput with fusion operations
