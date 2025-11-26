@@ -1,0 +1,274 @@
+{
+  "version": "1.3.0",
+  "date": "2025-11-25",
+  "commit": "027901d",
+  "description": "Baseline performance after canonical indexing integration",
+  "performance_summary": {
+    "peak_element_wise": "39.1 Gops/s (tnot @ 1M)",
+    "effective_throughput": "45.3 Gops/s (fused_tnot_tadd @ 1M)",
+    "sustained_throughput": "35-39 Gops/s range"
+  },
+  "benchmarks": [
+    {
+      "operation": "tadd",
+      "size": 32,
+      "time_ns_per_elem": 50.73,
+      "throughput_mops": 19.71
+    },
+    {
+      "operation": "tadd",
+      "size": 100,
+      "time_ns_per_elem": 14.19,
+      "throughput_mops": 70.46
+    },
+    {
+      "operation": "tadd",
+      "size": 1000,
+      "time_ns_per_elem": 1.48,
+      "throughput_mops": 675.17
+    },
+    {
+      "operation": "tadd",
+      "size": 10000,
+      "time_ns_per_elem": 0.22,
+      "throughput_mops": 4615.10
+    },
+    {
+      "operation": "tadd",
+      "size": 100000,
+      "time_ns_per_elem": 0.097,
+      "throughput_mops": 10296.33
+    },
+    {
+      "operation": "tadd",
+      "size": 1000000,
+      "time_ns_per_elem": 0.028,
+      "throughput_mops": 36110.99
+    },
+    {
+      "operation": "tadd",
+      "size": 10000000,
+      "time_ns_per_elem": 0.218,
+      "throughput_mops": 4578.08
+    },
+    {
+      "operation": "tmul",
+      "size": 32,
+      "time_ns_per_elem": 44.27,
+      "throughput_mops": 22.59
+    },
+    {
+      "operation": "tmul",
+      "size": 100,
+      "time_ns_per_elem": 14.43,
+      "throughput_mops": 69.28
+    },
+    {
+      "operation": "tmul",
+      "size": 1000,
+      "time_ns_per_elem": 1.49,
+      "throughput_mops": 672.54
+    },
+    {
+      "operation": "tmul",
+      "size": 10000,
+      "time_ns_per_elem": 0.22,
+      "throughput_mops": 4496.81
+    },
+    {
+      "operation": "tmul",
+      "size": 100000,
+      "time_ns_per_elem": 0.103,
+      "throughput_mops": 9710.91
+    },
+    {
+      "operation": "tmul",
+      "size": 1000000,
+      "time_ns_per_elem": 0.028,
+      "throughput_mops": 35539.89
+    },
+    {
+      "operation": "tmul",
+      "size": 10000000,
+      "time_ns_per_elem": 0.219,
+      "throughput_mops": 4572.20
+    },
+    {
+      "operation": "tmin",
+      "size": 32,
+      "time_ns_per_elem": 43.76,
+      "throughput_mops": 22.85
+    },
+    {
+      "operation": "tmin",
+      "size": 100,
+      "time_ns_per_elem": 14.36,
+      "throughput_mops": 69.62
+    },
+    {
+      "operation": "tmin",
+      "size": 1000,
+      "time_ns_per_elem": 1.50,
+      "throughput_mops": 668.27
+    },
+    {
+      "operation": "tmin",
+      "size": 10000,
+      "time_ns_per_elem": 0.25,
+      "throughput_mops": 4068.35
+    },
+    {
+      "operation": "tmin",
+      "size": 100000,
+      "time_ns_per_elem": 0.103,
+      "throughput_mops": 9731.70
+    },
+    {
+      "operation": "tmin",
+      "size": 1000000,
+      "time_ns_per_elem": 0.032,
+      "throughput_mops": 31569.04
+    },
+    {
+      "operation": "tmin",
+      "size": 10000000,
+      "time_ns_per_elem": 0.224,
+      "throughput_mops": 4473.03
+    },
+    {
+      "operation": "tmax",
+      "size": 32,
+      "time_ns_per_elem": 44.19,
+      "throughput_mops": 22.63
+    },
+    {
+      "operation": "tmax",
+      "size": 100,
+      "time_ns_per_elem": 14.31,
+      "throughput_mops": 69.90
+    },
+    {
+      "operation": "tmax",
+      "size": 1000,
+      "time_ns_per_elem": 1.53,
+      "throughput_mops": 654.07
+    },
+    {
+      "operation": "tmax",
+      "size": 10000,
+      "time_ns_per_elem": 0.21,
+      "throughput_mops": 4805.84
+    },
+    {
+      "operation": "tmax",
+      "size": 100000,
+      "time_ns_per_elem": 0.072,
+      "throughput_mops": 13920.40
+    },
+    {
+      "operation": "tmax",
+      "size": 1000000,
+      "time_ns_per_elem": 0.034,
+      "throughput_mops": 29471.14
+    },
+    {
+      "operation": "tmax",
+      "size": 10000000,
+      "time_ns_per_elem": 0.223,
+      "throughput_mops": 4486.23
+    },
+    {
+      "operation": "tnot",
+      "size": 32,
+      "time_ns_per_elem": 32.78,
+      "throughput_mops": 30.50
+    },
+    {
+      "operation": "tnot",
+      "size": 100,
+      "time_ns_per_elem": 10.76,
+      "throughput_mops": 92.96
+    },
+    {
+      "operation": "tnot",
+      "size": 1000,
+      "time_ns_per_elem": 1.14,
+      "throughput_mops": 880.20
+    },
+    {
+      "operation": "tnot",
+      "size": 10000,
+      "time_ns_per_elem": 0.16,
+      "throughput_mops": 6237.14
+    },
+    {
+      "operation": "tnot",
+      "size": 100000,
+      "time_ns_per_elem": 0.068,
+      "throughput_mops": 14773.01
+    },
+    {
+      "operation": "tnot",
+      "size": 1000000,
+      "time_ns_per_elem": 0.026,
+      "throughput_mops": 39056.40
+    },
+    {
+      "operation": "tnot",
+      "size": 10000000,
+      "time_ns_per_elem": 0.192,
+      "throughput_mops": 5212.05
+    }
+  ],
+  "fusion_benchmarks": [
+    {
+      "operation": "fused_tnot_tadd",
+      "size": 1000000,
+      "speedup": 15.93,
+      "effective_throughput_mops": 45300.0,
+      "time_us": 44.11
+    },
+    {
+      "operation": "fused_tnot_tmul",
+      "size": 1000000,
+      "speedup": 4.29,
+      "effective_throughput_mops": 39500.0,
+      "time_us": 50.64
+    },
+    {
+      "operation": "fused_tnot_tmin",
+      "size": 1000000,
+      "speedup": 4.23,
+      "effective_throughput_mops": 38900.0,
+      "time_us": 51.44
+    },
+    {
+      "operation": "fused_tnot_tmax",
+      "size": 1000000,
+      "speedup": 5.58,
+      "effective_throughput_mops": 42700.0,
+      "time_us": 46.87
+    }
+  ],
+  "hardware": {
+    "cpu": "AMD Ryzen 12-core @ 3.5 GHz",
+    "memory": "DDR4-3200 dual-channel",
+    "os": "Windows x64",
+    "compiler": "MSVC 19.29",
+    "flags": "/O2 /GL /arch:AVX2 /openmp /std:c++17"
+  },
+  "optimizations_active": [
+    "AVX2 SIMD vectorization (32 trits/op)",
+    "Canonical indexing (dual-shuffle + ADD)",
+    "OpenMP parallelization (12 threads)",
+    "Operation fusion (4 Binary→Unary patterns)",
+    "Compiler optimizations (MSVC /O2 /GL /LTCG)"
+  ],
+  "notes": [
+    "This is the validated v1.3.0 baseline after canonical indexing integration",
+    "Peak performance: 39.1 Gops/s (tnot @ 1M)",
+    "Effective throughput: 45.3 Gops/s (fused_tnot_tadd @ 1M)",
+    "All performance claims validated on 2025-11-25",
+    "NO REGRESSIONS ALLOWED below these values"
+  ]
+}

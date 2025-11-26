@@ -32,6 +32,129 @@ main (v1.3.0 - 45.3 Gops/s STABLE)
 
 ---
 
+## 🚨 MANDATORY BENCHMARKING POLICY
+
+### Benchmark After EVERY Feature (No Exceptions)
+
+**CRITICAL RULE:** No code changes are merged without benchmarking validation.
+
+```bash
+# MANDATORY workflow after ANY code change:
+1. Make code changes
+2. Build module
+3. Run benchmarks
+4. Validate against baseline (auto-fail if regression > 5%)
+5. Generate comparison report
+6. Only proceed if validation passes
+```
+
+### Automated Validation
+
+**Tool:** `benchmarks/utils/benchmark_validator.py`
+
+**Usage:**
+```bash
+# After every feature addition
+python build/build.py  # or build_experimental.py
+python benchmarks/bench_phase0.py
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_LATEST.json \\
+    --threshold 0.05  # 5% regression threshold
+
+# Exit code 0 = PASS (proceed), 1 = FAIL (investigate)
+```
+
+### Baseline Performance (v1.3.0) - DO NOT REGRESS
+
+**Element-wise Operations @ 1M elements:**
+- tadd: **36,111 Mops/s** (±5% acceptable)
+- tmul: **35,540 Mops/s** (±5% acceptable)
+- tmin: **31,569 Mops/s** (±5% acceptable)
+- tmax: **29,471 Mops/s** (±5% acceptable)
+- tnot: **39,056 Mops/s** (±5% acceptable)
+
+**Fusion Operations @ 1M elements:**
+- fused_tnot_tadd: **45,300 Mops/s** effective (±5% acceptable)
+
+**Files:**
+- Baseline: `benchmarks/results/baseline_v1.3.0.json`
+- Validator: `benchmarks/utils/benchmark_validator.py`
+- Reports: `reports/benchmark_validation/`
+
+### Regression Thresholds
+
+**Auto-fail conditions:**
+- Any operation regresses >5% from baseline
+- Build fails or crashes
+- Test suite fails (correctness)
+
+**Require investigation:**
+- Variance >5% between runs (measurement noise)
+- Performance improves but correctness fails
+- New warnings or errors in build
+
+### Continuous Benchmarking Workflow
+
+**After EVERY commit:**
+```bash
+# 1. Correctness tests (MUST PASS)
+python tests/test_phase0.py
+
+# 2. Quick performance check
+python benchmarks/bench_phase0.py --quick
+
+# 3. Validate against baseline
+python benchmarks/utils/benchmark_validator.py --auto
+
+# 4. If PASS: continue. If FAIL: investigate immediately.
+```
+
+**Before EVERY merge to main:**
+```bash
+# 1. Full test suite
+python run_tests.py --full
+
+# 2. Comprehensive benchmarks
+python benchmarks/bench_phase0.py  # Full size range
+python benchmarks/bench_fusion.py  # Fusion operations
+
+# 3. Validation with report generation
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_LATEST.json \\
+    --output reports/benchmark_validation/validation_pre_merge.md
+
+# 4. Review validation report
+# 5. Only merge if ALL validations pass
+```
+
+### Performance Tracking
+
+**Maintain history:**
+```
+benchmarks/results/
+  baseline_v1.3.0.json          # FROZEN baseline
+  bench_results_20251125_*.json # Historical results
+  bench_results_LATEST.json     # Current (symlink)
+
+reports/benchmark_validation/
+  validation_20251125_*.md      # Historical validation reports
+  validation_LATEST.md          # Current (symlink)
+```
+
+**Git commit message must include:**
+```
+FEAT: Add new optimization X
+
+Performance Impact:
+  - tadd@1M: 36.1 → 38.2 Gops/s (+5.8%)
+  - Validation: PASSED (0% regression)
+  - Report: reports/benchmark_validation/validation_20251126_143022.md
+```
+
+---
+
 ## Current Stable Baseline (v1.3.0)
 
 ### ✅ Production Files (DO NOT MODIFY)
@@ -120,8 +243,33 @@ python build/build.py --enable-profiling
 
 - [ ] Benchmark suite runs without errors
 - [ ] Identifies ≥3 distinct performance regions with p < 0.05
-- [ ] No regression in production performance (45.3 Gops/s maintained)
+- [ ] **MANDATORY: No regression in production performance (45.3 Gops/s maintained)**
 - [ ] Reproducible results across multiple runs
+
+### 🚨 MANDATORY: Benchmark After Phase 1
+
+**Before merging Phase 1 to main:**
+```bash
+# 1. Build production module (unchanged)
+python build/build.py
+
+# 2. Run comprehensive benchmarks
+python benchmarks/bench_phase0.py
+
+# 3. Validate NO regression
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_$(date +%Y%m%d_%H%M%S).json \\
+    --output reports/benchmark_validation/phase1_validation.md
+
+# 4. MUST show 0% regression on all operations
+# 5. Phase 1 only ADDS measurement code, does NOT modify kernels
+```
+
+**Expected Result:**
+- All operations: **0.0% delta** (no changes to production code)
+- Validation: **PASS** (exact match to baseline)
+- Measurement infrastructure: Adds overhead ONLY when enabled via feature flag
 
 ### Deliverables
 
@@ -290,9 +438,61 @@ assert np.array_equal(prod_result, exp_result)  # Must match!
 
 - [ ] Experimental module builds without errors
 - [ ] Hybrid kernel matches production correctness (100% pass rate)
-- [ ] Performance ≥ production baseline (no regression)
+- [ ] **MANDATORY: Performance ≥ production baseline (no regression)**
 - [ ] Path selection overhead < 5%
-- [ ] Production module unaffected (still 45.3 Gops/s)
+- [ ] **MANDATORY: Production module unaffected (still 45.3 Gops/s)**
+
+### 🚨 MANDATORY: Benchmark After Phase 2
+
+**Dual validation - Both modules MUST be benchmarked:**
+
+```bash
+# 1. Build BOTH modules
+python build/build.py                    # Production
+python build/build_experimental.py        # Experimental
+
+# 2. Benchmark production (MUST match baseline)
+python benchmarks/bench_phase0.py
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_PRODUCTION.json \\
+    --output reports/benchmark_validation/phase2_production_validation.md
+
+# 3. Benchmark experimental (MUST match OR exceed baseline)
+python benchmarks/bench_experimental.py  # NEW benchmark for experimental module
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_EXPERIMENTAL.json \\
+    --threshold 0.0  # Allow 0% regression (must equal or exceed)
+    --output reports/benchmark_validation/phase2_experimental_validation.md
+
+# 4. Compare experimental vs production
+python benchmarks/utils/compare_modules.py \\
+    --baseline-module ternary_simd_engine \\
+    --experimental-module ternary_experimental \\
+    --output reports/benchmark_validation/phase2_comparison.md
+```
+
+**Expected Results:**
+
+**Production Module:**
+- All operations: **0.0% delta** (unchanged)
+- Validation: **PASS** (exact match to v1.3.0)
+
+**Experimental Module:**
+- All operations: **≥0% delta** (equal or better)
+- Target: **+10%** improvement (50 Gops/s effective)
+- Minimum acceptable: **0%** (no regression)
+- Path selection overhead: **<5%** on high-entropy inputs
+
+**Decision Matrix:**
+
+| Experimental Performance | Action |
+|--------------------------|--------|
+| ≥ +10% (50+ Gops/s) | ✅ **Merge to main** - Replace production |
+| +5% to +10% | ✅ **Merge to main** - Worthwhile improvement |
+| 0% to +5% | ⚠️ **Keep experimental** - Not enough gain to justify complexity |
+| < 0% (regression) | ❌ **Abandon branch** - Hybrid slower than production |
 
 ### Deliverables
 
@@ -359,8 +559,39 @@ python build/build_pgo_production.py --phase optimize
 
 **Validation:**
 - [ ] PGO build matches correctness of standard build
-- [ ] Performance improvement 5-15% (expected)
-- [ ] No regressions on any operation
+- [ ] **MANDATORY: Performance improvement 5-15% (expected)**
+- [ ] **MANDATORY: No regressions on any operation**
+
+### 🚨 MANDATORY: Benchmark After Sub-Phase 3.1 (PGO)
+
+```bash
+# 1. Build PGO-optimized module
+python build/build_pgo_production.py --full
+
+# 2. Benchmark PGO build
+python benchmarks/bench_phase0.py
+python benchmarks/bench_fusion.py
+
+# 3. Validate improvement
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_PGO.json \\
+    --threshold -0.05  # Negative = require improvement
+    --output reports/benchmark_validation/phase3.1_pgo_validation.md
+
+# 4. MUST show 5-15% improvement
+```
+
+**Expected Results:**
+- All operations: **+5% to +15%** improvement
+- Target: **50-52 Gops/s** effective throughput
+- Minimum acceptable: **+3%** (48 Gops/s)
+
+**Decision:**
+- If <+3%: Revert to non-PGO build (not worth compilation complexity)
+- If +3% to +5%: Consider PGO optional
+- If +5% to +15%: **Adopt PGO** as standard build
+- If >+15%: **Unexpected but great!** Investigate why
 
 ---
 
@@ -422,8 +653,61 @@ class TernaryArrayDense243 {
 **Validation:**
 - [ ] Dense243 pack/unpack correctness
 - [ ] Memory reduction: 5× vs standard 2-bit
-- [ ] Performance on large arrays (10M+): +20-30% expected
-- [ ] Production module unaffected
+- [ ] **MANDATORY: Performance on large arrays (10M+): +20-30% expected**
+- [ ] **MANDATORY: Production module unaffected**
+
+### 🚨 MANDATORY: Benchmark After Sub-Phase 3.2 (Dense243)
+
+```bash
+# 1. Build Dense243-integrated module
+python build/build_dense243_integrated.py
+
+# 2. Benchmark BOTH modules on large arrays (10M elements)
+python benchmarks/bench_dense243.py --sizes 10000000  # NEW benchmark
+
+# 3. Validate Dense243 performance
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_DENSE243.json \\
+    --threshold 0.0  # Dense243 must not regress on small arrays
+    --output reports/benchmark_validation/phase3.2_dense243_validation.md
+
+# 4. Measure memory efficiency
+python benchmarks/utils/measure_memory.py \\
+    --baseline-module ternary_simd_engine \\
+    --dense243-module ternary_simd_dense243 \\
+    --output reports/benchmark_validation/phase3.2_memory_analysis.md
+
+# 5. Validate production unchanged
+python benchmarks/bench_phase0.py
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_PRODUCTION_CHECK.json \\
+    --output reports/benchmark_validation/phase3.2_production_unchanged.md
+```
+
+**Expected Results:**
+
+**Small arrays (1M):**
+- Dense243: **-10% to +0%** (pack/unpack overhead acceptable)
+- Minimum: No worse than -15%
+
+**Large arrays (10M):**
+- Dense243: **+20% to +30%** (memory bandwidth savings)
+- Target: 56+ Gops/s sustained
+- Minimum: +15%
+
+**Memory:**
+- Storage: **5× reduction** (validated)
+- Bandwidth: **5× less** traffic to RAM
+
+**Production:**
+- All operations: **0.0% delta** (unchanged)
+
+**Decision:**
+- If Dense243 performance < baseline on 10M: Investigate pack/unpack overhead
+- If memory reduction < 4×: Implementation issue, debug
+- If production affected: **Critical - rollback immediately**
 
 ---
 
@@ -495,8 +779,62 @@ result = tfa.fused_not_mul_add(a, b, c)  # tnot(tadd(tmul(a, b), c))
 
 **Validation:**
 - [ ] Correctness: matches sequential operations
-- [ ] Effective throughput: 2-3× expected (90+ Gops/s)
-- [ ] Production 2-op fusion unaffected
+- [ ] **MANDATORY: Effective throughput: 2-3× expected (90+ Gops/s)**
+- [ ] **MANDATORY: Production 2-op fusion unaffected**
+
+### 🚨 MANDATORY: Benchmark After Sub-Phase 3.3 (Advanced Fusion)
+
+```bash
+# 1. Build advanced fusion module
+python build/build_fusion_advanced.py
+
+# 2. Benchmark 3-op and 4-op fusion
+python benchmarks/bench_fusion_advanced.py  # NEW benchmark for 3-op fusion
+
+# 3. Validate effective throughput
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_FUSION_ADVANCED.json \\
+    --threshold -0.50  # Negative = require massive improvement (2-3×)
+    --output reports/benchmark_validation/phase3.3_fusion_validation.md
+
+# 4. Validate existing 2-op fusion unchanged
+python benchmarks/bench_fusion.py  # Existing 2-op benchmark
+python benchmarks/utils/benchmark_validator.py \\
+    --baseline benchmarks/results/baseline_v1.3.0.json \\
+    --current benchmarks/results/bench_results_2OP_FUSION_CHECK.json \\
+    --output reports/benchmark_validation/phase3.3_2op_unchanged.md
+
+# 5. Effective throughput calculation
+python benchmarks/utils/calculate_effective_throughput.py \\
+    --fusion-type 3op \\
+    --operations 3000000  # 3M ops (3× 1M)
+    --time-us <measured> \\
+    --output reports/benchmark_validation/phase3.3_effective_throughput.md
+```
+
+**Expected Results:**
+
+**3-op Fusion (fused_mul_add):**
+- Speedup vs sequential: **2-3×**
+- Effective throughput: **90+ Gops/s** (3M ops in ~33 µs)
+- Minimum acceptable: **2×** (80 Gops/s)
+
+**4-op Fusion (fused_not_mul_add):**
+- Speedup vs sequential: **3-4×**
+- Effective throughput: **100+ Gops/s** (4M ops in ~40 µs)
+- Minimum acceptable: **2.5×** (90 Gops/s)
+
+**Existing 2-op Fusion:**
+- All operations: **0.0% delta** (unchanged)
+- fused_tnot_tadd still **15.93×** @ 1M
+- fused_tnot_tadd still **45.3 Gops/s** effective
+
+**Decision:**
+- If 3-op fusion < 2×: Not worth complexity, abandon
+- If 3-op fusion 2-3×: **Merge to main**
+- If 3-op fusion > 3×: **Exceptional!** Investigate and document
+- If 2-op fusion regresses: **Critical - rollback immediately**
 
 ---
 
