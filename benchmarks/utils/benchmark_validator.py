@@ -95,12 +95,17 @@ class BenchmarkValidator:
         """
         # Handle different JSON formats
         if 'benchmarks' in data:
-            # New format
+            # Format 1: benchmarks array
             for bench in data['benchmarks']:
                 if bench.get('operation') == operation and bench.get('size') == size:
                     return bench.get('throughput_mops', 0.0)
+        elif 'results_optimized' in data:
+            # Format 2: results_optimized array (bench_phase0.py output)
+            for result in data['results_optimized']:
+                if result.get('operation') == operation and result.get('size') == size:
+                    return result.get('throughput_mops', 0.0)
         elif 'results' in data:
-            # Old format
+            # Format 3: results dict
             key = f"{operation}_{size}"
             return data['results'].get(key, {}).get('throughput_mops', 0.0)
 
