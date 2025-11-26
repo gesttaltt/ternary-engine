@@ -282,7 +282,7 @@ def generate_synthetic_dataset(entropy_level: str, size: int = 1000000) -> Tuple
 
     if entropy_level == 'low':
         # Low entropy: Highly repetitive pattern
-        pattern = np.array([0, 1, 2, 1] * 100)  # 400-element pattern
+        pattern = np.array([0, 1, 2, 1] * 100, dtype=np.uint8)  # 400-element pattern
         repetitions = size // len(pattern) + 1
         data = np.tile(pattern, repetitions)[:size]
 
