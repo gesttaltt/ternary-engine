@@ -1,0 +1,59 @@
+{
+  "timestamp": "2025-11-26T00:57:28.763315",
+  "baseline": "benchmarks\\results\\baseline_v1.3.0.json",
+  "current": "benchmarks\\results\\bench_results_20251125_174805.json",
+  "threshold": 0.05,
+  "results": {
+    "tadd@1000000": {
+      "operation": "tadd",
+      "size": 1000000,
+      "baseline_mops": 36110.99,
+      "current_mops": 0.0,
+      "delta_mops": -36110.99,
+      "delta_percent": -100.0,
+      "regression": true,
+      "status": "FAIL"
+    },
+    "tmul@1000000": {
+      "operation": "tmul",
+      "size": 1000000,
+      "baseline_mops": 35539.89,
+      "current_mops": 0.0,
+      "delta_mops": -35539.89,
+      "delta_percent": -100.0,
+      "regression": true,
+      "status": "FAIL"
+    },
+    "tmin@1000000": {
+      "operation": "tmin",
+      "size": 1000000,
+      "baseline_mops": 31569.04,
+      "current_mops": 0.0,
+      "delta_mops": -31569.04,
+      "delta_percent": -100.0,
+      "regression": true,
+      "status": "FAIL"
+    },
+    "tmax@1000000": {
+      "operation": "tmax",
+      "size": 1000000,
+      "baseline_mops": 29471.14,
+      "current_mops": 0.0,
+      "delta_mops": -29471.14,
+      "delta_percent": -100.0,
+      "regression": true,
+      "status": "FAIL"
+    },
+    "tnot@1000000": {
+      "operation": "tnot",
+      "size": 1000000,
+      "baseline_mops": 39056.4,
+      "current_mops": 0.0,
+      "delta_mops": -39056.4,
+      "delta_percent": -100.0,
+      "regression": true,
+      "status": "FAIL"
+    }
+  },
+  "passed": false
+}

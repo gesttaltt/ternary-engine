@@ -1,0 +1,59 @@
+{
+  "timestamp": "2025-11-26T01:05:54.305058",
+  "baseline": "benchmarks\\results\\baseline_v1.3.0.json",
+  "current": "benchmarks\\results\\bench_results_20251125_174805.json",
+  "threshold": 0.05,
+  "results": {
+    "tadd@1000000": {
+      "operation": "tadd",
+      "size": 1000000,
+      "baseline_mops": 36110.99,
+      "current_mops": 36110.99074114198,
+      "delta_mops": 0.0007411419792333618,
+      "delta_percent": 2.0524000566956536e-06,
+      "regression": false,
+      "status": "PASS"
+    },
+    "tmul@1000000": {
+      "operation": "tmul",
+      "size": 1000000,
+      "baseline_mops": 35539.89,
+      "current_mops": 35539.88641452302,
+      "delta_mops": -0.0035854769812431186,
+      "delta_percent": -1.0088598983404615e-05,
+      "regression": false,
+      "status": "PASS"
+    },
+    "tmin@1000000": {
+      "operation": "tmin",
+      "size": 1000000,
+      "baseline_mops": 31569.04,
+      "current_mops": 31569.044657570572,
+      "delta_mops": 0.0046575705709983595,
+      "delta_percent": 1.4753602171616111e-05,
+      "regression": false,
+      "status": "PASS"
+    },
+    "tmax@1000000": {
+      "operation": "tmax",
+      "size": 1000000,
+      "baseline_mops": 29471.14,
+      "current_mops": 29471.140385777224,
+      "delta_mops": 0.00038577722443733364,
+      "delta_percent": 1.3090000062343487e-06,
+      "regression": false,
+      "status": "PASS"
+    },
+    "tnot@1000000": {
+      "operation": "tnot",
+      "size": 1000000,
+      "baseline_mops": 39056.4,
+      "current_mops": 39056.39743790033,
+      "delta_mops": -0.002562099674833007,
+      "delta_percent": -6.559999577106459e-06,
+      "regression": false,
+      "status": "PASS"
+    }
+  },
+  "passed": true
+}

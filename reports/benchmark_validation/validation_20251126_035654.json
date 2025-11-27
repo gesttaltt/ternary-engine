@@ -1,0 +1,59 @@
+{
+  "timestamp": "2025-11-26T03:56:54.139265",
+  "baseline": "benchmarks\\results\\baseline_v1.3.0.json",
+  "current": "benchmarks\\results\\bench_results_20251126_034018.json",
+  "threshold": 0.05,
+  "results": {
+    "tadd@1000000": {
+      "operation": "tadd",
+      "size": 1000000,
+      "baseline_mops": 36110.99,
+      "current_mops": 17746.606848770516,
+      "delta_mops": -18364.383151229482,
+      "delta_percent": -50.85538544146666,
+      "regression": true,
+      "status": "FAIL"
+    },
+    "tmul@1000000": {
+      "operation": "tmul",
+      "size": 1000000,
+      "baseline_mops": 35539.89,
+      "current_mops": 20094.686161191537,
+      "delta_mops": -15445.203838808462,
+      "delta_percent": -43.458783465026094,
+      "regression": true,
+      "status": "FAIL"
+    },
+    "tmin@1000000": {
+      "operation": "tmin",
+      "size": 1000000,
+      "baseline_mops": 31569.04,
+      "current_mops": 18719.51059711495,
+      "delta_mops": -12849.529402885051,
+      "delta_percent": -40.70294631349275,
+      "regression": true,
+      "status": "FAIL"
+    },
+    "tmax@1000000": {
+      "operation": "tmax",
+      "size": 1000000,
+      "baseline_mops": 29471.14,
+      "current_mops": 19116.694035400295,
+      "delta_mops": -10354.445964599705,
+      "delta_percent": -35.13418878468802,
+      "regression": true,
+      "status": "FAIL"
+    },
+    "tnot@1000000": {
+      "operation": "tnot",
+      "size": 1000000,
+      "baseline_mops": 39056.4,
+      "current_mops": 20396.59132165832,
+      "delta_mops": -18659.80867834168,
+      "delta_percent": -47.77657100588298,
+      "regression": true,
+      "status": "FAIL"
+    }
+  },
+  "passed": false
+}
