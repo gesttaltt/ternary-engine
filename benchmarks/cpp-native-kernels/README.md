@@ -4,6 +4,175 @@
 
 ---
 
+## Source Code Targets
+
+These benchmarks target two distinct codebases with clear separation of concerns:
+
+### src/core/ — Production Kernel (Validated, Stable)
+
+| Component | Path | Description |
+|-----------|------|-------------|
+| Algebra | `src/core/algebra/` | Scalar operations + compile-time LUTs |
+| SIMD Kernels | `src/core/simd/` | AVX2-accelerated operations (32 parallel trits) |
+| Fusion | `src/core/simd/ternary_fusion.h` | Fused operations (validated 1.5-3.0× speedup) |
+| CPU Detection | `src/core/simd/ternary_cpu_detect.h` | Runtime ISA detection |
+| Unified API | `src/core/core_api.h` | Single include entry point |
+
+**Status:** Windows x64 validated, 65/65 tests passing, 35,042 Mops/s peak throughput
+
+### src/engine/ — Library Code (Experimental)
+
+| Component | Path | Description |
+|-----------|------|-------------|
+| Dense243 | `src/engine/dense243/` | 5 trits/byte encoding (95.3% density) |
+| Python Bindings | `src/engine/bindings_*.cpp` | pybind11 wrappers (NOT benchmarked here) |
+
+**Status:** Functional, validated pack/unpack, SIMD extraction pending
+
+### models/tritnet/ — TritNet Models (Experimental)
+
+| Component | Path | Description |
+|-----------|------|-------------|
+| GEMM | `models/tritnet/gemm/` | Ternary matrix multiplication |
+
+**Status:** Proof-of-concept, Phase 2 training in progress
+
+---
+
+## Benchmark Files
+
+### Core Kernel Benchmarks (src/core/)
+
+| File | Target | Description |
+|------|--------|-------------|
+| `benchmark_main.cpp` | `core/algebra/`, `core/simd/` | Production suite with JSON/CSV, OpenMP |
+| `bench_kernels.cpp` | `core/algebra/`, `core/simd/` | SIMD vs scalar microbenchmarks |
+| `bench_fusion.cpp` | `core/simd/ternary_fusion.h` | Fused operation speedup validation |
+
+### Engine Library Benchmarks (src/engine/)
+
+| File | Target | Description |
+|------|--------|-------------|
+| `bench_dense243.cpp` | `engine/dense243/` | Pack/unpack/extract throughput |
+
+### TritNet Benchmarks (models/tritnet/)
+
+| File | Target | Description |
+|------|--------|-------------|
+| `bench_tritnet_gemm.cpp` | `models/tritnet/gemm/` | GEMM performance vs BitNet |
+
+### Utility Headers
+
+| File | Description |
+|------|-------------|
+| `include/cpu_info.h` | CPU detection (vendor, AVX2/512 support) |
+| `include/timer.h` | High-resolution timing utilities |
+
+### Reference Implementation
+
+| File | Description |
+|------|-------------|
+| `reference_cpp.cpp` | Unoptimized baseline (pybind11 module) |
+
+---
+
+## Compilation
+
+All benchmarks compile from the `benchmarks/cpp-native-kernels/` directory.
+
+### Core Kernel Benchmarks
+
+```bash
+# bench_kernels.cpp (SIMD microbenchmarks)
+g++ -O3 -march=native -mavx2 -std=c++17 -I../../src bench_kernels.cpp -o bench_kernels
+clang++ -O3 -march=native -mavx2 -std=c++17 -I../../src bench_kernels.cpp -o bench_kernels
+
+# benchmark_main.cpp (production suite with OpenMP)
+g++ -O3 -march=native -mavx2 -fopenmp -std=c++17 -I../../src benchmark_main.cpp -o bench_main
+clang++ -O3 -march=native -mavx2 -fopenmp -std=c++17 -I../../src benchmark_main.cpp -o bench_main
+
+# bench_fusion.cpp (fused operations)
+g++ -O3 -march=native -mavx2 -std=c++17 -I../../src bench_fusion.cpp -o bench_fusion
+```
+
+### Engine Library Benchmarks
+
+```bash
+# bench_dense243.cpp (Dense243 encoding)
+g++ -O3 -march=native -mavx2 -std=c++17 -I../../src bench_dense243.cpp -o bench_dense243
+```
+
+### TritNet Benchmarks
+
+```bash
+# bench_tritnet_gemm.cpp (TritNet GEMM)
+g++ -O3 -march=native -mavx2 -std=c++17 -I../../ bench_tritnet_gemm.cpp -o bench_gemm
+```
+
+### Windows (MSVC)
+
+```cmd
+:: Core benchmarks
+cl /O2 /arch:AVX2 /std:c++17 /EHsc /I..\..\src bench_kernels.cpp
+cl /O2 /arch:AVX2 /openmp /std:c++17 /EHsc /I..\..\src benchmark_main.cpp
+
+:: Engine benchmarks
+cl /O2 /arch:AVX2 /std:c++17 /EHsc /I..\..\src bench_dense243.cpp
+
+:: TritNet benchmarks
+cl /O2 /arch:AVX2 /std:c++17 /EHsc /I..\..\ bench_tritnet_gemm.cpp
+```
+
+---
+
+## Usage
+
+### bench_kernels (SIMD microbenchmarks)
+
+```bash
+./bench_kernels              # Human-readable output
+./bench_kernels --csv        # CSV format for analysis
+./bench_kernels --json       # JSON format
+```
+
+**Output:** SIMD vs scalar throughput (ME/s), speedup ratios
+
+### benchmark_main (production suite)
+
+```bash
+./bench_main --repeat=5 --threads=12 --out=results/bench.json
+```
+
+**Output:** JSON + CSV telemetry for CI dashboards
+
+### bench_fusion (fused operations)
+
+```bash
+./bench_fusion               # Human-readable output
+./bench_fusion --csv         # CSV format
+```
+
+**Output:** Unfused vs fused timing, speedup ratios, coefficient of variation
+
+### bench_dense243 (Dense243 encoding)
+
+```bash
+./bench_dense243             # Human-readable output
+./bench_dense243 --csv       # CSV format
+```
+
+**Output:** Pack/unpack/extract throughput (ME/s)
+
+### bench_tritnet_gemm (TritNet GEMM)
+
+```bash
+./bench_gemm                 # Full benchmark suite + BitNet comparison
+```
+
+**Output:** GEMM throughput (Gops/s), memory bandwidth analysis
+
+---
+
 ## Why Native C++?
 
 Python benchmarks include interpreter overhead, pybind11 marshalling, and NumPy allocation costs. These native benchmarks measure:
@@ -15,70 +184,22 @@ Python benchmarks include interpreter overhead, pybind11 marshalling, and NumPy 
 
 The 35,042 Mops/s peak throughput claim requires native timing to be credible.
 
----
+### Overhead Breakdown
 
-## Files
-
-| File | Purpose |
-|------|---------|
-| `benchmark_main.cpp` | Production suite with JSON/CSV output, OpenMP threading |
-| `bench_kernels.cpp` | Kernel microbenchmarks (SIMD vs scalar comparison) |
-| `bench_tritnet_gemm.cpp` | TritNet GEMM vs BitNet performance analysis |
-| `reference_cpp.cpp` | Unoptimized baseline (pybind11 module) for fair comparison |
-| `include/cpu_info.h` | CPU detection (vendor, AVX2/512 support) |
-| `include/timer.h` | High-resolution timing utilities |
-
----
-
-## Build Instructions
-
-### benchmark_main.cpp (Production Suite)
-
-```bash
-# Windows (MSVC)
-cl /O2 /arch:AVX2 /openmp /std:c++17 /EHsc benchmark_main.cpp
-
-# Linux/macOS (GCC/Clang)
-g++ -O3 -march=native -fopenmp -std=c++17 benchmark_main.cpp -o bench
-clang++ -O3 -march=native -fopenmp -std=c++17 benchmark_main.cpp -o bench
-```
-
-**Usage:**
-```bash
-./bench --repeat=5 --threads=12 --out=results/bench.json
-```
-
-### bench_kernels.cpp (Microbenchmarks)
-
-```bash
-# GCC/Clang
-g++ -O3 -march=native -mavx2 -std=c++17 bench_kernels.cpp -o bench_kernels
-
-# Run
-./bench_kernels              # Human-readable output
-./bench_kernels --csv        # CSV format
-./bench_kernels --json       # JSON format
-```
-
-### bench_tritnet_gemm.cpp (TritNet GEMM)
-
-```bash
-# Requires tritnet_gemm.h from include/
-g++ -O3 -march=native -mavx2 -std=c++17 -I../../include bench_tritnet_gemm.cpp -o bench_gemm
-```
-
-### reference_cpp.cpp (Python Module)
-
-This is a pybind11 module compiled with the build system:
-```bash
-python build/build.py  # Builds as part of standard build
-```
+| Source | Typical Overhead |
+|--------|------------------|
+| pybind11 array conversion | 5-15% |
+| Python function dispatch | 1-5% |
+| NumPy output allocation | 5-10% |
+| GIL release/acquire | 1-3% |
+| **Total** | **12-33%** |
 
 ---
 
 ## Output Formats
 
 ### JSON (benchmark_main.cpp)
+
 ```json
 {
   "meta": {"compiler": "...", "threads": 12, "repeat": 5},
@@ -89,10 +210,61 @@ python build/build.py  # Builds as part of standard build
 ```
 
 ### CSV
+
 ```csv
 operation,size,throughput_simd_ME_s,throughput_scalar_ME_s,speedup
 tadd,1000000,3571.43,112.50,31.74
 ```
+
+---
+
+## Validation Against Python Benchmarks
+
+Compare with `python-with-interpreter-overhead/` to validate overhead estimates:
+
+```bash
+# Run native benchmark
+./bench_kernels --csv > native_results.csv
+
+# Run Python benchmark
+cd ../python-with-interpreter-overhead
+python bench_simd_core_ops.py > python_results.csv
+
+# Compare (Python should be 12-33% slower)
+```
+
+**Expected:** If Python shows **higher** throughput than native, something is wrong.
+
+---
+
+## Performance Expectations
+
+### Core SIMD Operations (bench_kernels, benchmark_main)
+
+| Operation | Scalar (ME/s) | SIMD (ME/s) | Speedup |
+|-----------|---------------|-------------|---------|
+| tadd | ~100 | ~3500 | ~35× |
+| tmul | ~100 | ~3500 | ~35× |
+| tmin | ~100 | ~3500 | ~35× |
+| tmax | ~100 | ~3500 | ~35× |
+| tnot | ~150 | ~4000 | ~27× |
+
+### Fusion Operations (bench_fusion)
+
+| Operation | Speedup Range | Average |
+|-----------|---------------|---------|
+| tnot(tadd) | 1.62-1.95× | 1.76× |
+| tnot(tmul) | 1.53-1.86× | 1.71× |
+| tnot(tmin) | 1.61-11.26× | 4.06× |
+| tnot(tmax) | 1.65-9.50× | 3.68× |
+
+### Dense243 Operations (bench_dense243)
+
+| Operation | Expected (ME/s) |
+|-----------|-----------------|
+| pack | ~50-100 |
+| unpack | ~100-200 |
+| extract | ~50-100 |
 
 ---
 
@@ -105,13 +277,29 @@ tadd,1000000,3571.43,112.50,31.74
 
 ---
 
-## Integration with Python Benchmarks
+## Architecture Summary
 
-These native benchmarks validate the Python benchmarks in `benchmarks/`. Use them to:
-
-1. Verify throughput claims (native should match or exceed Python results)
-2. Isolate kernel performance from FFI overhead
-3. Compare SIMD implementations across compilers
+```
+benchmarks/cpp-native-kernels/
+├── README.md                    # This file
+├── include/
+│   ├── cpu_info.h               # CPU detection utilities
+│   └── timer.h                  # Timing utilities
+│
+├── # Core Kernel Benchmarks (src/core/)
+├── benchmark_main.cpp           # Production suite (JSON/CSV, OpenMP)
+├── bench_kernels.cpp            # SIMD vs scalar microbenchmarks
+├── bench_fusion.cpp             # Fused operation validation
+│
+├── # Engine Library Benchmarks (src/engine/)
+├── bench_dense243.cpp           # Dense243 pack/unpack/extract
+│
+├── # TritNet Benchmarks (models/tritnet/)
+├── bench_tritnet_gemm.cpp       # TritNet GEMM vs BitNet
+│
+└── # Reference
+    └── reference_cpp.cpp        # Unoptimized baseline (pybind11)
+```
 
 ---
 

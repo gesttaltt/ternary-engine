@@ -25,13 +25,20 @@
 // - Comparison with xsimd, Eigen, and other SIMD libraries
 //
 // COMPILATION:
-//   g++ -O3 -march=native -mavx2 -std=c++17 bench_kernels.cpp -o bench_kernels
+//   # From benchmarks/cpp-native-kernels/ directory:
+//   g++ -O3 -march=native -mavx2 -std=c++17 -I../../src bench_kernels.cpp -o bench_kernels
+//   clang++ -O3 -march=native -mavx2 -std=c++17 -I../../src bench_kernels.cpp -o bench_kernels
+//
+//   # Windows (MSVC):
+//   cl /O2 /arch:AVX2 /std:c++17 /EHsc /I..\..\src bench_kernels.cpp
 //
 // USAGE:
 //   ./bench_kernels                    # Run all benchmarks
 //   ./bench_kernels --csv              # Output CSV format
 //   ./bench_kernels --json             # Output JSON format
 //   ./bench_kernels --sizes=1000,10000 # Benchmark specific sizes
+//
+// TARGET: src/core/ - Production SIMD kernels (validated, stable)
 //
 // =============================================================================
 
@@ -43,9 +50,10 @@
 #include <string>
 #include <cmath>
 
-#include "../ternary_simd_kernels.h"
-#include "../ternary_algebra.h"
-#include "../ternary_cpu_detect.h"
+// Core kernel includes (src/core/)
+#include "core/simd/ternary_simd_kernels.h"
+#include "core/algebra/ternary_algebra.h"
+#include "core/simd/ternary_cpu_detect.h"
 
 // =============================================================================
 // Benchmark Configuration

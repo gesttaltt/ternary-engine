@@ -1,16 +1,19 @@
 // benchmark_main.cpp — Production-grade benchmark suite for ternary_simd_engine
 //
-// Compile:
-//   clang++ -O3 -march=native -fopenmp -std=c++17 benchmark_main.cpp -o bench
-//   g++ -O3 -march=native -fopenmp -std=c++17 benchmark_main.cpp -o bench
+// Compile (from benchmarks/cpp-native-kernels/ directory):
+//   clang++ -O3 -march=native -fopenmp -std=c++17 -I../../src benchmark_main.cpp -o bench
+//   g++ -O3 -march=native -fopenmp -std=c++17 -I../../src benchmark_main.cpp -o bench
+//
 // Windows (MSVC):
-//   cl /O2 /arch:AVX2 /openmp /std:c++17 /EHsc benchmark_main.cpp
+//   cl /O2 /arch:AVX2 /openmp /std:c++17 /EHsc /I..\..\src benchmark_main.cpp
 //
 // Run:
 //   ./bench --repeat=5 --threads=12 --out=results/bench.json
 //
 // JSON + CSV telemetry outputs for CI dashboards (Grafana/Plotly/Sheets).
 // Deterministic RNG ensures reproducibility.
+//
+// TARGET: src/core/ - Production SIMD kernels (validated, stable)
 
 #include <iostream>
 #include <vector>
@@ -25,9 +28,9 @@
 #include <cstring>
 #include <omp.h>
 
-// Include ternary algebra and SIMD kernels
-#include "../ternary_algebra.h"
-#include "../ternary_simd_kernels.h"
+// Core kernel includes (src/core/)
+#include "core/algebra/ternary_algebra.h"
+#include "core/simd/ternary_simd_kernels.h"
 
 // Simple JSON builder (no external dependency)
 namespace json {

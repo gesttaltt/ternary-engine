@@ -6,9 +6,20 @@
  * against BitNet's expected performance.
  *
  * @date 2025-11-23
+ *
+ * COMPILATION (from benchmarks/cpp-native-kernels/ directory):
+ *   g++ -O3 -march=native -mavx2 -std=c++17 -I../../ bench_tritnet_gemm.cpp -o bench_gemm
+ *   clang++ -O3 -march=native -mavx2 -std=c++17 -I../../ bench_tritnet_gemm.cpp -o bench_gemm
+ *
+ *   # Windows (MSVC):
+ *   cl /O2 /arch:AVX2 /std:c++17 /EHsc /I..\..\ bench_tritnet_gemm.cpp
+ *
+ * TARGET: models/tritnet/gemm/ - TritNet GEMM operations (experimental)
  */
 
-#include "../include/tritnet_gemm.h"
+// TritNet GEMM header (models/tritnet/gemm/)
+#include "models/tritnet/gemm/tritnet_gemm.h"
+
 #include <iostream>
 #include <vector>
 #include <chrono>
