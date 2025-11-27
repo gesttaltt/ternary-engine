@@ -1,6 +1,6 @@
 # CPU Detection Reference
 
-**File:** `ternary_cpu_detect.h`
+**File:** `cpu_simd_capability.h`
 **Status:** Production-ready
 **Supported Platforms:** x86-64 (Intel/AMD), ARM64 (NEON/SVE)
 
@@ -222,7 +222,7 @@ inline const char* simd_level_name(SIMDLevel level) {
 ## Usage Example
 
 ```cpp
-#include "core/simd/ternary_cpu_detect.h"
+#include "core/simd/cpu_simd_capability.h"
 
 int main() {
     // Detect best available SIMD

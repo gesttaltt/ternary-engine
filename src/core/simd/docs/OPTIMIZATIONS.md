@@ -1,6 +1,6 @@
 # Optimization Techniques Reference
 
-**Files:** `ternary_canonical_index.h`, `ternary_dual_shuffle.h`, `ternary_lut_256b.h`
+**Files:** `opt_canonical_index.h`, `opt_dual_shuffle_xor.h`, `opt_lut_256byte_expanded.h`
 **Status:** Experimental (AVX2 v2 Backend)
 **Combined Improvement:** 30-40% over baseline
 
@@ -20,7 +20,7 @@ Three optimization techniques target the critical path in SIMD operations:
 
 ## 1. Canonical Indexing
 
-**File:** `ternary_canonical_index.h`
+**File:** `opt_canonical_index.h`
 
 ### Problem
 
@@ -90,7 +90,7 @@ static inline __m256i canonical_index_avx2(__m256i trits_a, __m256i trits_b) {
 
 ## 2. Dual-Shuffle XOR
 
-**File:** `ternary_dual_shuffle.h`
+**File:** `opt_dual_shuffle_xor.h`
 
 ### Problem
 
@@ -170,7 +170,7 @@ static inline __m256i tadd_dual_shuffle(__m256i a, __m256i b) {
 
 ## 3. 256-Byte LUTs
 
-**File:** `ternary_lut_256b.h`
+**File:** `opt_lut_256byte_expanded.h`
 
 ### Problem
 

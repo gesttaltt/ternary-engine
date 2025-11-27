@@ -21,16 +21,17 @@ This directory contains the SIMD-accelerated kernels for ternary arithmetic oper
 │                                                                          │
 │  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐  │
 │  │   CPU Detection  │───▶│  Backend Select  │───▶│ Active Backend   │  │
-│  │  ternary_cpu_    │    │  ternary_backend │    │  (AVX2/Scalar)   │  │
-│  │   detect.h       │    │   _dispatch.cpp  │    │                  │  │
+│  │  cpu_simd_       │    │  backend_        │    │  (AVX2/Scalar)   │  │
+│  │  capability.h    │    │  registry_       │    │                  │  │
+│  │                  │    │  dispatch.cpp    │    │                  │  │
 │  └──────────────────┘    └──────────────────┘    └────────┬─────────┘  │
 │                                                           │             │
 │  ┌────────────────────────────────────────────────────────▼──────────┐ │
 │  │                      BACKEND IMPLEMENTATIONS                       │ │
 │  ├───────────────────┬───────────────────┬───────────────────────────┤ │
 │  │ Scalar Reference  │    AVX2 v1        │       AVX2 v2             │ │
-│  │ ternary_backend_  │ ternary_backend_  │ ternary_backend_          │ │
-│  │   scalar.cpp      │   avx2_v1.cpp     │   avx2_v2.cpp             │ │
+│  │ backend_scalar_   │ backend_avx2_     │ backend_avx2_             │ │
+│  │   impl.cpp        │   v1_baseline.cpp │   v2_optimized.cpp        │ │
 │  │ (Baseline/Verify) │ (Current Stable)  │ (v1.2.0 Optimizations)    │ │
 │  └───────────────────┴───────────────────┴───────────────────────────┘ │
 │                                                                          │
@@ -38,9 +39,10 @@ This directory contains the SIMD-accelerated kernels for ternary arithmetic oper
 │  │                        KERNEL LAYER                                │ │
 │  ├─────────────────┬─────────────────────┬────────────────────────────┤ │
 │  │  SIMD Kernels   │  Fusion Operations  │  Optimization Headers     │ │
-│  │  ternary_simd_  │  ternary_fusion.h   │  • canonical_index.h      │ │
-│  │   kernels.h     │  (1.5-11× speedup)  │  • dual_shuffle.h         │ │
-│  │  (32 trits/op)  │                     │  • lut_256b.h             │ │
+│  │ simd_avx2_      │ fused_binary_       │  • opt_canonical_index.h  │ │
+│  │  32trit_ops.h   │   unary_ops.h       │  • opt_dual_shuffle_xor.h │ │
+│  │  (32 trits/op)  │  (1.5-11× speedup)  │  • opt_lut_256byte_       │ │
+│  │                 │                     │    expanded.h             │ │
 │  └─────────────────┴─────────────────────┴────────────────────────────┘ │
 │                                                                          │
 │  ┌────────────────────────────────────────────────────────────────────┐ │
@@ -59,28 +61,28 @@ This directory contains the SIMD-accelerated kernels for ternary arithmetic oper
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `ternary_simd_kernels.h` | Main SIMD kernel functions (tadd, tmul, tmin, tmax, tnot) | Production |
-| `ternary_fusion.h` | Fused operations (Phase 4.0/4.1) | Validated |
-| `ternary_cpu_detect.h` | Runtime CPU feature detection | Production |
-| `ternary_scalar_reference.h` | Golden baseline for correctness verification | Production |
+| `simd_avx2_32trit_ops.h` | Main SIMD kernel functions (tadd, tmul, tmin, tmax, tnot) | Production |
+| `fused_binary_unary_ops.h` | Fused operations (Phase 4.0/4.1) | Validated |
+| `cpu_simd_capability.h` | Runtime CPU feature detection | Production |
+| `scalar_golden_baseline.h` | Golden baseline for correctness verification | Production |
 
 ### Backend System
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `ternary_backend_interface.h` | Abstract backend interface (C API) | Production |
-| `ternary_backend_dispatch.cpp` | Registration and dispatch implementation | Production |
-| `ternary_backend_scalar.cpp` | Scalar reference backend | Production |
-| `ternary_backend_avx2_v1.cpp` | AVX2 backend (current stable) | Production |
-| `ternary_backend_avx2_v2.cpp` | AVX2 backend (v1.2.0 optimizations) | Experimental |
+| `backend_plugin_api.h` | Abstract backend interface (C API) | Production |
+| `backend_registry_dispatch.cpp` | Registration and dispatch implementation | Production |
+| `backend_scalar_impl.cpp` | Scalar reference backend | Production |
+| `backend_avx2_v1_baseline.cpp` | AVX2 backend (current stable) | Production |
+| `backend_avx2_v2_optimized.cpp` | AVX2 backend (v1.2.0 optimizations) | Experimental |
 
 ### Optimization Headers
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `ternary_canonical_index.h` | Canonical indexing (12-18% improvement) | Production |
-| `ternary_dual_shuffle.h` | Dual-shuffle XOR optimization | Experimental |
-| `ternary_lut_256b.h` | 256-byte expanded LUTs | Experimental |
+| `opt_canonical_index.h` | Canonical indexing (12-18% improvement) | Production |
+| `opt_dual_shuffle_xor.h` | Dual-shuffle XOR optimization | Experimental |
+| `opt_lut_256byte_expanded.h` | 256-byte expanded LUTs | Experimental |
 
 ---
 
@@ -110,7 +112,7 @@ This directory contains the SIMD-accelerated kernels for ternary arithmetic oper
 ## Usage Example
 
 ```cpp
-#include "core/simd/ternary_simd_kernels.h"
+#include "core/simd/simd_avx2_32trit_ops.h"
 #include <immintrin.h>
 
 void process_trits(const uint8_t* a, const uint8_t* b, uint8_t* result, size_t n) {

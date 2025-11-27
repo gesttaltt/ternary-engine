@@ -1,4 +1,4 @@
-// ternary_scalar_reference.h — Scalar reference implementations (golden baseline)
+// scalar_golden_baseline.h — Golden baseline scalar implementations for verification
 //
 // Copyright (c) 2025 Jonathan Verdun (Ternary Engine Project)
 //
@@ -23,8 +23,8 @@
 // LUT operations. These are NOT optimized - they are CORRECT BY CONSTRUCTION.
 // Performance is irrelevant; semantic correctness is everything.
 
-#ifndef TERNARY_SCALAR_REFERENCE_H
-#define TERNARY_SCALAR_REFERENCE_H
+#ifndef SCALAR_GOLDEN_BASELINE_H
+#define SCALAR_GOLDEN_BASELINE_H
 
 #include <cstdint>
 #include <cstddef>

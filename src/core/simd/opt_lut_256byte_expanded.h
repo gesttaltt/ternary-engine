@@ -1,5 +1,5 @@
 /**
- * ternary_lut_256b.h - 256-Byte Expanded LUTs for Ternary Operations
+ * opt_lut_256byte_expanded.h - 256-byte expanded LUT optimization (10-20% improvement)
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
@@ -23,8 +23,8 @@
  * Architecture: Backend optimization, semantic layer unchanged
  */
 
-#ifndef TERNARY_LUT_256B_H
-#define TERNARY_LUT_256B_H
+#ifndef OPT_LUT_256BYTE_EXPANDED_H
+#define OPT_LUT_256BYTE_EXPANDED_H
 
 #include <stdint.h>
 #include <string.h>

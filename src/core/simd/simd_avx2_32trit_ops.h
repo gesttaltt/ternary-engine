@@ -1,4 +1,4 @@
-// ternary_simd_kernels.h — Standalone SIMD kernels (no pybind11 dependency)
+// simd_avx2_32trit_ops.h — AVX2 SIMD kernels processing 32 trits per operation
 //
 // Copyright (c) 2025 Jonathan Verdun (Ternary Engine Project)
 //
@@ -18,13 +18,13 @@
 // This header extracts the pure SIMD kernel functions from ternary_simd_engine.cpp
 // for use in benchmarks and standalone C++ applications without pybind11 dependency.
 
-#ifndef TERNARY_SIMD_KERNELS_H
-#define TERNARY_SIMD_KERNELS_H
+#ifndef SIMD_AVX2_32TRIT_OPS_H
+#define SIMD_AVX2_32TRIT_OPS_H
 
 #include <immintrin.h>
 #include <stdint.h>
 #include "../algebra/ternary_algebra.h"
-#include "ternary_canonical_index.h"
+#include "opt_canonical_index.h"
 
 // Helper: Load 16-entry LUT and broadcast to both 128-bit lanes of 256-bit vector
 static inline __m256i broadcast_lut_16(const uint8_t* lut) {
@@ -113,4 +113,4 @@ static inline __m256i tnot_simd(__m256i a) {
     return _mm256_shuffle_epi8(g_luts.tnot, indices);
 }
 
-#endif // TERNARY_SIMD_KERNELS_H
+#endif // SIMD_AVX2_32TRIT_OPS_H

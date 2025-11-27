@@ -1,11 +1,11 @@
 /**
- * ternary_backend_dispatch.cpp - Backend Registration and Dispatch Implementation
+ * backend_registry_dispatch.cpp - Backend registration, selection, and dispatch
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
  */
 
-#include "ternary_backend_interface.h"
+#include "backend_plugin_api.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -14,14 +14,14 @@
 // Global LUT Definitions (extern from headers)
 // ============================================================================
 
-// From ternary_lut_256b.h
+// From opt_lut_256byte_expanded.h
 alignas(256) uint8_t TADD_LUT_256B[4096] = {0};
 alignas(256) uint8_t TMUL_LUT_256B[4096] = {0};
 alignas(256) uint8_t TMAX_LUT_256B[4096] = {0};
 alignas(256) uint8_t TMIN_LUT_256B[4096] = {0};
 alignas(256) uint8_t TNOT_LUT_256B[256] = {0};
 
-// From ternary_dual_shuffle.h
+// From opt_dual_shuffle_xor.h
 alignas(32) uint8_t TNOT_DUAL_A[32] = {0};
 alignas(32) uint8_t TNOT_DUAL_B[32] = {0};
 alignas(32) uint8_t TADD_DUAL_A[32] = {0};

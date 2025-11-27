@@ -20,7 +20,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
-#include "core/simd/ternary_backend_interface.h"
+#include "core/simd/backend_plugin_api.h"
 #include <vector>
 #include <string>
 #include <sstream>

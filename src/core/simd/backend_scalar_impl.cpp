@@ -1,5 +1,5 @@
 /**
- * ternary_backend_scalar.c - Scalar Reference Backend Implementation
+ * backend_scalar_impl.cpp - Portable scalar backend (baseline reference)
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
@@ -16,7 +16,7 @@
  * Performance: ~100-500 Mops/s (depending on CPU and compiler)
  */
 
-#include "ternary_backend_interface.h"
+#include "backend_plugin_api.h"
 #include "../algebra/ternary_algebra.h"
 #include <stdbool.h>
 

@@ -1,6 +1,6 @@
 # Backend System Reference
 
-**Files:** `ternary_backend_interface.h`, `ternary_backend_dispatch.cpp`, `ternary_backend_*.cpp`
+**Files:** `backend_plugin_api.h`, `backend_registry_dispatch.cpp`, `backend_*.cpp`
 **Status:** Production-ready
 
 ---
@@ -211,7 +211,7 @@ void ternary_dispatch_fused_tnot_tmax(uint8_t* dst, const uint8_t* a, const uint
 ## Usage Example
 
 ```c
-#include "core/simd/ternary_backend_interface.h"
+#include "core/simd/backend_plugin_api.h"
 
 int main() {
     // Initialize backend system
@@ -247,9 +247,9 @@ int main() {
 ### 1. Implement the Backend
 
 ```c
-// ternary_backend_my_impl.cpp
+// backend_my_impl.cpp
 
-#include "ternary_backend_interface.h"
+#include "backend_plugin_api.h"
 
 static bool my_backend_available(void) {
     // Check if this backend can run on current CPU
@@ -288,7 +288,7 @@ void ternary_register_my_backend(void) {
 ### 2. Register in Dispatch
 
 ```c
-// In ternary_backend_dispatch.cpp
+// In backend_registry_dispatch.cpp
 
 extern void ternary_register_my_backend(void);
 

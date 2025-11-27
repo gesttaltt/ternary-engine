@@ -1,5 +1,5 @@
 /**
- * ternary_canonical_index.h - Canonical Index LUT for Ternary Operations
+ * opt_canonical_index.h - Canonical index optimization (12-18% improvement)
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
@@ -23,8 +23,8 @@
  * The canonical 2-bit internal format remains unchanged.
  */
 
-#ifndef TERNARY_CANONICAL_INDEX_H
-#define TERNARY_CANONICAL_INDEX_H
+#ifndef OPT_CANONICAL_INDEX_H
+#define OPT_CANONICAL_INDEX_H
 
 #include <stdint.h>
 #include <immintrin.h>

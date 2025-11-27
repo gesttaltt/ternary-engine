@@ -44,9 +44,9 @@
 #include "algebra/ternary_algebra.h"
 
 // SIMD kernels and CPU detection
-#include "simd/ternary_cpu_detect.h"
-#include "simd/ternary_simd_kernels.h"
-#include "simd/ternary_fusion.h"
+#include "simd/cpu_simd_capability.h"
+#include "simd/simd_avx2_32trit_ops.h"
+#include "simd/fused_binary_unary_ops.h"
 
 // FFI layer for cross-language integration
 #include "ffi/ternary_c_api.h"

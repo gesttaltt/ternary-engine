@@ -86,9 +86,9 @@
 #include <pybind11/numpy.h>
 #include "core/algebra/ternary_algebra.h"
 #include "core/common/ternary_errors.h"
-#include "core/simd/ternary_cpu_detect.h"
-#include "core/simd/ternary_simd_kernels.h"
-#include "core/simd/ternary_fusion.h"
+#include "core/simd/cpu_simd_capability.h"
+#include "core/simd/simd_avx2_32trit_ops.h"
+#include "core/simd/fused_binary_unary_ops.h"
 #include "core/config/optimization_config.h"
 #include "core/profiling/ternary_profiler.h"
 

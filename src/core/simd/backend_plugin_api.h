@@ -1,5 +1,5 @@
 /**
- * ternary_backend_interface.h - Backend Interface for Ternary Operations
+ * backend_plugin_api.h - Pluggable backend interface for ternary operations
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
@@ -21,8 +21,8 @@
  * only implementing this interface, not rewriting the entire engine.
  */
 
-#ifndef TERNARY_BACKEND_INTERFACE_H
-#define TERNARY_BACKEND_INTERFACE_H
+#ifndef BACKEND_PLUGIN_API_H
+#define BACKEND_PLUGIN_API_H
 
 #include <stdint.h>
 #include <stddef.h>

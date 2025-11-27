@@ -1,8 +1,8 @@
 # SIMD Kernels Reference
 
-**File:** `ternary_simd_kernels.h`
+**File:** `simd_avx2_32trit_ops.h`
 **Status:** Production-ready
-**Dependencies:** `ternary_algebra.h`, `ternary_canonical_index.h`
+**Dependencies:** `ternary_algebra.h`, `opt_canonical_index.h`
 
 ---
 
@@ -223,7 +223,7 @@ static const BroadcastedLUTs g_luts;  // Global singleton
 ### Include Path
 
 ```cpp
-#include "core/simd/ternary_simd_kernels.h"
+#include "core/simd/simd_avx2_32trit_ops.h"
 ```
 
 ### Compiler Flags

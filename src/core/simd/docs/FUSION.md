@@ -1,6 +1,6 @@
 # Fusion Operations Reference
 
-**File:** `ternary_fusion.h`
+**File:** `fused_binary_unary_ops.h`
 **Status:** Validated (2025-10-29)
 **Phase:** 4.0 (PoC) + 4.1 (Full Suite)
 
@@ -197,7 +197,7 @@ Large arrays benefit most because memory bandwidth becomes the bottleneck.
 ## Usage Example
 
 ```cpp
-#include "core/simd/ternary_fusion.h"
+#include "core/simd/fused_binary_unary_ops.h"
 
 void apply_fused_operation(
     const uint8_t* a,

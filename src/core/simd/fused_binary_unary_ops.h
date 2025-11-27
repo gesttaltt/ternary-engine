@@ -1,4 +1,4 @@
-// ternary_fusion.h — Operation Fusion Infrastructure (Phase 4.0 PoC)
+// fused_binary_unary_ops.h — Fused binary→unary operations eliminating intermediate arrays
 //
 // Copyright (c) 2025 Jonathan Verdun (Ternary Engine Project)
 //
@@ -89,10 +89,10 @@
 //
 // =============================================================================
 
-#ifndef TERNARY_FUSION_H
-#define TERNARY_FUSION_H
+#ifndef FUSED_BINARY_UNARY_OPS_H
+#define FUSED_BINARY_UNARY_OPS_H
 
-#include "ternary_simd_kernels.h"
+#include "simd_avx2_32trit_ops.h"
 #include "../algebra/ternary_algebra.h"
 
 // =============================================================================

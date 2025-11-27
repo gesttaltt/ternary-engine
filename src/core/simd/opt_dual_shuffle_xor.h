@@ -1,5 +1,5 @@
 /**
- * ternary_dual_shuffle.h - Dual-Shuffle XOR Optimization for Ternary SIMD
+ * opt_dual_shuffle_xor.h - Dual-shuffle XOR optimization (15-25% improvement)
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
@@ -38,8 +38,8 @@
  * Architecture: Backend optimization, semantics unchanged
  */
 
-#ifndef TERNARY_DUAL_SHUFFLE_H
-#define TERNARY_DUAL_SHUFFLE_H
+#ifndef OPT_DUAL_SHUFFLE_XOR_H
+#define OPT_DUAL_SHUFFLE_XOR_H
 
 #include <stdint.h>
 #include <immintrin.h>

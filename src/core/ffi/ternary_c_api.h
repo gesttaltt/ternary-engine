@@ -141,8 +141,8 @@ const char* ternary_simd_level_name(void);
 
 #ifdef __cplusplus
 
-#include "../simd/ternary_simd_kernels.h"
-#include "../simd/ternary_cpu_detect.h"
+#include "../simd/simd_avx2_32trit_ops.h"
+#include "../simd/cpu_simd_capability.h"
 #include "../algebra/ternary_algebra.h"
 #include <algorithm>
 

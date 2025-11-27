@@ -1,5 +1,5 @@
 /**
- * ternary_backend_avx2_v2.cpp - AVX2 Backend with v1.2.0 Optimizations
+ * backend_avx2_v2_optimized.cpp - AVX2 optimized backend (35-45 Gops/s)
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
@@ -17,14 +17,14 @@
  * - Expected 12-18% performance improvement over traditional indexing
  */
 
-#include "ternary_backend_interface.h"
+#include "backend_plugin_api.h"
 
 #ifdef __AVX2__
 
-#include "ternary_canonical_index.h"
-#include "ternary_dual_shuffle.h"
-#include "ternary_fusion.h"                    // Phase 4.1 fusion operations
-#include "../simd/ternary_cpu_detect.h"
+#include "opt_canonical_index.h"
+#include "opt_dual_shuffle_xor.h"
+#include "fused_binary_unary_ops.h"            // Phase 4.1 fusion operations
+#include "cpu_simd_capability.h"
 #include "../algebra/ternary_algebra.h"        // Scalar operations for fallback
 #include "../algebra/ternary_canonical_lut.h"  // Canonical LUTs
 #include "../config/optimization_config.h"      // OMP_THRESHOLD, STREAM_THRESHOLD, PREFETCH_DIST

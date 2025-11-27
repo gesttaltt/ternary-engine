@@ -1,4 +1,4 @@
-// ternary_cpu_detect.h — Runtime CPU feature detection for SIMD capabilities
+// cpu_simd_capability.h — Runtime CPU SIMD capability detection (AVX2/AVX-512/NEON/SVE)
 //
 // Copyright (c) 2025 Jonathan Verdun (Ternary Engine Project)
 //
@@ -29,8 +29,8 @@
 //
 // =============================================================================
 
-#ifndef TERNARY_CPU_DETECT_H
-#define TERNARY_CPU_DETECT_H
+#ifndef CPU_SIMD_CAPABILITY_H
+#define CPU_SIMD_CAPABILITY_H
 
 #include <stdint.h>
 

@@ -1,5 +1,5 @@
 /**
- * ternary_backend_avx2_v1.cpp - AVX2 v1 Backend Wrapper
+ * backend_avx2_v1_baseline.cpp - AVX2 v1 baseline backend (28-35 Gops/s)
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
@@ -10,12 +10,12 @@
  * Performance: 28-35 Gops/s (validated v1.1.0)
  */
 
-#include "ternary_backend_interface.h"
+#include "backend_plugin_api.h"
 
 #ifdef __AVX2__
 
-#include "ternary_simd_kernels.h"
-#include "../simd/ternary_cpu_detect.h"
+#include "simd_avx2_32trit_ops.h"
+#include "cpu_simd_capability.h"
 #include "../algebra/ternary_algebra.h"
 #include <immintrin.h>
 #include <stdbool.h>
@@ -30,7 +30,7 @@ static void avx2_v1_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
     // Process 32 trits at a time
     for (; i + 32 <= n; i += 32) {
         __m256i a = _mm256_loadu_si256((const __m256i*)(src + i));
-        __m256i result = tnot_simd<true>(a);  // From ternary_simd_kernels.h
+        __m256i result = tnot_simd<true>(a);  // From simd_avx2_32trit_ops.h
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
@@ -46,7 +46,7 @@ static void avx2_v1_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_
     for (; i + 32 <= n; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
         __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i result = tadd_simd<true>(va, vb);  // From ternary_simd_kernels.h
+        __m256i result = tadd_simd<true>(va, vb);  // From simd_avx2_32trit_ops.h
         _mm256_storeu_si256((__m256i*)(dst + i), result);
     }
 
