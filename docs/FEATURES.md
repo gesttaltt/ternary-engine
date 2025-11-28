@@ -37,7 +37,7 @@ Comprehensive catalog of all features, optimizations, and abstractions in the Te
 
 **Files:**
 - `src/core/algebra/ternary_algebra.h` - Scalar operations
-- `src/core/simd/ternary_simd_kernels.h` - SIMD operations
+- `src/core/simd/simd_avx2_32trit_ops.h` - SIMD operations
 
 ### 1.2 Trit Encoding
 
@@ -76,7 +76,7 @@ Comprehensive catalog of all features, optimizations, and abstractions in the Te
 **Files:**
 - `src/engine/dense243/ternary_dense243.h` - Core encoding
 - `src/engine/dense243/ternary_dense243_simd.h` - SIMD extraction
-- `docs/t5-dense243-spec.md` - Specification
+- `docs/specifications/dense243_encoding_spec.md` - Specification
 
 ### 2.3 TriadSextet Encoding
 
