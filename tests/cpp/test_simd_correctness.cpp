@@ -21,8 +21,8 @@
 #include <stdlib.h>  // posix_memalign
 #endif
 
-#include "../src/core/simd/ternary_simd_kernels.h"
-#include "../src/core/simd/ternary_scalar_reference.h"
+#include "../src/core/simd/simd_avx2_32trit_ops.h"
+#include "../src/core/simd/scalar_golden_baseline.h"
 
 using namespace ternary_reference;
 

@@ -290,10 +290,10 @@ uint8_t b = 0b10;  // +1
 size_t idx = canonical_index_scalar(a, b);
 uint8_t result = TADD_CANONICAL_LUT[idx];  // Result: 0b01 (0, since -1+1=0)
 
-// AVX2 usage (in ternary_backend_avx2_v2.cpp):
+// AVX2 usage (in backend_avx2_v2_optimized.cpp):
 __m256i a_vec = _mm256_loadu_si256(...);
 __m256i b_vec = _mm256_loadu_si256(...);
-__m256i indices = canonical_index_avx2(a_vec, b_vec);  // From ternary_canonical_index.h
+__m256i indices = canonical_index_avx2(a_vec, b_vec);  // From opt_canonical_index.h
 __m256i lut = _mm256_load_si256((__m256i*)TADD_CANONICAL_LUT.data());
 __m256i result = _mm256_shuffle_epi8(lut, indices);
 */

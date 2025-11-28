@@ -92,10 +92,10 @@ else:
 # Backend module sources
 sources = [
     os.path.join(PROJECT_ROOT, "src/engine/bindings_backend_api.cpp"),
-    os.path.join(PROJECT_ROOT, "src/core/simd/ternary_backend_dispatch.cpp"),
-    os.path.join(PROJECT_ROOT, "src/core/simd/ternary_backend_scalar.cpp"),
-    os.path.join(PROJECT_ROOT, "src/core/simd/ternary_backend_avx2_v1.cpp"),
-    os.path.join(PROJECT_ROOT, "src/core/simd/ternary_backend_avx2_v2.cpp"),
+    os.path.join(PROJECT_ROOT, "src/core/simd/backend_registry_dispatch.cpp"),
+    os.path.join(PROJECT_ROOT, "src/core/simd/backend_scalar_impl.cpp"),
+    os.path.join(PROJECT_ROOT, "src/core/simd/backend_avx2_v1_baseline.cpp"),
+    os.path.join(PROJECT_ROOT, "src/core/simd/backend_avx2_v2_optimized.cpp"),
 ]
 
 ext_modules = [

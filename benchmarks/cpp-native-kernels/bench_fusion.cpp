@@ -40,7 +40,7 @@
 //   ./bench_fusion              # Run all benchmarks
 //   ./bench_fusion --csv        # Output CSV format
 //
-// TARGET: src/core/simd/ternary_fusion.h - Fused SIMD operations (validated)
+// TARGET: src/core/simd/fused_binary_unary_ops.h - Fused SIMD operations (validated)
 //
 // =============================================================================
 
@@ -55,8 +55,8 @@
 #include <numeric>
 
 // Core kernel includes (src/core/)
-#include "core/simd/ternary_fusion.h"
-#include "core/simd/ternary_simd_kernels.h"
+#include "core/simd/fused_binary_unary_ops.h"
+#include "core/simd/simd_avx2_32trit_ops.h"
 #include "core/algebra/ternary_algebra.h"
 
 using clock_type = std::chrono::steady_clock;
@@ -225,7 +225,7 @@ BenchStats bench_fused(
 
 void print_header() {
     std::cout << "=============================================================================\n";
-    std::cout << "Fusion Operations Benchmark (src/core/simd/ternary_fusion.h)\n";
+    std::cout << "Fusion Operations Benchmark (src/core/simd/fused_binary_unary_ops.h)\n";
     std::cout << "=============================================================================\n\n";
     std::cout << "Comparing unfused (2-pass) vs fused (1-pass) operations\n";
     std::cout << "Expected speedup: 1.5-3.0× (micro-kernel, validated 2025-10-29)\n\n";

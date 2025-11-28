@@ -51,9 +51,9 @@
 #include <cmath>
 
 // Core kernel includes (src/core/)
-#include "core/simd/ternary_simd_kernels.h"
+#include "core/simd/simd_avx2_32trit_ops.h"
 #include "core/algebra/ternary_algebra.h"
-#include "core/simd/ternary_cpu_detect.h"
+#include "core/simd/cpu_simd_capability.h"
 
 // =============================================================================
 // Benchmark Configuration

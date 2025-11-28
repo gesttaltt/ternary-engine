@@ -16,7 +16,7 @@
 #include <cassert>
 #include <cstdio>
 
-#include "../../src/core/simd/ternary_backend_interface.h"
+#include "../../src/core/simd/backend_plugin_api.h"
 
 // Test counters
 static int tests_run = 0;

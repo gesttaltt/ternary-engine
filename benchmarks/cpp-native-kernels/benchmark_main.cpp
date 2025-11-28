@@ -30,7 +30,7 @@
 
 // Core kernel includes (src/core/)
 #include "core/algebra/ternary_algebra.h"
-#include "core/simd/ternary_simd_kernels.h"
+#include "core/simd/simd_avx2_32trit_ops.h"
 
 // Simple JSON builder (no external dependency)
 namespace json {

@@ -14,8 +14,8 @@ These benchmarks target two distinct codebases with clear separation of concerns
 |-----------|------|-------------|
 | Algebra | `src/core/algebra/` | Scalar operations + compile-time LUTs |
 | SIMD Kernels | `src/core/simd/` | AVX2-accelerated operations (32 parallel trits) |
-| Fusion | `src/core/simd/ternary_fusion.h` | Fused operations (validated 1.5-3.0× speedup) |
-| CPU Detection | `src/core/simd/ternary_cpu_detect.h` | Runtime ISA detection |
+| Fusion | `src/core/simd/fused_binary_unary_ops.h` | Fused operations (validated 1.5-3.0× speedup) |
+| CPU Detection | `src/core/simd/cpu_simd_capability.h` | Runtime ISA detection |
 | Unified API | `src/core/core_api.h` | Single include entry point |
 
 **Status:** Windows x64 validated, 65/65 tests passing, 35,042 Mops/s peak throughput
@@ -47,7 +47,7 @@ These benchmarks target two distinct codebases with clear separation of concerns
 |------|--------|-------------|
 | `benchmark_main.cpp` | `core/algebra/`, `core/simd/` | Production suite with JSON/CSV, OpenMP |
 | `bench_kernels.cpp` | `core/algebra/`, `core/simd/` | SIMD vs scalar microbenchmarks |
-| `bench_fusion.cpp` | `core/simd/ternary_fusion.h` | Fused operation speedup validation |
+| `bench_fusion.cpp` | `core/simd/fused_binary_unary_ops.h` | Fused operation speedup validation |
 
 ### Engine Library Benchmarks (src/engine/)
 
