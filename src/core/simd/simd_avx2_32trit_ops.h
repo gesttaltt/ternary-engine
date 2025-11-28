@@ -33,6 +33,7 @@ static inline __m256i broadcast_lut_16(const uint8_t* lut) {
 }
 
 // --- Pre-broadcasted LUT Cache (OPT-LUT-BROADCAST) ---
+// Uses CANONICAL LUTs for SIMD operations (dual-shuffle + ADD indexing)
 namespace {
     struct BroadcastedLUTs {
         __m256i tadd;
@@ -42,11 +43,11 @@ namespace {
         __m256i tnot;
 
         BroadcastedLUTs()
-            : tadd(broadcast_lut_16(TADD_LUT.data()))
-            , tmul(broadcast_lut_16(TMUL_LUT.data()))
-            , tmin(broadcast_lut_16(TMIN_LUT.data()))
-            , tmax(broadcast_lut_16(TMAX_LUT.data()))
-            , tnot(broadcast_lut_16(TNOT_LUT_SIMD.data()))
+            : tadd(broadcast_lut_16(TADD_LUT_CANONICAL.data()))
+            , tmul(broadcast_lut_16(TMUL_LUT_CANONICAL.data()))
+            , tmin(broadcast_lut_16(TMIN_LUT_CANONICAL.data()))
+            , tmax(broadcast_lut_16(TMAX_LUT_CANONICAL.data()))
+            , tnot(broadcast_lut_16(TNOT_LUT_CANONICAL.data()))
         {}
     };
 

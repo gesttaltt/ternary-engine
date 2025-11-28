@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Critical Fix - 2025-11-28 - Canonical Indexing LUT Correctness
+
+**Context:** SIMD kernel produced incorrect results for arrays ≥32 elements. Root cause: incomplete implementation of Phase 3.2 canonical indexing optimization.
+
+**Root Cause Identified:** Two incompatible indexing schemes were mixed:
+- Traditional: `(a << 2) | b` → indices 0,1,2,4,5,6,8,9,10 (gaps)
+- Canonical: `a*3 + b` → indices 0,1,2,3,4,5,6,7,8 (compact)
+
+SIMD kernel used canonical index calculation but LUTs were organized for traditional indexing, causing reads from wrong LUT positions.
+
+**Fixed:**
+- `src/core/algebra/ternary_lut_gen.h` - Added `make_canonical_binary_lut()` and `make_canonical_unary_lut()` generators
+- `src/core/algebra/ternary_algebra.h` - Added canonical LUT variants (TADD_LUT_CANONICAL, etc.)
+- `src/core/simd/simd_avx2_32trit_ops.h` - Updated SIMD kernels to use canonical LUTs
+
+**Added:**
+- `docs/CANONICAL_INDEXING_FIX.md` - Complete root cause analysis and resolution
+- `benchmarks/bench_canonical_fix.py` - Validation benchmark with overhead breakdown
+- `benchmarks/SKEPTICAL_METRICS.md` - Skeptical benchmarking framework
+- `benchmarks/test_falsification.py` - Falsification test suite
+
+**Performance Findings (Post-Fix):**
+- SIMD kernel: 29.3× faster than NumPy (when data is native ternary)
+- Conversion overhead: 97.6% of full pipeline time
+- Full pipeline vs NumPy: NumPy wins (conversion negates kernel advantage)
+- Crossover point: None found (conversion dominates at all sizes)
+
+**Key Insight:** The value of ternary engine is NOT in beating NumPy at int8 operations. The value is in:
+1. Native ternary data that never converts (29× advantage realized)
+2. Memory compression (4× vs int8)
+3. Sparse computation (zeros can be skipped - future work)
+
+**Validation:**
+- All correctness tests pass (was 0% for n≥32, now 100%)
+- Benchmarks saved to `benchmarks/results/canonical_fix_*.json`
+
+---
+
 ### Analysis - 2025-11-25 - GEMM Performance Root Cause Analysis
 
 **Context:** GEMM v1.0.0 exists (from TritNet v1.0.0 based on BitNet b1.58) but is functionally complete yet unoptimized.

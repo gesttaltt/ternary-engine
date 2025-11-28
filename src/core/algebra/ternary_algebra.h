@@ -100,6 +100,63 @@ constexpr auto TNOT_LUT_SIMD = make_unary_lut_padded([](uint8_t a) -> uint8_t {
     return int_to_trit_constexpr(negated);
 });
 
+// =============================================================================
+// CANONICAL INDEXING LUTs (for SIMD dual-shuffle optimization)
+// =============================================================================
+//
+// These LUTs are organized for canonical indexing: idx = a*3 + b
+// Used by SIMD kernels with dual-shuffle + ADD instead of shift + OR
+//
+// Layout:
+//   Index 0 = op(0,0) = op(-1,-1)    Index 1 = op(0,1) = op(-1, 0)
+//   Index 2 = op(0,2) = op(-1,+1)    Index 3 = op(1,0) = op( 0,-1)
+//   Index 4 = op(1,1) = op( 0, 0)    Index 5 = op(1,2) = op( 0,+1)
+//   Index 6 = op(2,0) = op(+1,-1)    Index 7 = op(2,1) = op(+1, 0)
+//   Index 8 = op(2,2) = op(+1,+1)    Index 9-15 = padding
+//
+// =============================================================================
+
+// TADD_CANONICAL: Saturated ternary addition (canonical layout)
+constexpr auto TADD_LUT_CANONICAL = make_canonical_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    // a,b are in canonical encoding: 0=-1, 1=0, 2=+1
+    int sa = static_cast<int>(a) - 1;  // Convert to integer: -1, 0, +1
+    int sb = static_cast<int>(b) - 1;
+    int sum = sa + sb;
+    // Saturate to [-1, +1] and convert back to encoding
+    return static_cast<uint8_t>(clamp_ternary(sum) + 1);
+});
+
+// TMUL_CANONICAL: Ternary multiplication (canonical layout)
+constexpr auto TMUL_LUT_CANONICAL = make_canonical_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = static_cast<int>(a) - 1;
+    int sb = static_cast<int>(b) - 1;
+    int product = sa * sb;
+    return static_cast<uint8_t>(product + 1);
+});
+
+// TMIN_CANONICAL: Ternary minimum (canonical layout)
+constexpr auto TMIN_LUT_CANONICAL = make_canonical_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = static_cast<int>(a) - 1;
+    int sb = static_cast<int>(b) - 1;
+    int minimum = (sa < sb) ? sa : sb;
+    return static_cast<uint8_t>(minimum + 1);
+});
+
+// TMAX_CANONICAL: Ternary maximum (canonical layout)
+constexpr auto TMAX_LUT_CANONICAL = make_canonical_binary_lut([](uint8_t a, uint8_t b) -> uint8_t {
+    int sa = static_cast<int>(a) - 1;
+    int sb = static_cast<int>(b) - 1;
+    int maximum = (sa > sb) ? sa : sb;
+    return static_cast<uint8_t>(maximum + 1);
+});
+
+// TNOT_CANONICAL: Ternary negation (canonical layout)
+constexpr auto TNOT_LUT_CANONICAL = make_canonical_unary_lut([](uint8_t a) -> uint8_t {
+    int sa = static_cast<int>(a) - 1;
+    int negated = -sa;
+    return static_cast<uint8_t>(negated + 1);
+});
+
 // --- Compile-time LUT size validation ---
 // Ensures LUTs have correct sizes for their respective use cases
 static_assert(TADD_LUT.size() == 16, "Binary LUTs must have 16 entries for AVX2 compatibility");

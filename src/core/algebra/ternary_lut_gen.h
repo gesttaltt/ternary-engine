@@ -108,4 +108,70 @@ constexpr int clamp_ternary(int value) {
     return value;
 }
 
+// =============================================================================
+// CANONICAL INDEXING LUT GENERATORS
+// =============================================================================
+//
+// Canonical indexing uses idx = a*3 + b instead of (a << 2) | b
+//
+// Benefits:
+// - Compact: Uses indices 0-8 (no gaps) vs 0,1,2,4,5,6,8,9,10 (with gaps)
+// - Algebraic: Preserves Z_3 group structure
+// - SIMD-friendly: Dual-shuffle + ADD instead of shift + OR
+//
+// Layout for 16-entry LUT (padded for AVX2 shuffle):
+//   [0] = op(-1, -1)   [1] = op(-1, 0)   [2] = op(-1, +1)
+//   [3] = op( 0, -1)   [4] = op( 0, 0)   [5] = op( 0, +1)
+//   [6] = op(+1, -1)   [7] = op(+1, 0)   [8] = op(+1, +1)
+//   [9-15] = padding (copies of [0] for safety)
+//
+// =============================================================================
+
+// --- Canonical Binary LUT Generator (16 entries, indices 0-8 used) ---
+// Generates lookup tables for binary operations with canonical indexing
+// Index formula: a*3 + b, where a,b ∈ {0, 1, 2} representing {-1, 0, +1}
+
+template <typename Func>
+constexpr std::array<uint8_t, 16> make_canonical_binary_lut(Func op) {
+    std::array<uint8_t, 16> lut{};
+
+    // Generate 9 valid entries (3x3 combinations)
+    for (size_t a = 0; a < 3; ++a) {
+        for (size_t b = 0; b < 3; ++b) {
+            size_t index = a * 3 + b;  // Canonical index: 0-8
+            // Call op with 2-bit encoded trits (0=-1, 1=0, 2=+1)
+            lut[index] = op(static_cast<uint8_t>(a), static_cast<uint8_t>(b));
+        }
+    }
+
+    // Pad entries 9-15 with safe fallback (copy of entry 0)
+    // This handles any out-of-range indices gracefully
+    for (size_t i = 9; i < 16; ++i) {
+        lut[i] = lut[0];
+    }
+
+    return lut;
+}
+
+// --- Canonical Unary LUT Generator (16 entries, indices 0-2 used) ---
+// For unary operations with canonical indexing
+// Index formula: a, where a ∈ {0, 1, 2} representing {-1, 0, +1}
+
+template <typename Func>
+constexpr std::array<uint8_t, 16> make_canonical_unary_lut(Func op) {
+    std::array<uint8_t, 16> lut{};
+
+    // Generate 3 valid entries
+    for (size_t a = 0; a < 3; ++a) {
+        lut[a] = op(static_cast<uint8_t>(a));
+    }
+
+    // Pad entries 3-15 by replicating the pattern
+    for (size_t i = 3; i < 16; ++i) {
+        lut[i] = lut[i % 3];
+    }
+
+    return lut;
+}
+
 #endif // TERNARY_LUT_GEN_H
