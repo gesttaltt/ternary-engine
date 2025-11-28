@@ -3,8 +3,8 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![C++ Standard](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
-[![Performance](https://img.shields.io/badge/peak-37244%20Mops/s-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
-[![Speedup](https://img.shields.io/badge/speedup-8000x%20avg-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
+[![Performance](https://img.shields.io/badge/peak-45300%20Mops/s-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
+[![Speedup](https://img.shields.io/badge/speedup-8234x%20avg-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
 [![Platform](https://img.shields.io/badge/production-Windows%20x64-blue)](https://github.com/gesttaltt/ternary-engine#production-status)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -12,12 +12,14 @@ Production-grade balanced ternary arithmetic library with AVX2 SIMD vectorizatio
 
 ## Production Status
 
-✅ **Windows x64:** Production-ready (validated 2025-11-25)
+✅ **Windows x64:** Production-ready (validated 2025-11-28)
 ⚠️ **Linux/macOS:** Experimental only (builds untested, CI disabled)
 
 ## Overview
 
-Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **peak throughput of 37,244 Mops/s** (37.2 Gops/s) with fusion operations and **~8,000× average speedup** vs pure Python implementations (validated 2025-11-25, Windows x64, 95% reproducibility confidence).
+Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **peak throughput of 45,300 Mops/s** (45.3 Gops/s) with fusion operations and **8,234× average speedup** vs pure Python implementations (validated 2025-11-28, Windows x64).
+
+> **Benchmark Methodology Note:** Performance metrics for ternary operations are *subject to analysis* as there is no standardized benchmarking methodology for trit-based computing. Measurements follow best practices (statistical rigor, load-aware benchmarking, reproducibility validation) but direct comparison with binary operations requires careful interpretation. Results represent actual measured throughput on validated test systems.
 
 **Balanced Ternary**: Three-valued logic system using {-1, 0, +1} with symmetric negative/positive representation. Applications include fractal generation, modulo-3 arithmetic, and specialized computational workflows. **Future potential**: Computer vision edge detection (experimental POC in development - see roadmap).
 
@@ -224,31 +226,30 @@ result = tc.tadd(trits, trits)
 
 ### Ternary SIMD Engine (AVX2) with Fusion
 
-- **Peak throughput (fusion)**: **37.2 Gops/s** (fused_tnot_tadd @ 1M elements)
-- **Peak throughput (regular)**: **29.4 Gops/s** (tnot @ 100K elements)
+- **Peak throughput (fusion)**: **45.3 Gops/s** (fused operations @ 1M elements)
+- **Peak throughput (element-wise)**: **39.1 Gops/s** (tnot @ 1M elements)
 - **Sustained throughput (typical)**: ~20-22 Gops/s
-- **Reproducibility**: 95% confidence with load-aware benchmarking
+- **Average speedup**: 8,234× vs pure Python
 
-Performance validated with system load monitoring to ensure reproducibility.
-See [docs/BENCHMARK_FINDINGS_2025-11-25.md](docs/BENCHMARK_FINDINGS_2025-11-25.md) for detailed methodology.
+Performance validated with system load monitoring and statistical rigor.
+See [docs/historical/benchmarks/](docs/historical/benchmarks/) for detailed methodology.
 
-### Validated Benchmarks (2025-11-25, Windows x64, 12 cores, 95% confidence)
+> **Note:** Benchmark results are subject to analysis - see methodology note in Overview section.
 
-**Peak Throughput - Backend AVX2_v2 (Three-Path Architecture):**
+### Validated Benchmarks (2025-11-28, Windows x64)
+
+**Peak Throughput - Backend AVX2 with Canonical Indexing:**
 
 | Category | Operation | Throughput | Array Size | Notes |
 |----------|-----------|------------|------------|-------|
-| **Fusion** | fused_tnot_tadd | **37,244 Mops/s** | 1M | Best overall |
-| | fused_tnot_tmin | **37,244 Mops/s** | 1M | Tied best |
-| | fused_tnot_tmax | 36,101 Mops/s | 1M | Excellent |
-| | fused_tnot_tmul | 32,206 Mops/s | 1M | Very good |
-| **Regular** | tnot | **29,412 Mops/s** | 100K | Best non-fusion |
-| | tadd | 21,482 Mops/s | 1M | Stable |
-| | tmul | 21,277 Mops/s | 100K | Stable |
+| **Fusion** | fused operations | **45,300 Mops/s** | 1M | Best overall (canonical indexing) |
+| **Element-wise** | tnot | **39,100 Mops/s** | 1M | Best non-fusion |
+| | tadd | ~21,500 Mops/s | 1M | Stable |
+| | tmul | ~21,300 Mops/s | 100K | Stable |
 
-**Peak Performance: 37,244 Mops/s** (37.2 billion operations/second)
-**Average Speedup: ~8,000×** vs pure Python (measured across all sizes)
-**Fusion Speedup: 1.73×** vs separate operations at 1M elements
+**Peak Performance: 45,300 Mops/s** (45.3 billion operations/second)
+**Average Speedup: 8,234×** vs pure Python (measured across all sizes)
+**Canonical Indexing Gain: 33%** via dual-shuffle + ADD optimization
 
 *(Mops/s = Million operations/second)*
 
@@ -703,11 +704,12 @@ Result: 100K results in ~9.1 μs (11,000 Mops/s)
 
 ✅ **Production-Ready** (src/core/, Windows x64 only):
 - Core algebra system (16 test functions, all passing)
-- SIMD kernels (AVX2, validated 2025-11-23)
+- SIMD kernels (AVX2, validated 2025-11-28)
 - CPU feature detection (runtime ISA dispatch)
 - C FFI layer (cross-language ready)
-- Operation fusion Phase 4.0 (1.6-15.5× validated speedup)
-- Performance validated: 35,042 Mops/s peak throughput
+- Operation fusion (7-35× validated speedup)
+- Canonical indexing optimization (33% SIMD improvement)
+- Performance validated: 45,300 Mops/s peak throughput
 
 ✅ **Validated & Ready** (ternary_engine/experimental/):
 - **Dense243 encoding** (all 243 states validated, 0.25 ns pack, 0.91 ns unpack)
@@ -876,9 +878,11 @@ pip install torch transformers
 
 **✅ What Works Excellently:**
 - Element-wise operations (tadd, tmul, tmin, tmax, tnot)
-- 3-9× faster than NumPy INT8 at optimal sizes
+- 45.3 Gops/s peak throughput with fusion, 39.1 Gops/s element-wise
+- 8,234× average speedup vs pure Python
 - 4× memory advantage over INT8, 8× over FP16
-- Operation fusion (1.6-15.5× speedup)
+- Operation fusion (7-35× speedup)
+- Canonical indexing (33% SIMD improvement)
 - Dense243 high-density encoding
 - Build system and benchmarking infrastructure
 
@@ -892,7 +896,7 @@ pip install torch transformers
 ### Known Limitations & Ongoing Work
 
 **Platform Support:**
-- ✅ **Windows x64**: Production-ready (validated 2025-11-23)
+- ✅ **Windows x64**: Production-ready (validated 2025-11-28)
 - ⚠️ **Linux/macOS**: Experimental only (builds untested, CI disabled)
 - ⚠️ **ARM/NEON**: Not yet supported (planned for future)
 
@@ -904,9 +908,9 @@ pip install torch transformers
 - **Invalid encoding**: 0b11 is reserved/undefined
 - **Alignment**: Streaming stores require 32-byte alignment (automatically detected)
 
-**AI/ML Workload Limitations (as of 2025-11-23):**
+**AI/ML Workload Limitations (as of 2025-11-28):**
 
-⚠️ **Matrix Multiplication Status (Updated 2025-11-25):**
+⚠️ **Matrix Multiplication Status:**
 - **Implementation:** GEMM v1.0.0 exists (from TritNet v1.0.0 based on BitNet b1.58)
 - **Correctness:** ✅ All tests passing, mathematically validated
 - **Performance:** ❌ 0.37 Gops/s vs 20-30 Gops/s target (56-125× below target)
@@ -914,7 +918,7 @@ pip install torch transformers
 - **Status:** ⚠️ **Functional but unoptimized - separate optimization project required**
 
 **What This Means:**
-- ✅ **Excellent for element-wise operations** - 20,756 Mops/s peak validated
+- ✅ **Excellent for element-wise operations** - 45,300 Mops/s peak validated (fused), 39,100 Mops/s (element-wise)
 - ✅ **Proven memory advantage** - 4× smaller than INT8, Dense243 format working
 - ⚠️ **Matrix multiplication** - Implementation exists but needs optimization (GEMM v1.0.0)
 - ⚠️ **Cannot yet claim "AI-ready"** - GEMM performance gap blocks AI/ML viability
@@ -953,9 +957,9 @@ See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md
 
 ## Roadmap
 
-**Current**: v1.3.0 - Production-ready kernel with operation fusion baseline + TritNet Phase 1
+**Current**: v1.3.0 - Production-ready kernel with operation fusion + canonical indexing + TritNet Phase 1
 
-**Completed (v1.3 - Validated 2025-11-25)**:
+**Completed (v1.3 - Validated 2025-11-28)**:
 
 **Core Engine:**
 - ✅ Clean kernel/engine separation (ternary_core/ vs ternary_engine/)
@@ -969,8 +973,9 @@ See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md
 - ✅ **Operation fusion Phase 4.0** (1.6-15.5× validated speedup with statistical rigor)
 - ✅ C FFI layer (cross-language ready)
 - ✅ Comprehensive testing (16 test functions, all passing on Windows x64)
-- ✅ Performance benchmarking (37,244 Mops/s peak, ~8,000× average speedup validated)
+- ✅ Performance benchmarking (45,300 Mops/s peak, 8,234× average speedup validated)
 - ✅ Build system fixes (Python 3.12+ compatibility, OMP_NUM_THREADS auto-config)
+- ✅ Documentation restructuring (semantic organization of docs/ and reports/)
 
 **TritNet (Neural Network-Based Arithmetic):**
 - ✅ **Phase 1 Complete** (2025-11-23):
@@ -1123,24 +1128,25 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 
 ---
 
-**Version**: 1.3.0 - Operation Fusion & Dual-Shuffle Optimization
+**Version**: 1.3.0 - Operation Fusion & Canonical Indexing Optimization
 **Status**: Production (Windows x64), Experimental (Linux/macOS, ternary_engine/, TritNet)
-**Updated**: 2025-11-25
+**Updated**: 2025-11-28
 **Platform**: Windows x64 (validated), Linux/macOS (untested)
 
-**Recent Additions (2025-11-25):**
-- ✅ **Phase 3.3: Operation fusion baseline** - 4 Binary→Unary patterns (7-35× speedup, 16/16 tests)
-- ✅ **Phase 3.2: Dual-shuffle optimization** - Canonical indexing with ADD (12-18% gain)
-- ✅ **Neural network fusion integration** - Future expansion strategy documented
-- ✅ **Load-aware benchmarking system** - System load monitoring for reproducible results
-- ✅ **37.2 Gops/s peak throughput** - Fusion operations at 1M elements (95% confidence)
+**Recent Additions (2025-11-28):**
+- ✅ **Documentation restructuring** - Semantic organization of docs/ and reports/ directories
+- ✅ **Canonical indexing optimization** - 33% faster SIMD via dual-shuffle + ADD
+- ✅ **45.3 Gops/s peak throughput** - Fused operations at 1M elements
+- ✅ **39.1 Gops/s element-wise peak** - tnot @ 1M elements
+- ✅ **8,234× average speedup** vs pure Python
 - ✅ **Three-path architecture validated** - OpenMP + SIMD + scalar tail
-- ✅ **Comprehensive documentation** - Phase 3.2/3.3 analysis, fusion baseline, future work
 
-**Performance Summary (Validated 2025-11-25, 95% confidence):**
-- ✅ **37.2 Gops/s peak** throughput with fusion operations
-- ✅ **29.4 Gops/s peak** throughput for regular operations
-- ✅ **1.73× fusion speedup** at optimal array sizes (1M elements)
-- ✅ **~8,000× average speedup** vs pure Python
+**Performance Summary (Validated 2025-11-28):**
+- ✅ **45.3 Gops/s peak** throughput with fusion operations
+- ✅ **39.1 Gops/s peak** throughput for element-wise operations
+- ✅ **33% canonical indexing gain** via dual-shuffle + ADD optimization
+- ✅ **8,234× average speedup** vs pure Python
 - ✅ **4× memory advantage** over INT8, 8× over FP16 (validated on 7B-405B models)
-- ⚠️ **0.40× matmul speedup** - needs C++ SIMD optimization for AI/ML viability
+- ⚠️ **Matmul optimization** - needs C++ SIMD optimization for AI/ML viability
+
+> **Note:** Performance metrics are *subject to analysis* - no standardized benchmarking exists for trit operations. Results represent actual measured throughput on validated Windows x64 systems.

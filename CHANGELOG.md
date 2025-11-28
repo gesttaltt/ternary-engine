@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation Restructuring - 2025-11-28
+
+**Major documentation reorganization for clarity and maintainability.**
+
+**Reports Directory (`reports/`):**
+- Created semantic directory structure: `architecture/`, `performance/`, `roadmaps/`, `research/`, `investigations/`, `process/`, `archive/`
+- Moved 15+ reports to appropriate categories based on content type
+- Added `reports/README.md` with index and status tracking (CURRENT, PLANNING, HISTORICAL, etc.)
+- Archived outdated reports to `archive/outdated/` and `archive/sessions/`
+
+**Docs Directory (`docs/`):**
+- Created new structure: `planning/`, `research/tritnet/`, `research/bitnet/`, `historical/phases/`, `historical/audits/`, `historical/benchmarks/`, `specifications/`
+- Moved 30+ documents to appropriate semantic categories
+- Updated `docs/README.md` with new structure and current performance metrics (45.3 Gops/s)
+- Updated `docs/FEATURES.md` with corrected file paths (simd_avx2_32trit_ops.h)
+
+**Updated Performance Metrics:**
+- Peak throughput (fused): 45.3 Gops/s (up from 37.2 Gops/s)
+- Element-wise peak: 39.1 Gops/s (tnot @ 1M elements)
+- Canonical indexing: 33% faster SIMD via dual-shuffle + ADD
+
+---
+
 ### Critical Fix - 2025-11-28 - Canonical Indexing LUT Correctness
 
 **Context:** SIMD kernel produced incorrect results for arrays ≥32 elements. Root cause: incomplete implementation of Phase 3.2 canonical indexing optimization.
@@ -729,4 +752,4 @@ This release establishes a clear architectural boundary between the validated ke
 
 **Maintained by**: Jonathan Verdun (Ternary Engine Project)
 **License**: Apache 2.0
-**Last Updated**: 2025-11-25
+**Last Updated**: 2025-11-28
