@@ -37,7 +37,7 @@ Because our README.md contained:
 * multi-encoding design
 * AVX2 microarchitectural patterns
 
-…but **ONLY because AI agent assumed it was part of a public GitHub release**, since many developers use ChatGPT to generate public READMEs.
+…but **ONLY because AI agent assumed it was part of a public GitHub release**, since many developers use Claude Code, ChatGPT Codex or similar to generate public READMEs.
 
 Now that we clarified it is **private**, everything changes.
 

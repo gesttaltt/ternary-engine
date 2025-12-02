@@ -1,0 +1,627 @@
+{
+  "timestamp_date": "2025-11-28T06:41:37.315019Z",
+  "hash_algorithm": "SHA512",
+  "project": "Ternary Engine",
+  "files": {
+    "benchmarks\\bench_bridge_layer.py": {
+      "sha512": "b8267d58340efb2d25c8d80312c83687354ec26cf9d5e93b800d28972ea73ea7303a5b64945af34da7a6bfbe524df887423aac352e057e38dd311e3eb4c887db",
+      "size_bytes": 10070,
+      "modified": "2025-11-28T03:21:39.252637"
+    },
+    "benchmarks\\bench_canonical_fix.py": {
+      "sha512": "1dfce626584f57d8e3e1400f2e7408a367e159119d19866e4f3fc22b6930568dd0ab75c4999d687fac5d3a8aa668e04d2173092349777d49ba632ba3038ca40d",
+      "size_bytes": 9517,
+      "modified": "2025-11-28T02:57:03.646974"
+    },
+    "benchmarks\\bench_conversion_breakdown.py": {
+      "sha512": "2ab10dd26f36521f04266e9e5e0a3710fb4f96222c865e5b080ec6266705f55421d75ee9db188e2e035d8b12165576eb976961cf71093591736a8fca0734e115",
+      "size_bytes": 11582,
+      "modified": "2025-11-28T03:05:24.495598"
+    },
+    "benchmarks\\deprecated\\bench_backend_fusion.py": {
+      "sha512": "c5144946a2cdc3ed1456e0b52deb5fe2263c6e782cc3aff022b9f5e5ce958750f6c355bd7db07f8be0cfccb629ae484ff26c8b11749adac9bc0adda0ac315c2b",
+      "size_bytes": 10047,
+      "modified": "2025-11-25T01:25:36.388346"
+    },
+    "benchmarks\\deprecated\\bench_backends.py": {
+      "sha512": "e55c53a50b25b812887c3277ff84e77acec4a256969b0fc6fc80b0f4cc2dfc26fe183d8ec43b4873a33509f06113716c254a69688195876a1c3cfd0d3d0fe6fe",
+      "size_bytes": 12553,
+      "modified": "2025-11-24T13:34:15.214257"
+    },
+    "benchmarks\\deprecated\\bench_backends_improved.py": {
+      "sha512": "6291faf41aa6a6d15492ea4f40a59fb5d74f31e53d122652aa9bb9a643f05fee6d924279368403902ec07c15f18b5ce1f9ead2b180ded06ea13f8fa111af5560",
+      "size_bytes": 19903,
+      "modified": "2025-11-25T02:01:29.204564"
+    },
+    "benchmarks\\deprecated\\bench_fusion_phase41.py": {
+      "sha512": "87b5507c9dd5acd968070dc8db3617ad032afcb3435d0f51b2e2caeebaf91149d4d4f3a0b77f594467c60f6ba30e70ba1ae6f4abcceb05f66bbc1329ff46838d",
+      "size_bytes": 10082,
+      "modified": "2025-11-23T04:39:01.279689"
+    },
+    "benchmarks\\deprecated\\bench_fusion_poc.py": {
+      "sha512": "aafd449f63695c7f0dc47c31d9aefe9e68de461fab4a01139be22a7374b36348db592000d1109e8b918cf546fabeef6d0e2d7c614a6872582a58378ab1cd5b6a",
+      "size_bytes": 15049,
+      "modified": "2025-11-23T06:41:04.498104"
+    },
+    "benchmarks\\deprecated\\bench_fusion_rigorous.py": {
+      "sha512": "35b55d6af76f6c97b7dfee39d2498c3963ea78e62778f9efe4885d8e8060e8a4d4cba3b7cdf7bbad7d01f5866ce87f0f83ad9b6afc7eae395c1d5e1267840268",
+      "size_bytes": 10466,
+      "modified": "2025-11-23T06:41:04.508560"
+    },
+    "benchmarks\\deprecated\\bench_fusion_simple.py": {
+      "sha512": "5eeec63d03f343857ffed55294b182d7f73c27002cdf0a7f05fd59ea047190b9f1e1aca2e7439bbfcc3281cb094226b070ac3a1daf123d609f79fce9b17f351d",
+      "size_bytes": 4260,
+      "modified": "2025-11-23T06:41:04.508560"
+    },
+    "benchmarks\\deprecated\\bench_fusion_validation.py": {
+      "sha512": "eebf5b11340efe5255f53856bf07d6cbd7130fb3b03f5d1550fbbd3695fb962e3fdd3c69fd8eaec912ab3e13c188c9b35c6764c9fc147d6e6572315202a433dc",
+      "size_bytes": 8027,
+      "modified": "2025-11-24T20:21:07.707111"
+    },
+    "benchmarks\\deprecated\\bench_with_load_context.py": {
+      "sha512": "c80317c0eb11f14c2067841c134651f9336c73fd74f88b8bc640b980b1857175fa9d413d576def18a67ef5ed611c3d90e86567680ff48424169d8bd7018861bc",
+      "size_bytes": 17001,
+      "modified": "2025-11-25T02:21:59.760463"
+    },
+    "benchmarks\\investigation\\analyze_phase1_datasets.py": {
+      "sha512": "a0d22d44b438b76a1d1a71afa9c401db2b81a2783db8ff5b32657a908d0fe063f41cc96eac298f7ad28bf3ee41196180a04161e0699604fe68eb8badcba089a8",
+      "size_bytes": 5725,
+      "modified": "2025-11-26T03:10:16.539981"
+    },
+    "benchmarks\\investigation\\investigate_repetitive_performance.py": {
+      "sha512": "64f0f44e2f4f8c549cb773a343ab157cdcaf23f1287e89819ceb496f8ea5b2147e3c343bda04f0c9a06957f7fcb8d8360aa86c06aaef57770a6cfcb6e4ff936b",
+      "size_bytes": 16491,
+      "modified": "2025-11-26T03:03:40.888300"
+    },
+    "benchmarks\\investigation\\test_0121_pattern.py": {
+      "sha512": "606bae915d62b7c5b54b855d7c09fcef07ddf7331221c7a7e86f3a4065891fe9522ed98dac033aee51db5d550dd086d1f1e1909d05f111f1671c748c589bf1ed",
+      "size_bytes": 5890,
+      "modified": "2025-11-26T03:16:07.617413"
+    },
+    "benchmarks\\macro\\bench_image_pipeline.py": {
+      "sha512": "836bbda5cc9269b2d73007f7c09170a143ed41c57f86ab2fe853bb0be3089f648c6a1ab677ccf8fdb778fe72075fb089607fd6d8cb6f85d40e05c403cdb07aab",
+      "size_bytes": 9143,
+      "modified": "2025-11-23T06:41:04.511184"
+    },
+    "benchmarks\\macro\\bench_layer_forward.py": {
+      "sha512": "528efeb997c212d533f00ef15d6f2d3ff578ae3a03d3754dad59a2aa33af1534a1115c8bad60c229559ef2d3e9a14c2729765ece46db7166cefa9e36b1a122d7",
+      "size_bytes": 8198,
+      "modified": "2025-11-23T04:37:21.709006"
+    },
+    "benchmarks\\prototype\\bench_gemm.py": {
+      "sha512": "4716dbed6d82b3fc873530dd4fc62da76d16e40ea9a092415500964d1b342a9fb3d533eff1126cbfb4298fd4f608939ad18d553034f35d8f27f975ec2fd5e64c",
+      "size_bytes": 11927,
+      "modified": "2025-11-25T12:44:10.527310"
+    },
+    "benchmarks\\prototype\\bench_gemm_isolated.py": {
+      "sha512": "7b8419398442457fbffa3dcf4d5b6c281af067d97631ac99f5a8097b83da70b4112a1279286aa6238d271771b3f16640b80c406554008552433a692ee94d80e3",
+      "size_bytes": 13107,
+      "modified": "2025-11-25T14:15:35.078217"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\bench_competitive.py": {
+      "sha512": "b1fa1a6d3d10bce4cddd43871f31ada0e7bd9d16670f661a72e7b3b3c7ee154d9ec5f0b6f42d4643f723e03a08af4cd29e1e07abdc92a042d1a48332cf449e73",
+      "size_bytes": 26700,
+      "modified": "2025-11-23T03:02:22.422834"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\bench_dense243.py": {
+      "sha512": "c424c0cf2d7541fe8854546c77957c1ab826866e5a838f1e8c1427760ac7a635a728b1899c7c166c0f3a5c538e027df4e7b53ea74e56481f0fc5013e2688e51d",
+      "size_bytes": 11919,
+      "modified": "2025-11-24T02:23:06.071412"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\bench_input_characteristics.py": {
+      "sha512": "247b1bdbffa61daca9d91ded81ce3614739effe008278a59d8fb5983763a433406934b4f4bc2ec8d73d14cb8a651f14faace44cd4b55245a2bd48c0574eec5f4",
+      "size_bytes": 8831,
+      "modified": "2025-11-26T02:57:18.375883"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\bench_model_quantization.py": {
+      "sha512": "d34d3a196c31e3540efb720fc0ac58d554e65b525109fe55061934847a188d6747d2f113945a00872f026a4186417bd82e53578dd8efd640c06bb06732331973",
+      "size_bytes": 14572,
+      "modified": "2025-11-23T03:02:25.785125"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\bench_power_efficiency.py": {
+      "sha512": "acb4f1305bc47fe0f1cc5a1934a22336edd4fa2cb0ab936e509b10f50f7b3523f9ca7d0ddc77c0a70fa9c66937f099ca0b607ad1eb029c43302c36426614e381",
+      "size_bytes": 15713,
+      "modified": "2025-11-23T03:25:59.701552"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\bench_regression_detect.py": {
+      "sha512": "d676b3f48fe80fc5cb1b6ff956adc0f1e20fa862cc4baa70599eeab60489ec49c2a3eedb59bf8c15a298313d2efed584af8c3191a5f9a6304f0a49fbe24b583c",
+      "size_bytes": 8442,
+      "modified": "2025-11-21T09:59:02.072433"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\bench_simd_core_ops.py": {
+      "sha512": "83b979af585537ae33645301b9b4a691a28f96bd1aabd9050cc8b0dcf81fdb2d80ff06e2362359c2809d0781bd2566bc46e048032cc2c4663deb919243122755",
+      "size_bytes": 16681,
+      "modified": "2025-11-26T18:23:24.935101"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\bench_simd_fusion_ops.py": {
+      "sha512": "943c2c8b2b34f45f35ce3537a3d33d75445acafc58504114a3f40bdb1e110effd7e151660f1a2ade054c39b806974aedbd047e240e65bd2ab2076a81028bec9a",
+      "size_bytes": 9521,
+      "modified": "2025-11-23T04:37:20.211587"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\benchmark_framework.py": {
+      "sha512": "00d74c1521de32a63bc5cc4bf38d8cb5565980063f10371b6643a9e6853969ac6b7747974957615e2619009bce077f06dbfd9b8b9b22948c469715051ce06f1e",
+      "size_bytes": 12597,
+      "modified": "2025-11-21T09:59:02.074452"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\build_competitive.py": {
+      "sha512": "76d2f4ef8cec11325239d2b22cbd88666e997b82f37483797efa3397e4c74557e4f5b177ebd87046064d929ffb50f32b80b9e43db2e05ae78647e2b4d9409f61",
+      "size_bytes": 9726,
+      "modified": "2025-11-23T06:33:21.112891"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\download_models.py": {
+      "sha512": "47fec86216f34d20a312d47e1a88618fa17a93bfd34cb0c1e53a6dad149ae8941958f67d9a6f95794a1222c2d4f04fd385372ce8b2f18ae23a0d857fef9e63ec",
+      "size_bytes": 4968,
+      "modified": "2025-11-23T03:28:31.145456"
+    },
+    "benchmarks\\python-with-interpreter-overhead\\run_all_benchmarks.py": {
+      "sha512": "a901737877d45fbd0b0175aa1f91cbfcfaf41c49d857462e1657f5f3a6434411a59a2a885d882ab7db80a299183db64bfd468e2f82bb15dab3e1c70d8664706e",
+      "size_bytes": 7627,
+      "modified": "2025-11-26T18:33:32.514975"
+    },
+    "benchmarks\\test_falsification.py": {
+      "sha512": "9a2ccb177d00c368b096545cef9831dbfdbad6b9afd74972dfab9223539d6cd87a38cfde3333e00a0c4679efd068cfe0c13fb9a9043507b3352c55da99fe99f0",
+      "size_bytes": 17053,
+      "modified": "2025-11-28T02:30:31.378948"
+    },
+    "benchmarks\\utils\\benchmark_validator.py": {
+      "sha512": "97eba85f0153c14cbca7e37d9b2af2c8af39657787b845460e8e920430351f7d4e6f3a9189ca4500776998a60e2fc5c57775b564847db15fa55cba884953270e",
+      "size_bytes": 12437,
+      "modified": "2025-11-26T01:03:28.702678"
+    },
+    "benchmarks\\utils\\geometric_metrics.py": {
+      "sha512": "1dce227c66d0aa2d081e3159c29109b2f5368cbb6b958963292b6acaf9cf4d4c1a498180adceebbc0a6dd8f3ff8ad5ec4e28a8ab5ca48524f5cb227302d911c3",
+      "size_bytes": 12403,
+      "modified": "2025-11-26T03:24:17.934927"
+    },
+    "benchmarks\\utils\\hardware_metrics.py": {
+      "sha512": "e6ce267a8643228831e93a62da38c835065ba83feb8ad67d4137cdaabbaaab1c36deeeebfdc45f6df50f3c7d9aba64baf82a462d46e90657a54810a6f77d1f2c",
+      "size_bytes": 13304,
+      "modified": "2025-11-26T02:57:18.405369"
+    },
+    "benchmarks\\utils\\system_load_monitor.py": {
+      "sha512": "44158758f06262484fa9fc949a246a2da68821954c66451d8b99f5463d7ae289ef7a502e213624f5d1f4ca4c6ee15c225f50fd57cfb6ca3cf5638b475714e07d",
+      "size_bytes": 20701,
+      "modified": "2025-11-25T02:20:43.905727"
+    },
+    "benchmarks\\utils\\visualization.py": {
+      "sha512": "17f3187288572e97bf4c176c4de133559540cee983aeb51f60ba3516cfb06bae5684ab474d910f49d324dd46d2e2477f69968741beaf758cb531503f98e4d6cb",
+      "size_bytes": 14689,
+      "modified": "2025-11-23T02:54:41.672828"
+    },
+    "benchmarks\\utils\\windows_power.py": {
+      "sha512": "6a0320c870b25e5f0672bbff67660fb3a969249457787f0536fb6980dddb285bf59ee1f1eb8528bcff450f01f97d86aac630437fae0cb30f9906945a1afebd65",
+      "size_bytes": 9235,
+      "modified": "2025-11-23T03:23:55.730537"
+    },
+    "build\\build.py": {
+      "sha512": "6b3c064c3806b77b0bc3e964037cdb600e45d5ad289cf53743d8d632dbc906a8d532bd6ff8deb86f2d670f54c2dcd12cf4fcd65164dbfaed54a3d062dde9203b",
+      "size_bytes": 7912,
+      "modified": "2025-11-24T03:40:05.170239"
+    },
+    "build\\build_all.py": {
+      "sha512": "61c78ed63078c437681f2bd720ae9b02bddd5af139e5186b1167a69f9409ec4a2c599a9480271d06069f28255bc96839a219d9a0376f86dd0f870f7bc16b386b",
+      "size_bytes": 7444,
+      "modified": "2025-11-23T22:06:58.915812"
+    },
+    "build\\build_backend.py": {
+      "sha512": "bd5d5aaad90ea7255b3e9172f2a79e984ec5ca4492e2b207e23fdafdac3c42b2fd4231f645fe85d1901adc1e83752f08930f6e99e8278cd820816e086689c74e",
+      "size_bytes": 6374,
+      "modified": "2025-11-28T02:19:08.483609"
+    },
+    "build\\build_dense243.py": {
+      "sha512": "9dfcf2d8399ccb8c8e7bf93d93bc98413e7720cc03761bfea50d62cabcba52b7674ef470cee6775c50d1b835da36be045b67b773b2396eb454a710d8e79255ed",
+      "size_bytes": 6707,
+      "modified": "2025-11-24T00:19:31.375898"
+    },
+    "build\\build_pgo.py": {
+      "sha512": "82c496b91a73b872e24a47348e981f4a6987a139943e617fbec4e257bbecfb8566ceddf0ee6d4258d419874a4eecc63143336277059c4cc1c2123c1314cb001a",
+      "size_bytes": 18114,
+      "modified": "2025-11-24T03:41:38.115141"
+    },
+    "build\\build_pgo_unified.py": {
+      "sha512": "b60221eab092a6add4f7aa420d6d5cda4f9d7932c8c02512cae49ceb805273ff23484e5a5afbce88b6c2a1a7c8c3763c237e8c04cd63e058ee1b97d050386f9d",
+      "size_bytes": 12600,
+      "modified": "2025-11-23T06:35:23.396088"
+    },
+    "build\\build_reference.py": {
+      "sha512": "5c5ffa97328785c8321f025628fe1162e3548cb66dde53b28c36caed84308f199b11c17ca32eda9b8799d90815a84e75473c8cad4a1e94fa4277e0de9de2e8bd",
+      "size_bytes": 4889,
+      "modified": "2025-11-23T06:29:44.227827"
+    },
+    "build\\build_test_packing.py": {
+      "sha512": "6f05486258dca5ddedc83c92ca6dc93990d9deb06517923fbe44792f3dffadba344c65b857745384c31fd8c03ba7c5e6937caafcb851be118db4f9d5b0a58b44",
+      "size_bytes": 1574,
+      "modified": "2025-11-24T04:18:16.916760"
+    },
+    "build\\build_tritnet_gemm.py": {
+      "sha512": "b7988a52b71508df3e8d8f5d37354092f3306226a165cf7d7ad9f30fb697fe83f5689fe5372da8726a5bafca54ada81f9eac5ff1b568566cbd6ade691ddb9df1",
+      "size_bytes": 10137,
+      "modified": "2025-11-24T00:31:03.526580"
+    },
+    "build\\clean_all.py": {
+      "sha512": "17aac4daf9ca78531d1ea4c867a4b3885261a1ccd13eaf45aae971c1d23a757d2a8348736dcaae06662f4f8b82e7a2ece4218ec1eaf22e96fc59d2875f661f0f",
+      "size_bytes": 13673,
+      "modified": "2025-11-23T06:41:04.498104"
+    },
+    "CHANGELOG.md": {
+      "sha512": "499f521e26325b55316e6dee6439fa6a332e7f900ce65fb0a59796b0abef28f67d7839aeb91d2a5b956b821ae6250700299a67f97b55ee471ee779bd63dd62a9",
+      "size_bytes": 29332,
+      "modified": "2025-11-28T03:00:18.161520"
+    },
+    "docs\\api-reference\\error-handling.md": {
+      "sha512": "a8a1354bd195382a973d4ac48efe29e3130f71bcc76a3ee77e906da613f6dbea20d0ddc75a9d5f507abe0d2298b4fd9fc04f237bf70b98b5828bef5788ca635a",
+      "size_bytes": 10061,
+      "modified": "2025-11-24T00:25:30.016303"
+    },
+    "docs\\api-reference\\headers.md": {
+      "sha512": "acaf1af485ca74b3b1440e4cb901cead73f8bf551288d83e0756f41e2571c9dd138368c51bb0598d5422c9fcdd40b62cdd20e3922d8f0d2a62cbe47c75857785",
+      "size_bytes": 2197,
+      "modified": "2025-11-24T00:25:30.054426"
+    },
+    "docs\\api-reference\\source-code-overview.md": {
+      "sha512": "0ebd7e67e3994736dde5822b1576bd76bd1f892f0c64b9ddf3b7cf603a6e15d2af399170d25590315864c2856db5039c0fd900911b9ee8fee6bb3710ac896abc",
+      "size_bytes": 22116,
+      "modified": "2025-11-24T00:25:30.085241"
+    },
+    "docs\\api-reference\\ternary-core-header.md": {
+      "sha512": "1105330ba4c906e313c399de2edf4c6d6a928de3ed40739d509fe9d0892f057d9dea5fbf1f292d2d21410033cbe84fc75a9ba880f42e36953ad92747748682b5",
+      "size_bytes": 13674,
+      "modified": "2025-11-24T00:25:30.142501"
+    },
+    "docs\\api-reference\\ternary-core-simd.md": {
+      "sha512": "5df052dc48b5225dae53fcfe83514cac41d30fc0801c902a4a313e44e0f954f204210b9cd561599287cedb0766d5b8f430b68d7861537ad74675fc136566783b",
+      "size_bytes": 20656,
+      "modified": "2025-11-24T00:25:30.190529"
+    },
+    "docs\\architecture\\architecture.md": {
+      "sha512": "4d92d474f294de790559116bd91a6f1395df0f7d56987b5cc61a8c37cd6b55fc2564f6977b54ac74532ec6688526843cce7a8ae28a59bdb3be57a1fdb270d449",
+      "size_bytes": 15183,
+      "modified": "2025-11-24T00:25:30.256774"
+    },
+    "docs\\architecture\\optimization-complexity-rationale.md": {
+      "sha512": "f66a7ec191584bc1d9314a92d5358cdd19c1d112e02a9abdd57b2b2185a0dbd12f307f93b80c5de13fd0d40da8fa10ffc235a2db2ae16c081dedf5c64ca0687a",
+      "size_bytes": 25788,
+      "modified": "2025-11-24T00:25:30.313004"
+    },
+    "docs\\architecture\\optimization-roadmap.md": {
+      "sha512": "474a5a26a81799cef9bd13a0b43fd0d52a829e8e6dff6a8509e43de732f8d37ab9aa9b63f981bd2a96e1ad72aa0f34c0c4576c039880f531a0e65d2d668c168a",
+      "size_bytes": 23382,
+      "modified": "2025-11-24T00:25:30.350539"
+    },
+    "docs\\ARCHITECTURE_EVOLUTION.md": {
+      "sha512": "80b2822f99efc7365abdf48168c5e2691e7c52c5d92c1127101f45d326e212689d3ce913246744300efbfd01fce3c0d6f1bfacf8a6b7e5e5706badae8d454d1e",
+      "size_bytes": 16407,
+      "modified": "2025-11-25T19:19:44.936597"
+    },
+    "docs\\BACKEND_API.md": {
+      "sha512": "96689a46201f651ae376c8c4c2f4471fcabaa5fda7415d7d2d5e23fef82a2bb0675deaa460e03180e9c88a7cc2573ec6c17cdb7cc92528f96f72c9dfd78b9d8b",
+      "size_bytes": 15160,
+      "modified": "2025-11-24T13:37:38.163416"
+    },
+    "docs\\BACKEND_FUSION_FINDINGS.md": {
+      "sha512": "043f0d06b405583a23f66f58da812654391b296ce6eabc4f6d77c0c67f5711aa4da56768b2a2a57989adb68b59f0b896a415bc609848dcf6f54e8ec98acbace7",
+      "size_bytes": 8784,
+      "modified": "2025-11-24T21:02:59.763934"
+    },
+    "docs\\BENCHMARK_FINDINGS_2025-11-25.md": {
+      "sha512": "8dcb75dff04257b74b7a08debdab34f6d0fce3ea124025938267846731c5d4d8adc7047c4355f17a0c6d93b0768bda58f9f04ab17db04495c7c414abdd1fca17",
+      "size_bytes": 8897,
+      "modified": "2025-11-25T03:33:55.269404"
+    },
+    "docs\\BENCHMARK_RESULTS_2025-11-25.md": {
+      "sha512": "3aa4c1db0ba94666dd2cef4b5458213fe953532640569067ea2802356813bcfb467034335b2b4bbf78ccbcc619922e2885e1debb37446e72c5d50debeb36461e",
+      "size_bytes": 9866,
+      "modified": "2025-11-25T15:30:20.900752"
+    },
+    "docs\\BITNET_ARCHITECTURE_ANALYSIS.md": {
+      "sha512": "18549729eb56056ad9352e7f7d8f27da0042b94be3ad213e72abe5019f87a0a779fad74eab5f0cd684f0a9d0b8023022929582dbe0003202a26c86224f1b18b8",
+      "size_bytes": 18677,
+      "modified": "2025-11-24T00:25:30.390005"
+    },
+    "docs\\BITNET_INTEGRATION_STRATEGY.md": {
+      "sha512": "ec8f9f6e8e9e1469728bf5dead1dc37315c4a008f9c5ae8f919f63d6d454d7b02952806a041751c5f93ef7bc891b70bdd410ce93543252d1da05a468771baefc",
+      "size_bytes": 16222,
+      "modified": "2025-11-24T00:25:30.432583"
+    },
+    "docs\\BRIDGE_LAYER_ARCHITECTURE.md": {
+      "sha512": "55e8afd438f8d636d55d5d39dd0eef40c32a15c711a70b0988b797f3eea91040159f4f776e7f12fab6e7f4b44d2a483925434331eacb30043683c24c6c64910e",
+      "size_bytes": 17697,
+      "modified": "2025-11-28T03:17:11.356863"
+    },
+    "docs\\build-system\\artifact-organization.md": {
+      "sha512": "94ec867a05fa930d637a1eee6542ad8f372dd836f7d78b5047dae09604f0e72d7b948d4eca45ea989422c412c894bb3befff29f61ddeb3376c8b8b16fe754b61",
+      "size_bytes": 9660,
+      "modified": "2025-11-24T00:25:30.478102"
+    },
+    "docs\\build-system\\cleanup-system.md": {
+      "sha512": "bd158e26dde559088210544657e25941ec33d7b13e8e4720e2a46b4f7a070865a00c016f285248e170c83774dd75b95c363af4dcc08546cd2ae5376947ff316b",
+      "size_bytes": 20520,
+      "modified": "2025-11-24T00:25:30.565642"
+    },
+    "docs\\build-system\\README.md": {
+      "sha512": "09649957182a4ed2ef96c35ad3cd79df162ed698ed7e5b40551717f0b9ca24d7ed4c7c08c311cc510f737f354759b1064f70bc732bfc60028630327b415bf801",
+      "size_bytes": 17446,
+      "modified": "2025-11-24T00:25:30.598884"
+    },
+    "docs\\build-system\\setup-pgo.md": {
+      "sha512": "7e4806d6337fd51592d7a842a1086459f5c38d88bde2272f14dbb9709a0b03fc4835f3fb6abb6efd0cc91564e8050bb7f913feaa92850e2a552b864897cd9568",
+      "size_bytes": 17661,
+      "modified": "2025-11-24T00:25:30.665768"
+    },
+    "docs\\build-system\\setup-reference.md": {
+      "sha512": "504e38bed6731a1a9621539d3fe3a8a15cc8174864f49c14412362a313da18f979680f73d85443ce5019fe82aefe9aea522660a674472e69dfad8db97bbc3103",
+      "size_bytes": 15291,
+      "modified": "2025-11-24T00:25:30.699194"
+    },
+    "docs\\build-system\\setup-standard.md": {
+      "sha512": "33010d6cdff4f3cda2e0b90f20bfb9883eb5a3ebbd98e0f3d3e24c40212589213a618928a8a3cac271cf6e3a325f072c74907c421b5a0f16a1d3bd063553c8b6",
+      "size_bytes": 12556,
+      "modified": "2025-11-24T00:25:30.732508"
+    },
+    "docs\\CANONICAL_INDEXING_ANALYSIS.md": {
+      "sha512": "a459beaf5e0fca73dcb6d3176cb37c35889efe645ce7ab0b1acb3f3efb1cff9bd6381bcaba2582ef8f8ab3386cbbf59ed8e98ccf2dfdc1c9c7d9a5b039474534",
+      "size_bytes": 10931,
+      "modified": "2025-11-24T17:32:41.543067"
+    },
+    "docs\\CANONICAL_INDEXING_FIX.md": {
+      "sha512": "268e5db3b36813a2899b97506d515e13527e98f2ff64e03203ffb68dc309f58057c3a619c33ae31369fc0bf89e8c3f3d61702e2491abb5bd33bffe870f433aae",
+      "size_bytes": 7039,
+      "modified": "2025-11-28T02:58:09.265196"
+    },
+    "docs\\COMPETITIVE_FINDINGS_SUMMARY.md": {
+      "sha512": "85b8406156b47dfdf74e4e6644befe04db38c0663214bab82b8820254858bc67741f6c3d735a9cb7db2c358f8051ecaf1bfc72393092264ee882c6c41127f1f4",
+      "size_bytes": 13052,
+      "modified": "2025-11-24T00:25:30.773943"
+    },
+    "docs\\COMPONENT_AUDIT_2025-11-24.md": {
+      "sha512": "01254f6b2d7e06e6edbf85e7365171b1c379b9b715a94feca6ca4bda38afcfc7363e174db908a19cf381c2fac1cc9f9d4d6efb3d24d875ebaa3ff692651dbe2d",
+      "size_bytes": 9390,
+      "modified": "2025-11-24T21:08:50.702985"
+    },
+    "docs\\COMPONENT_MIGRATION_PLAN.md": {
+      "sha512": "2a5fe8f21080a642c22603ac8fabb0fd7322fc8a6d4f3b14208450e4f46cb133e8da60456ae3ca32b8913546cc59ab330b14e29988c3c0978649f18ef85978fa",
+      "size_bytes": 15768,
+      "modified": "2025-11-24T22:34:20.117229"
+    },
+    "docs\\encoding-ecosystem.md": {
+      "sha512": "495886e7766195b5b0ada19f73d2ad01a4ddbf7feabc38d929a6c0f26d1b5a5c71dd9290af2a17de232e1df4feeda70eedf43ab8e6b85031063a5562f008d8b8",
+      "size_bytes": 13889,
+      "modified": "2025-11-24T00:25:30.814366"
+    },
+    "docs\\features\\micro-vs-macro-speedup.md": {
+      "sha512": "f1808a87f7e037d51a7ea81b5823a67b2619ee2a85e4080dcd105fe0edf8f2a8845ef2d6639e133fe9f84b42e522242ca49f9559b31b369513f1e894500f4c54",
+      "size_bytes": 8344,
+      "modified": "2025-11-24T00:25:30.866924"
+    },
+    "docs\\features\\optimization-leverage-report.md": {
+      "sha512": "abc654d72dbc8bec725f18ef89758e1e5e482162586488a4b1110487f438aefa465ac0a58dfd0c8b74136a02363c7909f49ee4224adb19234cfce79b9a3e255c",
+      "size_bytes": 12569,
+      "modified": "2025-11-24T00:25:30.898842"
+    },
+    "docs\\features\\phase4-fusion-plan.md": {
+      "sha512": "f1b0489c518411c3e6ca0bd31016fc39200043fd7eae9e6c0a43344b784b68abefdda969d07c1fe7e272a84c279e4090c1b7d5c39e3de454845e823ab27b965b",
+      "size_bytes": 35042,
+      "modified": "2025-11-24T00:25:30.955292"
+    },
+    "docs\\features\\phase4-poc-readme.md": {
+      "sha512": "77ce130aee7c19c4267b94ca073c9bc48339f18875910dbf71d4d65fc0d5c0770ffa0157b55ad5f98c71930158ef91a6210242c7cbf6dfb573b68728074885a4",
+      "size_bytes": 15218,
+      "modified": "2025-11-24T00:25:30.993660"
+    },
+    "docs\\FEATURES.md": {
+      "sha512": "0c64882e7f660982d772dd4a5c5721d6312e9d8b17547a75e361623282a8e747601c25958d59b2d6399298120a552c58f6cec25c63acaf110f4eac4a2b5b1a48",
+      "size_bytes": 17165,
+      "modified": "2025-11-27T04:31:20.552734"
+    },
+    "docs\\GEMM_DISCOVERY_2025-11-23.md": {
+      "sha512": "7508c50d45ce66a2d12536a84aa116a25cf25e82bc42b5179da489278779bde6804e856dfbc9df09c478595dcabcfc1dcb1fed9df936c857e515dcd8837fc87b",
+      "size_bytes": 18923,
+      "modified": "2025-11-24T00:25:31.044955"
+    },
+    "docs\\general-readme.md": {
+      "sha512": "cdacc3ee5ea9f6cc9e39f9f80a38dda9f3a593cdaea5d5623ed74a434e35636280aae9bfedb2b04c08a6d46edebc4abad5d32d0ea44fdd9bfadf7fef1234b0c8",
+      "size_bytes": 11112,
+      "modified": "2025-11-24T00:25:31.085814"
+    },
+    "docs\\historical\\BASELINE-PRE-AUTOLUT.md": {
+      "sha512": "f8fa977764b7cb0a065145cae60a9398b268715bd4d9af8386ca06530ac7a21975987b8fb7f4ed6cb55afd523a5d43d81a676ef1eab85f45d0cfb9951a9f8955",
+      "size_bytes": 7882,
+      "modified": "2025-11-24T00:25:31.121615"
+    },
+    "docs\\IP_AND_LICENSING_GUIDANCE.md": {
+      "sha512": "1bdb5f98d80a33c9542fd3adc4f216ae44f15c489c2eefbb2db3bd62b969ce867b32e58276cb9eab2494137149fa28ba3fe7065c68362df1380ee0a68885657e",
+      "size_bytes": 15235,
+      "modified": "2025-11-27T10:51:44.743167"
+    },
+    "docs\\ISSUE_OPENMP_CRASHES.md": {
+      "sha512": "4cb847ed3ff5e8c28e047239340d2e05480de68479bb75684844796e2cba47f05e5144380f6a942773efab485ab33de59ec24d6059c203f02052ae1ee7262183",
+      "size_bytes": 10810,
+      "modified": "2025-11-24T00:25:31.150300"
+    },
+    "docs\\OPTIMIZATION_SUMMARY_2025-11-23.md": {
+      "sha512": "a79ab5cf3048b2c7e7243d0df31e2d8d0594a43a340ecf42cebeeb4a8e483b42a962eed85cab0af39fa03f10cb04ea7a85059bcaae85ec018e3f56c58ccaf7b8",
+      "size_bytes": 18870,
+      "modified": "2025-11-24T00:25:31.189248"
+    },
+    "docs\\pgo\\CLANG_INSTALLATION.md": {
+      "sha512": "0cb46fb131e4fe436acebb4249bca37fb3dd3d6c2a10c977a4dd737c6d1d80cf3bdca01a1df3d228666961bae37bba557e6227022c1af4cecb58b1bb1f4e333e",
+      "size_bytes": 6874,
+      "modified": "2025-11-24T00:25:31.229581"
+    },
+    "docs\\pgo\\PGO_AND_PATHS_FIX_REPORT.md": {
+      "sha512": "ebfc0b73f16977d4121e4624f5d72c90b261a2e8db666d54c7055f7b50e63e91e6c10748a383e4bc2147335f328611f1cdf967c9b881ff7231595a86463c741e",
+      "size_bytes": 9811,
+      "modified": "2025-11-24T00:25:31.256773"
+    },
+    "docs\\pgo\\PGO_LIMITATIONS.md": {
+      "sha512": "90d60fb6a8a918346154eae3e4c8514d7da6076eba7b62856563ced0b4c1a71aebb3af2386c3077338a3a255da0c63920126cdd863cd5df26a1901d2a3231505",
+      "size_bytes": 6565,
+      "modified": "2025-11-24T00:25:31.296894"
+    },
+    "docs\\pgo\\README.md": {
+      "sha512": "9087bedbfea3c2ed92c545b6bc7464680eeae40b379ea5a06d89d9b7cac8122fbba6ca5db21cdaf8169df00e0cdac2c1bd6f02cd2f3f7e163dd7383e6573fa61",
+      "size_bytes": 8831,
+      "modified": "2025-11-24T00:25:31.321376"
+    },
+    "docs\\PHASE_3.2_DUAL_SHUFFLE_ANALYSIS.md": {
+      "sha512": "0552cab3857a0fbe3a289ffbdfa0fb38450ec732fe48d9fa255742b7b0864eb96e3481741d5998bc91e53eba909daebeedc8bcfba620bb323fe0d1288478e08a",
+      "size_bytes": 12257,
+      "modified": "2025-11-25T05:53:28.302907"
+    },
+    "docs\\PHASE_3.3_FUSION_BASELINE.md": {
+      "sha512": "5ce42f914d38fd3532ca3775e19d4962242786ae8230bceac1263fd9ff5feeeff19d5bdb0d6ed6270de3a197771dad02a09af8574e7c827259c10fd5643a2926",
+      "size_bytes": 15852,
+      "modified": "2025-11-25T06:30:39.523706"
+    },
+    "docs\\PHASE_4_MATRIX_MULTIPLICATION_STATUS.md": {
+      "sha512": "4b71ceb7856bfa682232007875997d511a5b72be9aff12d80049780c319ddc471ee976703b3ca90f3e57fb8062d7f26d5e5526a7cc5d3f3acade09c6106dedf9",
+      "size_bytes": 24820,
+      "modified": "2025-11-25T15:28:31.940634"
+    },
+    "docs\\profiling\\README.md": {
+      "sha512": "6d627019499df53bf1f6cc413c57240badef172265fc65a1e6cdd17bfd19fffe2fe0e30ebde0b60abf5e2bd6d292732b62d70baf51e4aa3ff2bc6b71688b9d4d",
+      "size_bytes": 7467,
+      "modified": "2025-11-24T00:25:31.356256"
+    },
+    "docs\\README.md": {
+      "sha512": "7a57c51063bc5d7541c5966df876e165c4f7aaf5860e1edd68cf95d8b26c2a27b067c0a754e832f2cc29aaadcaa51377d0e09faeacb29943d3994d2bef328615",
+      "size_bytes": 10497,
+      "modified": "2025-11-24T00:25:31.397828"
+    },
+    "docs\\ROADMAP.md": {
+      "sha512": "ea165969c3ec3e062fdd723cd8df3ef83d12e25df7cfb2103a20b65eac384eac436c17a916daa2fca59abcd26f9f615623bc97c96f614d919f69b66c823d2bfe",
+      "size_bytes": 14239,
+      "modified": "2025-11-24T03:58:25.556382"
+    },
+    "docs\\t5-dense243-spec.md": {
+      "sha512": "64594a527452c589ee0019eb5d06bb1ddc70aa612f6b0f137e88dfe60fca39a1f1e68f291196a9f472d0d0ce5c12705268f72bd3254656606ccb40a6f414f10d",
+      "size_bytes": 10413,
+      "modified": "2025-11-24T00:25:31.442798"
+    },
+    "docs\\TECHNICAL_DEBT_CATALOG.md": {
+      "sha512": "edc2c235474a62aac780f15c4392aeb7764684ff9acb9696b2d8136c91e725efe2be2771987b046a4b17e134b154f785754e2432ef7ec5e017fc49010c2e70c5",
+      "size_bytes": 18559,
+      "modified": "2025-11-24T00:25:31.480020"
+    },
+    "docs\\triadsextet-spec.md": {
+      "sha512": "6e5a95a0b6f7be5238aed44cdac6bae946833732773c192b0369b31da9b34b56649d617be38f3f2c149f02d861cd60275e0f4b8c6b2633f11e9ffc32ff6a4cbf",
+      "size_bytes": 17085,
+      "modified": "2025-11-24T00:25:31.517373"
+    },
+    "docs\\TRITNET_GEMM_STATUS.md": {
+      "sha512": "1528b42dabf502060a7c7ced502f2f4916f62af21411506669f92e77fcda3de2f3205534144362e614517fb43c5e390fca927164b8d3111020f9e36ce34e82b5",
+      "size_bytes": 11197,
+      "modified": "2025-11-24T00:25:31.550666"
+    },
+    "docs\\TRITNET_ROADMAP.md": {
+      "sha512": "4387476424cba709585fd9cfd29728375424643f0480fb90fc8fba182e77054568dd9be47387db146c9f6ecc01511db236ef97301522536bb651230d452c82a1",
+      "size_bytes": 15670,
+      "modified": "2025-11-24T00:25:31.917115"
+    },
+    "docs\\TRITNET_VISION.md": {
+      "sha512": "e0ca04a42a3ccd45fa7b2e3543d5a093b1cfb9ee8063bd21ac99d99b7a5e9a549df99fd8bd4c384f08674d7fc42e815ee3315c98c70027a16e7e6fc1e9e5f26e",
+      "size_bytes": 23517,
+      "modified": "2025-11-24T00:25:31.954216"
+    },
+    "docs\\V1.2.0_IMPLEMENTATION_PLAN.md": {
+      "sha512": "2e9a173b25b6b9ae261c7daf8f72b0164b12f32c5b68f7fbc11d9df514ca9ec042478bd6f9dfcc7915c9539326b5a137bdbcc94d8212f6096d59d8fa34d87594",
+      "size_bytes": 30612,
+      "modified": "2025-11-24T04:03:53.490467"
+    },
+    "LICENSE": {
+      "sha512": "50fee24de9c683f7af002775a1b321d061f99a573abcd01d5018680e8e82c18ef9ad7107490827fd9ab3e1da61165370314bc3ed88a64a3a010fed542fb7e1c3",
+      "size_bytes": 11568,
+      "modified": "2025-11-21T09:59:02.068897"
+    },
+    "README.md": {
+      "sha512": "4ca5f576ff1f1eecccfbcc4db7b1870813bfe3f6764c99112390dee260f9c566b46f3c035a90026baa29eb25d905bc85cd83780aa30c591b688d089bbe353ee7",
+      "size_bytes": 47971,
+      "modified": "2025-11-25T15:36:50.560793"
+    },
+    "tests\\python\\compile_test.py": {
+      "sha512": "7e8c514652bd4ba04fd2fefdc458f2bb6505d22c492f8ffd2b2e3f74163fc021bf2f9682f642009c66e72fa5a3b1f02516cb8ec7fc59bb88381dcf34caf8e788",
+      "size_bytes": 3128,
+      "modified": "2025-11-21T09:59:02.134615"
+    },
+    "tests\\python\\run_simd_harness.py": {
+      "sha512": "a45dbaf5bf63d743e1f34b65e3aab7d54673b3330a716ee5a5e38238fc8f896ab155c8decdfe63fcc23901d45ab4e9942a680e6071a7b9acffc574008c79e58d",
+      "size_bytes": 16819,
+      "modified": "2025-11-21T09:59:02.134615"
+    },
+    "tests\\python\\setup_test.py": {
+      "sha512": "fc61590936873850ddf9b45e106f393f55f436fa71dce2867eb611ecdfcd9729c7e00c1ab56ed67ee700c197c3f07621fce5fdbc33c91b8333fc2ae1bf4747bd",
+      "size_bytes": 623,
+      "modified": "2025-11-21T09:59:02.134615"
+    },
+    "tests\\python\\test_backend_integration.py": {
+      "sha512": "5dba9cbc57e2af48841fb8d0025a3d12bd7e4140ced68f8312a48422518cf696a88d0532c5724d60e73e3594306bcb0c2bdc30391efa75cd902c1f6f0a9cd75e",
+      "size_bytes": 15644,
+      "modified": "2025-11-25T02:01:31.697979"
+    },
+    "tests\\python\\test_canonical_lut.py": {
+      "sha512": "b804b04d9f25ebb3afa657429667f9a7c30b63fbac2e3df234fe25fc9eba03e12832d7fe6998c639fa1bd2423a304f4cc84ab1f98d001a64c55d5b2c4230b5e0",
+      "size_bytes": 5565,
+      "modified": "2025-11-24T17:36:07.712372"
+    },
+    "tests\\python\\test_capabilities.py": {
+      "sha512": "1d43d064352d80d74005a751e9a13ba83ac6c59eeb03bb7ce745c4d8e2a6bb634293de54e790072432683aff7e10f0ebb436e39824ac372276bf605e9e0ea15c",
+      "size_bytes": 6628,
+      "modified": "2025-11-23T07:06:21.463527"
+    },
+    "tests\\python\\test_dual_shuffle_validation.py": {
+      "sha512": "0695f4a39ba2d162595d8736875d6ced1296e08712a06733786d6bc64d9f67de3e42c864f94b3cd883d2b67f385721c53bb2c629e1648aeb1bd48ff2e95cd9a7",
+      "size_bytes": 7136,
+      "modified": "2025-11-25T01:53:44.176311"
+    },
+    "tests\\python\\test_errors.py": {
+      "sha512": "5f63d59e059861e04df9b684fefbe69a7df2d3392da546097c8ef6e27a79da55ff7476c87fb0689b3103e57ffad5cc52de554c2e28fefef3e92b92d845d11c4e",
+      "size_bytes": 8864,
+      "modified": "2025-11-23T06:46:20.512371"
+    },
+    "tests\\python\\test_fusion.py": {
+      "sha512": "6dc0558991bbbb014acf386dc0bba4ef46a7d1c3055ab413804f1b43bd540e6f0b6fc140b2f3a1df56af27395ae33c0455526aabc2487a3c0344acd96a2e6d3e",
+      "size_bytes": 9865,
+      "modified": "2025-11-23T07:08:01.893101"
+    },
+    "tests\\python\\test_fusion_correctness.py": {
+      "sha512": "c49ecd35eccd4d6934d2c03b1d88e11df1d66f8f5da86c6156fb8cca1d7107e9903613c228779cd9efb528f7d52cacf8c5403fdc65a28791adce08f8fcabd699",
+      "size_bytes": 4972,
+      "modified": "2025-11-24T20:14:44.678597"
+    },
+    "tests\\python\\test_omp.py": {
+      "sha512": "f9631640aec37f9997d8d6627f1053957366be3c935d6a82095037156ee43d9c143725b2610f6560ce8239eb50000779679ec4ad1038259c0ba9c7f780be6440",
+      "size_bytes": 2710,
+      "modified": "2025-11-23T06:46:20.513392"
+    },
+    "tests\\python\\test_path_fixes.py": {
+      "sha512": "9924633967ce4ffe0f06f35bb165f0f0b4daf3c660cbaf0ec4a0c573f883eac1f9675667ba4a641f96b9e1558faf7e95ee80276502ed5f554e38085bfd2b2af1",
+      "size_bytes": 5730,
+      "modified": "2025-11-21T13:44:56.260656"
+    },
+    "tests\\python\\test_phase0.py": {
+      "sha512": "49a6aca30a4d052285f83ce8986f3a9dc5be64100d5e3739f932177ccead8bbcc3cfd3b76ee6b2aa10edb1829f2061bae0105ab6781a9c60a5baa9c033fb5403",
+      "size_bytes": 7650,
+      "modified": "2025-11-23T06:46:20.513392"
+    },
+    "tests\\python\\test_simd_python.py": {
+      "sha512": "a0608e57d165bbb592325aaea95e2553b5075aeb58c8c26d66c7d817f8fff262783589e877eba68d4deec0600c7047f480ffff4dabd5d96b59db9432725e6b85",
+      "size_bytes": 561,
+      "modified": "2025-11-21T09:59:02.141085"
+    },
+    "tests\\python\\test_simd_validation.py": {
+      "sha512": "3f3741d8b52bc84e0419dd7895c004d72c38c7cc053f3d68dae62f11182189ffa8852b89b57990ed05dd9e061ba784c638ab910791bb601f0785ff74a35c10ad",
+      "size_bytes": 10199,
+      "modified": "2025-11-23T06:46:20.513392"
+    },
+    "tests\\python\\test_tritnet_gemm_integration.py": {
+      "sha512": "cac635962498e23f41974228e6a38818ef449cab743baec78632130d53175b277ad4eb17877e2057fb88e01406e4712d3a6386ed82fee606a8c2f3bb2c44f865",
+      "size_bytes": 7589,
+      "modified": "2025-11-23T07:09:27.920748"
+    },
+    "tests\\run_tests.py": {
+      "sha512": "1dc90a01bfd20c5219d1a3271b143ba8a05de989c6f50422c915f296cd55961ac318fdf514c8520075b98701076e4fbedda9ef2a6a215f5a31d278a3db881f08",
+      "size_bytes": 10325,
+      "modified": "2025-11-23T07:07:01.717543"
+    }
+  }
+}
