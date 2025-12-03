@@ -1,6 +1,29 @@
 # C++ Native Kernel Benchmarks
 
+**Doc-Type:** Benchmark Suite · Version 2.0 · Updated 2025-12-03
+
 **Purpose:** Pure C++ benchmarks that bypass Python/NumPy overhead for accurate kernel performance measurement.
+
+---
+
+## NEW: Gops/s and Memory Efficiency Benchmarks
+
+### Gops/s Comparative Benchmark
+- **File:** `bench_gops_comparative.cpp`
+- **Purpose:** Compare ternary vs binary INT8 throughput in Gops/s
+- **Build:** `build_gops.bat` (Windows) or see [README_GOPS.md](README_GOPS.md)
+
+### Memory Efficiency Benchmark
+- **File:** `bench_memory_efficiency.cpp`
+- **Purpose:** Measure ternary's TRUE value: memory compression
+- **Build:** `build_memory_bench.bat` (Windows) or see [README_MEMORY.md](README_MEMORY.md)
+
+**Key Metrics:**
+| Metric | Ternary | INT8 | FP32 |
+|:-------|:--------|:-----|:-----|
+| Bits/Element | 2 | 8 | 32 |
+| Compression | 16x | 4x | 1x |
+| LLaMA-7B Size | 1.75 GB | 7 GB | 28 GB |
 
 ---
 
@@ -45,6 +68,8 @@ These benchmarks target two distinct codebases with clear separation of concerns
 
 | File | Target | Description |
 |------|--------|-------------|
+| `bench_gops_comparative.cpp` | `core/simd/` | **NEW:** Gops/s throughput comparison |
+| `bench_memory_efficiency.cpp` | `core/simd/` | **NEW:** Memory efficiency analysis |
 | `benchmark_main.cpp` | `core/algebra/`, `core/simd/` | Production suite with JSON/CSV, OpenMP |
 | `bench_kernels.cpp` | `core/algebra/`, `core/simd/` | SIMD vs scalar microbenchmarks |
 | `bench_fusion.cpp` | `core/simd/fused_binary_unary_ops.h` | Fused operation speedup validation |
@@ -65,6 +90,8 @@ These benchmarks target two distinct codebases with clear separation of concerns
 
 | File | Description |
 |------|-------------|
+| `include/bench_throughput.h` | **NEW:** Gops/s measurement framework |
+| `include/bench_memory.h` | **NEW:** Memory efficiency metrics |
 | `include/cpu_info.h` | CPU detection (vendor, AVX2/512 support) |
 | `include/timer.h` | High-resolution timing utilities |
 
@@ -303,4 +330,30 @@ benchmarks/cpp-native-kernels/
 
 ---
 
-**Validated:** Windows x64, MSVC 2022, 2025-11-27
+**Validated:** Windows x64, MSVC 2022, 2025-12-03
+
+---
+
+## Latest Benchmark Results (2025-12-03)
+
+### Peak Throughput (Python benchmarks, 100K elements)
+| Operation | Gops/s | Speedup vs Python |
+|:----------|:-------|:------------------|
+| tnot | 19.57 | 2,634x |
+| tmin | 15.53 | 3,837x |
+| tmax | 15.48 | 3,951x |
+| tadd | 15.34 | 4,022x |
+| tmul | 15.10 | 3,993x |
+
+### Bridge Layer Performance
+| Metric | Value |
+|:-------|:------|
+| Max Speedup vs NumPy | 44.58x |
+| Fused Ops Max Speedup | 29.12x |
+| Crossover Point | 64 elements |
+
+### Memory Efficiency (Theoretical)
+| Model | FP32 | Ternary | Compression |
+|:------|:-----|:--------|:------------|
+| LLaMA-7B | 28 GB | 1.75 GB | 16x |
+| LLaMA-70B | 280 GB | 17.5 GB | 16x |
