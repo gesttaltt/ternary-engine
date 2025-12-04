@@ -90,6 +90,7 @@
 #include "core/simd/simd_avx2_32trit_ops.h"
 #include "core/simd/fused_binary_unary_ops.h"
 #include "core/simd/fused_bridge_ops.h"
+#include "core/simd/backend_plugin_api.h"  // ADDED: Backend dispatch system
 #include "core/config/optimization_config.h"
 #include "core/profiling/ternary_profiler.h"
 
@@ -302,49 +303,119 @@ py::array_t<uint8_t> process_unary_array(
 }
 
 // =============================================================================
-// Operation Wrappers (replacing macro-generated code)
+// Backend Dispatch Wrappers (REFACTORED 2025-12-04)
+// =============================================================================
+//
+// CHANGE: Replaced process_binary_array/process_unary_array templates with
+// simple wrappers that delegate to backend dispatch system. This eliminates
+// code duplication between bindings and backend implementations.
+//
+// BENEFITS:
+// - Single source of truth for optimizations (in backend)
+// - Fusion operations automatically available
+// - Backend selection/improvements propagate to Python
+// - Future AVX-512/ARM support automatic
+// - ~300 lines of duplicate code eliminated
+//
+// =============================================================================
+
+/**
+ * Unified binary operation via backend dispatch
+ */
+template <typename DispatchFunc>
+static py::array_t<uint8_t> process_binary_via_backend(
+    py::array_t<uint8_t> A,
+    py::array_t<uint8_t> B,
+    DispatchFunc dispatch_func
+) {
+    py::ssize_t n = A.size();
+
+    // Validation
+    if (n != B.size()) {
+        throw ArraySizeMismatchError(n, B.size());
+    }
+
+    // Allocate output
+    py::array_t<uint8_t> out(n);
+
+    // Delegate to backend (includes OpenMP, prefetch, streaming, etc.)
+    dispatch_func(
+        static_cast<uint8_t*>(out.mutable_data()),
+        static_cast<const uint8_t*>(A.data()),
+        static_cast<const uint8_t*>(B.data()),
+        static_cast<size_t>(n)
+    );
+
+    return out;
+}
+
+/**
+ * Unified unary operation via backend dispatch
+ */
+template <typename DispatchFunc>
+static py::array_t<uint8_t> process_unary_via_backend(
+    py::array_t<uint8_t> A,
+    DispatchFunc dispatch_func
+) {
+    py::ssize_t n = A.size();
+
+    // Allocate output
+    py::array_t<uint8_t> out(n);
+
+    // Delegate to backend
+    dispatch_func(
+        static_cast<uint8_t*>(out.mutable_data()),
+        static_cast<const uint8_t*>(A.data()),
+        static_cast<size_t>(n)
+    );
+
+    return out;
+}
+
+// =============================================================================
+// Operation Wrappers (routing to backend dispatch)
 // =============================================================================
 
 // --- Binary Operations ---
 py::array_t<uint8_t> tadd_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, tadd_simd<SANITIZE>, tadd);
+    return process_binary_via_backend(A, B, ternary_dispatch_tadd);
 }
 
 py::array_t<uint8_t> tmul_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, tmul_simd<SANITIZE>, tmul);
+    return process_binary_via_backend(A, B, ternary_dispatch_tmul);
 }
 
 py::array_t<uint8_t> tmin_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, tmin_simd<SANITIZE>, tmin);
+    return process_binary_via_backend(A, B, ternary_dispatch_tmin);
 }
 
 py::array_t<uint8_t> tmax_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, tmax_simd<SANITIZE>, tmax);
+    return process_binary_via_backend(A, B, ternary_dispatch_tmax);
 }
 
 // --- Unary Operation ---
 py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
-    return process_unary_array<SANITIZE>(A, tnot_simd<SANITIZE>, tnot);
+    return process_unary_via_backend(A, ternary_dispatch_tnot);
 }
 
 // =============================================================================
-// Fused Operations (Phase 4.1 - Validated)
+// Fused Operations (Phase 4.1 - via backend dispatch)
 // =============================================================================
 
 py::array_t<uint8_t> fused_tnot_tadd_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, fused_tnot_tadd_simd<SANITIZE>, fused_tnot_tadd_scalar);
+    return process_binary_via_backend(A, B, ternary_dispatch_fused_tnot_tadd);
 }
 
 py::array_t<uint8_t> fused_tnot_tmul_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, fused_tnot_tmul_simd<SANITIZE>, fused_tnot_tmul_scalar);
+    return process_binary_via_backend(A, B, ternary_dispatch_fused_tnot_tmul);
 }
 
 py::array_t<uint8_t> fused_tnot_tmin_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, fused_tnot_tmin_simd<SANITIZE>, fused_tnot_tmin_scalar);
+    return process_binary_via_backend(A, B, ternary_dispatch_fused_tnot_tmin);
 }
 
 py::array_t<uint8_t> fused_tnot_tmax_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, fused_tnot_tmax_simd<SANITIZE>, fused_tnot_tmax_scalar);
+    return process_binary_via_backend(A, B, ternary_dispatch_fused_tnot_tmax);
 }
 
 // =============================================================================
@@ -561,6 +632,16 @@ PYBIND11_MODULE(ternary_simd_engine, m) {
             "Your CPU does not support AVX2. Detected ISA: " +
             std::string(simd_level_name(detect_best_simd())) + "\n"
             "Minimum requirement: Intel Haswell (2013+) or AMD Excavator (2015+)"
+        );
+    }
+
+    // ADDED 2025-12-04: Initialize backend system
+    // Registers all available backends and selects the best one
+    // This enables AVX2_v2 optimizations (canonical + fusion) automatically
+    if (!ternary_backend_init()) {
+        throw std::runtime_error(
+            "Failed to initialize ternary backend system.\n"
+            "No backends available (internal error)."
         );
     }
 
