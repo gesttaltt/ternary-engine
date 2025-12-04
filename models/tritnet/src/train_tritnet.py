@@ -218,8 +218,13 @@ def train_tritnet(
             model = TritNetUnary(hidden_size=hidden_size, threshold=threshold)
             model_type = 'TritNetUnary'
     else:
-        model = TritNetBinary(hidden_size=hidden_size, threshold=threshold)
-        model_type = 'TritNetBinary'
+        if architecture == 'deep':
+            from tritnet_model import TritNetBinaryDeep
+            model = TritNetBinaryDeep(hidden_size=hidden_size, threshold=threshold)
+            model_type = 'TritNetBinaryDeep'
+        else:
+            model = TritNetBinary(hidden_size=hidden_size, threshold=threshold)
+            model_type = 'TritNetBinary'
 
     print(f"\nModel architecture:")
     print(f"  Type: {model_type}")

@@ -273,6 +273,101 @@ class TritNetBinary(nn.Module):
         }
 
 
+class TritNetBinaryDeep(nn.Module):
+    """
+    Improved TritNet model for binary operations with deeper architecture.
+
+    Architecture:
+        Input: 10 trits (5 from A, 5 from B) {-1, 0, +1}
+        Hidden Layer 1: hidden_size neurons, ternary weights
+        Hidden Layer 2: hidden_size neurons, ternary weights + skip connection
+        Hidden Layer 3: hidden_size neurons, ternary weights
+        Hidden Layer 4: hidden_size neurons, ternary weights + skip connection
+        Output: 5 trits {-1, 0, +1}
+
+    Improvements over TritNetBinary:
+    - 4 hidden layers instead of 2 (more complex decision boundaries)
+    - Skip connections every 2 layers (ResNet-style, helps gradient flow)
+    - Better suited for complex binary operations
+
+    Args:
+        hidden_size: Number of neurons in hidden layers (default: 32)
+        threshold: Quantization threshold for ternary weights (default: 0.5)
+
+    Attributes:
+        layer1-5: Network layers
+        projection: Projection for skip connections (10 → hidden_size)
+        activation: Ternary sign activation (inference only)
+    """
+
+    def __init__(self, hidden_size: int = 32, threshold: float = 0.5):
+        super().__init__()
+
+        self.hidden_size = hidden_size
+        self.threshold = threshold
+        self.apply_activation = False  # Don't apply during training
+
+        # Network layers
+        self.layer1 = TernaryLinear(10, hidden_size, bias=False, threshold=threshold)
+        self.layer2 = TernaryLinear(hidden_size, hidden_size, bias=False, threshold=threshold)
+        self.layer3 = TernaryLinear(hidden_size, hidden_size, bias=False, threshold=threshold)
+        self.layer4 = TernaryLinear(hidden_size, hidden_size, bias=False, threshold=threshold)
+        self.layer5 = TernaryLinear(hidden_size, 5, bias=False, threshold=threshold)
+
+        # Projection layer for first skip connection (10 → hidden_size)
+        self.projection = TernaryLinear(10, hidden_size, bias=False, threshold=threshold)
+
+        # Ternary activation (only for inference)
+        self.activation = TernaryActivation()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass with skip connections.
+
+        Args:
+            x: Input tensor [batch_size, 10] with values in {-1, 0, +1}
+               First 5 values from operand A, next 5 from operand B
+
+        Returns:
+            Output tensor [batch_size, 5] with values in {-1, 0, +1}
+        """
+        # Save input for first skip connection
+        identity = self.projection(x)
+
+        # Layer 1
+        x = self.layer1(x)
+
+        # Layer 2 + skip connection from input
+        x = self.layer2(x) + identity
+
+        # Save for second skip connection
+        identity2 = x
+
+        # Layer 3
+        x = self.layer3(x)
+
+        # Layer 4 + skip connection
+        x = self.layer4(x) + identity2
+
+        # Output layer
+        x = self.layer5(x)
+
+        # Only apply activation during inference, not training
+        if self.apply_activation:
+            x = self.activation(x)
+
+        return x
+
+    def get_config(self) -> Dict[str, Any]:
+        """Get model configuration for saving."""
+        return {
+            'model_type': 'TritNetBinaryDeep',
+            'hidden_size': self.hidden_size,
+            'threshold': self.threshold,
+            'num_parameters': count_parameters(self),
+        }
+
+
 def save_tritnet_model(
     model: nn.Module,
     filepath: Path,
@@ -346,6 +441,11 @@ def load_tritnet_model(filepath: Path) -> tuple:
         )
     elif config['model_type'] == 'TritNetBinary':
         model = TritNetBinary(
+            hidden_size=config['hidden_size'],
+            threshold=config['threshold']
+        )
+    elif config['model_type'] == 'TritNetBinaryDeep':
+        model = TritNetBinaryDeep(
             hidden_size=config['hidden_size'],
             threshold=config['threshold']
         )
