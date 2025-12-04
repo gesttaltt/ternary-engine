@@ -129,6 +129,48 @@ NAVIERLIB_API const char* nv_get_version(void);
  */
 NAVIERLIB_API const char* nv_get_last_error(void);
 
+/**
+ * Load Profile Classification
+ *
+ * Classify consumption into load bands for billing and demand response.
+ *
+ * @param consumption    Energy consumption values (kWh)
+ * @param baseline       Expected baseline consumption per interval
+ * @param categories     Output: packed ternary classifications (4 trits/byte)
+ * @param count          Number of intervals to classify
+ * @param low_ratio      Threshold for below-baseline (e.g., 0.8)
+ * @param high_ratio     Threshold for peak demand (e.g., 1.2)
+ * @return 0 on success, error code otherwise
+ */
+NAVIERLIB_API int nv_classify_load_profile(
+    const double* consumption,
+    const double* baseline,
+    uint8_t* categories,
+    int64_t count,
+    double low_ratio,
+    double high_ratio
+);
+
+/**
+ * Aggregate Load Bands
+ *
+ * Count classifications per category.
+ *
+ * @param categories     Ternary classifications from nv_classify_load_profile
+ * @param count          Number of intervals
+ * @param below_count    Output: count of below-baseline intervals
+ * @param normal_count   Output: count of normal intervals
+ * @param peak_count     Output: count of peak demand intervals
+ * @return 0 on success, error code otherwise
+ */
+NAVIERLIB_API int nv_aggregate_load_bands(
+    const uint8_t* categories,
+    int64_t count,
+    int64_t* below_count,
+    int64_t* normal_count,
+    int64_t* peak_count
+);
+
 #ifdef __cplusplus
 }
 #endif

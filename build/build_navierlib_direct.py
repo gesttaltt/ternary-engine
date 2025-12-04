@@ -1,28 +1,32 @@
 """
-build_navierlib.py - Build NavierLib DLL for commercial distribution
+build_navierlib_direct.py - Build NavierLib DLL directly with full MSVC paths
 
-Builds navierlib.dll with maximum optimization:
-- x64 Release
-- AVX2 required
-- Link-Time Code Generation (LTCG)
-- Static runtime (no dependencies)
-- Profile-Guided Optimization (PGO) optional
-
-USAGE:
-    python build/build_navierlib.py         # Standard build
-    python build/build_navierlib.py --pgo   # With PGO (requires 2-phase build)
+Builds navierlib.dll without requiring vcvarsall.bat environment setup
+by using full paths to MSVC tools.
 """
 
 import sys
 import subprocess
 import shutil
 from pathlib import Path
-import argparse
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 NAVIERLIB_SRC = PROJECT_ROOT / "src" / "navierlib"
 BUILD_DIR = PROJECT_ROOT / "build" / "navierlib_build"
 OUTPUT_DIR = PROJECT_ROOT / "dist" / "NavierLib"
+
+# MSVC Build Tools paths (VS 2022 Build Tools 18)
+MSVC_ROOT = Path("C:/Program Files (x86)/Microsoft Visual Studio/18/BuildTools")
+MSVC_BIN = MSVC_ROOT / "VC/Tools/MSVC/14.50.35717/bin/HostX86/x64"
+MSVC_INCLUDE = MSVC_ROOT / "VC/Tools/MSVC/14.50.35717/include"
+MSVC_LIB = MSVC_ROOT / "VC/Tools/MSVC/14.50.35717/lib/x64"
+
+WIN_SDK_ROOT = Path("C:/Program Files (x86)/Windows Kits/10")
+WIN_SDK_INCLUDE = WIN_SDK_ROOT / "include/10.0.26100.0"
+WIN_SDK_LIB = WIN_SDK_ROOT / "Lib/10.0.26100.0"
+
+CL_EXE = MSVC_BIN / "cl.exe"
+LINK_EXE = MSVC_BIN / "link.exe"
 
 def clean_build_dir():
     """Clean previous build artifacts"""
@@ -34,39 +38,29 @@ def clean_build_dir():
         shutil.rmtree(OUTPUT_DIR)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-def detect_msvc():
-    """Detect MSVC compiler"""
-    try:
-        result = subprocess.run(
-            ["cl.exe"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        if "Microsoft (R) C/C++ Optimizing Compiler" in result.stderr:
-            return True
-    except:
-        pass
-    return False
-
-def build_dll_msvc(use_pgo=False):
+def build_dll():
     """Build NavierLib DLL with MSVC"""
     print("\n" + "="*80)
-    print("  Building NavierLib.dll (MSVC x64 Release)")
+    print("  Building NavierLib.dll (Direct MSVC x64 Release)")
     print("="*80 + "\n")
 
-    if not detect_msvc():
-        print("ERROR: MSVC compiler not found. Please run from Visual Studio Developer Command Prompt.")
+    if not CL_EXE.exists():
+        print(f"ERROR: cl.exe not found at {CL_EXE}")
         sys.exit(1)
 
     # Include directories
     include_dirs = [
-        f"/I{PROJECT_ROOT / 'src'}",  # For #include "core/algebra/ternary_algebra.h"
+        f"/I{PROJECT_ROOT / 'src'}",           # For ternary core headers
+        f"/I{MSVC_INCLUDE}",                   # MSVC standard library
+        f"/I{WIN_SDK_INCLUDE / 'ucrt'}",       # Universal CRT
+        f"/I{WIN_SDK_INCLUDE / 'um'}",         # Windows SDK
+        f"/I{WIN_SDK_INCLUDE / 'shared'}",     # Shared headers
     ]
 
     # Compiler flags
     compile_flags = [
         "/c",                    # Compile only
+        "/nologo",               # Suppress banner
         "/O2",                   # Maximum optimization
         "/Oi",                   # Intrinsic functions
         "/GL",                   # Whole program optimization (LTCG)
@@ -82,19 +76,24 @@ def build_dll_msvc(use_pgo=False):
         "/W3",                   # Warning level 3
     ] + include_dirs
 
-    if use_pgo:
-        compile_flags.append("/GL")  # Required for PGO
+    # Library directories
+    lib_dirs = [
+        f"/LIBPATH:{MSVC_LIB}",
+        f"/LIBPATH:{WIN_SDK_LIB / 'ucrt/x64'}",
+        f"/LIBPATH:{WIN_SDK_LIB / 'um/x64'}",
+    ]
 
     # Linker flags
     link_flags = [
         "/DLL",                  # Build DLL
+        "/nologo",               # Suppress banner
         "/LTCG",                 # Link-time code generation
         "/OPT:REF",              # Eliminate unreferenced code
         "/OPT:ICF",              # Identical COMDAT folding
         "/MACHINE:X64",          # x64 target
         "/SUBSYSTEM:WINDOWS",    # Windows subsystem
         f"/OUT:{OUTPUT_DIR / 'navierlib.dll'}",
-    ]
+    ] + lib_dirs
 
     # Source files
     sources = [
@@ -104,31 +103,37 @@ def build_dll_msvc(use_pgo=False):
 
     # Compile step
     print("Compiling sources...")
+    obj_files = []
     for src in sources:
         obj_file = BUILD_DIR / (src.stem + ".obj")
-        cmd = ["cl.exe"] + compile_flags + [
+        obj_files.append(obj_file)
+
+        cmd = [str(CL_EXE)] + compile_flags + [
             f"/Fo{obj_file}",
             str(src)
         ]
 
-        print(f"  {src.name}...", end=" ")
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        print(f"  {src.name}...", end=" ", flush=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=BUILD_DIR)
 
         if result.returncode != 0:
             print("FAILED")
+            print("\nCompiler Output:")
+            print(result.stdout)
             print(result.stderr)
             sys.exit(1)
         print("OK")
 
     # Link step
     print("\nLinking DLL...")
-    obj_files = list(BUILD_DIR.glob("*.obj"))
-    cmd = ["link.exe"] + link_flags + [str(obj) for obj in obj_files]
+    cmd = [str(LINK_EXE)] + link_flags + [str(obj) for obj in obj_files]
 
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=BUILD_DIR)
 
     if result.returncode != 0:
         print("FAILED")
+        print("\nLinker Output:")
+        print(result.stdout)
         print(result.stderr)
         sys.exit(1)
 
@@ -145,15 +150,11 @@ def build_dll_msvc(use_pgo=False):
         print(f"  navierlib.dll: {size_kb:.1f} KB")
 
 def main():
-    parser = argparse.ArgumentParser(description="Build NavierLib DLL")
-    parser.add_argument("--pgo", action="store_true", help="Enable Profile-Guided Optimization")
-    args = parser.parse_args()
-
-    print("NavierLib Build System")
+    print("NavierLib Build System (Direct MSVC)")
     print("Target: x64 Release DLL with AVX2 + LTCG")
 
     clean_build_dir()
-    build_dll_msvc(use_pgo=args.pgo)
+    build_dll()
 
     print("\n✓ Build complete!")
     print(f"   Output directory: {OUTPUT_DIR}")

@@ -15,6 +15,11 @@
 #include <immintrin.h>
 #include <cmath>
 
+// Ternary trit values (from ternary_algebra.h: 2-bit encoding)
+#define TRIT_MINUS_ONE  0b00  // -1
+#define TRIT_ZERO       0b01  //  0
+#define TRIT_PLUS_ONE   0b10  // +1
+
 /**
  * Classify single consumption value into load band
  *
@@ -24,18 +29,18 @@ static trit classify_single_load(double consumption, double baseline,
                                   double low_threshold, double high_threshold) {
     // Edge case: handle zero/invalid baseline
     if (baseline <= 0.0) {
-        return ZERO;  // Default to normal if baseline invalid
+        return TRIT_ZERO;  // Default to normal if baseline invalid
     }
 
     double ratio = consumption / baseline;
 
     // Classify using thresholds
     if (ratio < low_threshold) {
-        return MINUS_ONE;  // Below baseline (0b00)
+        return TRIT_MINUS_ONE;  // Below baseline (0b00)
     } else if (ratio > high_threshold) {
-        return PLUS_ONE;   // Peak demand (0b10)
+        return TRIT_PLUS_ONE;   // Peak demand (0b10)
     } else {
-        return ZERO;       // Normal (0b01)
+        return TRIT_ZERO;       // Normal (0b01)
     }
 }
 
@@ -81,23 +86,24 @@ static void classify_batch_simd(
         // is_low=0, is_high=0 →  0 (0b01)
         // is_low=0, is_high=1 → +1 (0b10)
 
-        // Extract results as integers
-        alignas(32) double low_results[4];
-        alignas(32) double high_results[4];
-        _mm256_store_pd(low_results, is_low);
-        _mm256_store_pd(high_results, is_high);
+        // Extract comparison masks as integers (not doubles)
+        int low_mask = _mm256_movemask_pd(is_low);   // Bits 0-3 set if comparison true
+        int high_mask = _mm256_movemask_pd(is_high); // Bits 0-3 set if comparison true
 
         // Pack 4 trits into 1 byte
         uint8_t t0, t1, t2, t3;
 
         for (int j = 0; j < 4; j++) {
+            int low_bit = (low_mask >> j) & 1;
+            int high_bit = (high_mask >> j) & 1;
+
             trit category;
-            if (low_results[j] != 0.0) {
-                category = MINUS_ONE;  // 0b00
-            } else if (high_results[j] != 0.0) {
-                category = PLUS_ONE;   // 0b10
+            if (low_bit) {
+                category = TRIT_MINUS_ONE;  // 0b00
+            } else if (high_bit) {
+                category = TRIT_PLUS_ONE;   // 0b10
             } else {
-                category = ZERO;       // 0b01
+                category = TRIT_ZERO;       // 0b01
             }
 
             switch (j) {
@@ -153,6 +159,11 @@ int nv_classify_load_profile(
         return -2;  // Invalid thresholds
     }
 
+    // Initialize output array to zero
+    // (Required for |= operations in tail handling)
+    int64_t packed_count = (count + 3) / 4;
+    memset(categories, 0, packed_count);
+
     // Batch classify using SIMD
     classify_batch_simd(
         consumption,
@@ -202,18 +213,18 @@ int nv_aggregate_load_bands(
             trit category = unpack_trit(packed, j);
 
             // Count using ternary values
-            // MINUS_ONE (0b00) → below
-            // ZERO (0b01) → normal
-            // PLUS_ONE (0b10) → peak
+            // TRIT_MINUS_ONE (0b00) → below
+            // TRIT_ZERO (0b01) → normal
+            // TRIT_PLUS_ONE (0b10) → peak
 
             switch (category) {
-                case MINUS_ONE:
+                case TRIT_MINUS_ONE:
                     (*below_count)++;
                     break;
-                case ZERO:
+                case TRIT_ZERO:
                     (*normal_count)++;
                     break;
-                case PLUS_ONE:
+                case TRIT_PLUS_ONE:
                     (*peak_count)++;
                     break;
                 default:

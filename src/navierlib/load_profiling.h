@@ -20,6 +20,17 @@
 #include <stdint.h>
 #include "../core/algebra/ternary_algebra.h"
 
+// Export macro for DLL
+#ifdef _WIN32
+    #ifdef NAVIERLIB_EXPORTS
+        #define NAVIERLIB_API __declspec(dllexport)
+    #else
+        #define NAVIERLIB_API __declspec(dllimport)
+    #endif
+#else
+    #define NAVIERLIB_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -79,7 +90,7 @@ typedef struct {
  *       1.2   // Above 120% = peak
  *   );
  */
-int nv_classify_load_profile(
+NAVIERLIB_API int nv_classify_load_profile(
     const double* consumption,
     const double* baseline,
     uint8_t* categories,
@@ -110,7 +121,7 @@ int nv_classify_load_profile(
  *
  *   printf("Below: %ld, Normal: %ld, Peak: %ld\n", below, normal, peak);
  */
-int nv_aggregate_load_bands(
+NAVIERLIB_API int nv_aggregate_load_bands(
     const uint8_t* categories,
     int64_t count,
     int64_t* below_count,
@@ -148,13 +159,51 @@ int nv_aggregate_load_bands(
  *
  *   free(result.categories);
  */
-int nv_load_profile_complete(
+NAVIERLIB_API int nv_load_profile_complete(
     const double* consumption,
     const double* baseline,
     int64_t count,
     double low_ratio,
     double high_ratio,
     LoadProfileResult* result
+);
+
+/**
+ * Optimized classification (no memset, branchless packing)
+ *
+ * Performance improvements:
+ * - Removes memset overhead
+ * - Branchless bit manipulation
+ * - Prefetching hints
+ *
+ * Expected: ~2.7 ms for 1M intervals (2.2× vs C# baseline)
+ */
+NAVIERLIB_API int nv_classify_load_profile_optimized(
+    const double* consumption,
+    const double* baseline,
+    uint8_t* categories,
+    int64_t count,
+    double low_ratio,
+    double high_ratio
+);
+
+/**
+ * Ultra-optimized classification (8-wide SIMD)
+ *
+ * Performance improvements:
+ * - Process 8 doubles per iteration (2 AVX2 registers)
+ * - Better instruction-level parallelism
+ * - Reduced loop overhead
+ *
+ * Expected: ~2.2 ms for 1M intervals (2.7× vs C# baseline)
+ */
+NAVIERLIB_API int nv_classify_load_profile_8wide(
+    const double* consumption,
+    const double* baseline,
+    uint8_t* categories,
+    int64_t count,
+    double low_ratio,
+    double high_ratio
 );
 
 /**

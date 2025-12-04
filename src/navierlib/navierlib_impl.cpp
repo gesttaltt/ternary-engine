@@ -7,6 +7,7 @@
 
 #include "navierlib_api.h"
 #include <immintrin.h>
+#include <intrin.h>   // For __cpuid, __cpuidex (MSVC)
 #include <cmath>
 #include <cstring>
 
