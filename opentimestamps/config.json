@@ -9,10 +9,10 @@
   },
   "files_to_timestamp": {
     "source_code": [
-      "ternary_core/**/*.cpp",
-      "ternary_core/**/*.h",
-      "ternary_engine/**/*.cpp",
-      "ternary_engine/**/*.h"
+      "src/core/**/*.cpp",
+      "src/core/**/*.h",
+      "src/engine/**/*.cpp",
+      "src/engine/**/*.h"
     ],
     "critical_scripts": [
       "scripts/**/*.py",
@@ -32,7 +32,11 @@
     "build_configs": [
       "build/**/*.py",
       "CMakeLists.txt",
-      "setup.py"
+      "setup.py",
+      "pyproject.toml"
+    ],
+    "legal_transfers": [
+      "opentimestamps/transfers/**/*.md"
     ]
   },
   "exclude_patterns": [

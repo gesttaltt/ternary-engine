@@ -1,0 +1,276 @@
+# pyproject.toml - Ternary Engine Project Configuration
+#
+# This file configures Python tooling for the Ternary Engine project.
+# See docs/DEVELOPMENT_TOOLING.md for installation instructions.
+
+[build-system]
+requires = ["setuptools>=61.0", "pybind11>=2.10"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ternary-engine"
+version = "0.1.0"
+description = "Production-grade balanced ternary arithmetic library with SIMD acceleration"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.7"
+authors = [
+    {name = "Jonathan Verdun", email = "jonathan.verdun707@gmail.com"}
+]
+keywords = [
+    "ternary",
+    "arithmetic",
+    "simd",
+    "avx2",
+    "neural-network",
+    "quantization",
+    "edge-ai"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "numpy>=1.19",
+    "pybind11>=2.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-benchmark>=4.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+    "py-spy>=0.3",
+]
+tritnet = [
+    "torch>=2.0",
+]
+viz = [
+    "matplotlib>=3.5",
+]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+    "mkdocs-mermaid2-plugin>=1.0",
+]
+all = [
+    "ternary-engine[dev,tritnet,viz,docs]",
+]
+
+[project.urls]
+Homepage = "https://github.com/gesttaltt/ternary-engine"
+Documentation = "https://github.com/gesttaltt/ternary-engine#readme"
+Repository = "https://github.com/gesttaltt/ternary-engine.git"
+Issues = "https://github.com/gesttaltt/ternary-engine/issues"
+Changelog = "https://github.com/gesttaltt/ternary-engine/blob/main/CHANGELOG.md"
+
+# ============================================================================
+# Ruff Configuration (Linter + Formatter)
+# ============================================================================
+[tool.ruff]
+# Target Python 3.7 for broad compatibility
+target-version = "py37"
+
+# Line length matching project standard
+line-length = 100
+
+# Exclude generated and build artifacts
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    "__pycache__",
+    "build/artifacts",
+    "*.pyd",
+    "*.so",
+    "models/datasets",
+]
+
+[tool.ruff.lint]
+# Enable these rule categories
+select = [
+    "E",      # pycodestyle errors
+    "F",      # Pyflakes
+    "W",      # pycodestyle warnings
+    "I",      # isort (import sorting)
+    "UP",     # pyupgrade (Python upgrade suggestions)
+    "C90",    # mccabe complexity
+    "B",      # flake8-bugbear
+    "S",      # flake8-bandit (security)
+    "T20",    # flake8-print (no print statements)
+    "SIM",    # flake8-simplify
+    "RUF",    # Ruff-specific rules
+]
+
+# Ignore these specific rules
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "S101",   # Use of assert (fine in tests)
+    "T201",   # Print found (used in benchmarks/scripts)
+    "B008",   # Function call in default argument (pybind11 pattern)
+]
+
+# Allow these rules to be auto-fixed
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use assert and print
+"tests/**/*.py" = ["S101", "T201"]
+# Benchmarks can use print
+"benchmarks/**/*.py" = ["T201"]
+# Scripts can use print
+"scripts/**/*.py" = ["T201"]
+# Build scripts can use print
+"build/**/*.py" = ["T201"]
+# TritNet training can use print
+"models/**/*.py" = ["T201"]
+
+[tool.ruff.lint.mccabe]
+# Maximum cyclomatic complexity
+max-complexity = 15
+
+[tool.ruff.lint.isort]
+# Match project import style
+known-first-party = ["ternary_simd_engine", "ternary_dense243_module"]
+force-single-line = false
+lines-after-imports = 2
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Use spaces for indentation
+indent-style = "space"
+
+# Respect magic trailing commas
+skip-magic-trailing-comma = false
+
+# Unix line endings
+line-ending = "auto"
+
+# ============================================================================
+# Mypy Configuration (Type Checker)
+# ============================================================================
+[tool.mypy]
+python_version = "3.7"
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+show_column_numbers = true
+
+# Strict optional is too aggressive for this codebase
+strict_optional = false
+
+# Ignore missing imports for C extensions and external libs
+ignore_missing_imports = true
+
+# Exclude generated files and datasets
+exclude = [
+    "build/",
+    "models/datasets/",
+    ".mypy_cache/",
+]
+
+# Per-module overrides
+[[tool.mypy.overrides]]
+module = "tests.*"
+# Tests don't need strict typing
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "benchmarks.*"
+# Benchmarks don't need strict typing
+disallow_untyped_defs = false
+
+# ============================================================================
+# Pytest Configuration
+# ============================================================================
+[tool.pytest.ini_options]
+# Test discovery paths
+testpaths = ["tests/python"]
+
+# Test file patterns
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+# Default options
+addopts = [
+    "-v",
+    "--tb=short",
+    "-ra",  # Show summary of all except passed
+]
+
+# Markers for test categorization
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "benchmark: marks benchmark tests",
+    "integration: marks integration tests",
+    "unit: marks unit tests",
+]
+
+# Minimum pytest version
+minversion = "7.0"
+
+# Strict marker validation
+strict_markers = true
+
+# Filter warnings
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+# ============================================================================
+# Coverage Configuration
+# ============================================================================
+[tool.coverage.run]
+source = ["tests"]
+branch = true
+omit = [
+    "tests/python/test_benchmark_*.py",
+    "benchmarks/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = "reports/coverage"
+
+# ============================================================================
+# Setuptools Configuration
+# ============================================================================
+[tool.setuptools]
+packages = []  # No Python packages to install (C++ extensions only)
+
+[tool.setuptools.package-data]
+"*" = ["*.pyd", "*.so", "*.h"]
