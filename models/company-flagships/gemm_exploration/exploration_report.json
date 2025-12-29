@@ -1,0 +1,70 @@
+{
+  "timestamp": "2025-12-29 11:13:05",
+  "num_ternary_values": 19683,
+  "embedding_dim": 16,
+  "operations": {
+    "add": {
+      "ultrametric_rate": 0.0,
+      "discrete_in_top1": 0.0,
+      "discrete_in_top5": 0.002,
+      "mean_dist_to_discrete": 0.3771672248840332,
+      "soft_gap_mean": 0.11470368729624897,
+      "soft_gap_max": 0.28711751103401184
+    },
+    "mul": {
+      "ultrametric_rate": 0.012,
+      "discrete_in_top1": 0.0,
+      "discrete_in_top5": 0.0012,
+      "mean_dist_to_discrete": 0.3277741074562073,
+      "soft_gap_mean": 0.11470368729624897,
+      "soft_gap_max": 0.28711751103401184
+    },
+    "min": {
+      "ultrametric_rate": 0.0466,
+      "discrete_in_top1": 0.001,
+      "discrete_in_top5": 0.0044,
+      "mean_dist_to_discrete": 0.268907368183136,
+      "soft_gap_mean": 0.11470368729624897,
+      "soft_gap_max": 0.28711751103401184
+    },
+    "max": {
+      "ultrametric_rate": 0.0466,
+      "discrete_in_top1": 0.0004,
+      "discrete_in_top5": 0.0048,
+      "mean_dist_to_discrete": 0.2212514579296112,
+      "soft_gap_mean": 0.11470368729624897,
+      "soft_gap_max": 0.28711751103401184
+    }
+  },
+  "lattice": {
+    "distance_peaks": [
+      0.10328816124351496,
+      0.16219233077462442,
+      0.1916444155401791,
+      0.17200969236314262,
+      0.15237496918610616,
+      0.1131055228320332,
+      0.18182705395166088,
+      0.1327402460090697,
+      0.12292288442055145,
+      0.14255760759758793
+    ],
+    "mean_distance": 0.36679700442356755,
+    "std_distance": 0.26093814432155965
+  },
+  "ultrametric": {
+    "euclidean_ultrametric_correlation": 0.9166508518252026
+  },
+  "gemm_maps": {
+    "add": {
+      "match_rate": 0.0002,
+      "mean_distance": 0.11511861379863694,
+      "max_distance": 0.28908053040504456
+    },
+    "mul": {
+      "match_rate": 0.001,
+      "mean_distance": 0.11511861379863694,
+      "max_distance": 0.28908053040504456
+    }
+  }
+}
