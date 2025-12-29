@@ -1,0 +1,155 @@
+{
+  "source_checkpoint": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\epoch_20.pt",
+  "quantization_threshold": 0.03126489743590355,
+  "input_dim": 9,
+  "latent_dim": 16,
+  "output_dim": 27,
+  "encoder_A": [
+    {
+      "name": "encoder.0",
+      "in_features": 9,
+      "out_features": 256,
+      "weight_offset": 0,
+      "weight_size": 512,
+      "bias_offset": 0,
+      "bias_size": 1024,
+      "has_activation": true
+    },
+    {
+      "name": "encoder.2",
+      "in_features": 256,
+      "out_features": 128,
+      "weight_offset": 512,
+      "weight_size": 6656,
+      "bias_offset": 1024,
+      "bias_size": 512,
+      "has_activation": true
+    },
+    {
+      "name": "encoder.4",
+      "in_features": 128,
+      "out_features": 64,
+      "weight_offset": 7168,
+      "weight_size": 1664,
+      "bias_offset": 1536,
+      "bias_size": 256,
+      "has_activation": true
+    },
+    {
+      "name": "fc_mu",
+      "in_features": 64,
+      "out_features": 16,
+      "weight_offset": 8832,
+      "weight_size": 208,
+      "bias_offset": 1792,
+      "bias_size": 64,
+      "has_activation": false
+    },
+    {
+      "name": "fc_logvar",
+      "in_features": 64,
+      "out_features": 16,
+      "weight_offset": 9040,
+      "weight_size": 208,
+      "bias_offset": 1856,
+      "bias_size": 64,
+      "has_activation": false
+    }
+  ],
+  "encoder_B": [
+    {
+      "name": "encoder.0",
+      "in_features": 9,
+      "out_features": 256,
+      "weight_offset": 0,
+      "weight_size": 512,
+      "bias_offset": 0,
+      "bias_size": 1024,
+      "has_activation": true
+    },
+    {
+      "name": "encoder.2",
+      "in_features": 256,
+      "out_features": 128,
+      "weight_offset": 512,
+      "weight_size": 6656,
+      "bias_offset": 1024,
+      "bias_size": 512,
+      "has_activation": true
+    },
+    {
+      "name": "encoder.4",
+      "in_features": 128,
+      "out_features": 64,
+      "weight_offset": 7168,
+      "weight_size": 1664,
+      "bias_offset": 1536,
+      "bias_size": 256,
+      "has_activation": true
+    },
+    {
+      "name": "fc_mu",
+      "in_features": 64,
+      "out_features": 16,
+      "weight_offset": 8832,
+      "weight_size": 208,
+      "bias_offset": 1792,
+      "bias_size": 64,
+      "has_activation": false
+    },
+    {
+      "name": "fc_logvar",
+      "in_features": 64,
+      "out_features": 16,
+      "weight_offset": 9040,
+      "weight_size": 208,
+      "bias_offset": 1856,
+      "bias_size": 64,
+      "has_activation": false
+    }
+  ],
+  "decoder_A": [
+    {
+      "name": "decoder.0",
+      "in_features": 16,
+      "out_features": 32,
+      "weight_offset": 0,
+      "weight_size": 128,
+      "bias_offset": 0,
+      "bias_size": 128,
+      "has_activation": true
+    },
+    {
+      "name": "decoder.2",
+      "in_features": 32,
+      "out_features": 64,
+      "weight_offset": 128,
+      "weight_size": 448,
+      "bias_offset": 128,
+      "bias_size": 256,
+      "has_activation": true
+    },
+    {
+      "name": "decoder.4",
+      "in_features": 64,
+      "out_features": 27,
+      "weight_offset": 576,
+      "weight_size": 351,
+      "bias_offset": 384,
+      "bias_size": 108,
+      "has_activation": false
+    }
+  ],
+  "total_bytes": {
+    "encoder_A": 11168,
+    "encoder_B": 11168,
+    "decoder_A": 1419,
+    "projection": 22664,
+    "total": 46419
+  },
+  "weight_distribution": {
+    "minus_one": 0.39854317903518677,
+    "zero": 0.3000059127807617,
+    "plus_one": 0.3014509379863739
+  }
+}
