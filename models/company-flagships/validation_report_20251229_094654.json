@@ -1,0 +1,3644 @@
+{
+  "generated": "2025-12-29T09:47:12.418621",
+  "total_checkpoints": 58,
+  "summary": {
+    "best_model": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\epoch_20.pt",
+    "best_score": 72.3349947117373,
+    "loadable": 58,
+    "dual_vae_models": 51
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\epoch_20.pt",
+      "type": "dual_vae",
+      "score": 72.33,
+      "coverage": 100.0,
+      "hierarchy_B": -0.8314,
+      "richness": "0.00208",
+      "loadable": true
+    },
+    {
+      "rank": 2,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\epoch_40.pt",
+      "type": "dual_vae",
+      "score": 71.79,
+      "coverage": 100.0,
+      "hierarchy_B": -0.8318,
+      "richness": "0.001548",
+      "loadable": true
+    },
+    {
+      "rank": 3,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\best.pt",
+      "type": "dual_vae",
+      "score": 71.59,
+      "coverage": 99.9,
+      "hierarchy_B": -0.8319,
+      "richness": "0.001387",
+      "loadable": true
+    },
+    {
+      "rank": 4,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\latest.pt",
+      "type": "dual_vae",
+      "score": 71.59,
+      "coverage": 99.9,
+      "hierarchy_B": -0.8319,
+      "richness": "0.001387",
+      "loadable": true
+    },
+    {
+      "rank": 5,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_160.pt",
+      "type": "dual_vae",
+      "score": 70.39,
+      "coverage": 100.0,
+      "hierarchy_B": -0.8164,
+      "richness": "0.000651",
+      "loadable": true
+    },
+    {
+      "rank": 6,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_100.pt",
+      "type": "dual_vae",
+      "score": 70.39,
+      "coverage": 100.0,
+      "hierarchy_B": 0.7965,
+      "richness": "0.001208",
+      "loadable": true
+    },
+    {
+      "rank": 7,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_100.pt",
+      "type": "dual_vae",
+      "score": 70.07,
+      "coverage": 100.0,
+      "hierarchy_B": 0.8137,
+      "richness": "0.000421",
+      "loadable": true
+    },
+    {
+      "rank": 8,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_280.pt",
+      "type": "dual_vae",
+      "score": 69.71,
+      "coverage": 100.0,
+      "hierarchy_B": -0.7836,
+      "richness": "0.000925",
+      "loadable": true
+    },
+    {
+      "rank": 9,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\best.pt",
+      "type": "dual_vae",
+      "score": 69.49,
+      "coverage": 100.0,
+      "hierarchy_B": -0.7643,
+      "richness": "0.00125",
+      "loadable": true
+    },
+    {
+      "rank": 10,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_140.pt",
+      "type": "dual_vae",
+      "score": 69.18,
+      "coverage": 100.0,
+      "hierarchy_B": 0.7765,
+      "richness": "0.000617",
+      "loadable": true
+    },
+    {
+      "rank": 11,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_20.pt",
+      "type": "dual_vae",
+      "score": 69.05,
+      "coverage": 100.0,
+      "hierarchy_B": -0.7489,
+      "richness": "0.001271",
+      "loadable": true
+    },
+    {
+      "rank": 12,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_220.pt",
+      "type": "dual_vae",
+      "score": 68.8,
+      "coverage": 100.0,
+      "hierarchy_B": -0.7492,
+      "richness": "0.001026",
+      "loadable": true
+    },
+    {
+      "rank": 13,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_160.pt",
+      "type": "dual_vae",
+      "score": 67.69,
+      "coverage": 100.0,
+      "hierarchy_B": 0.7251,
+      "richness": "0.000644",
+      "loadable": true
+    },
+    {
+      "rank": 14,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\latest.pt",
+      "type": "dual_vae",
+      "score": 67.67,
+      "coverage": 100.0,
+      "hierarchy_B": 0.6864,
+      "richness": "0.001704",
+      "loadable": true
+    },
+    {
+      "rank": 15,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_120.pt",
+      "type": "dual_vae",
+      "score": 66.0,
+      "coverage": 100.0,
+      "hierarchy_B": 0.6806,
+      "richness": "0.000281",
+      "loadable": true
+    },
+    {
+      "rank": 16,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_40.pt",
+      "type": "dual_vae",
+      "score": 65.68,
+      "coverage": 100.0,
+      "hierarchy_B": 0.6521,
+      "richness": "0.000768",
+      "loadable": true
+    },
+    {
+      "rank": 17,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_140.pt",
+      "type": "dual_vae",
+      "score": 64.85,
+      "coverage": 100.0,
+      "hierarchy_B": 0.6361,
+      "richness": "0.000427",
+      "loadable": true
+    },
+    {
+      "rank": 18,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary-multiVAE\\ternary_v5_11_3.pt",
+      "type": "dual_vae",
+      "score": 64.78,
+      "coverage": 100.0,
+      "hierarchy_B": -0.5856,
+      "richness": "0.00177",
+      "loadable": true
+    },
+    {
+      "rank": 19,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_240.pt",
+      "type": "dual_vae",
+      "score": 64.07,
+      "coverage": 100.0,
+      "hierarchy_B": 0.5794,
+      "richness": "0.001279",
+      "loadable": true
+    },
+    {
+      "rank": 20,
+      "path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_180.pt",
+      "type": "dual_vae",
+      "score": 63.23,
+      "coverage": 100.0,
+      "hierarchy_B": -0.5623,
+      "richness": "0.000955",
+      "loadable": true
+    }
+  ],
+  "detailed_results": [
+    {
+      "rank": 1,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\epoch_20.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 72.33,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.788586365946771,
+        "hierarchy_B": -0.8314391630002357,
+        "richness": "0.0020804305",
+        "radius_v0": 0.9893829822540283,
+        "radius_v9": 0.011142793111503124,
+        "radial_separation": 0.9782401891425252,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.17953220009803772,
+        "geo_loss_B": 0.04978518187999725,
+        "rad_loss_A": 0.09529063105583191,
+        "rad_loss_B": 0.04675190895795822,
+        "radial_corr_A": -0.7210622407275991,
+        "radial_corr_B": -0.8314157585286059,
+        "mean_radius_A": 0.7615501880645752,
+        "mean_radius_B": 0.813995897769928,
+        "radius_min_A": 0.007224211934953928,
+        "radius_max_A": 0.949989378452301,
+        "radius_range_A": 0.9427651762962341,
+        "radius_v0": 0.8672835230827332,
+        "radius_v9": 0.00905699748545885,
+        "distance_corr_A": 0.4945327639579773,
+        "distance_corr_B": 0.9036123752593994
+      }
+    },
+    {
+      "rank": 2,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\epoch_40.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 71.79,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.7977479561232866,
+        "hierarchy_B": -0.831846893525758,
+        "richness": "0.0015478266",
+        "radius_v0": 0.9908191561698914,
+        "radius_v9": 0.005545256659388542,
+        "radial_separation": 0.9852738995105028,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.17639580368995667,
+        "geo_loss_B": 0.047619324177503586,
+        "rad_loss_A": 0.09359411895275116,
+        "rad_loss_B": 0.04446563124656677,
+        "radial_corr_A": -0.7426050444983698,
+        "radial_corr_B": -0.8318011553971325,
+        "mean_radius_A": 0.7787569761276245,
+        "mean_radius_B": 0.8168158531188965,
+        "radius_min_A": 0.0008161067962646484,
+        "radius_max_A": 0.9500000476837158,
+        "radius_range_A": 0.9491839408874512,
+        "radius_v0": 0.8886516094207764,
+        "radius_v9": 0.1979837715625763,
+        "distance_corr_A": 0.5317713022232056,
+        "distance_corr_B": 0.9114424586296082
+      }
+    },
+    {
+      "rank": 3,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\best.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 71.59,
+      "reconstruction": {
+        "coverage": 99.89838947314942,
+        "unique_outputs": 19663,
+        "reconstruction_loss": 0.001016105268505818,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.8254829121409353,
+        "hierarchy_B": -0.8318736564280642,
+        "richness": "0.0013869918",
+        "radius_v0": 0.9922287464141846,
+        "radius_v9": 0.0043680183589458466,
+        "radial_separation": 0.9878607280552387,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 0.9989838947314942,
+        "geo_loss_A": 0.10727255046367645,
+        "geo_loss_B": 0.045334458351135254,
+        "rad_loss_A": 0.05760511755943298,
+        "rad_loss_B": 0.044328026473522186,
+        "radial_corr_A": -0.816209473152063,
+        "radial_corr_B": -0.8318379099829077,
+        "mean_radius_A": 0.8066193461418152,
+        "mean_radius_B": 0.8186026215553284,
+        "radius_min_A": 0.011077075265347958,
+        "radius_max_A": 0.9500001072883606,
+        "radius_range_A": 0.9389230608940125,
+        "radius_v0": 0.9316665530204773,
+        "radius_v9": 0.013311395421624184,
+        "distance_corr_A": 0.7315119504928589,
+        "distance_corr_B": 0.915156900882721
+      }
+    },
+    {
+      "rank": 4,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\latest.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 71.59,
+      "reconstruction": {
+        "coverage": 99.89838947314942,
+        "unique_outputs": 19663,
+        "reconstruction_loss": 0.001016105268505818,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.8254829121409353,
+        "hierarchy_B": -0.8318736564280642,
+        "richness": "0.0013869918",
+        "radius_v0": 0.9922287464141846,
+        "radius_v9": 0.0043680183589458466,
+        "radial_separation": 0.9878607280552387,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 0.9989838947314942,
+        "geo_loss_A": 0.10727255046367645,
+        "geo_loss_B": 0.045334458351135254,
+        "rad_loss_A": 0.05760511755943298,
+        "rad_loss_B": 0.044328026473522186,
+        "radial_corr_A": -0.816209473152063,
+        "radial_corr_B": -0.8318379099829077,
+        "mean_radius_A": 0.8066193461418152,
+        "mean_radius_B": 0.8186026215553284,
+        "radius_min_A": 0.011077075265347958,
+        "radius_max_A": 0.9500001072883606,
+        "radius_range_A": 0.9389230608940125,
+        "radius_v0": 0.9316665530204773,
+        "radius_v9": 0.013311395421624184,
+        "distance_corr_A": 0.7315119504928589,
+        "distance_corr_B": 0.915156900882721
+      }
+    },
+    {
+      "rank": 5,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_160.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 70.39,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.5650045582022399,
+        "hierarchy_B": -0.8163837822727299,
+        "richness": "0.0006508958",
+        "radius_v0": 0.6591219305992126,
+        "radius_v9": 0.5556382536888123,
+        "radial_separation": 0.10348367691040039,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.12743961811065674,
+        "geo_loss_B": 0.00417483551427722,
+        "rad_loss_A": 0.05668340623378754,
+        "rad_loss_B": 0.0004432862042449415,
+        "radial_corr_A": -0.6459410452046597,
+        "radial_corr_B": -0.8320502839763829,
+        "mean_radius_A": 0.8186161518096924,
+        "mean_radius_B": 0.8183557987213135,
+        "radius_min_A": 0.05819269269704819,
+        "radius_max_A": 0.9499360918998718,
+        "radius_range_A": 0.8917434215545654,
+        "radius_v0": 0.8732632994651794,
+        "radius_v9": 0.05819269269704819,
+        "distance_corr_A": 0.5507537722587585,
+        "distance_corr_B": 0.9884270429611206
+      }
+    },
+    {
+      "rank": 6,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_100.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 70.39,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.004664665893661556,
+        "hierarchy_B": 0.7965229394206521,
+        "richness": "0.0012077669",
+        "radius_v0": 0.32707834243774414,
+        "radius_v9": 0.5517370104789734,
+        "radial_separation": -0.22465866804122925,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.1583564281463623,
+        "geo_loss_B": 0.005050520412623882,
+        "rad_loss_A": 0.07845060527324677,
+        "rad_loss_B": 0.00019172061001881957,
+        "radial_corr_A": -0.6712493759633826,
+        "radial_corr_B": -0.8320501669168974,
+        "mean_radius_A": 0.8134739995002747,
+        "mean_radius_B": 0.8131664395332336,
+        "radius_min_A": 0.09726770967245102,
+        "radius_max_A": 0.9499949812889099,
+        "radius_range_A": 0.8527272939682007,
+        "radius_v0": 0.8788455724716187,
+        "radius_v9": 0.09726770967245102,
+        "distance_corr_A": 0.4802108407020569,
+        "distance_corr_B": 0.9861727952957153
+      }
+    },
+    {
+      "rank": 7,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_100.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 70.07,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.4126122031787895,
+        "hierarchy_B": 0.8137099974674864,
+        "richness": "0.00042115967",
+        "radius_v0": 0.2717456519603729,
+        "radius_v9": 0.32754552364349365,
+        "radial_separation": -0.05579987168312073,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.1464548408985138,
+        "geo_loss_B": 0.004792566876858473,
+        "rad_loss_A": 0.05814968794584274,
+        "rad_loss_B": 0.00036616376019082963,
+        "radial_corr_A": -0.6388829743652681,
+        "radial_corr_B": -0.8320500382018734,
+        "mean_radius_A": 0.8144705891609192,
+        "mean_radius_B": 0.8171257376670837,
+        "radius_min_A": 0.08354669064283371,
+        "radius_max_A": 0.9499779343605042,
+        "radius_range_A": 0.8664312362670898,
+        "radius_v0": 0.8719186186790466,
+        "radius_v9": 0.1610860675573349,
+        "distance_corr_A": 0.4983634352684021,
+        "distance_corr_B": 0.9862412214279175
+      }
+    },
+    {
+      "rank": 8,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_280.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 69.71,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.5278715453326986,
+        "hierarchy_B": -0.7835973306797372,
+        "richness": "0.00092517294",
+        "radius_v0": 0.7889940142631531,
+        "radius_v9": 0.43843063712120056,
+        "radial_separation": 0.3505633771419525,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.13431088626384735,
+        "geo_loss_B": 0.002700486686080694,
+        "rad_loss_A": 0.057492803782224655,
+        "rad_loss_B": 0.0002662928309291601,
+        "radial_corr_A": -0.6777600573718271,
+        "radial_corr_B": -0.832050295701972,
+        "mean_radius_A": 0.821505069732666,
+        "mean_radius_B": 0.8163545727729797,
+        "radius_min_A": 0.11422239243984222,
+        "radius_max_A": 0.9499744772911072,
+        "radius_range_A": 0.8357520699501038,
+        "radius_v0": 0.8824305534362793,
+        "radius_v9": 0.1465092897415161,
+        "distance_corr_A": 0.5480323433876038,
+        "distance_corr_B": 0.99310702085495
+      }
+    },
+    {
+      "rank": 9,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\best.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 69.49,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.1163790494950435,
+        "hierarchy_B": -0.7643213884150185,
+        "richness": "0.0012501244",
+        "radius_v0": 0.7935962677001953,
+        "radius_v9": 0.5407467484474182,
+        "radial_separation": 0.2528495192527771,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.031456432840515886,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.15733598172664642,
+        "geo_loss_B": 0.025765174999833107,
+        "rad_loss_A": 0.08479198813438416,
+        "rad_loss_B": 0.003296670038253069,
+        "radial_corr_A": -0.6392978195002242,
+        "radial_corr_B": -0.8302459896474613,
+        "mean_radius_A": 0.7581405639648438,
+        "mean_radius_B": 0.8145169019699097,
+        "radius_min_A": 0.051238007843494415,
+        "radius_max_A": 0.9461430311203003,
+        "radius_range_A": 0.8949050307273865,
+        "radius_v0": 0.8131962418556213,
+        "radius_v9": 0.07250015437602997,
+        "distance_corr_A": 0.45849791169166565,
+        "distance_corr_B": 0.9297544360160828
+      }
+    },
+    {
+      "rank": 10,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_140.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 69.18,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.05995837119043545,
+        "hierarchy_B": 0.7765444507334743,
+        "richness": "0.0006171041",
+        "radius_v0": 0.2874106764793396,
+        "radius_v9": 0.3684106171131134,
+        "radial_separation": -0.0809999406337738,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.14154550433158875,
+        "geo_loss_B": 0.009994518011808395,
+        "rad_loss_A": 0.07555074244737625,
+        "rad_loss_B": 0.00020452584431041032,
+        "radial_corr_A": -0.6649768989057488,
+        "radial_corr_B": -0.8320501405524079,
+        "mean_radius_A": 0.8148998618125916,
+        "mean_radius_B": 0.8107059597969055,
+        "radius_min_A": 0.06334146857261658,
+        "radius_max_A": 0.9499922394752502,
+        "radius_range_A": 0.886650800704956,
+        "radius_v0": 0.8784662485122681,
+        "radius_v9": 0.06334146857261658,
+        "distance_corr_A": 0.5487150549888611,
+        "distance_corr_B": 0.9861844182014465
+      }
+    },
+    {
+      "rank": 11,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_20.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 69.05,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.23485431624904868,
+        "hierarchy_B": -0.7488701857063971,
+        "richness": "0.0012713297",
+        "radius_v0": 0.7628452181816101,
+        "radius_v9": 0.45206418633461,
+        "radial_separation": 0.3107810318470001,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.15477369725704193,
+        "geo_loss_B": 0.02892191708087921,
+        "rad_loss_A": 0.074995256960392,
+        "rad_loss_B": 0.004929724149405956,
+        "radial_corr_A": -0.6435620838638665,
+        "radial_corr_B": -0.8296950275657735,
+        "mean_radius_A": 0.7722176313400269,
+        "mean_radius_B": 0.811457097530365,
+        "radius_min_A": 0.10316954553127289,
+        "radius_max_A": 0.949560821056366,
+        "radius_range_A": 0.8463912606239319,
+        "radius_v0": 0.8347547650337219,
+        "radius_v9": 0.17581117153167725,
+        "distance_corr_A": 0.498383492231369,
+        "distance_corr_B": 0.9150577783584595
+      }
+    },
+    {
+      "rank": 12,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_220.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 68.8,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.20471431584991515,
+        "hierarchy_B": -0.7491578023469411,
+        "richness": "0.0010256355",
+        "radius_v0": 0.7127971649169922,
+        "radius_v9": 0.7168365120887756,
+        "radial_separation": -0.004039347171783447,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.12863172590732574,
+        "geo_loss_B": 0.0030384620185941458,
+        "rad_loss_A": 0.07505235821008682,
+        "rad_loss_B": 0.0002733041765168309,
+        "radial_corr_A": -0.676867514352671,
+        "radial_corr_B": -0.8320502956738208,
+        "mean_radius_A": 0.8238669037818909,
+        "mean_radius_B": 0.8166382312774658,
+        "radius_min_A": 0.04881691932678223,
+        "radius_max_A": 0.9499757885932922,
+        "radius_range_A": 0.90115886926651,
+        "radius_v0": 0.8847065567970276,
+        "radius_v9": 0.07503999769687653,
+        "distance_corr_A": 0.5537996888160706,
+        "distance_corr_B": 0.9921332001686096
+      }
+    },
+    {
+      "rank": 13,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_160.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 67.69,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.572895727609431,
+        "hierarchy_B": 0.7250678349418862,
+        "richness": "0.0006437303",
+        "radius_v0": 0.509465217590332,
+        "radius_v9": 0.5103034377098083,
+        "radial_separation": -0.0008382201194763184,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.14741556346416473,
+        "geo_loss_B": 0.003680489957332611,
+        "rad_loss_A": 0.07173261046409607,
+        "rad_loss_B": 0.00024152005789801478,
+        "radial_corr_A": -0.6761075786625137,
+        "radial_corr_B": -0.8320502943929455,
+        "mean_radius_A": 0.8201902508735657,
+        "mean_radius_B": 0.8153534531593323,
+        "radius_min_A": 0.09933537989854813,
+        "radius_max_A": 0.9499959945678711,
+        "radius_range_A": 0.8506606221199036,
+        "radius_v0": 0.8842369318008423,
+        "radius_v9": 0.12917140126228333,
+        "distance_corr_A": 0.5376859307289124,
+        "distance_corr_B": 0.9895507097244263
+      }
+    },
+    {
+      "rank": 14,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\latest.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 67.67,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.42588497396212177,
+        "hierarchy_B": 0.6863647768086923,
+        "richness": "0.0017037984",
+        "radius_v0": 0.4214022755622864,
+        "radius_v9": 0.5387909412384033,
+        "radial_separation": -0.11738866567611694,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.031456432840515886,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.15733598172664642,
+        "geo_loss_B": 0.025765174999833107,
+        "rad_loss_A": 0.08479198813438416,
+        "rad_loss_B": 0.003296670038253069,
+        "radial_corr_A": -0.6392978195002242,
+        "radial_corr_B": -0.8302459896474613,
+        "mean_radius_A": 0.7581405639648438,
+        "mean_radius_B": 0.8145169019699097,
+        "radius_min_A": 0.051238007843494415,
+        "radius_max_A": 0.9461430311203003,
+        "radius_range_A": 0.8949050307273865,
+        "radius_v0": 0.8131962418556213,
+        "radius_v9": 0.07250015437602997,
+        "distance_corr_A": 0.45849791169166565,
+        "distance_corr_B": 0.9297544360160828
+      }
+    },
+    {
+      "rank": 15,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_120.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 66.0,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.36457493042650774,
+        "hierarchy_B": 0.6805855828363829,
+        "richness": "0.00028085217",
+        "radius_v0": 0.3569156527519226,
+        "radius_v9": 0.6007208228111267,
+        "radial_separation": -0.2438051700592041,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.1472589671611786,
+        "geo_loss_B": 0.004258319269865751,
+        "rad_loss_A": 0.06467203050851822,
+        "rad_loss_B": 0.00019321478612255305,
+        "radial_corr_A": -0.672137977025792,
+        "radial_corr_B": -0.8320502226812853,
+        "mean_radius_A": 0.8147340416908264,
+        "mean_radius_B": 0.8137036561965942,
+        "radius_min_A": 0.03153878077864647,
+        "radius_max_A": 0.9499954581260681,
+        "radius_range_A": 0.9184566736221313,
+        "radius_v0": 0.8798949718475342,
+        "radius_v9": 0.19207443296909332,
+        "distance_corr_A": 0.5476757884025574,
+        "distance_corr_B": 0.9888221621513367
+      }
+    },
+    {
+      "rank": 16,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_40.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 65.68,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.32550011199773937,
+        "hierarchy_B": 0.6521312478221076,
+        "richness": "0.0007682573",
+        "radius_v0": 0.5089494585990906,
+        "radius_v9": 0.5704877972602844,
+        "radial_separation": -0.06153833866119385,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.1513218730688095,
+        "geo_loss_B": 0.0108730997890234,
+        "rad_loss_A": 0.08587470650672913,
+        "rad_loss_B": 0.0005470413598231971,
+        "radial_corr_A": -0.6656637315314665,
+        "radial_corr_B": -0.831990160369584,
+        "mean_radius_A": 0.7977189421653748,
+        "mean_radius_B": 0.8101474642753601,
+        "radius_min_A": 0.07154843211174011,
+        "radius_max_A": 0.9499963521957397,
+        "radius_range_A": 0.8784478902816772,
+        "radius_v0": 0.8640860319137573,
+        "radius_v9": 0.08210819959640503,
+        "distance_corr_A": 0.5160889625549316,
+        "distance_corr_B": 0.9688676595687866
+      }
+    },
+    {
+      "rank": 17,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_140.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 64.85,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.10894710301042392,
+        "hierarchy_B": 0.6360534885513713,
+        "richness": "0.00042692354",
+        "radius_v0": 0.3797987997531891,
+        "radius_v9": 0.5344350337982178,
+        "radial_separation": -0.1546362340450287,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.14114300906658173,
+        "geo_loss_B": 0.01057187095284462,
+        "rad_loss_A": 0.050705939531326294,
+        "rad_loss_B": 0.0006993425195105374,
+        "radial_corr_A": -0.6456630080241524,
+        "radial_corr_B": -0.8320487862932131,
+        "mean_radius_A": 0.8220475912094116,
+        "mean_radius_B": 0.8235920667648315,
+        "radius_min_A": 0.0830661877989769,
+        "radius_max_A": 0.9499552249908447,
+        "radius_range_A": 0.8668890595436096,
+        "radius_v0": 0.8777601718902588,
+        "radius_v9": 0.10830102860927582,
+        "distance_corr_A": 0.5196941494941711,
+        "distance_corr_B": 0.9839038848876953
+      }
+    },
+    {
+      "rank": 18,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary-multiVAE\\ternary_v5_11_3.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 64.78,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.1341373357072838,
+        "hierarchy_B": -0.5856216574468556,
+        "richness": "0.0017700397",
+        "radius_v0": 0.6434439420700073,
+        "radius_v9": 0.4713967740535736,
+        "radial_separation": 0.17204716801643372,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.031456432840515886,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.15733598172664642,
+        "geo_loss_B": 0.025765174999833107,
+        "rad_loss_A": 0.08479198813438416,
+        "rad_loss_B": 0.003296670038253069,
+        "radial_corr_A": -0.6392978195002242,
+        "radial_corr_B": -0.8302459896474613,
+        "mean_radius_A": 0.7581405639648438,
+        "mean_radius_B": 0.8145169019699097,
+        "radius_min_A": 0.051238007843494415,
+        "radius_max_A": 0.9461430311203003,
+        "radius_range_A": 0.8949050307273865,
+        "radius_v0": 0.8131962418556213,
+        "radius_v9": 0.07250015437602997,
+        "distance_corr_A": 0.45849791169166565,
+        "distance_corr_B": 0.9297544360160828
+      }
+    },
+    {
+      "rank": 19,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_240.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 64.07,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.1683940661627954,
+        "hierarchy_B": 0.5793977142550213,
+        "richness": "0.001278721",
+        "radius_v0": 0.49858564138412476,
+        "radius_v9": 0.5350859761238098,
+        "radial_separation": -0.03650033473968506,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.1337646245956421,
+        "geo_loss_B": 0.0027064261958003044,
+        "rad_loss_A": 0.09289145469665527,
+        "rad_loss_B": 0.0002615162811707705,
+        "radial_corr_A": -0.673951343270604,
+        "radial_corr_B": -0.8320502956751301,
+        "mean_radius_A": 0.8225871324539185,
+        "mean_radius_B": 0.8164316415786743,
+        "radius_min_A": 0.07471088320016861,
+        "radius_max_A": 0.9499346613883972,
+        "radius_range_A": 0.8752237558364868,
+        "radius_v0": 0.8828496336936951,
+        "radius_v9": 0.16795989871025085,
+        "distance_corr_A": 0.5298391580581665,
+        "distance_corr_B": 0.9926333427429199
+      }
+    },
+    {
+      "rank": 20,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_180.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 63.23,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.2224239986049578,
+        "hierarchy_B": -0.5622738447370602,
+        "richness": "0.000954775",
+        "radius_v0": 0.6722145080566406,
+        "radius_v9": 0.6131014227867126,
+        "radial_separation": 0.05911308526992798,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.14255961775779724,
+        "geo_loss_B": 0.0034464390482753515,
+        "rad_loss_A": 0.06428440660238266,
+        "rad_loss_B": 0.0002552433288656175,
+        "radial_corr_A": -0.6742813147359501,
+        "radial_corr_B": -0.8320502956332307,
+        "mean_radius_A": 0.8204571008682251,
+        "mean_radius_B": 0.8161514401435852,
+        "radius_min_A": 0.09318602085113525,
+        "radius_max_A": 0.9499878287315369,
+        "radius_range_A": 0.8568018078804016,
+        "radius_v0": 0.8830957412719727,
+        "radius_v9": 0.22511032223701477,
+        "distance_corr_A": 0.5226082801818848,
+        "distance_corr_B": 0.9906994700431824
+      }
+    },
+    {
+      "rank": 21,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_60.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 63.06,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.4040762614891666,
+        "hierarchy_B": 0.5696494843470244,
+        "richness": "0.00058674696",
+        "radius_v0": 0.4108530879020691,
+        "radius_v9": 0.4000605642795563,
+        "radial_separation": 0.010792523622512817,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.1523353010416031,
+        "geo_loss_B": 0.009294262155890465,
+        "rad_loss_A": 0.07346904277801514,
+        "rad_loss_B": 0.0003624985693022609,
+        "radial_corr_A": -0.6618346324861174,
+        "radial_corr_B": -0.8320161419516988,
+        "mean_radius_A": 0.8029094338417053,
+        "mean_radius_B": 0.81083744764328,
+        "radius_min_A": 0.07334993034601212,
+        "radius_max_A": 0.9499938488006592,
+        "radius_range_A": 0.8766438961029053,
+        "radius_v0": 0.8679232597351074,
+        "radius_v9": 0.14428775012493134,
+        "distance_corr_A": 0.5327998399734497,
+        "distance_corr_B": 0.9730801582336426
+      }
+    },
+    {
+      "rank": 22,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_validation\\best.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 62.02,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.08142936469166558,
+        "hierarchy_B": -0.5079227790671581,
+        "richness": "0.0013318543",
+        "radius_v0": 0.4922132194042206,
+        "radius_v9": 0.3853340148925781,
+        "radial_separation": 0.10687920451164246,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.17647385597229004,
+        "geo_loss_B": 0.04898088797926903,
+        "rad_loss_A": 0.06575306504964828,
+        "rad_loss_B": 0.015295473858714104,
+        "radial_corr_A": -0.6551249015014924,
+        "radial_corr_B": -0.8308378570686841,
+        "mean_radius_A": 0.7587869763374329,
+        "mean_radius_B": 0.8547713756561279,
+        "radius_min_A": 0.06338870525360107,
+        "radius_max_A": 0.9485703110694885,
+        "radius_range_A": 0.8851816058158875,
+        "radius_v0": 0.8264797329902649,
+        "radius_v9": 0.09753095358610153,
+        "distance_corr_A": 0.4114620089530945,
+        "distance_corr_B": 0.8757898211479187
+      }
+    },
+    {
+      "rank": 23,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_200.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 61.15,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.1329320112509211,
+        "hierarchy_B": 0.4791569105166084,
+        "richness": "0.0013074267",
+        "radius_v0": 0.47304442524909973,
+        "radius_v9": 0.45082852244377136,
+        "radial_separation": 0.02221590280532837,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.13369688391685486,
+        "geo_loss_B": 0.0030883222352713346,
+        "rad_loss_A": 0.07588435709476471,
+        "rad_loss_B": 0.0002762762305792421,
+        "radial_corr_A": -0.6788293735450228,
+        "radial_corr_B": -0.8320502956587633,
+        "mean_radius_A": 0.8230115175247192,
+        "mean_radius_B": 0.8159396052360535,
+        "radius_min_A": 0.10158367455005646,
+        "radius_max_A": 0.9499909281730652,
+        "radius_range_A": 0.8484072685241699,
+        "radius_v0": 0.8851988315582275,
+        "radius_v9": 0.2896004021167755,
+        "distance_corr_A": 0.5784046053886414,
+        "distance_corr_B": 0.9919381737709045
+      }
+    },
+    {
+      "rank": 24,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_260.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 60.77,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.36261688959438493,
+        "hierarchy_B": -0.4546471132504275,
+        "richness": "0.0016339703",
+        "radius_v0": 0.41703349351882935,
+        "radius_v9": 0.3074524700641632,
+        "radial_separation": 0.10958102345466614,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.1285720020532608,
+        "geo_loss_B": 0.002877472899854183,
+        "rad_loss_A": 0.07245220243930817,
+        "rad_loss_B": 0.00027466355822980404,
+        "radial_corr_A": -0.6786371179530624,
+        "radial_corr_B": -0.8320502956980438,
+        "mean_radius_A": 0.8232613801956177,
+        "mean_radius_B": 0.8161925077438354,
+        "radius_min_A": 0.08689185976982117,
+        "radius_max_A": 0.9499581456184387,
+        "radius_range_A": 0.8630663156509399,
+        "radius_v0": 0.8834489583969116,
+        "radius_v9": 0.2650696337223053,
+        "distance_corr_A": 0.5611253976821899,
+        "distance_corr_B": 0.9918642044067383
+      }
+    },
+    {
+      "rank": 25,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_80.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 60.62,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.09834194570055213,
+        "hierarchy_B": 0.4852480393295612,
+        "richness": "0.0006303026",
+        "radius_v0": 0.3537524342536926,
+        "radius_v9": 0.4201340675354004,
+        "radial_separation": -0.06638163328170776,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.13984067738056183,
+        "geo_loss_B": 0.005261301063001156,
+        "rad_loss_A": 0.0792878270149231,
+        "rad_loss_B": 0.00020451722957659513,
+        "radial_corr_A": -0.6715523912454557,
+        "radial_corr_B": -0.8320490026013745,
+        "mean_radius_A": 0.8124493956565857,
+        "mean_radius_B": 0.8118410110473633,
+        "radius_min_A": 0.08380995690822601,
+        "radius_max_A": 0.9499937295913696,
+        "radius_range_A": 0.8661837577819824,
+        "radius_v0": 0.8777338266372681,
+        "radius_v9": 0.1913764625787735,
+        "distance_corr_A": 0.5451012849807739,
+        "distance_corr_B": 0.9849456548690796
+      }
+    },
+    {
+      "rank": 26,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_50.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 60.29,
+      "reconstruction": {
+        "coverage": 99.88822842046436,
+        "unique_outputs": 19661,
+        "reconstruction_loss": 0.0011177157953563555,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.36112910202951465,
+        "hierarchy_B": -0.47718299228809197,
+        "richness": "0.00057389843",
+        "radius_v0": 0.5329092144966125,
+        "radius_v9": 0.4581660330295563,
+        "radial_separation": 0.07474318146705627,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 27,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_validation\\latest.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 60.28,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.6277284591178545,
+        "hierarchy_B": -0.4915308275065674,
+        "richness": "0.00012707213",
+        "radius_v0": 0.4762791097164154,
+        "radius_v9": 0.43693646788597107,
+        "radial_separation": 0.039342641830444336,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.17647385597229004,
+        "geo_loss_B": 0.04898088797926903,
+        "rad_loss_A": 0.06575306504964828,
+        "rad_loss_B": 0.015295473858714104,
+        "radial_corr_A": -0.6551249015014924,
+        "radial_corr_B": -0.8308378570686841,
+        "mean_radius_A": 0.7587869763374329,
+        "mean_radius_B": 0.8547713756561279,
+        "radius_min_A": 0.06338870525360107,
+        "radius_max_A": 0.9485703110694885,
+        "radius_range_A": 0.8851816058158875,
+        "radius_v0": 0.8264797329902649,
+        "radius_v9": 0.09753095358610153,
+        "distance_corr_A": 0.4114620089530945,
+        "distance_corr_B": 0.8757898211479187
+      }
+    },
+    {
+      "rank": 28,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_homeostasis\\epoch_0.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 59.66,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.6219361242408487,
+        "hierarchy_B": -0.340916594361431,
+        "richness": "0.0037625246",
+        "radius_v0": 0.5519452095031738,
+        "radius_v9": 0.2545115649700165,
+        "radial_separation": 0.29743364453315735,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.5258364677429199,
+        "geo_loss_B": 0.5194467902183533,
+        "rad_loss_A": 0.23273538053035736,
+        "rad_loss_B": 0.26208341121673584,
+        "radial_corr_A": -0.5498333957491603,
+        "radial_corr_B": -0.32273970524318957,
+        "mean_radius_A": 0.5138354897499084,
+        "mean_radius_B": 0.5126839280128479,
+        "radius_min_A": 0.27458667755126953,
+        "radius_max_A": 0.7962660193443298,
+        "radius_range_A": 0.5216793417930603,
+        "radius_v0": 0.5401566028594971,
+        "radius_v9": 0.34356197714805603,
+        "distance_corr_A": 0.3541620075702667,
+        "distance_corr_B": 0.2961188554763794
+      }
+    },
+    {
+      "rank": 29,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11\\epoch_0.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 54.86,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.05751768486592203,
+        "hierarchy_B": -0.2743134776995313,
+        "richness": "0.0010593906",
+        "radius_v0": 0.5201739072799683,
+        "radius_v9": 0.36757907271385193,
+        "radial_separation": 0.15259483456611633,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.031456432840515886,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.6444846391677856,
+        "geo_loss_B": 0.5193031430244446,
+        "rad_loss_A": 0.3249690532684326,
+        "rad_loss_B": 0.29547253251075745,
+        "radial_corr_A": -0.41652241650917504,
+        "radial_corr_B": -0.37794096105421865,
+        "mean_radius_A": 0.48154082894325256,
+        "mean_radius_B": 0.5193591117858887,
+        "radius_min_A": 0.214457705616951,
+        "radius_max_A": 0.780842661857605,
+        "radius_range_A": 0.5663849711418152,
+        "radius_v0": 0.504011332988739,
+        "radius_v9": 0.3139520287513733,
+        "distance_corr_A": 0.17058269679546356,
+        "distance_corr_B": 0.15729615092277527
+      }
+    },
+    {
+      "rank": 30,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_80.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 53.92,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.09478741186600356,
+        "hierarchy_B": -0.2571167203600353,
+        "richness": "0.00064199755",
+        "radius_v0": 0.4745200276374817,
+        "radius_v9": 0.4206514358520508,
+        "radial_separation": 0.05386859178543091,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 31,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_60.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 53.18,
+      "reconstruction": {
+        "coverage": 99.99491947365748,
+        "unique_outputs": 19682,
+        "reconstruction_loss": 5.08052634252687e-05,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.37274582372942855,
+        "hierarchy_B": 0.22531154793829047,
+        "richness": "0.000830411",
+        "radius_v0": 0.4804542362689972,
+        "radius_v9": 0.4484729468822479,
+        "radial_separation": 0.03198128938674927,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 32,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_120.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 50.91,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.06949258528984029,
+        "hierarchy_B": 0.15531637903216147,
+        "richness": "0.0006342452",
+        "radius_v0": 0.3109439015388489,
+        "radius_v9": 0.20390601456165314,
+        "radial_separation": 0.10703788697719574,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.1401948183774948,
+        "geo_loss_B": 0.004436085466295481,
+        "rad_loss_A": 0.04599127918481827,
+        "rad_loss_B": 0.0003988712269347161,
+        "radial_corr_A": -0.6434762474848158,
+        "radial_corr_B": -0.8320501766951501,
+        "mean_radius_A": 0.8178149461746216,
+        "mean_radius_B": 0.8174179196357727,
+        "radius_min_A": 0.06368233263492584,
+        "radius_max_A": 0.9499608874320984,
+        "radius_range_A": 0.8862785696983337,
+        "radius_v0": 0.8747024536132812,
+        "radius_v9": 0.12236437201499939,
+        "distance_corr_A": 0.5148142576217651,
+        "distance_corr_B": 0.9876739382743835
+      }
+    },
+    {
+      "rank": 33,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_100.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 50.39,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.23547702790296787,
+        "hierarchy_B": 0.12114757299000588,
+        "richness": "0.0010922598",
+        "radius_v0": 0.5150095224380493,
+        "radius_v9": 0.587324857711792,
+        "radial_separation": -0.07231533527374268,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 34,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_11_validation\\epoch_0.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 49.52,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.4387442459265863,
+        "hierarchy_B": 0.10020618844036872,
+        "richness": "0.0008582136",
+        "radius_v0": 0.44015783071517944,
+        "radius_v9": 0.42870068550109863,
+        "radial_separation": 0.01145714521408081,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.6858087778091431,
+        "geo_loss_B": 0.6350412964820862,
+        "rad_loss_A": 0.29215067625045776,
+        "rad_loss_B": 0.28084611892700195,
+        "radial_corr_A": -0.46693403276404444,
+        "radial_corr_B": -0.49210659926900424,
+        "mean_radius_A": 0.4745820462703705,
+        "mean_radius_B": 0.4900314509868622,
+        "radius_min_A": 0.21202009916305542,
+        "radius_max_A": 0.739625096321106,
+        "radius_range_A": 0.5276049971580505,
+        "radius_v0": 0.4994962513446808,
+        "radius_v9": 0.3361068665981293,
+        "distance_corr_A": 0.14427383244037628,
+        "distance_corr_B": 0.08555526286363602
+      }
+    },
+    {
+      "rank": 35,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_180.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 49.25,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.1955069742358357,
+        "hierarchy_B": -0.09961820174146264,
+        "richness": "0.00061236287",
+        "radius_v0": 0.5796608328819275,
+        "radius_v9": 0.7586028575897217,
+        "radial_separation": -0.1789420247077942,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.12346234172582626,
+        "geo_loss_B": 0.004005063325166702,
+        "rad_loss_A": 0.053058139979839325,
+        "rad_loss_B": 0.0004593086487147957,
+        "radial_corr_A": -0.6086754123432182,
+        "radial_corr_B": -0.8320502956273387,
+        "mean_radius_A": 0.789455771446228,
+        "mean_radius_B": 0.8190205097198486,
+        "radius_min_A": 0.1020333468914032,
+        "radius_max_A": 0.9414803981781006,
+        "radius_range_A": 0.839447021484375,
+        "radius_v0": 0.8372802734375,
+        "radius_v9": 0.1823987066745758,
+        "distance_corr_A": 0.5474017262458801,
+        "distance_corr_B": 0.9890945553779602
+      }
+    },
+    {
+      "rank": 36,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_90.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 48.6,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.04420544373870824,
+        "hierarchy_B": 0.07160577288815746,
+        "richness": "0.0007761122",
+        "radius_v0": 0.5275377631187439,
+        "radius_v9": 0.49211040139198303,
+        "radial_separation": 0.035427361726760864,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 37,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_40.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 47.41,
+      "reconstruction": {
+        "coverage": 20.95209063658995,
+        "unique_outputs": 4124,
+        "reconstruction_loss": 0.9913122999542753,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.08608378915718551,
+        "hierarchy_B": 0.5077797214131081,
+        "richness": "0.013734045",
+        "radius_v0": 0.5323688387870789,
+        "radius_v9": 0.6295191645622253,
+        "radial_separation": -0.09715032577514648,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 38,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\latest.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 46.89,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.24105368394423346,
+        "hierarchy_B": -0.029607633599975786,
+        "richness": "0.00033064015",
+        "radius_v0": 0.4975297152996063,
+        "radius_v9": 0.5065171718597412,
+        "radial_separation": -0.008987456560134888,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 39,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_70.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 46.25,
+      "reconstruction": {
+        "coverage": 100.0,
+        "unique_outputs": 19683,
+        "reconstruction_loss": 0.0,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.4777449137370126,
+        "hierarchy_B": -0.00659741777859617,
+        "richness": "0.00036549542",
+        "radius_v0": 0.5474335551261902,
+        "radius_v9": 0.5069229006767273,
+        "radial_separation": 0.04051065444946289,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 40,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_20.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 44.32,
+      "reconstruction": {
+        "coverage": 43.66712391403749,
+        "unique_outputs": 8595,
+        "reconstruction_loss": 0.81572930955647,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.14530417163219342,
+        "hierarchy_B": -0.5245956925099983,
+        "richness": "9.853228e-05",
+        "radius_v0": 0.01949732005596161,
+        "radius_v9": 9.57172414928209e-06,
+        "radial_separation": 0.019487748331812327,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 41,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_10.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 44.2,
+      "reconstruction": {
+        "coverage": 44.52573286592491,
+        "unique_outputs": 8764,
+        "reconstruction_loss": 0.7868719199309049,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.13549838973283185,
+        "hierarchy_B": 0.5137402455241028,
+        "richness": "4.46843e-05",
+        "radius_v0": 0.9805647730827332,
+        "radius_v9": 0.9991860389709473,
+        "radial_separation": -0.01862126588821411,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 42,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\best.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 41.69,
+      "reconstruction": {
+        "coverage": 40.02438652644414,
+        "unique_outputs": 7878,
+        "reconstruction_loss": 0.851343799217599,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.09332445142043079,
+        "hierarchy_B": 0.4749406427845527,
+        "richness": "2.3192657e-05",
+        "radius_v0": 0.9914334416389465,
+        "radius_v9": 0.9998061656951904,
+        "radial_separation": -0.008372724056243896,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 43,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_30.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 36.67,
+      "reconstruction": {
+        "coverage": 33.628003861200014,
+        "unique_outputs": 6619,
+        "reconstruction_loss": 0.943402936544226,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.16359554583877148,
+        "hierarchy_B": 0.013836614584409343,
+        "richness": "0.038922414",
+        "radius_v0": 0.3278753161430359,
+        "radius_v9": 0.4755375385284424,
+        "radial_separation": -0.1476622223854065,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 44,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\v5_5\\epoch_0.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "",
+      "overall_score": 31.65,
+      "reconstruction": {
+        "coverage": 28.750698572372098,
+        "unique_outputs": 5659,
+        "reconstruction_loss": 0.824975867499873,
+        "valid_ternary_outputs": 100.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 1.0,
+        "tmul_commutativity": 1.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.134,
+        "tmul_identity": 1.0,
+        "tnot_involution": 1.0
+      },
+      "geometric": {
+        "hierarchy_A": -0.17148113943154375,
+        "hierarchy_B": 0.14705705576080647,
+        "richness": "0.0028767248",
+        "radius_v0": 0.06495875865221024,
+        "radius_v9": 0.07025756686925888,
+        "radial_separation": -0.005298808217048645,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.019171779141104295,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 45,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\gpt2_ternary\\ternary_weights.pt",
+      "model_type": "gpt2_ternary",
+      "loadable": true,
+      "error": "GPT2 model with 0 layers - needs LM-specific validation",
+      "overall_score": 15.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 99.89470590627631,
+        "ternary_purity": 100.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": true
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 46,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\gpt2_ternary\\best_checkpoint.pt",
+      "model_type": "gpt2_ternary",
+      "loadable": true,
+      "error": "GPT2 model with 24 layers - needs LM-specific validation",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 47,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\gpt2_ternary\\full_model.pt",
+      "model_type": "gpt2_ternary",
+      "loadable": true,
+      "error": "GPT2 model with 24 layers - needs LM-specific validation",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 2.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 48,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\best.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "Model construction failed: Error(s) in loading state_dict for TernaryVAE:\n\tsize mismatch for projection.proj_A.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_A.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_A.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_A.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_A.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_A.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_A.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).\n\tsize mismatch for projection.proj_B.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_B.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_B.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_B.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_B.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_B.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_B.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.14773841202259064,
+        "geo_loss_B": 0.016458913683891296,
+        "rad_loss_A": 0.04691531881690025,
+        "rad_loss_B": 0.014291170984506607,
+        "radial_corr_A": -0.7285578529855029,
+        "radial_corr_B": -0.8320366130889552,
+        "mean_radius_A": 0.8187558650970459,
+        "mean_radius_B": 0.8565052151679993,
+        "radius_min_A": 0.0979306772351265,
+        "radius_max_A": 0.9500001072883606,
+        "radius_range_A": 0.8520694375038147,
+        "radius_v0": 0.8987889885902405,
+        "radius_v9": 0.11778901517391205,
+        "distance_corr_A": 0.5651536583900452,
+        "distance_corr_B": 0.973907470703125
+      }
+    },
+    {
+      "rank": 49,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_0.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "Model construction failed: Error(s) in loading state_dict for TernaryVAE:\n\tsize mismatch for projection.proj_A.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_A.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_A.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_A.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_A.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_A.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_A.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).\n\tsize mismatch for projection.proj_B.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_B.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_B.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_B.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_B.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_B.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_B.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.5434535145759583,
+        "geo_loss_B": 0.4194219708442688,
+        "rad_loss_A": 0.28725534677505493,
+        "rad_loss_B": 0.22464318573474884,
+        "radial_corr_A": -0.4310584992675981,
+        "radial_corr_B": -0.415335043293084,
+        "mean_radius_A": 0.5068860054016113,
+        "mean_radius_B": 0.5509629249572754,
+        "radius_min_A": 0.09963981807231903,
+        "radius_max_A": 0.8483806848526001,
+        "radius_range_A": 0.7487408518791199,
+        "radius_v0": 0.5452685952186584,
+        "radius_v9": 0.18965280055999756,
+        "distance_corr_A": 0.07508658617734909,
+        "distance_corr_B": 0.18402515351772308
+      }
+    },
+    {
+      "rank": 50,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_20.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "Model construction failed: Error(s) in loading state_dict for TernaryVAE:\n\tsize mismatch for projection.proj_A.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_A.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_A.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_A.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_A.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_A.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_A.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).\n\tsize mismatch for projection.proj_B.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_B.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_B.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_B.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_B.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_B.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_B.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.16905078291893005,
+        "geo_loss_B": 0.031556904315948486,
+        "rad_loss_A": 0.05624871701002121,
+        "rad_loss_B": 0.015264429152011871,
+        "radial_corr_A": -0.7006083045663769,
+        "radial_corr_B": -0.8318361210548602,
+        "mean_radius_A": 0.8072393536567688,
+        "mean_radius_B": 0.8517467975616455,
+        "radius_min_A": 0.03423712030053139,
+        "radius_max_A": 0.949999988079071,
+        "radius_range_A": 0.9157628417015076,
+        "radius_v0": 0.8844173550605774,
+        "radius_v9": 0.054526329040527344,
+        "distance_corr_A": 0.49471932649612427,
+        "distance_corr_B": 0.9359877109527588
+      }
+    },
+    {
+      "rank": 51,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_40.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "Model construction failed: Error(s) in loading state_dict for TernaryVAE:\n\tsize mismatch for projection.proj_A.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_A.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_A.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_A.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_A.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_A.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_A.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).\n\tsize mismatch for projection.proj_B.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_B.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_B.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_B.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_B.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_B.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_B.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.14512762427330017,
+        "geo_loss_B": 0.01617271825671196,
+        "rad_loss_A": 0.0448090136051178,
+        "rad_loss_B": 0.01433123555034399,
+        "radial_corr_A": -0.727263017454458,
+        "radial_corr_B": -0.832040374406887,
+        "mean_radius_A": 0.8198618292808533,
+        "mean_radius_B": 0.8565292954444885,
+        "radius_min_A": 0.03313666582107544,
+        "radius_max_A": 0.9500001072883606,
+        "radius_range_A": 0.9168634414672852,
+        "radius_v0": 0.8976848721504211,
+        "radius_v9": 0.19656763970851898,
+        "distance_corr_A": 0.5681345462799072,
+        "distance_corr_B": 0.9718101024627686
+      }
+    },
+    {
+      "rank": 52,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_60.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "Model construction failed: Error(s) in loading state_dict for TernaryVAE:\n\tsize mismatch for projection.proj_A.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_A.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.4.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_A.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_A.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_A.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_B.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_B.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.4.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_B.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_B.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_B.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.11667009443044662,
+        "geo_loss_B": 0.007024294231086969,
+        "rad_loss_A": 0.044803060591220856,
+        "rad_loss_B": 0.0003279308439232409,
+        "radial_corr_A": -0.676994761398163,
+        "radial_corr_B": -0.8320095974937078,
+        "mean_radius_A": 0.7792317271232605,
+        "mean_radius_B": 0.8096588850021362,
+        "radius_min_A": 0.08696597069501877,
+        "radius_max_A": 0.9420216679573059,
+        "radius_range_A": 0.8550556898117065,
+        "radius_v0": 0.8291431069374084,
+        "radius_v9": 0.08696597069501877,
+        "distance_corr_A": 0.5858674645423889,
+        "distance_corr_B": 0.9808831214904785
+      }
+    },
+    {
+      "rank": 53,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\epoch_80.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "Model construction failed: Error(s) in loading state_dict for TernaryVAE:\n\tsize mismatch for projection.proj_A.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_A.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.4.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_A.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_A.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_A.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_B.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_B.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.4.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_B.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_B.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_B.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.11324062943458557,
+        "geo_loss_B": 0.0042329528369009495,
+        "rad_loss_A": 0.039839647710323334,
+        "rad_loss_B": 0.00012564132339321077,
+        "radial_corr_A": -0.6976222605053557,
+        "radial_corr_B": -0.8320499873501801,
+        "mean_radius_A": 0.7805538773536682,
+        "mean_radius_B": 0.809509813785553,
+        "radius_min_A": 0.07046499103307724,
+        "radius_max_A": 0.9301556348800659,
+        "radius_range_A": 0.8596906661987305,
+        "radius_v0": 0.8285657167434692,
+        "radius_v9": 0.1681153029203415,
+        "distance_corr_A": 0.5771920084953308,
+        "distance_corr_B": 0.9883972406387329
+      }
+    },
+    {
+      "rank": 54,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\ternary\\latest.pt",
+      "model_type": "dual_vae",
+      "loadable": true,
+      "error": "Model construction failed: Error(s) in loading state_dict for TernaryVAE:\n\tsize mismatch for projection.proj_A.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_A.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_A.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_A.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_A.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_A.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_A.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_A.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).\n\tsize mismatch for projection.proj_B.direction_net.0.weight: copying a param with shape torch.Size([128, 16]) from checkpoint, the shape in current model is torch.Size([64, 16]).\n\tsize mismatch for projection.proj_B.direction_net.0.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.1.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([64]).\n\tsize mismatch for projection.proj_B.direction_net.4.weight: copying a param with shape torch.Size([128, 128]) from checkpoint, the shape in current model is torch.Size([16, 64]).\n\tsize mismatch for projection.proj_B.direction_net.4.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([16]).\n\tsize mismatch for projection.proj_B.radius_net.0.weight: copying a param with shape torch.Size([64, 16]) from checkpoint, the shape in current model is torch.Size([32, 16]).\n\tsize mismatch for projection.proj_B.radius_net.0.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([32]).\n\tsize mismatch for projection.proj_B.radius_net.3.weight: copying a param with shape torch.Size([64, 64]) from checkpoint, the shape in current model is torch.Size([1, 32]).\n\tsize mismatch for projection.proj_B.radius_net.3.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1]).",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {
+        "coverage": 1.0,
+        "geo_loss_A": 0.144024059176445,
+        "geo_loss_B": 0.016604401171207428,
+        "rad_loss_A": 0.060942113399505615,
+        "rad_loss_B": 0.014319135807454586,
+        "radial_corr_A": -0.7230477583677701,
+        "radial_corr_B": -0.8320424074814864,
+        "mean_radius_A": 0.819387674331665,
+        "mean_radius_B": 0.8561846017837524,
+        "radius_min_A": 0.0581144243478775,
+        "radius_max_A": 0.9500001072883606,
+        "radius_range_A": 0.8918856978416443,
+        "radius_v0": 0.896897554397583,
+        "radius_v9": 0.10689733177423477,
+        "distance_corr_A": 0.5687673687934875,
+        "distance_corr_B": 0.974956214427948
+      }
+    },
+    {
+      "rank": 55,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\hierarchy-encoder-codon-inference\\codon-predictor\\codon_encoder_3adic.pt",
+      "model_type": "unknown",
+      "loadable": true,
+      "error": "Unknown model type, keys: ['cluster_centers', 'encoder.0.weight', 'encoder.0.bias', 'encoder.2.weight', 'encoder.2.bias']",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 56,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\hierarchy-encoder-codon-inference\\codon-validator\\codon_encoder_fused.pt",
+      "model_type": "unknown",
+      "loadable": true,
+      "error": "Unknown model type, keys: ['cluster_centers', 'target_radii', 'encoder.0.weight', 'encoder.0.bias', 'encoder.1.weight']",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 57,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\hierarchy-encoder-codon-inference\\codon-validator\\fused_embeddings.pt",
+      "model_type": "unknown",
+      "loadable": true,
+      "error": "Unknown model type, keys: ['z_A_hyp', 'z_B_hyp', 'z_A_euc', 'z_B_euc', 'z_fused']",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    },
+    {
+      "rank": 58,
+      "checkpoint_path": "C:\\Users\\Gestalt\\Desktop\\ternary\\repos\\ternary-engine\\models\\company-flagships\\hierarchy-encoder-codon-inference\\codon-predictor\\3-adic-embedding\\v5_11_3_embeddings.pt",
+      "model_type": "unknown",
+      "loadable": true,
+      "error": "Unknown model type, keys: ['z_A_hyp', 'z_B_hyp', 'z_A_euc', 'z_B_euc', 'z_fused']",
+      "overall_score": 0.0,
+      "reconstruction": {
+        "coverage": 0.0,
+        "unique_outputs": 0,
+        "reconstruction_loss": Infinity,
+        "valid_ternary_outputs": 0.0
+      },
+      "arithmetic": {
+        "tnot_accuracy": 0.0,
+        "tadd_accuracy": 0.0,
+        "tmul_accuracy": 0.0,
+        "tmin_accuracy": 0.0,
+        "tmax_accuracy": 0.0,
+        "overall_accuracy": 0.0
+      },
+      "algebraic": {
+        "tadd_commutativity": 0.0,
+        "tmul_commutativity": 0.0,
+        "tadd_associativity": 0.0,
+        "tmul_associativity": 0.0,
+        "tadd_identity": 0.0,
+        "tmul_identity": 0.0,
+        "tnot_involution": 0.0
+      },
+      "geometric": {
+        "hierarchy_A": 0.0,
+        "hierarchy_B": 0.0,
+        "richness": 0.0,
+        "radius_v0": 0.0,
+        "radius_v9": 0.0,
+        "radial_separation": 0.0,
+        "distance_correlation_A": 0.0,
+        "distance_correlation_B": 0.0
+      },
+      "gemm": {
+        "weight_sparsity": 0.0,
+        "ternary_purity": 0.0,
+        "encoding_efficiency": 0.0,
+        "matmul_compatible": false
+      },
+      "claimed_metrics": {}
+    }
+  ]
+}
