@@ -31,6 +31,22 @@ from scipy.stats import spearmanr
 from collections import defaultdict
 
 
+def convert_numpy_types(obj):
+    """Recursively convert numpy types to native Python types for JSON."""
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(v) for v in obj]
+    elif isinstance(obj, (np.integer, np.int64, np.int32)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float64, np.float32)):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return obj
+
+
 class ExtendedGEMMExplorer:
     """Extended GEMM space exploration with deep analysis."""
 
@@ -655,7 +671,8 @@ def main():
         } for op, data in gap_analysis.items()}
     }
 
-    # Save JSON report
+    # Save JSON report (convert all numpy types)
+    report = convert_numpy_types(report)
     with open(output_dir / 'extended_exploration_report.json', 'w') as f:
         json.dump(report, f, indent=2)
 
