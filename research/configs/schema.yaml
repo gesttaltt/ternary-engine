@@ -1,0 +1,366 @@
+# Ternary Semantic Falsification - Configuration Schema
+# Version: 1.0
+# Philosophy: Listen to errors, discover by negative space
+
+# =============================================================================
+# COMPONENT WIRING
+# =============================================================================
+# All tests MUST wire these components - no isolated/abstract testing
+
+components:
+  simd_engine:
+    module: "ternary_simd_engine"
+    location: "ternary_simd_engine.cp312-win_amd64.pyd"
+    operations: [tadd, tmul, tmin, tmax, tnot]
+    description: "Native SIMD ternary arithmetic"
+    required: true
+
+  hyperbolic_vae:
+    module: "models.3-vae-gemm-v1.hyperbolic_ops"
+    location: "models/3-vae-gemm-v1/hyperbolic_ops.py"
+    classes:
+      - PoincareOperations
+      - HyperbolicEncoder
+      - HyperbolicOperationFlow
+      - UltrametricAttractorField
+    description: "Poincaré ball embeddings and geodesic operations"
+    required: true
+
+  ultrametric_energy:
+    module: "models.gemm_discovery.ebm.ultrametric_energy"
+    location: "models/gemm_discovery/ebm/ultrametric_energy.py"
+    functions:
+      - compute_3adic_valuation
+      - compute_ultrametric_distance
+      - compute_factor_valuation_profile
+    classes:
+      - UltrametricEnergyFunction
+    description: "3-adic valuation and ultrametric distance"
+    required: true
+
+  codon_encoder:
+    module: "codon_encoder"
+    location: "models/company-flagships/hierarchy-encoder-codon-inference/codon-predictor/"
+    files:
+      - codon_encoder_3adic.pt
+      - codon_mapping_3adic.json
+    description: "Biological ultrametric hierarchy from codon structure"
+    required: false  # Optional for non-biological tests
+
+  operation_luts:
+    module: "models.3-vae-gemm-v1.data"
+    location: "models/3-vae-gemm-v1/data.py"
+    description: "Complete 19,683 operation corpus"
+    total_operations: 19683
+    required: true
+
+# =============================================================================
+# HYPOTHESIS REGISTRY
+# =============================================================================
+
+hypotheses:
+  H1:
+    name: "p-adic / 3-adic Semantics"
+    category: "algebraic"
+    difficulty: "medium"
+    components_required: [simd_engine, ultrametric_energy]
+    predictions:
+      - "Ultrametric triangle inequality holds"
+      - "Operations cluster by valuation level"
+      - "High-valuation results exponentially rare"
+
+  H2:
+    name: "Ultrametric Tree Semantics"
+    category: "metric"
+    difficulty: "medium"
+    components_required: [simd_engine, ultrametric_energy]
+    predictions:
+      - "All triangles isoceles"
+      - "Discrete distance levels only"
+      - "Hierarchical clustering"
+
+  H3:
+    name: "Hyperbolic / Poincaré Ball Semantics"
+    category: "geometric"
+    difficulty: "hard"
+    components_required: [simd_engine, hyperbolic_vae]
+    predictions:
+      - "Geodesic midpoint equidistant"
+      - "Tree structures embed naturally"
+      - "Operations follow geodesic flows"
+
+  H4:
+    name: "Tropical Algebra Semantics"
+    category: "algebraic"
+    difficulty: "medium"
+    components_required: [simd_engine]
+    predictions:
+      - "Idempotent property (a ⊕ a = a)"
+      - "Distributivity of ⊗ over ⊕"
+      - "Piecewise linear structure"
+
+  H5:
+    name: "Clifford Algebra Semantics"
+    category: "algebraic"
+    difficulty: "hard"
+    components_required: [simd_engine]
+    predictions:
+      - "Rotation-like composition"
+      - "Duality between operations"
+      - "Geometric invariants preserved"
+
+  H6:
+    name: "Three-Valued Logic Semantics"
+    category: "logical"
+    difficulty: "easy"
+    components_required: [simd_engine, operation_luts]
+    predictions:
+      - "Logic axioms satisfied"
+      - "Specific tautologies hold/fail"
+      - "Modal operators definable"
+
+  H7:
+    name: "Quantum Superposition Semantics"
+    category: "physical"
+    difficulty: "hard"
+    components_required: [simd_engine, hyperbolic_vae]
+    predictions:
+      - "Interference patterns in compound ops"
+      - "Non-classical correlations"
+      - "Measurement-like collapse"
+
+  H8:
+    name: "Category Theory Semantics"
+    category: "structural"
+    difficulty: "hard"
+    components_required: [simd_engine]
+    predictions:
+      - "Functoriality"
+      - "Universal properties"
+      - "Adjunctions between op types"
+
+  H9:
+    name: "Information-Theoretic Semantics"
+    category: "information"
+    difficulty: "medium"
+    components_required: [simd_engine, operation_luts]
+    predictions:
+      - "Entropy bounds on operations"
+      - "Optimal coding patterns"
+      - "Rate-distortion behavior"
+
+  H10:
+    name: "Group Theory Semantics"
+    category: "algebraic"
+    difficulty: "easy"
+    components_required: [simd_engine]
+    predictions:
+      - "Group axioms (identity, inverse, associativity)"
+      - "Subgroup structure"
+      - "Character theory"
+
+  H11:
+    name: "Lattice Semantics"
+    category: "order"
+    difficulty: "easy"
+    components_required: [simd_engine]
+    predictions:
+      - "Distributivity"
+      - "Absorption laws"
+      - "Fixed points"
+
+  H12:
+    name: "Dynamical Systems Semantics"
+    category: "dynamical"
+    difficulty: "medium"
+    components_required: [simd_engine, hyperbolic_vae]
+    predictions:
+      - "Attractor structure"
+      - "Fixed points/cycles"
+      - "Basin boundaries"
+
+  H13:
+    name: "Topological / Cantor Semantics"
+    category: "topological"
+    difficulty: "hard"
+    components_required: [simd_engine]
+    predictions:
+      - "Self-similarity"
+      - "Fractal dimension"
+      - "Nowhere dense sets"
+
+  H14:
+    name: "Neural / Biological Semantics"
+    category: "biological"
+    difficulty: "medium"
+    components_required: [simd_engine, codon_encoder]
+    predictions:
+      - "Winner-take-all behavior"
+      - "Lateral inhibition"
+      - "Homeostatic balance"
+
+  H15:
+    name: "Spin-1 Physics Semantics"
+    category: "physical"
+    difficulty: "hard"
+    components_required: [simd_engine]
+    predictions:
+      - "Angular momentum rules"
+      - "Selection rules"
+      - "Clebsch-Gordan structure"
+
+  H16:
+    name: "Game Theory Semantics"
+    category: "game"
+    difficulty: "medium"
+    components_required: [simd_engine]
+    predictions:
+      - "Nash equilibria structure"
+      - "Dominated strategies"
+      - "Correlated equilibria"
+
+  H17:
+    name: "Algebraic Geometry F₃ Semantics"
+    category: "algebraic"
+    difficulty: "hard"
+    components_required: [simd_engine]
+    predictions:
+      - "Field axioms (under mapping)"
+      - "Quadratic residues"
+      - "Frobenius structure"
+
+  H18:
+    name: "Homological Semantics"
+    category: "algebraic"
+    difficulty: "hard"
+    components_required: [simd_engine]
+    predictions:
+      - "∂² = 0"
+      - "Non-trivial homology"
+      - "Exact sequences"
+
+  H19:
+    name: "Modal Logic Semantics"
+    category: "logical"
+    difficulty: "medium"
+    components_required: [simd_engine]
+    predictions:
+      - "K axiom"
+      - "Frame conditions"
+      - "Bisimulation"
+
+  H20:
+    name: "Probabilistic Semantics"
+    category: "stochastic"
+    difficulty: "medium"
+    components_required: [simd_engine, operation_luts]
+    predictions:
+      - "Stochastic matrix structure"
+      - "Stationary distributions"
+      - "Ergodicity"
+
+  H21:
+    name: "Cellular Automata Semantics"
+    category: "computational"
+    difficulty: "medium"
+    components_required: [simd_engine]
+    predictions:
+      - "Wolfram classification"
+      - "Universality"
+      - "Glider structures"
+
+  H22:
+    name: "Signed Graph Semantics"
+    category: "network"
+    difficulty: "medium"
+    components_required: [simd_engine]
+    predictions:
+      - "Structural balance"
+      - "Community structure"
+      - "Spectral properties"
+
+  H23:
+    name: "Modular Arithmetic Semantics"
+    category: "algebraic"
+    difficulty: "easy"
+    components_required: [simd_engine]
+    predictions:
+      - "Z/3Z isomorphism"
+      - "CRT decomposition"
+      - "Multiplicative structure"
+
+  H24:
+    name: "Sui Generis Semantics"
+    category: "intrinsic"
+    difficulty: "ultimate"
+    components_required: [simd_engine, hyperbolic_vae, ultrametric_energy, codon_encoder]
+    predictions:
+      - "Novel identities"
+      - "Irreducible complexity"
+      - "Emergent properties"
+
+# =============================================================================
+# SCORING CONFIGURATION
+# =============================================================================
+
+scoring:
+  grades:
+    A: { min: 0.95, label: "Strong support" }
+    B: { min: 0.80, label: "Moderate support" }
+    C: { min: 0.50, label: "Weak support" }
+    D: { min: 0.20, label: "Minimal support" }
+    F: { min: 0.00, label: "FALSIFIED" }
+
+  thresholds:
+    falsification: 0.20  # Below this = falsified
+    strong_support: 0.95  # Above this = strongly supported
+    anomaly_alert: 0.10   # Alert if >10% anomalies
+
+# =============================================================================
+# EXECUTION CONFIGURATION
+# =============================================================================
+
+execution:
+  corpus_size: 19683  # Total ternary operations
+  batch_size: 1024
+  timeout_per_hypothesis: 300  # seconds
+  parallel_hypotheses: 4  # Run up to 4 in parallel
+  save_anomalies: true
+  verbose: true
+
+# =============================================================================
+# OUTPUT CONFIGURATION
+# =============================================================================
+
+output:
+  results_dir: "research/results"
+  format: ["json", "markdown"]
+  include_anomalies: true
+  include_timing: true
+  generate_visualization: true
+
+# =============================================================================
+# PRIORITY QUEUE (Easiest to Falsify First)
+# =============================================================================
+
+priority_queue:
+  tier1_easy:
+    - H11  # Lattice
+    - H10  # Group
+    - H6   # Three-valued logic
+    - H23  # Modular
+
+  tier2_medium:
+    - H1   # p-adic
+    - H2   # Ultrametric
+    - H4   # Tropical
+    - H9   # Information
+
+  tier3_hard:
+    - H3   # Hyperbolic
+    - H12  # Dynamical
+    - H7   # Quantum
+    - H14  # Neural
+
+  tier4_ultimate:
+    - H24  # Sui Generis (test after all others)

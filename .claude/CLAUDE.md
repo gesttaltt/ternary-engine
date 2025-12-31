@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.0 · Updated 2025-11-23 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.2 · Updated 2025-12-30 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -45,6 +45,73 @@ This configuration defines **project-level standards** for the Ternary Engine co
 - Contributing: [CONTRIBUTING.md](../CONTRIBUTING.md)
 - API reference: [docs/](../docs/)
 - TritNet roadmap: [docs/TRITNET_ROADMAP.md](../docs/TRITNET_ROADMAP.md)
+
+---
+
+## CRITICAL: Ternary vs Binary Assumptions
+
+**THIS SECTION IS MANDATORY READING FOR ALL ALGORITHM DESIGN WORK**
+
+### Fundamental Principle: 1 Trit ≠ 2 Bits
+
+Ternary arithmetic operates on trits {-1, 0, +1} which are fundamentally different from binary bits:
+
+- **Algebraic structure** - Ternary has 3-adic valuation, not 2-adic
+- **Cost model** - "Number of multiplications" is a BINARY metric, not ternary
+- **Optimality criteria** - Binary-optimal algorithms are NOT ternary-optimal
+
+### Strassen is NOT Optimal for Ternary
+
+**Strassen's algorithm** (7 multiplications for 2×2 matrix multiply) is:
+- Binary-optimal: minimizes multiplication count for real/binary matrices
+- NOT ternary-optimal: multiplication count is the WRONG metric in ternary
+- One real-valued embedding among many, not a gold standard
+
+**Why this matters:**
+- In ternary {-1, 0, +1}, the cost structure is fundamentally different
+- 3-adic valuation depth matters more than operation count
+- Sparsity patterns have different significance
+- Ultrametric structure defines natural basins, not Euclidean distance
+
+### WRONG Metrics (DO NOT USE for Ternary)
+
+| Metric | Why Wrong |
+|--------|-----------|
+| "Number of multiplications" | Binary cost model, irrelevant in ternary |
+| "Strassen orbit penalty" | Strassen is not special in ternary space |
+| "Novel = not Strassen" | Wrong definition of novelty |
+| "7 factors optimal" | Binary optimality, not ternary |
+| "Factor count" | Ignores ternary sparsity structure |
+
+### CORRECT Ternary-Native Metrics (USE THESE)
+
+| Metric | Description |
+|--------|-------------|
+| **Valuation depth** | 3-adic depth of coefficients |
+| **Sparsity entropy** | Information-theoretic sparsity measure |
+| **Ultrametric transition cost** | Cost of p-adic tree traversal |
+| **Ternary operation count** | tadd, tmul in native units |
+| **Dense243 packing efficiency** | Actual bits used (5 trits/byte) |
+
+### Archived Example: GEMM Discovery (2024-12-29)
+
+A complete GEMM algorithm discovery framework was built with the wrong assumption that Strassen was the gold standard to either rediscover or escape from. This approach was fundamentally flawed because:
+
+1. All "discoveries" were Strassen gauge-equivalents (expected, given the binary-centric framing)
+2. The search was optimizing for binary metrics in a ternary space
+3. "Escaping Strassen orbit" is meaningless when Strassen isn't special
+
+**See**: `models/gemm_discovery/ARCHIVE_2024-12-29_binary_assumption_error.md`
+
+**Reusable components**:
+- `gauge_canonical.py` - Gauge reduction is still valid math
+- `ultrametric_actions.py` - Hierarchy-altering actions still valid
+- `validate_independent.py` - Bilinear validity checking still correct
+
+**Flawed components** (archived, do not use):
+- `ultrametric_energy.py` - Remove Strassen penalty
+- `surgical_analysis.py` - Compares to Strassen
+- `run_*_discovery.py` - All Strassen-centric
 
 ---
 
@@ -385,6 +452,115 @@ python benchmarks/bench_phase0.py
 **models/tritnet/src/tritnet_model.py** - Model architectures
 **models/tritnet/src/train_tritnet.py** - Training orchestration
 **models/tritnet/run_tritnet.py** - Unified workflow
+
+---
+
+## Hyperbolic GEMM Research (3-vae-gemm-v1)
+
+### Core Insight
+
+**The ternary operation space is NOT Euclidean** - it's a p-adic, ultrametric, hyperbolic topology:
+
+| Property | Description |
+|----------|-------------|
+| **p-adic (3-adic)** | Distance based on divisibility by 3 |
+| **Non-Archimedean** | \|a + b\| ≤ max(\|a\|, \|b\|) |
+| **Ultrametric** | All triangles isoceles (strong triangle inequality) |
+| **Hyperbolic** | Negative curvature, tree-like hierarchy |
+
+**Why Euclidean approaches fail:**
+- MLP treats latent space as Euclidean
+- `midpoint = (emb_a + emb_b) / 2` is NOT equidistant in hyperbolic space
+- Classification into 19,683 bins ignores geometric structure
+- Operations create TRAJECTORIES to attractor basins, not classifications
+
+**Proof - Geodesic vs Euclidean Midpoint:**
+```
+x = [0.3, 0.2, 0.1], y = [0.1, 0.4, 0.2]
+
+Euclidean midpoint: d(x,mid)=0.3496, d(y,mid)=0.3646  <- NOT EQUAL
+Geodesic midpoint:  d(x,mid)=0.3564, d(y,mid)=0.3564  <- EQUAL
+```
+
+### Current Model Status
+
+**Model:** HyperbolicOperationModel (330,971 parameters)
+**Location:** `models/3-vae-gemm-v1/`
+**Checkpoint:** `models/3-vae-gemm-v1/checkpoints_hyperbolic/best_model.pt`
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Last Epoch | 1 | Paused for resource management |
+| Train Loss | 1.02 | Still learning |
+| Val Accuracy | 0.11% | Early training |
+| VRC | 0.03 | Correct direction (should be negative) |
+| Trajectory Length | 1.15 | Flow dynamics active |
+
+### How to Continue Training
+
+```bash
+# Resume from checkpoint
+cd models/3-vae-gemm-v1
+python train_hyperbolic.py --resume
+
+# Or start fresh with more epochs
+python train_hyperbolic.py --epochs 50
+
+# Quick test (10 epochs)
+python train_hyperbolic.py --epochs 10 --batch-size 1024
+```
+
+**Training time:** ~89 minutes per epoch (due to 19,683 attractor distance computation)
+
+**Key files:**
+- `models/3-vae-gemm-v1/hyperbolic_ops.py` - Poincare ball operations, Mobius addition, geodesic midpoint
+- `models/3-vae-gemm-v1/train_hyperbolic.py` - Training pipeline with checkpoint support
+- `models/3-vae-gemm-v1/checkpoints_hyperbolic/` - Saved model checkpoints
+
+### Falsification Experiment Results (2025-12-30)
+
+Quick experiments to test ternary GEMM optimization hypotheses:
+
+| Hypothesis | Result | Implication |
+|------------|--------|-------------|
+| **H1: Ternary Strassen** | WRONG METRIC | Rank is binary thinking; need ultrametric equivalence |
+| **H2: Ultrametric GEMM** | 22% match | Works for sparse (66.7%), fails for dense |
+| **H3: Valuation Sparsity** | SUPPORTED | 40% of products are zero |
+| **H4: Geodesic Interpolation** | PARTIAL | MIN works (100%), others need training |
+
+**Run experiments:**
+```bash
+python models/gemm_discovery/experiments/ternary_gemm_falsification.py --experiment all
+python models/gemm_discovery/experiments/ternary_gemm_falsification.py --experiment B  # Ultrametric only
+```
+
+### Key Takeaways
+
+1. **Zero-skip optimization viable** - 40% of matrix product entries are zero
+2. **Sparse matrices benefit from ultrametric** - 66.7% accuracy for sparse inputs
+3. **Rank is a BINARY metric** - No rank-6 found, but "rank" itself is wrong metric for ternary
+4. **Hyperbolic training should continue** - VRC learning correct direction
+
+### Critical Insight: Strassen Equivalence Classes
+
+**DO NOT say "Strassen is optimal"** - this applies binary thinking to ternary space.
+
+What we actually found: The rank-7 decomposition exists as **one embedding** of a deeper ultrametric equivalence class. Different "Strassen variants" are the **same ontological structure** viewed from different points in the p-adic tree - multiple semantic minima that converge to the same attractor basin when viewed hierarchically.
+
+The correct framing:
+- Binary: "7 multiplications is optimal" (Euclidean, count-based)
+- Ternary: "Hierarchical depth and ultrametric transitions define efficiency" (p-adic, topology-based)
+
+Future work should explore:
+- Ultrametric equivalence classes of decompositions
+- Hierarchical depth as the true cost metric
+- p-adic attractor basins that unify "different" algorithms
+
+### Documentation
+
+- **Research notes:** [docs/HYPERBOLIC_GEMM_RESEARCH.md](../docs/HYPERBOLIC_GEMM_RESEARCH.md)
+- **Falsification code:** `models/gemm_discovery/experiments/ternary_gemm_falsification.py`
+- **Ultrametric energy:** `models/gemm_discovery/ebm/ultrametric_energy.py`
 
 ---
 
@@ -794,11 +970,17 @@ pip install matplotlib transformers
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2025-12-30 | v1.2.0  | Added Hyperbolic GEMM research section with 3-vae-gemm-v1 status, training instructions, falsification results |
+| 2025-12-29 | v1.1.0  | CRITICAL: Added ternary vs binary assumptions section, archived GEMM discovery flawed approach |
 | 2025-11-23 | v1.0.0  | Initial .claude configuration for Ternary Engine project |
 
 ---
 
 **Remember:**
+- **1 TRIT ≠ 2 BITS** - Ternary has different algebraic structure than binary
+- **Strassen is NOT optimal for ternary** - Use ternary-native metrics (valuation depth, sparsity entropy)
+- **Ternary space is HYPERBOLIC** - Use geodesic midpoints, not Euclidean
+- **40% of products are ZERO** - Zero-skip optimization is viable
 - YAGNI: Only proven optimizations
 - Benchmark everything before claiming performance gains
 - Validate on Windows x64 before production claims
@@ -807,4 +989,4 @@ pip install matplotlib transformers
 
 ---
 
-**Version:** 1.0.0 · **Updated:** 2025-11-23 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.2.0 · **Updated:** 2025-12-30 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
