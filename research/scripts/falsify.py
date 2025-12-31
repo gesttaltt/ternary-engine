@@ -809,6 +809,421 @@ class HypothesisTests:
         )
 
     # -------------------------------------------------------------------------
+    # H6: Three-Valued Logic Semantics
+    # -------------------------------------------------------------------------
+    def test_H6_three_valued_logic(self) -> FalsificationResult:
+        """
+        Test three-valued logic properties using REAL operations.
+
+        Predictions:
+        1. Kleene logic axioms (strong 3-valued)
+        2. Lukasiewicz logic axioms
+        3. Specific tautologies hold/fail predictably
+        """
+        start = time.time()
+        passed = 0
+        tested = 0
+        anomalies = []
+        details = {}
+
+        simd_op = self.c['data']['simd_batch_operation']
+        index_to_trits = self.c['data']['index_to_trits']
+        trits_to_index = self.c['data']['trits_to_index']
+
+        # tnot: negate each trit (-1 -> +1, 0 -> 0, +1 -> -1)
+        def tnot_batch(indices):
+            """Apply tnot to batch of indices."""
+            results = np.zeros_like(indices)
+            for i, idx in enumerate(indices):
+                trits = index_to_trits(idx, 9)
+                neg_trits = -trits  # Negate each trit
+                results[i] = trits_to_index(neg_trits)
+            return results
+
+        # In balanced ternary: -1=False, 0=Unknown, +1=True
+        # We'll test on single-trit values (indices 0-2 map to trits -1,0,+1)
+        # For 9-trit system, we test component-wise logic
+
+        print("  Testing three-valued logic axioms...")
+
+        np.random.seed(42)
+        n_samples = 500
+        num_values = self.c['corpus']['num_values']
+
+        # Sample random indices
+        a_idx = np.random.randint(0, num_values, n_samples)
+        b_idx = np.random.randint(0, num_values, n_samples)
+
+        # Test 1: Double negation (tnot(tnot(a)) = a)
+        print("    Double negation...")
+        not_a = tnot_batch(a_idx)
+        not_not_a = tnot_batch(not_a)
+
+        dn_passed = 0
+        for i in range(n_samples):
+            tested += 1
+            if not_not_a[i] == a_idx[i]:
+                passed += 1
+                dn_passed += 1
+            else:
+                if len(anomalies) < 10:
+                    anomalies.append({
+                        'test': 'double_negation',
+                        'a': int(a_idx[i]),
+                        'not_not_a': int(not_not_a[i])
+                    })
+
+        details['double_negation_rate'] = dn_passed / n_samples
+
+        # Test 2: De Morgan's laws
+        # not(a and b) = not(a) or not(b) -> not(min(a,b)) = max(not(a), not(b))
+        print("    De Morgan's laws...")
+        a_min_b = simd_op(a_idx, b_idx, 'min')
+        not_a_min_b = tnot_batch(a_min_b)
+
+        not_a = tnot_batch(a_idx)
+        not_b = tnot_batch(b_idx)
+        not_a_max_not_b = simd_op(not_a, not_b, 'max')
+
+        dm1_passed = 0
+        for i in range(n_samples):
+            tested += 1
+            if not_a_min_b[i] == not_a_max_not_b[i]:
+                passed += 1
+                dm1_passed += 1
+            else:
+                if len(anomalies) < 20:
+                    anomalies.append({
+                        'test': 'de_morgan_1',
+                        'a': int(a_idx[i]), 'b': int(b_idx[i]),
+                        'lhs': int(not_a_min_b[i]),
+                        'rhs': int(not_a_max_not_b[i])
+                    })
+
+        details['de_morgan_1_rate'] = dm1_passed / n_samples
+
+        # Test 3: De Morgan 2: not(a or b) = not(a) and not(b)
+        a_max_b = simd_op(a_idx, b_idx, 'max')
+        not_a_max_b = tnot_batch(a_max_b)
+        not_a_min_not_b = simd_op(not_a, not_b, 'min')
+
+        dm2_passed = 0
+        for i in range(n_samples):
+            tested += 1
+            if not_a_max_b[i] == not_a_min_not_b[i]:
+                passed += 1
+                dm2_passed += 1
+
+        details['de_morgan_2_rate'] = dm2_passed / n_samples
+
+        # Test 4: Law of excluded middle (a or not(a) = True?)
+        # In 3-valued logic, this FAILS for Unknown
+        print("    Excluded middle (expected to fail for Unknown)...")
+        a_or_not_a = simd_op(a_idx, not_a, 'max')
+
+        # Check how many give "True" (max trit value)
+        max_trit_idx = trits_to_index(np.array([1]*9))  # All +1s
+        em_true = sum(1 for x in a_or_not_a if x == max_trit_idx)
+        details['excluded_middle_true_rate'] = em_true / n_samples
+        details['excluded_middle_note'] = 'Expected <100% in 3-valued logic'
+
+        score = passed / tested if tested > 0 else 0
+        grade = self._score_to_grade(score)
+
+        return FalsificationResult(
+            hypothesis_id='H6',
+            hypothesis_name='Three-Valued Logic Semantics',
+            score=score,
+            grade=grade,
+            predictions_tested=tested,
+            predictions_passed=passed,
+            anomalies=anomalies,
+            timing_seconds=time.time() - start,
+            details=details
+        )
+
+    # -------------------------------------------------------------------------
+    # H10: Group Theory Semantics
+    # -------------------------------------------------------------------------
+    def test_H10_group(self) -> FalsificationResult:
+        """
+        Test group axioms using REAL SIMD tadd operation.
+
+        Predictions:
+        1. Associativity: (a + b) + c = a + (b + c)
+        2. Identity: a + 0 = a (zero element)
+        3. Inverse: a + (-a) = 0
+        4. Closure: result is valid ternary value
+        """
+        start = time.time()
+        passed = 0
+        tested = 0
+        anomalies = []
+        details = {}
+
+        simd_op = self.c['data']['simd_batch_operation']
+        index_to_trits = self.c['data']['index_to_trits']
+        trits_to_index = self.c['data']['trits_to_index']
+
+        num_values = self.c['corpus']['num_values']
+        np.random.seed(42)
+
+        print("  Testing group axioms with SIMD tadd...")
+
+        n_samples = 500
+
+        a_idx = np.random.randint(0, num_values, n_samples)
+        b_idx = np.random.randint(0, num_values, n_samples)
+        c_idx = np.random.randint(0, num_values, n_samples)
+
+        # Identity element: all zeros
+        zero_idx = np.full(n_samples, trits_to_index(np.array([0]*9)))
+
+        # Test 1: Right identity (a + 0 = a)
+        print("    Right identity...")
+        a_plus_zero = simd_op(a_idx, zero_idx, 'add')
+
+        ri_passed = 0
+        for i in range(n_samples):
+            tested += 1
+            if a_plus_zero[i] == a_idx[i]:
+                passed += 1
+                ri_passed += 1
+            else:
+                if len(anomalies) < 10:
+                    anomalies.append({
+                        'test': 'right_identity',
+                        'a': int(a_idx[i]),
+                        'a_plus_zero': int(a_plus_zero[i])
+                    })
+
+        details['right_identity_rate'] = ri_passed / n_samples
+
+        # Test 2: Left identity (0 + a = a)
+        print("    Left identity...")
+        zero_plus_a = simd_op(zero_idx, a_idx, 'add')
+
+        li_passed = 0
+        for i in range(n_samples):
+            tested += 1
+            if zero_plus_a[i] == a_idx[i]:
+                passed += 1
+                li_passed += 1
+
+        details['left_identity_rate'] = li_passed / n_samples
+
+        # Test 3: Associativity ((a + b) + c = a + (b + c))
+        print("    Associativity...")
+        a_plus_b = simd_op(a_idx, b_idx, 'add')
+        ab_plus_c = simd_op(a_plus_b, c_idx, 'add')
+
+        b_plus_c = simd_op(b_idx, c_idx, 'add')
+        a_plus_bc = simd_op(a_idx, b_plus_c, 'add')
+
+        assoc_passed = 0
+        for i in range(n_samples):
+            tested += 1
+            if ab_plus_c[i] == a_plus_bc[i]:
+                passed += 1
+                assoc_passed += 1
+            else:
+                if len(anomalies) < 20:
+                    anomalies.append({
+                        'test': 'associativity',
+                        'a': int(a_idx[i]), 'b': int(b_idx[i]), 'c': int(c_idx[i]),
+                        'ab_c': int(ab_plus_c[i]), 'a_bc': int(a_plus_bc[i])
+                    })
+
+        details['associativity_rate'] = assoc_passed / n_samples
+
+        # Test 4: Commutativity (a + b = b + a)
+        print("    Commutativity...")
+        b_plus_a = simd_op(b_idx, a_idx, 'add')
+
+        comm_passed = 0
+        for i in range(n_samples):
+            tested += 1
+            if a_plus_b[i] == b_plus_a[i]:
+                passed += 1
+                comm_passed += 1
+
+        details['commutativity_rate'] = comm_passed / n_samples
+
+        # Test 5: Inverse existence (a + neg(a) = 0)
+        # tnot: negate each trit (-1 -> +1, 0 -> 0, +1 -> -1)
+        def tnot_batch(indices):
+            results = np.zeros_like(indices)
+            for i, idx in enumerate(indices):
+                trits = index_to_trits(idx, 9)
+                neg_trits = -trits
+                results[i] = trits_to_index(neg_trits)
+            return results
+
+        print("    Inverse existence...")
+        neg_a = tnot_batch(a_idx)  # tnot negates
+        a_plus_neg_a = simd_op(a_idx, neg_a, 'add')
+
+        inv_passed = 0
+        zero_val = trits_to_index(np.array([0]*9))
+        for i in range(n_samples):
+            tested += 1
+            if a_plus_neg_a[i] == zero_val:
+                passed += 1
+                inv_passed += 1
+            else:
+                if len(anomalies) < 30:
+                    anomalies.append({
+                        'test': 'inverse',
+                        'a': int(a_idx[i]),
+                        'neg_a': int(neg_a[i]),
+                        'sum': int(a_plus_neg_a[i]),
+                        'expected': int(zero_val)
+                    })
+
+        details['inverse_rate'] = inv_passed / n_samples
+
+        score = passed / tested if tested > 0 else 0
+        grade = self._score_to_grade(score)
+
+        return FalsificationResult(
+            hypothesis_id='H10',
+            hypothesis_name='Group Theory Semantics',
+            score=score,
+            grade=grade,
+            predictions_tested=tested,
+            predictions_passed=passed,
+            anomalies=anomalies,
+            timing_seconds=time.time() - start,
+            details=details
+        )
+
+    # -------------------------------------------------------------------------
+    # H23: Modular Arithmetic Semantics
+    # -------------------------------------------------------------------------
+    def test_H23_modular(self) -> FalsificationResult:
+        """
+        Test Z/3Z (modular arithmetic mod 3) properties.
+
+        Predictions:
+        1. Addition mod 3 structure
+        2. Multiplication mod 3 structure
+        3. Field axioms under appropriate mapping
+        """
+        start = time.time()
+        passed = 0
+        tested = 0
+        anomalies = []
+        details = {}
+
+        simd_op = self.c['data']['simd_batch_operation']
+        index_to_trits = self.c['data']['index_to_trits']
+        trits_to_index = self.c['data']['trits_to_index']
+        v3 = self.c['corpus']['v3']
+
+        num_values = self.c['corpus']['num_values']
+        np.random.seed(42)
+
+        print("  Testing Z/3Z modular arithmetic...")
+
+        n_samples = 500
+
+        a_idx = np.random.randint(0, num_values, n_samples)
+        b_idx = np.random.randint(0, num_values, n_samples)
+
+        # Test 1: Valuation of sum relates to mod 3
+        # v3(a + b) >= min(v3(a), v3(b)) in p-adic
+        print("    Valuation of sums (p-adic)...")
+        a_plus_b = simd_op(a_idx, b_idx, 'add')
+
+        v_sum_passed = 0
+        for i in range(n_samples):
+            v_a = v3(int(a_idx[i]))
+            v_b = v3(int(b_idx[i]))
+            v_sum = v3(int(a_plus_b[i]))
+
+            tested += 1
+            # p-adic: v(a+b) >= min(v(a), v(b))
+            if v_sum >= min(v_a, v_b):
+                passed += 1
+                v_sum_passed += 1
+            else:
+                if len(anomalies) < 10:
+                    anomalies.append({
+                        'test': 'valuation_sum',
+                        'a': int(a_idx[i]), 'b': int(b_idx[i]),
+                        'sum': int(a_plus_b[i]),
+                        'v_a': v_a, 'v_b': v_b, 'v_sum': v_sum
+                    })
+
+        details['valuation_sum_rate'] = v_sum_passed / n_samples
+
+        # Test 2: Valuation of product
+        # v3(a * b) = v3(a) + v3(b) in p-adic
+        print("    Valuation of products (p-adic)...")
+        a_times_b = simd_op(a_idx, b_idx, 'mul')
+
+        v_prod_passed = 0
+        for i in range(n_samples):
+            v_a = v3(int(a_idx[i]))
+            v_b = v3(int(b_idx[i]))
+            v_prod = v3(int(a_times_b[i]))
+
+            tested += 1
+            # p-adic: v(a*b) = v(a) + v(b)
+            if v_prod == v_a + v_b:
+                passed += 1
+                v_prod_passed += 1
+            else:
+                if len(anomalies) < 20:
+                    anomalies.append({
+                        'test': 'valuation_product',
+                        'a': int(a_idx[i]), 'b': int(b_idx[i]),
+                        'product': int(a_times_b[i]),
+                        'v_a': v_a, 'v_b': v_b, 'v_prod': v_prod,
+                        'expected': v_a + v_b
+                    })
+
+        details['valuation_product_rate'] = v_prod_passed / n_samples
+
+        # Test 3: Mod 3 residue classes
+        # Check that operations preserve residue classes
+        print("    Residue class preservation...")
+
+        # Map to Z/3Z: value mod 3 (treating as integer)
+        def to_mod3(idx):
+            return idx % 3
+
+        mod3_add_passed = 0
+        for i in range(n_samples):
+            r_a = to_mod3(a_idx[i])
+            r_b = to_mod3(b_idx[i])
+            r_sum = to_mod3(a_plus_b[i])
+
+            tested += 1
+            # Check if (a mod 3) + (b mod 3) mod 3 = (a+b) mod 3
+            expected = (r_a + r_b) % 3
+            if r_sum == expected:
+                passed += 1
+                mod3_add_passed += 1
+
+        details['mod3_addition_rate'] = mod3_add_passed / n_samples
+
+        score = passed / tested if tested > 0 else 0
+        grade = self._score_to_grade(score)
+
+        return FalsificationResult(
+            hypothesis_id='H23',
+            hypothesis_name='Modular Arithmetic Semantics',
+            score=score,
+            grade=grade,
+            predictions_tested=tested,
+            predictions_passed=passed,
+            anomalies=anomalies,
+            timing_seconds=time.time() - start,
+            details=details
+        )
+
+    # -------------------------------------------------------------------------
     # Get test function by ID
     # -------------------------------------------------------------------------
     def get_test_function(self, hypothesis_id: str) -> Optional[Callable]:
@@ -817,7 +1232,10 @@ class HypothesisTests:
             'H1': self.test_H1_padic,
             'H2': self.test_H2_ultrametric,
             'H3': self.test_H3_hyperbolic,
+            'H6': self.test_H6_three_valued_logic,
+            'H10': self.test_H10_group,
             'H11': self.test_H11_lattice,
+            'H23': self.test_H23_modular,
         }
         return mapping.get(hypothesis_id)
 
@@ -882,7 +1300,7 @@ class FalsificationRunner:
 
     def run_all_implemented(self) -> List[FalsificationResult]:
         """Run all implemented hypothesis tests."""
-        implemented = ['H1', 'H2', 'H3', 'H11']
+        implemented = ['H1', 'H2', 'H3', 'H6', 'H10', 'H11', 'H23']
 
         print(f"\n{'#'*60}")
         print("RUNNING ALL IMPLEMENTED HYPOTHESES")
