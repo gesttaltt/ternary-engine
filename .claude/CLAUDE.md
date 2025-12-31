@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.2 · Updated 2025-12-30 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.3 · Updated 2025-12-31 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -112,6 +112,58 @@ A complete GEMM algorithm discovery framework was built with the wrong assumptio
 - `ultrametric_energy.py` - Remove Strassen penalty
 - `surgical_analysis.py` - Compares to Strassen
 - `run_*_discovery.py` - All Strassen-centric
+
+---
+
+## Trained Models for Falsification Testing
+
+### Available Checkpoints
+
+| Model | Path | Purpose | Key Properties |
+|-------|------|---------|----------------|
+| **v5_11_3** | `models/company-flagships/ternary-multiVAE/ternary_v5_11_3.pt` | Add/sub arithmetic centering | Hyperbolic embedding, operation-aware |
+| **homeostasis** | `models/company-flagships/v5_11_homeostasis/best.pt` | Radial hierarchy, p-adic valuation | VRC target: -0.83, coverage: 100% |
+| **codon_encoder** | `models/company-flagships/hierarchy-encoder-codon-inference/codon-predictor/codon_encoder_3adic.pt` | Hierarchy neural network | 3-adic valuation structure |
+
+### Model Capabilities
+
+**v5_11_3 (Arithmetic Centering)**
+- Trained for tadd/tsub operation embeddings
+- Strong hyperbolic structure in Poincare ball
+- Use for: H3 (hyperbolic), H10 (group theory) tests
+
+**homeostasis (Radial Hierarchy)**
+- Trained for valuation-radius correlation (VRC)
+- Target: high valuation → small radius (near center)
+- Use for: H1 (p-adic), H2 (ultrametric) tests
+
+**codon_encoder (Hierarchy Network)**
+- 3-adic valuation hierarchy encoder
+- Can be repurposed for arithmetic hierarchy testing
+- Use for: H2 (ultrametric tree), H24 (sui generis) tests
+
+### Falsification Test Integration
+
+```python
+# Load models in falsify.py
+models = {
+    'v5_11_3': 'models/company-flagships/ternary-multiVAE/ternary_v5_11_3.pt',
+    'homeostasis': 'models/company-flagships/v5_11_homeostasis/best.pt',
+    'codon': 'models/company-flagships/hierarchy-encoder-codon-inference/codon-predictor/codon_encoder_3adic.pt',
+}
+```
+
+### Falsification Results Summary (2025-12-31)
+
+| Hypothesis | Engine | Model | Status |
+|------------|--------|-------|--------|
+| H1 p-adic | 100% | - | Intrinsic |
+| H2 Ultrametric | 100% raw | 45% emb | Model needs training |
+| H3 Hyperbolic | 99.8% | VRC 0.03 | Model needs training |
+| H6 Three-Valued Logic | 100% | - | Intrinsic |
+| H10 Group Theory | 84% | - | **Non-associative (20%)** |
+| H11 Lattice | 100% | - | Intrinsic |
+| H23 Modular | 56.5% | - | Weak |
 
 ---
 
