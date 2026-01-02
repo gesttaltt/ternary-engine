@@ -671,6 +671,178 @@ class HypothesisTests:
         )
 
     # -------------------------------------------------------------------------
+    # H4: Tropical Algebra Semantics
+    # -------------------------------------------------------------------------
+    def test_H4_tropical(self) -> FalsificationResult:
+        """
+        Test tropical semiring properties using REAL SIMD operations.
+
+        Tropical algebra (min-plus or max-plus):
+        - ⊕ = min (tropical addition)
+        - ⊗ = + (tropical multiplication, but we test with tadd)
+
+        Predictions:
+        1. Idempotent: a ⊕ a = a (tmin/tmax with self)
+        2. Distributivity: a ⊗ (b ⊕ c) = (a ⊗ b) ⊕ (a ⊗ c)
+        3. Associativity of ⊕: (a ⊕ b) ⊕ c = a ⊕ (b ⊕ c)
+        4. Zero element behavior
+        """
+        start = time.time()
+        passed = 0
+        tested = 0
+        anomalies = []
+        details = {}
+
+        simd_op = self.c['data']['simd_batch_operation']
+        index_to_trits = self.c['data']['index_to_trits']
+        trits_to_index = self.c['data']['trits_to_index']
+
+        num_values = self.c['corpus']['num_values']
+        np.random.seed(42)
+
+        print("  Testing tropical algebra properties...")
+
+        n_samples = 500
+
+        a_idx = np.random.randint(0, num_values, n_samples)
+        b_idx = np.random.randint(0, num_values, n_samples)
+        c_idx = np.random.randint(0, num_values, n_samples)
+
+        # Test 1: Idempotent (a ⊕ a = a) for both min and max
+        print("    Idempotent property...")
+        a_min_a = simd_op(a_idx, a_idx, 'min')
+        a_max_a = simd_op(a_idx, a_idx, 'max')
+
+        idemp_min = 0
+        idemp_max = 0
+        for i in range(n_samples):
+            tested += 2
+            if a_min_a[i] == a_idx[i]:
+                passed += 1
+                idemp_min += 1
+            if a_max_a[i] == a_idx[i]:
+                passed += 1
+                idemp_max += 1
+
+        details['idempotent_min_rate'] = idemp_min / n_samples
+        details['idempotent_max_rate'] = idemp_max / n_samples
+
+        # Test 2: Associativity of ⊕ (min/max)
+        print("    Associativity of tropical addition...")
+        # (a ⊕ b) ⊕ c = a ⊕ (b ⊕ c)
+        a_min_b = simd_op(a_idx, b_idx, 'min')
+        ab_min_c = simd_op(a_min_b, c_idx, 'min')
+        b_min_c = simd_op(b_idx, c_idx, 'min')
+        a_min_bc = simd_op(a_idx, b_min_c, 'min')
+
+        assoc_min = 0
+        for i in range(n_samples):
+            tested += 1
+            if ab_min_c[i] == a_min_bc[i]:
+                passed += 1
+                assoc_min += 1
+            else:
+                if len(anomalies) < 10:
+                    anomalies.append({
+                        'test': 'assoc_min',
+                        'a': int(a_idx[i]), 'b': int(b_idx[i]), 'c': int(c_idx[i]),
+                        'ab_c': int(ab_min_c[i]), 'a_bc': int(a_min_bc[i])
+                    })
+
+        details['associativity_min_rate'] = assoc_min / n_samples
+
+        # Test 3: Distributivity of ⊗ over ⊕
+        # tadd(a, tmin(b,c)) = tmin(tadd(a,b), tadd(a,c))
+        print("    Distributivity of ⊗ over ⊕...")
+        b_min_c = simd_op(b_idx, c_idx, 'min')
+        a_add_bminc = simd_op(a_idx, b_min_c, 'add')  # a ⊗ (b ⊕ c)
+
+        a_add_b = simd_op(a_idx, b_idx, 'add')
+        a_add_c = simd_op(a_idx, c_idx, 'add')
+        ab_min_ac = simd_op(a_add_b, a_add_c, 'min')  # (a ⊗ b) ⊕ (a ⊗ c)
+
+        dist_add_min = 0
+        for i in range(n_samples):
+            tested += 1
+            if a_add_bminc[i] == ab_min_ac[i]:
+                passed += 1
+                dist_add_min += 1
+            else:
+                if len(anomalies) < 20:
+                    anomalies.append({
+                        'test': 'dist_add_over_min',
+                        'a': int(a_idx[i]), 'b': int(b_idx[i]), 'c': int(c_idx[i]),
+                        'lhs': int(a_add_bminc[i]), 'rhs': int(ab_min_ac[i])
+                    })
+
+        details['distributivity_add_over_min'] = dist_add_min / n_samples
+
+        # Test 4: Distributivity with max
+        # tadd(a, tmax(b,c)) = tmax(tadd(a,b), tadd(a,c))
+        b_max_c = simd_op(b_idx, c_idx, 'max')
+        a_add_bmaxc = simd_op(a_idx, b_max_c, 'add')  # a ⊗ (b ⊕ c)
+
+        ab_max_ac = simd_op(a_add_b, a_add_c, 'max')  # (a ⊗ b) ⊕ (a ⊗ c)
+
+        dist_add_max = 0
+        for i in range(n_samples):
+            tested += 1
+            if a_add_bmaxc[i] == ab_max_ac[i]:
+                passed += 1
+                dist_add_max += 1
+
+        details['distributivity_add_over_max'] = dist_add_max / n_samples
+
+        # Test 5: Distributivity with tmul
+        # tmul(a, tmin(b,c)) = tmin(tmul(a,b), tmul(a,c))
+        print("    Distributivity of tmul over min...")
+        a_mul_bminc = simd_op(a_idx, b_min_c, 'mul')
+
+        a_mul_b = simd_op(a_idx, b_idx, 'mul')
+        a_mul_c = simd_op(a_idx, c_idx, 'mul')
+        ab_mul_min_ac = simd_op(a_mul_b, a_mul_c, 'min')
+
+        dist_mul_min = 0
+        for i in range(n_samples):
+            tested += 1
+            if a_mul_bminc[i] == ab_mul_min_ac[i]:
+                passed += 1
+                dist_mul_min += 1
+
+        details['distributivity_mul_over_min'] = dist_mul_min / n_samples
+
+        # Test 6: Zero absorbs in multiplication
+        # a ⊗ 0 = 0 (zero is absorbing element for tmul)
+        print("    Zero absorption...")
+        zero_idx = np.full(n_samples, trits_to_index(np.array([0]*9)))
+        a_mul_zero = simd_op(a_idx, zero_idx, 'mul')
+
+        zero_absorb = 0
+        zero_val = trits_to_index(np.array([0]*9))
+        for i in range(n_samples):
+            tested += 1
+            if a_mul_zero[i] == zero_val:
+                passed += 1
+                zero_absorb += 1
+
+        details['zero_absorption_mul'] = zero_absorb / n_samples
+
+        score = passed / tested if tested > 0 else 0
+        grade = self._score_to_grade(score)
+
+        return FalsificationResult(
+            hypothesis_id='H4',
+            hypothesis_name='Tropical Algebra Semantics',
+            score=score,
+            grade=grade,
+            predictions_tested=tested,
+            predictions_passed=passed,
+            anomalies=anomalies,
+            timing_seconds=time.time() - start,
+            details=details
+        )
+
+    # -------------------------------------------------------------------------
     # H11: Lattice / Order-Theoretic Semantics
     # -------------------------------------------------------------------------
     def test_H11_lattice(self) -> FalsificationResult:
@@ -1232,6 +1404,7 @@ class HypothesisTests:
             'H1': self.test_H1_padic,
             'H2': self.test_H2_ultrametric,
             'H3': self.test_H3_hyperbolic,
+            'H4': self.test_H4_tropical,
             'H6': self.test_H6_three_valued_logic,
             'H10': self.test_H10_group,
             'H11': self.test_H11_lattice,
@@ -1300,7 +1473,7 @@ class FalsificationRunner:
 
     def run_all_implemented(self) -> List[FalsificationResult]:
         """Run all implemented hypothesis tests."""
-        implemented = ['H1', 'H2', 'H3', 'H6', 'H10', 'H11', 'H23']
+        implemented = ['H1', 'H2', 'H3', 'H4', 'H6', 'H10', 'H11', 'H23']
 
         print(f"\n{'#'*60}")
         print("RUNNING ALL IMPLEMENTED HYPOTHESES")
