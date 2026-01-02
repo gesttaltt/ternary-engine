@@ -171,6 +171,14 @@ models = {
 
 **Key Discovery:** tadd is non-associative for 79.6% of triplets - balanced ternary is NOT a group.
 
+**Next Session:** Implement remaining 15 hypotheses starting with Tier 2 (H5, H7, H8). Run `python research/scripts/falsify.py -H H5`.
+
+| Priority | Hypotheses | Difficulty |
+|----------|------------|------------|
+| Tier 2 | H5 Clifford, H7 Quantum, H8 Category | Medium |
+| Tier 3 | H12 Dynamical, H13 Topological, H14 Neural | Hard |
+| Tier 4 | H15-H22, H24 | Research |
+
 ---
 
 ## Communication Style
