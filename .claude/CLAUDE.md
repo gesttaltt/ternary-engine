@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.3 · Updated 2025-12-31 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.4 · Updated 2025-01-02 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -153,17 +153,23 @@ models = {
 }
 ```
 
-### Falsification Results Summary (2025-12-31)
+### Falsification Results Summary (2025-01-02)
 
-| Hypothesis | Engine | Model | Status |
-|------------|--------|-------|--------|
-| H1 p-adic | 100% | - | Intrinsic |
-| H2 Ultrametric | 100% raw | 45% emb | Model needs training |
-| H3 Hyperbolic | 99.8% | VRC 0.03 | Model needs training |
-| H6 Three-Valued Logic | 100% | - | Intrinsic |
-| H10 Group Theory | 84% | - | **Non-associative (20%)** |
-| H11 Lattice | 100% | - | Intrinsic |
-| H23 Modular | 56.5% | - | Weak |
+**9 of 24 hypotheses tested** - See `research/results/FALSIFICATION_SUMMARY.md` for details.
+
+| Hypothesis | Score | Grade | Status | Key Finding |
+|------------|-------|-------|--------|-------------|
+| H1 p-adic | 100% | A | INTRINSIC | Built into ternary representation |
+| H2 Ultrametric | 89.32% | B | Supported | Raw=100%, model=45% isoceles |
+| H3 Hyperbolic | 99.80% | A | Supported | VRC=0.035, target=-0.8 |
+| H4 Tropical | 87.20% | B | Supported | tadd distributes, tmul doesn't |
+| H6 Three-Valued | 100% | A | INTRINSIC | De Morgan laws hold |
+| H9 Information | 90.91% | B | Supported | Entropy confirms p-adic |
+| H10 Group Theory | 84.08% | B | Supported | **tadd non-associative (20%)** |
+| H11 Lattice | 100% | A | INTRINSIC | tmin/tmax distributive lattice |
+| H23 Modular | 56.53% | C | Weak | Products fail, mod-3 fails |
+
+**Key Discovery:** tadd is non-associative for 79.6% of triplets - balanced ternary is NOT a group.
 
 ---
 
@@ -1022,6 +1028,8 @@ pip install matplotlib transformers
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2025-01-02 | v1.4.0  | Updated falsification results (9/24 hypotheses), added H4 Tropical and H9 Information Theory |
+| 2025-12-31 | v1.3.0  | Added trained models section for falsification testing |
 | 2025-12-30 | v1.2.0  | Added Hyperbolic GEMM research section with 3-vae-gemm-v1 status, training instructions, falsification results |
 | 2025-12-29 | v1.1.0  | CRITICAL: Added ternary vs binary assumptions section, archived GEMM discovery flawed approach |
 | 2025-11-23 | v1.0.0  | Initial .claude configuration for Ternary Engine project |
@@ -1030,6 +1038,7 @@ pip install matplotlib transformers
 
 **Remember:**
 - **1 TRIT ≠ 2 BITS** - Ternary has different algebraic structure than binary
+- **tadd is NON-ASSOCIATIVE** - Only 20% associativity, balanced ternary is NOT a group
 - **Strassen is NOT optimal for ternary** - Use ternary-native metrics (valuation depth, sparsity entropy)
 - **Ternary space is HYPERBOLIC** - Use geodesic midpoints, not Euclidean
 - **40% of products are ZERO** - Zero-skip optimization is viable
