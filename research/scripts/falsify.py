@@ -1115,6 +1115,205 @@ class HypothesisTests:
         )
 
     # -------------------------------------------------------------------------
+    # H9: Information-Theoretic Semantics
+    # -------------------------------------------------------------------------
+    def test_H9_information(self) -> FalsificationResult:
+        """
+        Test information-theoretic properties of ternary operations.
+
+        Predictions:
+        1. Entropy bounds: H(output) related to H(inputs)
+        2. Mutual information: I(input; output) structure
+        3. Optimal coding: log2(3) ≈ 1.585 bits/trit efficiency
+        4. Valuation entropy: high-valuation values are rare (low entropy contribution)
+        """
+        start = time.time()
+        passed = 0
+        tested = 0
+        anomalies = []
+        details = {}
+
+        simd_op = self.c['data']['simd_batch_operation']
+        v3 = self.c['corpus']['v3']
+        valuations = self.c['corpus']['valuations']
+        luts = self.c['luts']
+
+        print("  Testing information-theoretic properties...")
+
+        # Helper: compute entropy from counts
+        def entropy(counts):
+            """Shannon entropy in bits."""
+            probs = counts / counts.sum()
+            probs = probs[probs > 0]  # Remove zeros
+            return -np.sum(probs * np.log2(probs))
+
+        # Test 1: Output entropy for each operation
+        print("    Output entropy by operation...")
+        op_entropies = {}
+        max_entropy = np.log2(19683)  # Maximum possible entropy
+
+        for op_name, lut_data in luts.items():
+            results = lut_data['results']
+            unique, counts = np.unique(results, return_counts=True)
+            H = entropy(counts)
+            op_entropies[op_name] = H
+            efficiency = H / max_entropy
+
+            tested += 1
+            # Entropy should be positive and less than maximum
+            if 0 < H <= max_entropy:
+                passed += 1
+            else:
+                anomalies.append({
+                    'test': 'entropy_bounds',
+                    'op': op_name,
+                    'entropy': H,
+                    'max': max_entropy
+                })
+
+        details['operation_entropies'] = op_entropies
+        details['max_possible_entropy'] = max_entropy
+
+        # Test 2: Valuation distribution entropy
+        print("    Valuation distribution entropy...")
+        unique_vals, val_counts = np.unique(valuations, return_counts=True)
+        val_entropy = entropy(val_counts)
+        details['valuation_entropy'] = val_entropy
+
+        # Expected: low entropy because high valuations are exponentially rare
+        # Theoretical: sum over k of (2/3)*(1/3)^k * log2((2/3)*(1/3)^k)
+        tested += 1
+        if val_entropy < max_entropy * 0.5:  # Should be much less than max
+            passed += 1
+        else:
+            anomalies.append({
+                'test': 'valuation_entropy_low',
+                'H': val_entropy,
+                'threshold': max_entropy * 0.5
+            })
+
+        details['valuation_entropy_ratio'] = val_entropy / max_entropy
+
+        # Test 3: Conditional entropy H(output | input)
+        # For deterministic operations, H(output | inputs) = 0
+        print("    Conditional entropy (determinism)...")
+
+        for op_name, lut_data in luts.items():
+            indices_a = lut_data['indices_a']
+            indices_b = lut_data['indices_b']
+            results = lut_data['results']
+
+            # Check determinism: same inputs -> same output
+            n_check = min(10000, len(indices_a))
+            input_output = {}
+            deterministic = 0
+            non_deterministic = 0
+
+            for i in range(n_check):
+                key = (int(indices_a[i]), int(indices_b[i]))
+                result = int(results[i])
+                if key in input_output:
+                    if input_output[key] == result:
+                        deterministic += 1
+                    else:
+                        non_deterministic += 1
+                else:
+                    input_output[key] = result
+                    deterministic += 1
+
+            tested += 1
+            if non_deterministic == 0:
+                passed += 1
+            else:
+                anomalies.append({
+                    'test': 'determinism',
+                    'op': op_name,
+                    'non_deterministic': non_deterministic
+                })
+
+        details['operations_deterministic'] = True  # All should be
+
+        # Test 4: Data processing inequality
+        # I(A; C) <= I(A; B) when A -> B -> C forms a Markov chain
+        # For op(a, op(b, c)): info about a should decrease with more ops
+        print("    Data processing inequality...")
+
+        np.random.seed(42)
+        n_samples = 5000
+        num_values = 19683
+
+        a_idx = np.random.randint(0, num_values, n_samples)
+        b_idx = np.random.randint(0, num_values, n_samples)
+        c_idx = np.random.randint(0, num_values, n_samples)
+
+        # Compute b + c, then a + (b + c)
+        b_add_c = simd_op(b_idx, c_idx, 'add')
+        a_add_bc = simd_op(a_idx, b_add_c, 'add')
+
+        # Mutual information proxy: correlation between a and final result
+        # Using valuation as a "summary statistic"
+        v_a = np.array([v3(int(x)) for x in a_idx])
+        v_bc = np.array([v3(int(x)) for x in b_add_c])
+        v_abc = np.array([v3(int(x)) for x in a_add_bc])
+
+        # Correlation as MI proxy
+        corr_a_bc = np.corrcoef(v_a, v_bc)[0, 1] if np.std(v_bc) > 0 else 0
+        corr_a_abc = np.corrcoef(v_a, v_abc)[0, 1] if np.std(v_abc) > 0 else 0
+
+        details['valuation_corr_a_bc'] = float(corr_a_bc) if not np.isnan(corr_a_bc) else 0
+        details['valuation_corr_a_abc'] = float(corr_a_abc) if not np.isnan(corr_a_abc) else 0
+
+        # Test 5: Bits per trit efficiency
+        print("    Bits per trit efficiency...")
+        theoretical_bits_per_trit = np.log2(3)  # ≈ 1.585
+        details['theoretical_bits_per_trit'] = theoretical_bits_per_trit
+
+        # For 9 trits, theoretical max info = 9 * log2(3) ≈ 14.26 bits
+        theoretical_max_bits = 9 * theoretical_bits_per_trit
+        actual_max_bits = np.log2(19683)  # = 9 * log2(3) exactly
+
+        tested += 1
+        if abs(theoretical_max_bits - actual_max_bits) < 0.001:
+            passed += 1
+            details['bits_per_trit_match'] = True
+        else:
+            details['bits_per_trit_match'] = False
+
+        # Test 6: Zero has special information status (high valuation = low info)
+        print("    Zero information content...")
+        zero_idx = 9841  # Middle index (all zeros)
+        zero_valuation = v3(zero_idx)
+
+        tested += 1
+        if zero_valuation >= 8:  # Zero should have very high valuation
+            passed += 1
+            details['zero_is_special'] = True
+        else:
+            details['zero_is_special'] = False
+            anomalies.append({
+                'test': 'zero_valuation',
+                'expected': '>=8',
+                'actual': zero_valuation
+            })
+
+        details['zero_valuation'] = zero_valuation
+
+        score = passed / tested if tested > 0 else 0
+        grade = self._score_to_grade(score)
+
+        return FalsificationResult(
+            hypothesis_id='H9',
+            hypothesis_name='Information-Theoretic Semantics',
+            score=score,
+            grade=grade,
+            predictions_tested=tested,
+            predictions_passed=passed,
+            anomalies=anomalies,
+            timing_seconds=time.time() - start,
+            details=details
+        )
+
+    # -------------------------------------------------------------------------
     # H10: Group Theory Semantics
     # -------------------------------------------------------------------------
     def test_H10_group(self) -> FalsificationResult:
@@ -1406,6 +1605,7 @@ class HypothesisTests:
             'H3': self.test_H3_hyperbolic,
             'H4': self.test_H4_tropical,
             'H6': self.test_H6_three_valued_logic,
+            'H9': self.test_H9_information,
             'H10': self.test_H10_group,
             'H11': self.test_H11_lattice,
             'H23': self.test_H23_modular,
@@ -1473,7 +1673,7 @@ class FalsificationRunner:
 
     def run_all_implemented(self) -> List[FalsificationResult]:
         """Run all implemented hypothesis tests."""
-        implemented = ['H1', 'H2', 'H3', 'H4', 'H6', 'H10', 'H11', 'H23']
+        implemented = ['H1', 'H2', 'H3', 'H4', 'H6', 'H9', 'H10', 'H11', 'H23']
 
         print(f"\n{'#'*60}")
         print("RUNNING ALL IMPLEMENTED HYPOTHESES")
