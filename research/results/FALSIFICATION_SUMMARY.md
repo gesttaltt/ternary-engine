@@ -1,6 +1,6 @@
 # Ternary Semantic Falsification - Results Summary
 
-**Doc-Type:** Research Results · Version 1.0 · Updated 2025-12-31
+**Doc-Type:** Research Results · Version 1.1 · Updated 2025-01-02
 
 ---
 
@@ -11,14 +11,19 @@ By falsifying hypotheses, we discover truth through negative space.
 
 ---
 
-## Test Results (2025-12-31)
+## Test Results (2025-01-02)
 
 | Hypothesis | Score | Grade | Status | Key Finding |
 |------------|-------|-------|--------|-------------|
 | H1 p-adic/3-adic | 100% | A | SUPPORTED | **Intrinsic** to ternary values |
-| H2 Ultrametric Tree | 88.88% | B | SUPPORTED | Raw values 100% isoceles, model 44% |
+| H2 Ultrametric Tree | 88.52% | B | SUPPORTED | Raw values 100% isoceles, model 44% |
 | H3 Hyperbolic/Poincare | 99.80% | A | SUPPORTED | Math correct, model VRC needs training |
+| H4 Tropical Algebra | 54.35% | D | WEAK | tadd distributes over tmin/tmax (100%), tmul does NOT (10%) |
+| H6 Three-Valued Logic | 100% | A | SUPPORTED | **Intrinsic** - De Morgan, double negation all hold |
+| H9 Information Theory | 90.91% | B | SUPPORTED | Valuation entropy 9.6% of max, confirms p-adic |
+| H10 Group Theory | 84.16% | B | SUPPORTED | **tadd non-associative (20%)** - major finding |
 | H11 Lattice/Order | 100% | A | SUPPORTED | **Intrinsic** to tmin/tmax |
+| H23 Modular Arithmetic | 56.53% | C | WEAK | Works for valuation sums, fails for products |
 
 ---
 
@@ -53,6 +58,51 @@ After fix:
 - Geodesic wins: 100% of cases
 
 **Model gap**: Valuation-radius correlation (VRC) is 0.035 instead of target -0.8. The model hasn't learned to position high-valuation values near the center.
+
+### 4. Tropical Algebra (H4) - PARTIAL
+
+Ternary forms a **partial tropical semiring**:
+- **tadd distributes over tmin/tmax**: 100% (both directions)
+- **tmul does NOT distribute**: 10.4% over tmin, 10.4% over tmax
+- **Grade D (54.35%)** - only partial tropical structure
+
+This means `tadd(a, tmin(b,c)) = tmin(tadd(a,b), tadd(a,c))` but NOT for tmul.
+
+### 5. Three-Valued Logic (H6) - INTRINSIC
+
+All three-valued logic properties hold perfectly:
+- **De Morgan laws**: 100%
+- **Double negation**: 100%
+- **Complement**: 100%
+- **Excluded middle fails**: Expected (ternary has three values)
+
+### 6. Information Theory (H9)
+
+Entropy analysis confirms p-adic structure:
+- **Operation entropies**: add near max (14.24/14.26), mul/min/max lower
+- **Valuation entropy**: 1.38 (only 9.6% of max) - strong p-adic structure
+- **Operations deterministic**: 100%
+- **Bits per trit**: 1.585 (theoretical log₂(3))
+
+### 7. Group Theory (H10) - NON-ASSOCIATIVE
+
+**Major discovery**: Balanced ternary with tadd is NOT a group!
+- **Closure**: 100%
+- **Identity**: 100%
+- **Inverses**: 100%
+- **Associativity**: Only 20.4%!
+
+`tadd(tadd(a,b), c) ≠ tadd(a, tadd(b,c))` for 79.6% of triplets.
+
+This is a fundamental property that was previously assumed.
+
+### 8. Modular Arithmetic (H23) - WEAK
+
+- **Valuation sum**: Works (100%)
+- **Valuation product**: Fails (57.4%)
+- **Mod-3 addition**: Fails (12.2%)
+
+Ternary values do NOT form a proper Z/3Z ring.
 
 ---
 
