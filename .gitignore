@@ -49,6 +49,21 @@ build_output.log
 .DS_Store
 Thumbs.db
 
+# Model checkpoints and large files
+checkpoints/
+models/*/checkpoints/
+models/*/checkpoints_*/
+models/*/luts/
+models/company-flagships/gpt2_ternary/
+models/company-flagships/hierarchy-encoder-codon-inference/
+models/company-flagships/ternary-multiVAE/
+models/company-flagships/ternary/
+models/company-flagships/v5_*/
+models/gemm_discovery/
+models/gemm_vae/
+nul
+toolkit/
+
 # Always include important legal and reference files (override broad patterns)
 !LICENSE
 !NOTICE
