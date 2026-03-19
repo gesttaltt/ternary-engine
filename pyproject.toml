@@ -85,8 +85,8 @@ Changelog = "https://github.com/gesttaltt/ternary-engine/blob/main/CHANGELOG.md"
 # Ruff Configuration (Linter + Formatter)
 # ============================================================================
 [tool.ruff]
-# Target Python 3.7 for broad compatibility
-target-version = "py37"
+# Target Python 3.12 for current environment
+target-version = "py312"
 
 # Line length matching project standard
 line-length = 100
@@ -100,6 +100,8 @@ exclude = [
     "build/artifacts",
     "*.pyd",
     "*.so",
+    "*.yaml",
+    "*.yml",
     "models/datasets",
 ]
 
@@ -142,6 +144,8 @@ unfixable = []
 "build/**/*.py" = ["T201"]
 # TritNet training can use print
 "models/**/*.py" = ["T201"]
+# Research scripts can use print
+"research/**/*.py" = ["T201"]
 
 [tool.ruff.lint.mccabe]
 # Maximum cyclomatic complexity
@@ -170,7 +174,7 @@ line-ending = "auto"
 # Mypy Configuration (Type Checker)
 # ============================================================================
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 warn_redundant_casts = true
@@ -200,6 +204,11 @@ disallow_untyped_defs = false
 [[tool.mypy.overrides]]
 module = "benchmarks.*"
 # Benchmarks don't need strict typing
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "research.*"
+# Research scripts don't need strict typing
 disallow_untyped_defs = false
 
 # ============================================================================

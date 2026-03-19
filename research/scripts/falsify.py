@@ -20,18 +20,20 @@ USAGE:
     python research/scripts/falsify.py --all
 """
 
-import sys
 import json
-import yaml
+import sys
 import time
+import traceback
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
 import numpy as np
 import torch
-from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Optional, Any, Callable
-from datetime import datetime
-from itertools import combinations
-import traceback
+import yaml
+
 
 # Setup paths
 ROOT = Path(__file__).parent.parent.parent
@@ -56,14 +58,14 @@ class ComponentLoader:
         """Load SIMD engine and data utilities from data.py."""
         try:
             from data import (
-                index_to_trits,
-                trits_to_index,
-                simd_batch_operation,
-                create_operation_luts,
-                load_operation_luts,
+                HAS_SIMD,
                 OperationLUTDataset,
                 TripletDataset,
-                HAS_SIMD
+                create_operation_luts,
+                index_to_trits,
+                load_operation_luts,
+                simd_batch_operation,
+                trits_to_index,
             )
 
             self.components['data'] = {
@@ -89,14 +91,14 @@ class ComponentLoader:
         """Load hyperbolic/Poincaré operations from hyperbolic_ops.py."""
         try:
             from hyperbolic_ops import (
-                PoincareOperations,
                 HyperbolicEncoder,
                 HyperbolicLinear,
                 HyperbolicMLR,
-                UltrametricAttractorField,
                 HyperbolicOperationFlow,
-                HyperbolicOperationModel,
                 HyperbolicOperationLoss,
+                HyperbolicOperationModel,
+                PoincareOperations,
+                UltrametricAttractorField,
             )
 
             self.components['hyperbolic'] = {
@@ -122,10 +124,10 @@ class ComponentLoader:
         """Load ultrametric/p-adic functions from ultrametric_energy.py."""
         try:
             from ebm.ultrametric_energy import (
-                compute_3adic_valuation,
-                compute_ultrametric_distance,
-                compute_factor_valuation_profile,
                 UltrametricEnergyFunction,
+                compute_3adic_valuation,
+                compute_factor_valuation_profile,
+                compute_ultrametric_distance,
             )
 
             self.components['ultrametric'] = {
@@ -227,7 +229,7 @@ class ComponentLoader:
             # Print valuation distribution
             unique, counts = np.unique(valuations, return_counts=True)
             print(f"[OK] Corpus built ({num_values} values)")
-            print(f"     Valuation distribution: {dict(zip(unique, counts))}")
+            print(f"     Valuation distribution: {dict(zip(unique, counts))}")  # noqa: B905
 
             return True
         except Exception as e:
@@ -235,7 +237,7 @@ class ComponentLoader:
             print(f"[ERROR] Corpus build failed: {e}")
             return False
 
-    def load_all(self) -> Dict[str, bool]:
+    def load_all(self) -> dict[str, bool]:
         """Load all components and return status."""
         status = {}
 
@@ -271,12 +273,12 @@ class FalsificationResult:
     grade: str
     predictions_tested: int
     predictions_passed: int
-    anomalies: List[Dict[str, Any]] = field(default_factory=list)
+    anomalies: list[dict[str, Any]] = field(default_factory=list)
     timing_seconds: float = 0.0
-    error: Optional[str] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             'hypothesis_id': self.hypothesis_id,
             'hypothesis_name': self.hypothesis_name,
@@ -312,10 +314,14 @@ class HypothesisTests:
         self.c = loader.components
 
     def _score_to_grade(self, score: float) -> str:
-        if score >= 0.95: return 'A'
-        if score >= 0.80: return 'B'
-        if score >= 0.50: return 'C'
-        if score >= 0.20: return 'D'
+        if score >= 0.95:
+            return 'A'
+        if score >= 0.80:
+            return 'B'
+        if score >= 0.50:
+            return 'C'
+        if score >= 0.20:
+            return 'D'
         return 'F'
 
     # -------------------------------------------------------------------------
@@ -337,7 +343,6 @@ class HypothesisTests:
         details = {}
 
         v3 = self.c['corpus']['v3']
-        valuations = self.c['corpus']['valuations']
         luts = self.c['luts']
 
         # Test 1: Ultrametric inequality on REAL operation results
@@ -379,7 +384,7 @@ class HypothesisTests:
         result_valuations = np.array([v3(int(r)) for r in all_results[:10000]])
 
         unique_vals, counts = np.unique(result_valuations, return_counts=True)
-        val_dist = dict(zip(unique_vals.tolist(), (counts / counts.sum()).tolist()))
+        val_dist = dict(zip(unique_vals.tolist(), (counts / counts.sum()).tolist()))  # noqa: B905
         details['valuation_distribution'] = val_dist
 
         # Expected: ~66.7% at v=0
@@ -618,7 +623,7 @@ class HypothesisTests:
         details['geodesic_mean_error'] = float(np.mean(equidistance_errors))
         details['euclidean_mean_error'] = float(np.mean(euclidean_errors))
         details['geodesic_better'] = details['geodesic_mean_error'] < details['euclidean_mean_error']
-        geodesic_wins = sum(1 for g, e in zip(equidistance_errors, euclidean_errors) if g <= e)
+        geodesic_wins = sum(1 for g, e in zip(equidistance_errors, euclidean_errors) if g <= e)  # noqa: B905
         details['geodesic_wins_count'] = geodesic_wins
         details['geodesic_wins_pct'] = geodesic_wins / len(equidistance_errors) * 100
 
@@ -673,7 +678,7 @@ class HypothesisTests:
     # -------------------------------------------------------------------------
     # H4: Tropical Algebra Semantics
     # -------------------------------------------------------------------------
-    def test_H4_tropical(self) -> FalsificationResult:
+    def test_H4_tropical(self) -> FalsificationResult:  # noqa: C901
         """
         Test tropical semiring properties using REAL SIMD operations.
 
@@ -694,7 +699,6 @@ class HypothesisTests:
         details = {}
 
         simd_op = self.c['data']['simd_batch_operation']
-        index_to_trits = self.c['data']['index_to_trits']
         trits_to_index = self.c['data']['trits_to_index']
 
         num_values = self.c['corpus']['num_values']
@@ -850,9 +854,9 @@ class HypothesisTests:
         Test lattice properties using REAL SIMD tmin/tmax operations.
 
         Predictions:
-        1. Absorption laws: a ∧ (a ∨ b) = a
-        2. Distributivity: a ∧ (b ∨ c) = (a ∧ b) ∨ (a ∧ c)
-        3. Idempotence: a ∧ a = a, a ∨ a = a
+        1. Absorption laws: a ∧ (a v b) = a
+        2. Distributivity: a ∧ (b v c) = (a ∧ b) v (a ∧ c)
+        3. Idempotence: a ∧ a = a, a v a = a
         """
         start = time.time()
         passed = 0
@@ -861,8 +865,6 @@ class HypothesisTests:
         details = {}
 
         simd_op = self.c['data']['simd_batch_operation']
-        index_to_trits = self.c['data']['index_to_trits']
-        trits_to_index = self.c['data']['trits_to_index']
 
         num_values = self.c['corpus']['num_values']
         np.random.seed(42)
@@ -879,12 +881,12 @@ class HypothesisTests:
 
         # Compute operations using SIMD
         # meet = tmin, join = tmax
-        a_join_b = simd_op(a_idx, b_idx, 'max')  # a ∨ b
+        a_join_b = simd_op(a_idx, b_idx, 'max')  # a v b
         a_meet_b = simd_op(a_idx, b_idx, 'min')  # a ∧ b
 
-        # Test 1: Absorption a ∧ (a ∨ b) = a
+        # Test 1: Absorption a ∧ (a v b) = a
         print("    Absorption law 1...")
-        result = simd_op(a_idx, a_join_b, 'min')  # a ∧ (a ∨ b)
+        result = simd_op(a_idx, a_join_b, 'min')  # a ∧ (a v b)
 
         for i in range(n_samples):
             tested += 1
@@ -902,9 +904,9 @@ class HypothesisTests:
 
         details['absorption1_pass_rate'] = passed / n_samples
 
-        # Test 2: Absorption a ∨ (a ∧ b) = a
+        # Test 2: Absorption a v (a ∧ b) = a
         print("    Absorption law 2...")
-        result2 = simd_op(a_idx, a_meet_b, 'max')  # a ∨ (a ∧ b)
+        result2 = simd_op(a_idx, a_meet_b, 'max')  # a v (a ∧ b)
 
         abs2_passed = 0
         for i in range(n_samples):
@@ -941,13 +943,13 @@ class HypothesisTests:
 
         details['idempotence_pass_rate'] = idemp_passed / (2 * n_samples)
 
-        # Test 4: Distributivity a ∧ (b ∨ c) = (a ∧ b) ∨ (a ∧ c)
+        # Test 4: Distributivity a ∧ (b v c) = (a ∧ b) v (a ∧ c)
         print("    Distributivity...")
         b_join_c = simd_op(b_idx, c_idx, 'max')
-        lhs = simd_op(a_idx, b_join_c, 'min')  # a ∧ (b ∨ c)
+        lhs = simd_op(a_idx, b_join_c, 'min')  # a ∧ (b v c)
 
         a_meet_c = simd_op(a_idx, c_idx, 'min')
-        rhs = simd_op(a_meet_b, a_meet_c, 'max')  # (a ∧ b) ∨ (a ∧ c)
+        rhs = simd_op(a_meet_b, a_meet_c, 'max')  # (a ∧ b) v (a ∧ c)
 
         dist_passed = 0
         for i in range(n_samples):
@@ -1154,10 +1156,9 @@ class HypothesisTests:
 
         for op_name, lut_data in luts.items():
             results = lut_data['results']
-            unique, counts = np.unique(results, return_counts=True)
+            _unique, counts = np.unique(results, return_counts=True)
             H = entropy(counts)
             op_entropies[op_name] = H
-            efficiency = H / max_entropy
 
             tested += 1
             # Entropy should be positive and less than maximum
@@ -1176,7 +1177,7 @@ class HypothesisTests:
 
         # Test 2: Valuation distribution entropy
         print("    Valuation distribution entropy...")
-        unique_vals, val_counts = np.unique(valuations, return_counts=True)
+        _unique_vals, val_counts = np.unique(valuations, return_counts=True)
         val_entropy = entropy(val_counts)
         details['valuation_entropy'] = val_entropy
 
@@ -1316,7 +1317,7 @@ class HypothesisTests:
     # -------------------------------------------------------------------------
     # H10: Group Theory Semantics
     # -------------------------------------------------------------------------
-    def test_H10_group(self) -> FalsificationResult:
+    def test_H10_group(self) -> FalsificationResult:  # noqa: C901
         """
         Test group axioms using REAL SIMD tadd operation.
 
@@ -1333,8 +1334,8 @@ class HypothesisTests:
         details = {}
 
         simd_op = self.c['data']['simd_batch_operation']
-        index_to_trits = self.c['data']['index_to_trits']
         trits_to_index = self.c['data']['trits_to_index']
+        index_to_trits = self.c['data']['index_to_trits']
 
         num_values = self.c['corpus']['num_values']
         np.random.seed(42)
@@ -1490,7 +1491,6 @@ class HypothesisTests:
         details = {}
 
         simd_op = self.c['data']['simd_batch_operation']
-        index_to_trits = self.c['data']['index_to_trits']
         trits_to_index = self.c['data']['trits_to_index']
         v3 = self.c['corpus']['v3']
 
@@ -1618,7 +1618,7 @@ class HypothesisTests:
     # -------------------------------------------------------------------------
     # Get test function by ID
     # -------------------------------------------------------------------------
-    def get_test_function(self, hypothesis_id: str) -> Optional[Callable]:
+    def get_test_function(self, hypothesis_id: str) -> Callable | None:
         """Get test function for hypothesis."""
         mapping = {
             'H1': self.test_H1_padic,
@@ -1677,11 +1677,7 @@ class HypothesisTests:
 
 
         simd_op = self.c['data']['simd_batch_operation']
-
         trits_to_index = self.c['data']['trits_to_index']
-
-        index_to_trits = self.c['data']['index_to_trits']
-
         v3 = self.c['corpus']['v3']
 
         num_values = self.c['corpus']['num_values']
@@ -1710,7 +1706,7 @@ class HypothesisTests:
 
         n_assoc = 100
 
-        
+
 
         for op_type in ['add', 'mul']:
 
@@ -1720,7 +1716,7 @@ class HypothesisTests:
 
                 a = int(a_idx)
 
-                
+
 
                 # (a op a) op a vs a op (a op a)
 
@@ -1730,11 +1726,11 @@ class HypothesisTests:
 
                 aa_a = simd_op(np.array([int(aa)]), np.array([a]), op_type)[0]
 
-                
+
 
                 tested += 2
 
-                
+
 
                 if int(a_aa) == int(aa_a):
 
@@ -1772,13 +1768,13 @@ class HypothesisTests:
 
         sample = np.random.choice(num_values, n_id, replace=False)
 
-        
+
 
         for idx in sample:
 
             a = int(idx)
 
-            
+
 
             # Left identity: 0 ⊕ a = a
 
@@ -1804,7 +1800,7 @@ class HypothesisTests:
 
                     })
 
-            
+
 
             # Right identity: a ⊕ 0 = a
 
@@ -1844,7 +1840,7 @@ class HypothesisTests:
 
         n_func = 100
 
-        
+
 
         for _ in range(n_func):
 
@@ -1856,11 +1852,11 @@ class HypothesisTests:
 
             b = int(b_idx)
 
-            
+
 
             a_plus_b = simd_op(np.array([a]), np.array([b]), 'add')[0]
 
-            
+
 
             # FIXED: v3 of differences (proper p-adic metric)
 
@@ -1872,7 +1868,7 @@ class HypothesisTests:
 
                 v_ac = v3(abs(a - a_plus_b))
 
-                
+
 
                 tested += 1
 
@@ -1898,7 +1894,7 @@ class HypothesisTests:
 
         n_nat = 100
 
-        
+
 
         for _ in range(n_nat):
 
@@ -1910,17 +1906,17 @@ class HypothesisTests:
 
             b = int(b_idx)
 
-            
+
 
             a_min_b = simd_op(np.array([a]), np.array([b]), 'min')[0]
 
             a_max_b = simd_op(np.array([a]), np.array([b]), 'max')[0]
 
-            
+
 
             tested += 1
 
-            
+
 
             # Naturality: min and max are dual
 
@@ -1975,12 +1971,12 @@ class HypothesisTests:
 class FalsificationRunner:
     """Main runner for hypothesis falsification."""
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         self.config = self._load_config(config_path)
         self.loader = ComponentLoader()
-        self.results: List[FalsificationResult] = []
+        self.results: list[FalsificationResult] = []
 
-    def _load_config(self, config_path: Optional[Path]) -> Dict:
+    def _load_config(self, config_path: Path | None) -> dict:
         default_config = ROOT / "research" / "configs" / "schema.yaml"
         path = config_path or default_config
         if path.exists():
@@ -1993,7 +1989,7 @@ class FalsificationRunner:
         print(f"\n{'='*60}")
         print(f"TESTING {hypothesis_id}")
         print(f"{'='*60}")
-        
+
         tests = HypothesisTests(self.loader)
         test_fn = tests.get_test_function(hypothesis_id)
 
@@ -2026,7 +2022,7 @@ class FalsificationRunner:
             )
             return result
 
-    def run_all_implemented(self) -> List[FalsificationResult]:
+    def run_all_implemented(self) -> list[FalsificationResult]:
         """Run all implemented hypothesis tests."""
         implemented = ['H1', 'H2', 'H3', 'H4', 'H6', 'H8', 'H9', 'H10', 'H11', 'H23']
 
@@ -2054,7 +2050,7 @@ class FalsificationRunner:
         if result.error:
             print(f"  Error: {result.error}")
 
-    def _print_summary(self, results: List[FalsificationResult]):
+    def _print_summary(self, results: list[FalsificationResult]):
         """Print summary of all results."""
         print(f"\n{'='*60}")
         print("FALSIFICATION SUMMARY")
@@ -2085,7 +2081,7 @@ class FalsificationRunner:
         # Save results
         self._save_results(results)
 
-    def _save_results(self, results: List[FalsificationResult]):
+    def _save_results(self, results: list[FalsificationResult]):
         """Save results to file."""
         output_dir = ROOT / "research" / "results"
         output_dir.mkdir(parents=True, exist_ok=True)
