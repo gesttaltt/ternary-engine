@@ -38,6 +38,11 @@ build_output.log
 *.a
 *.lib
 
+# Build artifacts at project root (development builds)
+*.so
+*.pyd
+test_simd_correctness
+
 # IDE
 .vscode/
 .idea/
