@@ -134,27 +134,18 @@ def test_tropical():
 
 ### H5: Clifford Algebra / Geometric Algebra Semantics
 
-**Claim:** Ternary values are elements of a Clifford algebra with geometric interpretation.
+> ⚠️ **REMOVED** (2026-03-19) - This hypothesis was removed because its test was furniture.
+> The test only checked if results were valid balanced ternary, not actual
+> geometric algebra properties. Any balanced ternary operation would pass.
 
-**Core structure:**
-- Basis vectors e₁, e₂, e₃ with e_i² = ±1 or 0
-- Products encode rotations, reflections
-- Ternary = scalar + bivector components
+~~**Claim:** Ternary values are elements of a Clifford algebra with geometric interpretation.~~
 
-**Falsification test:**
-```python
-def test_clifford():
-    # Ternary operations should preserve geometric structure
-    # Check if operations correspond to rotations/reflections
-    for op in [tadd, tmul]:
-        result = op(a, b)
-        # Verify geometric invariants
-```
+~~**Core structure:**~~
+~~- Basis vectors e₁, e₂, e₃ with e_i² = ±1 or 0~~
+~~- Products encode rotations, reflections~~
+~~- Ternary = scalar + bivector components~~
 
-**Predictions:**
-- Rotation-like composition
-- Duality between operations
-- Natural extension to higher dimensions
+The claimed geometric properties were never actually tested.
 
 ---
 
@@ -184,25 +175,18 @@ def test_three_valued_logic():
 
 ### H7: Quantum-Inspired Superposition Semantics
 
-**Claim:** Ternary 0 represents superposition of +1 and -1 (quantum-like).
+> ⚠️ **REMOVED** (2026-03-19) - This hypothesis was removed because its test was furniture.
+> The test only checked arithmetic identities (absorption), not actual quantum
+> properties. Any operation where 0 is absorbing would pass.
 
-**Core structure:**
-- |+⟩, |-⟩ basis states
-- |0⟩ = (|+⟩ + |-⟩)/√2 (superposition)
-- Operations = unitary-like transformations
+~~**Claim:** Ternary 0 represents superposition of +1 and -1 (quantum-like).~~
 
-**Falsification test:**
-```python
-def test_quantum_like():
-    # Check interference patterns
-    # 0 ⊗ 0 should show interference, not classical mixing
-    result = tmul(0, 0)  # What does "superposition × superposition" give?
-```
+~~**Core structure:**~~
+~~- |+⟩, |-⟩ basis states~~
+~~- |0⟩ = (|+⟩ + |-⟩)/√2 (superposition)~~
+~~- Operations = unitary-like transformations~~
 
-**Predictions:**
-- Interference effects in compound operations
-- Non-classical correlations
-- Measurement-like collapse
+The claimed quantum properties were never actually tested.
 
 ---
 
