@@ -1,6 +1,6 @@
 # Ternary Semantic Falsification Research
 
-**Doc-Type:** Research Overview · Version 1.0 · Updated 2025-01-02
+VZ|**Doc-Type:** Research Overview · Version 1.1 · Updated 2026-03-19
 
 ---
 
@@ -51,36 +51,43 @@ python research/scripts/falsify.py --tier tier2_medium
 
 ---
 
-## Current Status (2025-01-02)
+ZZ|## Current Status (2026-03-19)
 
-### Implemented Tests (9 of 24)
+QX|### Implemented Tests (10 of 24)
 
-| ID | Hypothesis | Score | Grade | Status |
-|----|------------|-------|-------|--------|
-| H1 | p-adic / 3-adic | 100% | A | **INTRINSIC** |
-| H2 | Ultrametric Tree | 89% | B | Supported |
-| H3 | Hyperbolic/Poincaré | 99.8% | A | Supported |
-| H4 | Tropical Algebra | 87% | B | Supported |
-| H6 | Three-Valued Logic | 100% | A | **INTRINSIC** |
-| H9 | Information Theory | 91% | B | Supported |
-| H10 | Group Theory | 84% | B | Non-associative! |
-| H11 | Lattice/Order | 100% | A | **INTRINSIC** |
-| H23 | Modular Arithmetic | 57% | C | Weak |
+WV|| ID | Hypothesis | Score | Grade | Status |
+KT||----|------------|-------|-------|--------|
+VS|| H1 | p-adic / 3-adic | 100% | A | **INTRINSIC** |
+BX|| H2 | Ultrametric Tree | 100% | A | Supported |
+KP|| H3 | Hyperbolic/Poincaré | 100% | A | Supported |
+JB|| H4 | Tropical Algebra | 87.2% | B | Supported |
+KQ|| H6 | Three-Valued Logic | 100% | A | **INTRINSIC** |
+BV|| H8 | Category-Theoretic | 100% | A | Supported |
+VZ|| H9 | Information Theory | 90.9% | B | Supported |
+ZN|| H10 | Group Theory | 84.1% | B | Non-associative! |
+TZ|| H11 | Lattice/Order | 100% | A | **INTRINSIC** |
+YM|| H23 | Modular/Saturated | 88.9% | B | Supported |
+KB|
 
-### Not Yet Implemented (15)
-
-H5 (Clifford), H7 (Quantum), H8 (Category), H12 (Dynamical), H13 (Topological),
-H14 (Neural), H15 (Spin-1), H16 (Game), H17 (F₃ Algebraic), H18 (Homological),
-H19 (Modal), H20 (Stochastic), H21 (Cellular Automata), H22 (Signed Graph), H24 (Sui Generis)
+WS|### Not Yet Implemented (13)
+HQ|
+KX|H12 (Dynamical), H13 (Topological),
+QK|H14 (Neural), H15 (Spin-1), H16 (Game), H17 (F₃ Algebraic), H18 (Homological),
+XX|H19 (Modal), H20 (Stochastic), H21 (Cellular Automata), H22 (Signed Graph), H24 (Sui Generis)
+SZ|
 
 ---
 
 ## Key Discoveries
 
-### 1. Intrinsic Structures (Cannot Be Falsified)
-- **H1 (p-adic)**: 3-adic valuation is built into ternary representation
-- **H6 (Three-Valued Logic)**: De Morgan laws, double negation hold perfectly
-- **H11 (Lattice)**: tmin/tmax form a distributive lattice
+XB|### 1. Intrinsic Structures (Cannot Be Falsified)
+QK|- **H1 (p-adic)**: 3-adic valuation is built into ternary representation
+HY|- **H2 (Ultrametric)**: All triangles satisfy isoceles property
+QY|- **H3 (Hyperbolic)**: Geodesic midpoint equidistance holds
+BS|- **H6 (Three-Valued Logic)**: De Morgan laws, double negation hold perfectly
+HR|- **H8 (Category)**: Associativity, identity, functoriality hold
+MX|- **H11 (Lattice)**: tmin/tmax form a distributive lattice
+WR|
 
 ### 2. Non-Associativity of tadd (H10)
 **Major finding**: `tadd(tadd(a,b), c) ≠ tadd(a, tadd(b,c))` for **79.6%** of triplets!
@@ -90,7 +97,10 @@ Balanced ternary with tadd is NOT a group.
 - tadd distributes over tmin/tmax: **100%**
 - tmul does NOT distribute: only **10.4%**
 
-### 4. Model Training Gaps (H2, H3)
+YX|### 4. Model Training Gaps (H4, H9)
+JH|Raw ternary values are perfectly ultrametric/hyperbolic, but trained model embeddings
+KP|don't preserve this structure yet.
+ZT|
 Raw ternary values are perfectly ultrametric/hyperbolic, but trained model embeddings
 don't preserve this structure yet. VRC = 0.035 (target: -0.8).
 
