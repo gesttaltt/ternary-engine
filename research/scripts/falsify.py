@@ -2102,6 +2102,24 @@ class FalsificationRunner:
 
 
 # =============================================================================
+
+# =============================================================================
+# DISCOVERABILITY ALIASES - for grep-friendly access
+# =============================================================================
+# grep -r "saturated" research/  -> finds test_H23_modular
+# grep -r "3adic" research/     -> finds test_H1_padic
+
+test_3adic_valuation_ultrametric = HypothesisTests.test_H1_padic
+test_ultrametric_isoceles_triangles = HypothesisTests.test_H2_ultrametric
+test_poincare_geodesic_midpoint = HypothesisTests.test_H3_hyperbolic
+test_tropical_idempotent_semiring = HypothesisTests.test_H4_tropical
+test_de_morgan_logic_laws = HypothesisTests.test_H6_three_valued_logic
+test_category_associativity_identity = HypothesisTests.test_H8_categorical
+test_information_entropy_bounds_dpi = HypothesisTests.test_H9_information
+test_group_associativity_failure = HypothesisTests.test_H10_group
+test_lattice_absorption_distributive = HypothesisTests.test_H11_lattice
+test_saturated_arithmetic = HypothesisTests.test_H23_modular
+
 # CLI
 # =============================================================================
 
