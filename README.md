@@ -1150,3 +1150,22 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 - ⚠️ **Matmul optimization** - needs C++ SIMD optimization for AI/ML viability
 
 > **Note:** Performance metrics are *subject to analysis* - no standardized benchmarking exists for trit operations. Results represent actual measured throughput on validated Windows x64 systems.
+
+---
+
+## The P-Adic Ecosystem
+
+This repository is part of a tri-fold ecosystem exploring the intersection of p-adic mathematics, ternary logic, and high-performance computing:
+
+*   **[3-Adic ML](https://github.com/gesttaltt/3-adic-ml)**: Mathematical foundation and framework for p-adic Variational Autoencoders and geometric deep learning.
+*   **[3-Adic Bioinformatics](https://github.com/gesttaltt/3-adic-bioinformatics)**: Application of ultrametric geometry to genomic sequences, protein folding, and biological hierarchy analysis.
+*   **[Ternary Engine](https://github.com/gesttaltt/ternary-engine)**: (This Repo) High-performance C++/C backend for native ternary arithmetic and efficient p-adic valuation processing.
+
+## Status & Engagement
+
+**Current Phase**: Active Low-Profile Research
+
+This engine provides the computational backbone for our p-adic research. It is designed for researchers who require deterministic, high-efficiency ternary logic.
+
+*   **Proposals**: We are focused on technical excellence and scientific utility. We are not entertaining commercial acquisition or mass-market investment at this stage.
+*   **Contributions**: Technical contributions that improve the efficiency of the C++ core or broaden the C-header compatibility are highly valued.
