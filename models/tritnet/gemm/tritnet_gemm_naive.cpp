@@ -12,6 +12,7 @@
 #include "ternary_dense243.h"  // Resolved via ternary_engine/lib/dense243 in include_dirs
 #include <string.h>
 #include <stdlib.h>
+#include <cmath>
 
 // Platform-specific aligned memory allocation (must be defined early)
 #if defined(_WIN32)
@@ -20,7 +21,8 @@
 #else
     static inline void* aligned_alloc_impl(size_t alignment, size_t size) {
         void* ptr = nullptr;
-        posix_memalign(&ptr, alignment, size);
+        if (posix_memalign(&ptr, alignment, size) != 0)
+            return nullptr;
         return ptr;
     }
     #define aligned_free_impl(ptr) free(ptr)

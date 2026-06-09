@@ -17,6 +17,15 @@ except ImportError as e:
     print("  Run 'python build.py' to build the module first")
     exit(1)
 
+def check_tadd_correct(a, b, result, label):
+    """Verify tadd result against scalar reference: saturating addition on {0=−1, 1=0, 2=+1}."""
+    expected = np.clip(a.astype(np.int16) + b.astype(np.int16) - 2, -1, 1).astype(np.int16) + 1
+    expected = expected.astype(np.uint8)
+    if not np.array_equal(result, expected):
+        print(f"[FAIL] {label}: correctness check failed")
+        print(f"  First mismatch at index {np.where(result != expected)[0][0]}")
+        exit(1)
+
 # Test 1: Small array (should use single-threaded path)
 print("\n=== Test 1: Small array (50K elements) ===")
 n = 50000
@@ -27,6 +36,7 @@ start = time.perf_counter()
 result = tc.tadd(a, b)
 elapsed = time.perf_counter() - start
 
+check_tadd_correct(a, b, result, "Small array")
 print(f"Size: {n:,} elements")
 print(f"Time: {elapsed*1000:.3f} ms")
 print(f"Throughput: {n/elapsed/1e6:.1f} M trits/sec")
@@ -42,6 +52,7 @@ start = time.perf_counter()
 result = tc.tadd(a, b)
 elapsed = time.perf_counter() - start
 
+check_tadd_correct(a, b, result, "Large array")
 print(f"Size: {n:,} elements")
 print(f"Time: {elapsed*1000:.3f} ms")
 print(f"Throughput: {n/elapsed/1e6:.1f} M trits/sec")
@@ -57,6 +68,7 @@ start = time.perf_counter()
 result = tc.tadd(a, b)
 elapsed = time.perf_counter() - start
 
+check_tadd_correct(a, b, result, "Very large array")
 print(f"Size: {n:,} elements")
 print(f"Time: {elapsed*1000:.3f} ms")
 print(f"Throughput: {n/elapsed/1e6:.1f} M trits/sec")

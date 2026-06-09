@@ -187,14 +187,11 @@ py::array_t<uint8_t> process_binary_array(
             // FIX: Alignment check performed above, safe to use streaming stores here
             if (use_streaming) {
                 _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
+                // Fence inside parallel region so all worker threads' NT stores are ordered
+                _mm_sfence();
             } else {
                 _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
             }
-        }
-
-        // Memory fence after streaming stores to ensure visibility
-        if (use_streaming) {
-            _mm_sfence();
         }
 
         i = n_simd_blocks;

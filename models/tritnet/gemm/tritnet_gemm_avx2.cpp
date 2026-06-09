@@ -150,10 +150,27 @@ void tritnet_gemm_f32_avx2(
         tritnet_gemm_kernel_avx2_8x(A_block, B_packed, C_block, K, N);
     }
 
-    // Handle remaining rows with naive implementation
+    // Handle remaining rows with scalar fallback
     if (m_remainder > 0) {
-        // TODO: Implement scalar fallback or use masked AVX2
-        // For now, just skip (will be added in next iteration)
+        int m_start = m_blocks * 8;
+        for (int m = m_start; m < M; m++) {
+            for (int n = 0; n < N; n++) {
+                float acc = 0.0f;
+                for (int k_group = 0; k_group + 5 <= K; k_group += 5) {
+                    int pack_idx = (k_group / 5) * N + n;
+                    int8_t trits[5];
+                    int value = B_packed[pack_idx];
+                    for (int t = 0; t < 5; t++) {
+                        trits[t] = (int8_t)(value % 3 - 1);
+                        value /= 3;
+                    }
+                    for (int t = 0; t < 5; t++) {
+                        acc += A[m * K + k_group + t] * trits[t];
+                    }
+                }
+                C[m * N + n] = acc;
+            }
+        }
     }
 }
 

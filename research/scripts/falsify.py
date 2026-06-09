@@ -1503,6 +1503,10 @@ class HypothesisTests:
         a_idx = np.random.randint(0, num_values, n_samples)
         b_idx = np.random.randint(0, num_values, n_samples)
 
+        # Decode encoding index → integer value of 9-trit balanced ternary number.
+        # Encoding: idx = Σ (trit_i + 1) * 3^i, so val = idx - (num_values - 1) / 2
+        idx_offset = (num_values - 1) // 2
+
         # Test 1: p-adic valuation of sums
         # v3(a + b) >= min(v3(a), v3(b)) - ALWAYS holds for integers
         print("    Valuation of sums (p-adic)...")
@@ -1510,9 +1514,9 @@ class HypothesisTests:
 
         v_sum_passed = 0
         for i in range(n_samples):
-            v_a = v3(abs(int(a_idx[i])))
-            v_b = v3(abs(int(b_idx[i])))
-            v_sum = v3(abs(int(a_plus_b[i])))
+            v_a = v3(abs(int(a_idx[i]) - idx_offset))
+            v_b = v3(abs(int(b_idx[i]) - idx_offset))
+            v_sum = v3(abs(int(a_plus_b[i]) - idx_offset))
 
             tested += 1
             if v_sum >= min(v_a, v_b):
@@ -1528,9 +1532,9 @@ class HypothesisTests:
 
         v_prod_passed = 0
         for i in range(n_samples):
-            v_a = v3(abs(int(a_idx[i])))
-            v_b = v3(abs(int(b_idx[i])))
-            v_prod = v3(abs(int(a_times_b[i])))
+            v_a = v3(abs(int(a_idx[i]) - idx_offset))
+            v_b = v3(abs(int(b_idx[i]) - idx_offset))
+            v_prod = v3(abs(int(a_times_b[i]) - idx_offset))
 
             tested += 1
             # Allow ±1 tolerance for saturated arithmetic
@@ -1712,31 +1716,23 @@ class HypothesisTests:
 
             for _ in range(n_assoc):
 
-                a_idx = np.random.randint(0, num_values)
+                a = int(np.random.randint(0, num_values))
+                b = int(np.random.randint(0, num_values))
+                c = int(np.random.randint(0, num_values))
 
-                a = int(a_idx)
+                # (a op b) op c vs a op (b op c) — proper associativity test
+                ab = simd_op(np.array([a]), np.array([b]), op_type)[0]
+                bc = simd_op(np.array([b]), np.array([c]), op_type)[0]
+                ab_c = simd_op(np.array([int(ab)]), np.array([c]), op_type)[0]
+                a_bc = simd_op(np.array([a]), np.array([int(bc)]), op_type)[0]
 
+                tested += 1
 
+                if int(ab_c) == int(a_bc):
 
-                # (a op a) op a vs a op (a op a)
+                    passed += 1
 
-                aa = simd_op(np.array([a]), np.array([a]), op_type)[0]
-
-                a_aa = simd_op(np.array([a]), np.array([int(aa)]), op_type)[0]
-
-                aa_a = simd_op(np.array([int(aa)]), np.array([a]), op_type)[0]
-
-
-
-                tested += 2
-
-
-
-                if int(a_aa) == int(aa_a):
-
-                    passed += 2
-
-                    assoc_passed += 2
+                    assoc_passed += 1
 
                 else:
 
@@ -1746,15 +1742,15 @@ class HypothesisTests:
 
                             'test': 'associativity',
 
-                            'op': op_type, 'a': a,
+                            'op': op_type, 'a': a, 'b': b, 'c': c,
 
-                            'a_aa': int(a_aa), 'aa_a': int(aa_a)
+                            'ab_c': int(ab_c), 'a_bc': int(a_bc)
 
                         })
 
 
 
-        details['associativity_rate'] = assoc_passed / (2 * n_assoc)
+        details['associativity_rate'] = assoc_passed / (2 * n_assoc) if n_assoc > 0 else 0.0
 
 
 
@@ -1837,6 +1833,7 @@ class HypothesisTests:
         print("    Testing functoriality (ultrametric preservation)...")
 
         functorial_passed = 0
+        functorial_tested = 0
 
         n_func = 100
 
@@ -1871,6 +1868,7 @@ class HypothesisTests:
 
 
                 tested += 1
+                functorial_tested += 1
 
                 # Ultrametric: v(a,c) >= min(v(a,b), v(b,c))
 
@@ -1882,7 +1880,8 @@ class HypothesisTests:
 
 
 
-        details['functoriality_rate'] = functorial_passed / n_func
+        # Use actual tested count as denominator — guard condition filters some samples
+        details['functoriality_rate'] = functorial_passed / functorial_tested if functorial_tested > 0 else 0.0
 
 
 

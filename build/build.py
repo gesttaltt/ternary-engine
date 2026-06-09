@@ -126,7 +126,6 @@ ext_modules = [
         [os.path.join(PROJECT_ROOT, 'src', 'engine', 'bindings_core_ops.cpp')],
         include_dirs=[
             pybind11.get_include(),
-            pybind11.get_include(user=True),
             PROJECT_ROOT,
             os.path.join(PROJECT_ROOT, 'src')
         ],

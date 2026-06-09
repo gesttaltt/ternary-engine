@@ -157,11 +157,13 @@ def build_module(naive_only=False, verbose=False, clean=False):
     if clean:
         print("\n🧹 Cleaning build artifacts...")
         import shutil
-        build_dir = ROOT_DIR / "build"
-        if build_dir.exists():
-            shutil.rmtree(build_dir)
+        # Only remove compiled artifacts, never source files
+        artifacts_dir = ROOT_DIR / "build" / "artifacts" / "tritnet"
+        if artifacts_dir.exists():
+            shutil.rmtree(artifacts_dir)
+            print(f"   Removed: {artifacts_dir}")
 
-        # Remove old .pyd/.so files
+        # Remove old .pyd/.so files from project root
         for ext in [".pyd", ".so"]:
             for old_file in ROOT_DIR.glob(f"ternary_tritnet_gemm*{ext}"):
                 old_file.unlink()

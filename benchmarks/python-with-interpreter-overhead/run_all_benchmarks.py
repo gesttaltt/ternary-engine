@@ -27,11 +27,11 @@ from datetime import datetime
 import shutil
 
 
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 BUILD_SCRIPT = PROJECT_ROOT / "build" / "build.py"
 BUILD_PGO_SCRIPT = PROJECT_ROOT / "build" / "build_pgo_unified.py"
-BENCH_SCRIPT = PROJECT_ROOT / "benchmarks" / "bench_simd_core_ops.py"
-COMPARE_SCRIPT = PROJECT_ROOT / "benchmarks" / "bench_regression_detect.py"
+BENCH_SCRIPT = PROJECT_ROOT / "benchmarks" / "python-with-interpreter-overhead" / "bench_simd_core_ops.py"
+COMPARE_SCRIPT = PROJECT_ROOT / "benchmarks" / "python-with-interpreter-overhead" / "bench_regression_detect.py"
 CLEAN_SCRIPT = PROJECT_ROOT / "build" / "clean_all.py"
 RESULTS_DIR = PROJECT_ROOT / "benchmarks" / "results"
 
