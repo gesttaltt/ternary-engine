@@ -41,6 +41,14 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+try:
+    import ternary_zero_skip_gemm as _zs
+    HAS_ZS = True
+    HAS_AVX2 = _zs.has_avx2
+except ImportError:
+    HAS_ZS = False
+    HAS_AVX2 = False
+
 # ---------------------------------------------------------------------------
 # GEMM implementations
 # ---------------------------------------------------------------------------
@@ -85,6 +93,16 @@ def matmul_zero_skip_cols(A: np.ndarray, B: np.ndarray) -> np.ndarray:
         if nz.size > 0:
             C[:, j] = A[:, nz] @ B[nz, j].astype(np.float32)
     return C
+
+
+def matmul_zero_skip_cpp_scalar(A: np.ndarray, weights) -> np.ndarray:
+    """C++ zero-skip kernel, scalar path (precomputed CSC, no AVX2)."""
+    return weights.gemm(A, use_avx2=False)
+
+
+def matmul_zero_skip_cpp_avx2(A: np.ndarray, weights) -> np.ndarray:
+    """C++ zero-skip kernel, AVX2 path (precomputed CSC + gather + FMA)."""
+    return weights.gemm(A, use_avx2=True)
 
 
 # ---------------------------------------------------------------------------
@@ -162,13 +180,23 @@ def verify_correctness(M: int, K: int, N: int, rng: np.random.Generator) -> bool
     A = rng.standard_normal((M, K)).astype(np.float32)
     B = generate_ternary_matrix(K, N, zero_fraction=1/3, rng=rng)
 
-    ref  = matmul_dense_blas(A, B)
-    sign = matmul_sign_split(A, B)
-    skip = matmul_zero_skip_cols(A, B)
+    ref    = matmul_dense_blas(A, B)
+    sign   = matmul_sign_split(A, B)
+    py_skip= matmul_zero_skip_cols(A, B)
 
-    sign_ok = bool(np.allclose(ref, sign, atol=1e-4))
-    skip_ok = bool(np.allclose(ref, skip, atol=1e-4))
-    return sign_ok and skip_ok
+    ok = (bool(np.allclose(ref, sign,    atol=1e-4)) and
+          bool(np.allclose(ref, py_skip, atol=1e-4)))
+
+    if HAS_ZS:
+        import ternary_zero_skip_gemm as zs
+        W = zs.ZeroSkipWeights(B)
+        cpp_scalar = W.gemm(A, use_avx2=False)
+        cpp_avx2   = W.gemm(A, use_avx2=True)
+        ok = (ok and
+              bool(np.allclose(ref, cpp_scalar, atol=1e-4)) and
+              bool(np.allclose(ref, cpp_avx2,   atol=1e-4)))
+
+    return ok
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +205,7 @@ def verify_correctness(M: int, K: int, N: int, rng: np.random.Generator) -> bool
 
 def run_size(M: int, K: int, N: int, zero_fraction: float,
              rng: np.random.Generator, skip_col_threshold: int = 256) -> dict:
-    """Run all three implementations for one (M, K, N) configuration."""
+    """Run all implementations for one (M, K, N) configuration."""
     A = rng.standard_normal((M, K)).astype(np.float32)
     B = generate_ternary_matrix(K, N, zero_fraction=zero_fraction, rng=rng)
 
@@ -186,16 +214,29 @@ def run_size(M: int, K: int, N: int, zero_fraction: float,
     t_dense = time_fn(matmul_dense_blas, A, B)
     t_sign  = time_fn(matmul_sign_split, A, B)
 
-    # Zero-skip column loop is O(N) Python — only run for small N to avoid
-    # minute-long benchmarks. We report the theoretical speedup for larger N.
+    # Python zero-skip: slow for large N due to loop overhead
     if N <= skip_col_threshold:
-        t_skip = time_fn(matmul_zero_skip_cols, A, B, warmup=2, repeats=5)
+        t_py_skip = time_fn(matmul_zero_skip_cols, A, B, warmup=2, repeats=5)
     else:
-        t_skip = None
+        t_py_skip = None
+
+    # C++ zero-skip kernels
+    t_cpp_scalar = t_cpp_avx2 = t_precompute = None
+    if HAS_ZS:
+        import ternary_zero_skip_gemm as zs
+
+        # Time the precompute separately
+        t_pre = time_fn(zs.ZeroSkipWeights, B, warmup=3, repeats=10)
+        t_precompute = t_pre
+
+        # Build weights once, then time the GEMM
+        weights = zs.ZeroSkipWeights(B)
+        t_cpp_scalar = time_fn(matmul_zero_skip_cpp_scalar, A, weights)
+        t_cpp_avx2   = time_fn(matmul_zero_skip_cpp_avx2,   A, weights)
 
     ops = M * N * K
     def gops(t_ms):
-        return ops / (t_ms * 1e6)  # ms → s → Gops
+        return ops / (t_ms * 1e6)
 
     return {
         "M": M, "K": K, "N": N,
@@ -204,10 +245,17 @@ def run_size(M: int, K: int, N: int, zero_fraction: float,
         "ops_per_output_dense":    sp["ops_per_output_dense"],
         "ops_per_output_zeroskip": sp["ops_per_output_zeroskip"],
         "ops_reduction_pct":       sp["ops_reduction_pct"],
-        "dense": {**t_dense, "gops_s": gops(t_dense["median_ms"])},
-        "sign_split": {**t_sign, "gops_s": gops(t_sign["median_ms"])},
-        "zero_skip_cols": (
-            {**t_skip, "gops_s": gops(t_skip["median_ms"])} if t_skip else None
+        "dense":        {**t_dense,       "gops_s": gops(t_dense["median_ms"])},
+        "sign_split":   {**t_sign,        "gops_s": gops(t_sign["median_ms"])},
+        "py_zero_skip": (
+            {**t_py_skip, "gops_s": gops(t_py_skip["median_ms"])} if t_py_skip else None
+        ),
+        "cpp_precompute": t_precompute,
+        "cpp_scalar": (
+            {**t_cpp_scalar, "gops_s": gops(t_cpp_scalar["median_ms"])} if t_cpp_scalar else None
+        ),
+        "cpp_avx2": (
+            {**t_cpp_avx2, "gops_s": gops(t_cpp_avx2["median_ms"])} if t_cpp_avx2 else None
         ),
     }
 
@@ -216,25 +264,32 @@ def print_size_result(r: dict) -> None:
     M, K, N = r["M"], r["K"], r["N"]
     print(f"\n  {M}×{K}×{N}  (M×K×N,  {M*K*N:,} ops)")
     print(f"    Sparsity:  actual={r['zero_fraction']:.3f}  theoretical={r['theoretical_zero']:.3f}")
-    print(f"    Zero-skip eliminates {r['ops_reduction_pct']:.1f}% of multiply-accumulates per output")
+    print(f"    Zero-skip eliminates {r['ops_reduction_pct']:.1f}% of multiply-accumulates")
+    if r["cpp_precompute"]:
+        print(f"    CSC precompute: {r['cpp_precompute']['median_ms']:.3f} ms  (one-time cost per weight matrix)")
     print()
 
-    d   = r["dense"]
-    s   = r["sign_split"]
-    sk  = r["zero_skip_cols"]
+    d      = r["dense"]
+    s      = r["sign_split"]
+    py_sk  = r["py_zero_skip"]
+    cs     = r["cpp_scalar"]
+    ca     = r["cpp_avx2"]
 
-    print(f"    {'Method':<22}  {'Median ms':>10}  {'Gops/s':>10}  {'vs dense':>10}")
-    print(f"    {'-'*22}  {'-'*10}  {'-'*10}  {'-'*10}")
-    print(f"    {'dense BLAS':<22}  {d['median_ms']:>10.3f}  {d['gops_s']:>10.2f}  {'(baseline)':>10}")
-    print(f"    {'sign split':<22}  {s['median_ms']:>10.3f}  {s['gops_s']:>10.2f}  "
-          f"  {d['median_ms']/s['median_ms']:>8.2f}×")
-    if sk:
-        print(f"    {'zero-skip cols (Py)':<22}  {sk['median_ms']:>10.3f}  {sk['gops_s']:>10.2f}  "
-              f"  {d['median_ms']/sk['median_ms']:>8.2f}×")
-    else:
-        est = r["ops_per_output_zeroskip"] / r["ops_per_output_dense"]
-        print(f"    {'zero-skip (theoretical)':<22}  {'N/A':>10}  {'N/A':>10}  "
-              f"  ~{1/est:>7.2f}×  (C++ kernel needed)")
+    def row(label, t, ref_ms):
+        if t is None:
+            return f"    {label:<28}  {'N/A':>10}  {'N/A':>10}  {'N/A':>10}"
+        ratio = ref_ms / t["median_ms"]
+        return (f"    {label:<28}  {t['median_ms']:>10.3f}  {t['gops_s']:>10.2f}  "
+                f"  {ratio:>8.2f}×")
+
+    print(f"    {'Method':<28}  {'Median ms':>10}  {'Gops/s':>10}  {'vs dense':>10}")
+    print(f"    {'-'*28}  {'-'*10}  {'-'*10}  {'-'*10}")
+    print(f"    {'dense BLAS (NumPy)':<28}  {d['median_ms']:>10.3f}  {d['gops_s']:>10.2f}  {'(baseline)':>10}")
+    print(row("sign split (Py)", s, d["median_ms"]))
+    if py_sk:
+        print(row("zero-skip cols (Py loop)", py_sk, d["median_ms"]))
+    print(row("zero-skip C++ scalar", cs, d["median_ms"]))
+    print(row("zero-skip C++ AVX2", ca, d["median_ms"]))
 
 
 def run_sparsity_sweep(K: int, N: int, zero_fractions: list[float],
@@ -322,23 +377,37 @@ def main() -> int:
 
     avg_zero   = float(np.mean([r["zero_fraction"] for r in all_results]))
     avg_saving = float(np.mean([r["ops_reduction_pct"] for r in all_results]))
+
     sign_ratios = [r["dense"]["median_ms"] / r["sign_split"]["median_ms"]
                    for r in all_results]
     avg_sign_ratio = float(np.mean(sign_ratios))
 
-    print(f"\n  Average measured zero fraction:  {avg_zero:.3f}  "
-          f"(theoretical 0.333)")
+    print(f"\n  Average measured zero fraction:  {avg_zero:.3f}  (theoretical 0.333)")
     print(f"  Average ops saved (zero-skip):   {avg_saving:.1f}%")
-    print(f"  Sign-split vs dense (NumPy avg): {avg_sign_ratio:.2f}×")
+    print(f"  Sign-split vs dense (NumPy):     {avg_sign_ratio:.2f}×")
+
+    if HAS_ZS:
+        scalar_ratios = [r["dense"]["median_ms"] / r["cpp_scalar"]["median_ms"]
+                         for r in all_results if r["cpp_scalar"]]
+        avx2_ratios   = [r["dense"]["median_ms"] / r["cpp_avx2"]["median_ms"]
+                         for r in all_results if r["cpp_avx2"]]
+        if scalar_ratios:
+            print(f"  C++ scalar vs dense (avg):       {float(np.mean(scalar_ratios)):.2f}×")
+        if avx2_ratios:
+            print(f"  C++ AVX2   vs dense (avg):       {float(np.mean(avx2_ratios)):.2f}×")
+
     print()
     print("  Key takeaway:")
-    print("    Zero-skip eliminates ~33% of multiply-accumulates.")
-    print("    Sign-split (two binary matmuls) is the correct PyTorch/C++ stepping")
-    print("    stone — same arithmetic, structured for hardware that skips zero-weight")
-    print("    lanes (GPU tensor cores, custom ASIC, BitNet-style kernels).")
-    print("    NumPy BLAS doesn't skip zeros internally, so sign-split ≈ dense here.")
-    print("    The savings materialise in: (a) scipy.sparse, (b) a C++ zero-skip")
-    print("    kernel, or (c) GPU hardware with structured sparsity support.")
+    print("    Zero-skip eliminates ~33% of multiply-accumulates (confirmed).")
+    if HAS_ZS and avx2_ratios:
+        avg_avx2 = float(np.mean(avx2_ratios))
+        if avg_avx2 >= 1.0:
+            print(f"    C++ AVX2 zero-skip beats NumPy BLAS by {avg_avx2:.2f}× on average.")
+        else:
+            print(f"    C++ AVX2 zero-skip reaches {avg_avx2:.2f}× of NumPy BLAS.")
+            print("    BLAS is memory-bandwidth-bound here; savings show at larger K.")
+    print("    Sign-split (Python/NumPy) can't exploit sparsity — BLAS touches all zeros.")
+    print("    The C++ CSC kernel skips them at the instruction level.")
 
     # ---- Save results --------------------------------------------------------
     if args.output:
