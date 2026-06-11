@@ -134,8 +134,12 @@ def validate():
     err2 = float(abs(C_scalar - C_ref).max())
     print(f"  Scalar max_error: {err2:.2e}", "PASS" if err2 < 1e-4 else "FAIL")
 
+    C_tiled = W.gemm_tiled(A)
+    err3 = float(abs(C_tiled - C_ref).max())
+    print(f"  Tiled max_error:  {err3:.2e}", "PASS" if err3 < 1e-4 else "FAIL")
+
     print("Validation done.")
-    return err < 1e-4 and err2 < 1e-4
+    return err < 1e-4 and err2 < 1e-4 and err3 < 1e-4
 
 
 def main():

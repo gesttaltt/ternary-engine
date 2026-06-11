@@ -39,16 +39,18 @@ public:
 
         K_   = (int)buf.shape[0];
         N_   = (int)buf.shape[1];
-        csc_ = build_ternary_csc(
-            static_cast<const int8_t*>(buf.ptr), K_, N_
-        );
-        if (!csc_)
+        const int8_t* data = static_cast<const int8_t*>(buf.ptr);
+        csc_ = build_ternary_csc(data, K_, N_);
+        csr_ = build_ternary_csr(data, K_, N_);
+        if (!csc_ || !csr_)
             throw std::runtime_error("Failed to build sparse index");
     }
 
-    ~ZeroSkipWeights() { free_ternary_csc(csc_); }
+    ~ZeroSkipWeights() {
+        free_ternary_csc(csc_);
+        free_ternary_csr(csr_);
+    }
 
-    /* Disable copy; only move semantics make sense for an owned C struct */
     ZeroSkipWeights(const ZeroSkipWeights&) = delete;
     ZeroSkipWeights& operator=(const ZeroSkipWeights&) = delete;
 
@@ -68,7 +70,6 @@ public:
 
         py::array_t<float> C({M, N_});
         auto c_buf = C.request();
-
         const float* a_ptr = static_cast<const float*>(buf.ptr);
         float*       c_ptr = static_cast<float*>(c_buf.ptr);
 
@@ -80,13 +81,37 @@ public:
         return C;
     }
 
+    /* k-parallel tiled kernel: each thread owns a k-stripe → AT fits in L2. */
+    py::array_t<float> gemm_tiled(py::array_t<float> A) {
+        auto buf = A.request();
+        if (buf.ndim != 2)
+            throw std::invalid_argument("A must be 2-D [M, K] float32 array");
+        int M = (int)buf.shape[0];
+        int K = (int)buf.shape[1];
+        if (K != K_)
+            throw std::invalid_argument(
+                "A columns (" + std::to_string(K) +
+                ") must match weight rows (" + std::to_string(K_) + ")"
+            );
+        if (!A.attr("flags").attr("c_contiguous").cast<bool>())
+            throw std::invalid_argument("A must be C-contiguous");
+
+        py::array_t<float> C({M, N_});
+        auto c_buf = C.request();
+        const float* a_ptr = static_cast<const float*>(buf.ptr);
+        float*       c_ptr = static_cast<float*>(c_buf.ptr);
+
+        ternary_gemm_zero_skip_tiled(M, N_, K_, a_ptr, csr_, c_ptr);
+        return C;
+    }
+
     py::dict info() const {
         py::dict d;
-        d["K"]             = K_;
-        d["N"]             = N_;
-        d["nnz"]           = csc_->nnz;
-        d["total"]         = K_ * N_;
-        d["zero_fraction"] = 1.0 - (double)csc_->nnz / (K_ * N_);
+        d["K"]                = K_;
+        d["N"]                = N_;
+        d["nnz"]              = csc_->nnz;
+        d["total"]            = K_ * N_;
+        d["zero_fraction"]    = 1.0 - (double)csc_->nnz / (K_ * N_);
         d["nonzero_fraction"] = (double)csc_->nnz / (K_ * N_);
         return d;
     }
@@ -97,7 +122,8 @@ public:
 
 private:
     int          K_, N_;
-    TernaryCSC*  csc_;
+    TernaryCSC*  csc_;   /* column-indexed; used by gemm() */
+    TernaryCSR*  csr_;   /* row-indexed;    used by gemm_tiled() */
 };
 
 /* -------------------------------------------------------------------------
@@ -204,7 +230,11 @@ PYBIND11_MODULE(ternary_zero_skip_gemm, m) {
              "Build sparse index from int8 B [K, N] with values in {-1, 0, +1}.")
         .def("gemm", &ZeroSkipWeights::gemm,
              py::arg("A"), py::arg("use_avx2") = true,
-             "Compute C = A @ B using zero-skip kernel.  Returns [M, N] float32.")
+             "Compute C = A @ B (j-parallel, CSC).  Returns [M, N] float32.")
+        .def("gemm_tiled", &ZeroSkipWeights::gemm_tiled,
+             py::arg("A"),
+             "Compute C = A @ B (k-parallel tiled, CSR).  Each thread's AT "
+             "stripe fits in L2; reduces thread-private CT arrays.  Returns [M, N] float32.")
         .def("info", &ZeroSkipWeights::info,
              "Return dict with K, N, nnz, zero_fraction.")
         .def_property_readonly("K",   &ZeroSkipWeights::K)

@@ -7,20 +7,30 @@
  * Implements zero-skip GEMM for ternary weight matrices {-1, 0, +1}.
  *
  * Key optimization: ~33% of ternary weights are exactly zero (p-adic
- * structure, see research/FINDINGS.md).  By precomputing a CSC sparse
- * index and iterating only over non-zero weights, we eliminate ~33% of
+ * structure, see research/FINDINGS.md).  By precomputing a sparse index
+ * and iterating only over non-zero weights, we eliminate ~33% of
  * multiply-accumulate operations.
  *
- * Unlike the Dense243-based tritnet_gemm, this kernel accepts B in plain
- * int8 format, avoiding the unpacking overhead.  The sparse structure is
- * built once per weight matrix and reused across forward passes.
+ * Two sparse formats, two kernels:
+ *
+ *   CSC (column-indexed) + j-parallel kernel:
+ *     For each output column j, SAXPY over non-zero k rows.
+ *     All j threads share the full AT[K,M] transpose buffer in L3.
+ *     Scales ~3× from 8 cores due to shared-AT bandwidth bottleneck.
+ *
+ *   CSR (row-indexed) + k-parallel tiled kernel:
+ *     For each activation row k, SAXPY into all j columns it touches.
+ *     Each thread owns a k-stripe; AT[k_stripe,:] fits in L2 (~128KB).
+ *     Thread-private CT_local arrays eliminate AT bandwidth contention.
+ *     Expected better scaling for bandwidth-bound large-M cases.
  *
  * API:
- *   TernaryCSC* build_ternary_csc(B, K, N)   -- precompute sparse index
- *   void        free_ternary_csc(csc)
- *   void        ternary_gemm_zero_skip_scalar(M, N, K, A, csc, C)
- *   void        ternary_gemm_zero_skip_avx2  (M, N, K, A, csc, C)  [AVX2]
- *   void        ternary_gemm_zero_skip       (M, N, K, A, B, C)    [all-in-one]
+ *   TernaryCSC* build_ternary_csc(B, K, N)   -- column-indexed index
+ *   TernaryCSR* build_ternary_csr(B, K, N)   -- row-indexed index
+ *   void        ternary_gemm_zero_skip_scalar (M,N,K, A, csc, C)
+ *   void        ternary_gemm_zero_skip_avx2   (M,N,K, A, csc, C)  [j-parallel]
+ *   void        ternary_gemm_zero_skip_tiled  (M,N,K, A, csr, C)  [k-parallel]
+ *   void        ternary_gemm_zero_skip        (M,N,K, A, B,   C)  [all-in-one]
  */
 
 #pragma once
@@ -30,10 +40,8 @@
 extern "C" {
 #endif
 
-/* CSC (Compressed Sparse Column) representation of a ternary weight matrix.
- * col_ptr[j]..col_ptr[j+1]-1 indexes the non-zeros in column j.
- * row_idx[p] = k (row / activation dimension)
- * signs[p]   = +1 or -1 */
+/* ---- CSC: column-indexed (output-column outer loop) ---- */
+
 typedef struct {
     int   K;         /* rows of B  (activation dimension) */
     int   N;         /* cols of B  (output dimension)     */
@@ -43,14 +51,29 @@ typedef struct {
     int8_t* signs;   /* [nnz] +1 or -1                    */
 } TernaryCSC;
 
-/* Build CSC structure from dense int8 B [K, N] row-major.
- * Caller must free with free_ternary_csc(). */
 TernaryCSC* build_ternary_csc(const int8_t* B, int K, int N);
 void        free_ternary_csc(TernaryCSC* csc);
 
-/* Zero-skip GEMM, scalar path.
- * A: [M, K] float32 row-major
- * C: [M, N] float32 row-major (zeroed by callee) */
+/* ---- CSR: row-indexed (activation-row outer loop) ---- */
+
+/* For the tiled kernel: each k-row lists the output columns j it connects to.
+ * This enables AT[k,:] to be loaded once and reused for all j in that row,
+ * keeping the k-stripe hot in L2 while threads work on their partition. */
+typedef struct {
+    int   K;         /* rows of B  (activation dimension) */
+    int   N;         /* cols of B  (output dimension)     */
+    int   nnz;       /* total non-zero count              */
+    int*  row_ptr;   /* [K+1] row pointers                */
+    int*  col_idx;   /* [nnz] non-zero column indices     */
+    int8_t* signs;   /* [nnz] +1 or -1                    */
+} TernaryCSR;
+
+TernaryCSR* build_ternary_csr(const int8_t* B, int K, int N);
+void        free_ternary_csr(TernaryCSR* csr);
+
+/* ---- Kernels ---- */
+
+/* Scalar j-parallel kernel (A: [M,K], C: [M,N], zeroed by callee). */
 void ternary_gemm_zero_skip_scalar(
     int M, int N, int K,
     const float*       A,
@@ -58,7 +81,8 @@ void ternary_gemm_zero_skip_scalar(
     float*             C
 );
 
-/* Zero-skip GEMM, AVX2 path.  Falls back to scalar on non-AVX2 builds. */
+/* AVX2 j-parallel kernel (CSC, OpenMP over j).  Falls back to scalar
+ * on non-AVX2 builds. */
 void ternary_gemm_zero_skip_avx2(
     int M, int N, int K,
     const float*       A,
@@ -66,8 +90,17 @@ void ternary_gemm_zero_skip_avx2(
     float*             C
 );
 
-/* Convenience: build CSC on the fly, compute, free.
- * Use for one-shot benchmarking; prefer the explicit API for inference. */
+/* AVX2 k-parallel tiled kernel (CSR, OpenMP over k, thread-private CT).
+ * Parallelises over activation rows so each thread's AT slice fits in L2.
+ * Falls back to ternary_gemm_zero_skip_avx2 when OpenMP is absent. */
+void ternary_gemm_zero_skip_tiled(
+    int M, int N, int K,
+    const float*       A,
+    const TernaryCSR*  B_csr,
+    float*             C
+);
+
+/* Convenience: build CSC on the fly, run avx2, free. */
 void ternary_gemm_zero_skip(
     int M, int N, int K,
     const float*   A,

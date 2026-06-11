@@ -50,20 +50,45 @@ This (2/3)^k pattern is the signature of 3-adic measure. Zero occupies a structu
 
 **Implication for hardware:** 66.7% of all operation results have valuation 0 and 40% of matrix products are exactly zero. Zero-skip optimization is not just viable — it is the natural move for any ternary GEMM implementation.
 
-**Empirical validation (2026-06-11):** `benchmarks/bench_zero_skip_gemm.py` and the C++ kernel in `src/core/simd/ternary_gemm_zero_skip.cpp` confirm this at multiple levels:
+**Empirical validation (2026-06-11):** `benchmarks/bench_zero_skip_gemm.py` and the C++ kernel in `src/core/simd/ternary_gemm_zero_skip.cpp` confirm this across sparsity levels. Two sweeps were run: a matrix-size sweep at 33% zeros and a sparsity sweep at fixed 256×1024×256.
 
-| Size | NumPy BLAS | Zero-skip (OMP+AVX2) | % of BLAS | Eff. ops/s¹ |
-|------|-----------|---------------------|-----------|-------------|
-| 32×128×32 | 16.4 Gops/s | 10.1 Gops/s | 68% | 16.9 Gops/s |
-| 64×256×64 | 39.3 Gops/s | **31.4 Gops/s** | **80%** | **47.0 Gops/s** |
-| 128×512×128 | 84.0 Gops/s | 45.9 Gops/s | 55% | 68.7 Gops/s |
-| 256×1024×256 | 103.7 Gops/s | 43.0 Gops/s | 42% | 64.6 Gops/s |
+**Matrix-size sweep at 33% zeros:**
 
-¹ Effective ops/s = measured Gops/s ÷ (1 − zero_fraction): throughput per multiply-accumulate actually executed. BLAS executes all K muls including zeros; zero-skip executes only ~66.6%.
+| Size | NumPy BLAS | Zero-skip AVX2 | % of BLAS | Eff. Gops/s¹ |
+|------|-----------|----------------|-----------|--------------|
+| 32×128×32 | 8.4 Gops/s | 5.5 Gops/s | 65% | 8.2 Gops/s |
+| 64×256×64 | 25.6 Gops/s | 15.0 Gops/s | 58% | 22.4 Gops/s |
+| 128×512×128 | 43.9 Gops/s | 21.6 Gops/s | 49% | 32.4 Gops/s |
+| 256×1024×256 | 57.0 Gops/s | 36.7 Gops/s | 64% | 55.0 Gops/s |
 
-At 64×256×64 the zero-skip kernel's **effective throughput exceeds BLAS by 20%** — it does the same output in fewer operations. The gap at large M is memory bandwidth: 8 threads competing for the AT[K,M] transpose buffer saturate L3 cache, giving 3× scaling from 8 cores instead of 8×.
+**Sparsity sweep at 256×1024×256:**
 
-Implementation: `ternary_zero_skip_gemm.ZeroSkipWeights` precomputes a CSC sparse index once per weight matrix. The critical optimization is transposing A→AT[K,M] before the GEMM loop — naive strided A[:,k] access in row-major layout caused a 340× penalty; the transpose eliminates it. The outer `j` loop is embarrassingly parallel (each thread owns a distinct CT[j,:] row). Auto-vectorized scalar consistently matches or beats the manual AVX2 path because the compiler hoists the sign broadcast and unrolls the inner SAXPY more aggressively.
+| Zero fraction | Zero-skip AVX2 | vs BLAS | Eff. Gops/s¹ |
+|---------------|----------------|---------|--------------|
+| 10% | 2.22 ms | 0.28× | 34 |
+| 33% | 2.13 ms | 0.29× | 47 |
+| 50% | 1.50 ms | 0.44× | 90 |
+| 70% | 1.08 ms | 0.59× | 208 |
+| 90% | 0.69 ms | **0.94×** | 960 |
+
+¹ Effective Gops/s = measured throughput ÷ (1 − zero_fraction): throughput per multiply-accumulate actually executed.
+
+**Honest interpretation:** On a CPU with optimized BLAS (OpenBLAS behind NumPy), the zero-skip kernel does not beat wall-clock time until approximately 90% zeros. At the natural ternary distribution of 33% zeros, wall-clock is 0.29–0.64× of BLAS depending on matrix size. BLAS is so thoroughly vectorized — no per-element branching, no index overhead, hardware-tuned for each CPU microarchitecture — that the multiply-accumulates saved do not translate to proportional time savings on x86.
+
+An L2-tiled k-parallel variant was also implemented (parallelising over activation rows with thread-private accumulators so each thread's AT slice fits in L2 cache). It was consistently 7–15% slower than the j-parallel CSC kernel — scattered writes to thread-private CT arrays cost more than the AT bandwidth saved.
+
+**Where zero-skip wins:**
+
+| Use case | Why it wins |
+|----------|-------------|
+| Custom ASIC / neuromorphic hardware | Skipped multiply = skipped power draw, directly |
+| GPU sparse tensor cores | CSC format maps to structured sparsity APIs |
+| Memory-bandwidth-limited inference | Fewer weight reads when streaming from DRAM |
+| Energy-efficiency metrics | Ops saved ∝ energy saved regardless of latency |
+
+The key value is **operation count reduction**, which is the correct metric for energy-constrained edge AI. A ternary weight matrix with 33% zeros reduces inference energy by exactly 33% on hardware that charges per multiply-accumulate — independent of any wall-clock consideration.
+
+Implementation: `ternary_zero_skip_gemm.ZeroSkipWeights` precomputes both CSC and CSR sparse indices once per weight matrix. The critical optimisation is transposing A→AT[K,M] before the GEMM loop — naive strided A[:,k] access caused a 340× slowdown; the transpose eliminates it. The outer `j` loop is embarrassingly parallel with no synchronisation (each thread owns a distinct CT[j,:] output row).
 
 ### 2. Three-Valued Logic (H6)
 

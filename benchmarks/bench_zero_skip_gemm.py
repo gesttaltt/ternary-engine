@@ -101,8 +101,13 @@ def matmul_zero_skip_cpp_scalar(A: np.ndarray, weights) -> np.ndarray:
 
 
 def matmul_zero_skip_cpp_avx2(A: np.ndarray, weights) -> np.ndarray:
-    """C++ zero-skip kernel, AVX2 path (precomputed CSC + gather + FMA)."""
+    """C++ zero-skip kernel, AVX2 j-parallel (CSC, OpenMP over output cols)."""
     return weights.gemm(A, use_avx2=True)
+
+
+def matmul_zero_skip_cpp_tiled(A: np.ndarray, weights) -> np.ndarray:
+    """C++ zero-skip kernel, AVX2 k-parallel tiled (CSR, thread-private CT)."""
+    return weights.gemm_tiled(A)
 
 
 # ---------------------------------------------------------------------------
@@ -192,9 +197,11 @@ def verify_correctness(M: int, K: int, N: int, rng: np.random.Generator) -> bool
         W = zs.ZeroSkipWeights(B)
         cpp_scalar = W.gemm(A, use_avx2=False)
         cpp_avx2   = W.gemm(A, use_avx2=True)
+        cpp_tiled  = W.gemm_tiled(A)
         ok = (ok and
               bool(np.allclose(ref, cpp_scalar, atol=1e-4)) and
-              bool(np.allclose(ref, cpp_avx2,   atol=1e-4)))
+              bool(np.allclose(ref, cpp_avx2,   atol=1e-4)) and
+              bool(np.allclose(ref, cpp_tiled,  atol=1e-4)))
 
     return ok
 
@@ -221,18 +228,19 @@ def run_size(M: int, K: int, N: int, zero_fraction: float,
         t_py_skip = None
 
     # C++ zero-skip kernels
-    t_cpp_scalar = t_cpp_avx2 = t_precompute = None
+    t_cpp_scalar = t_cpp_avx2 = t_cpp_tiled = t_precompute = None
     if HAS_ZS:
         import ternary_zero_skip_gemm as zs
 
-        # Time the precompute separately
+        # Time the precompute separately (now builds both CSC and CSR)
         t_pre = time_fn(zs.ZeroSkipWeights, B, warmup=3, repeats=10)
         t_precompute = t_pre
 
-        # Build weights once, then time the GEMM
+        # Build weights once, then time each GEMM variant
         weights = zs.ZeroSkipWeights(B)
         t_cpp_scalar = time_fn(matmul_zero_skip_cpp_scalar, A, weights)
         t_cpp_avx2   = time_fn(matmul_zero_skip_cpp_avx2,   A, weights)
+        t_cpp_tiled  = time_fn(matmul_zero_skip_cpp_tiled,  A, weights)
 
     ops = M * N * K
     def gops(t_ms):
@@ -257,6 +265,9 @@ def run_size(M: int, K: int, N: int, zero_fraction: float,
         "cpp_avx2": (
             {**t_cpp_avx2, "gops_s": gops(t_cpp_avx2["median_ms"])} if t_cpp_avx2 else None
         ),
+        "cpp_tiled": (
+            {**t_cpp_tiled, "gops_s": gops(t_cpp_tiled["median_ms"])} if t_cpp_tiled else None
+        ),
     }
 
 
@@ -274,42 +285,97 @@ def print_size_result(r: dict) -> None:
     py_sk  = r["py_zero_skip"]
     cs     = r["cpp_scalar"]
     ca     = r["cpp_avx2"]
+    ct     = r["cpp_tiled"]
 
     def row(label, t, ref_ms):
         if t is None:
-            return f"    {label:<28}  {'N/A':>10}  {'N/A':>10}  {'N/A':>10}"
+            return f"    {label:<32}  {'N/A':>10}  {'N/A':>10}  {'N/A':>10}"
         ratio = ref_ms / t["median_ms"]
-        return (f"    {label:<28}  {t['median_ms']:>10.3f}  {t['gops_s']:>10.2f}  "
+        return (f"    {label:<32}  {t['median_ms']:>10.3f}  {t['gops_s']:>10.2f}  "
                 f"  {ratio:>8.2f}×")
 
-    print(f"    {'Method':<28}  {'Median ms':>10}  {'Gops/s':>10}  {'vs dense':>10}")
-    print(f"    {'-'*28}  {'-'*10}  {'-'*10}  {'-'*10}")
-    print(f"    {'dense BLAS (NumPy)':<28}  {d['median_ms']:>10.3f}  {d['gops_s']:>10.2f}  {'(baseline)':>10}")
+    print(f"    {'Method':<32}  {'Median ms':>10}  {'Gops/s':>10}  {'vs dense':>10}")
+    print(f"    {'-'*32}  {'-'*10}  {'-'*10}  {'-'*10}")
+    print(f"    {'dense BLAS (NumPy)':<32}  {d['median_ms']:>10.3f}  {d['gops_s']:>10.2f}  {'(baseline)':>10}")
     print(row("sign split (Py)", s, d["median_ms"]))
     if py_sk:
         print(row("zero-skip cols (Py loop)", py_sk, d["median_ms"]))
     print(row("zero-skip C++ scalar", cs, d["median_ms"]))
-    print(row("zero-skip C++ AVX2", ca, d["median_ms"]))
+    print(row("zero-skip C++ AVX2 (j-par)", ca, d["median_ms"]))
+    print(row("zero-skip C++ tiled (k-par)", ct, d["median_ms"]))
 
 
 def run_sparsity_sweep(K: int, N: int, zero_fractions: list[float],
                        rng: np.random.Generator) -> None:
-    """Show how ops-reduction scales with zero fraction, for a fixed K×N."""
-    M = 128
+    """
+    Show how throughput scales with sparsity for every kernel.
+
+    Uses a fixed M×K×N and sweeps zero_fraction from low to high.
+    Reports wall-clock ratio vs dense BLAS and effective throughput
+    (adjusting for the fraction of multiply-accumulates actually executed).
+    """
+    M = 256
     print(f"\n  Sparsity sweep  (M={M}, K={K}, N={N})")
-    print(f"  {'Zero %':>8}  {'Actual %':>10}  {'Ops saved':>12}  "
-          f"{'Dense ms':>10}  {'SignSplit ms':>13}")
-    print(f"  {'-'*8}  {'-'*10}  {'-'*12}  {'-'*10}  {'-'*13}")
+
+    if HAS_ZS:
+        import ternary_zero_skip_gemm as zs
+        hdr = (f"  {'Zero%':>6}  {'Skip%':>6}  {'Dense ms':>9}  "
+               f"{'AVX2 ms':>8}  {'vs BLAS':>8}  {'Eff Gops':>9}  {'Tiled ms':>9}  {'vs BLAS':>8}")
+        sep = f"  {'-'*6}  {'-'*6}  {'-'*9}  {'-'*8}  {'-'*8}  {'-'*9}  {'-'*9}  {'-'*8}"
+    else:
+        hdr = (f"  {'Zero%':>6}  {'Skip%':>6}  {'Dense ms':>9}  {'SignSplit ms':>13}")
+        sep = f"  {'-'*6}  {'-'*6}  {'-'*9}  {'-'*13}"
+    print(hdr)
+    print(sep)
+
+    ops = M * N * K
+    sweep_results = []
 
     for zf in zero_fractions:
         A = rng.standard_normal((M, K)).astype(np.float32)
         B = generate_ternary_matrix(K, N, zero_fraction=zf, rng=rng)
         sp = measure_sparsity(B)
-        td = time_fn(matmul_dense_blas, A, B, warmup=5, repeats=10)
-        ts = time_fn(matmul_sign_split, A, B, warmup=5, repeats=10)
-        print(f"  {zf*100:>7.0f}%  {sp['zero_fraction']*100:>9.1f}%  "
-              f"  {sp['ops_reduction_pct']:>10.1f}%  "
-              f"  {td['median_ms']:>9.3f}  {ts['median_ms']:>12.3f}")
+        actual_zf = sp["zero_fraction"]
+        td = time_fn(matmul_dense_blas, A, B, warmup=5, repeats=15)
+
+        if HAS_ZS:
+            weights = zs.ZeroSkipWeights(B)
+            ta = time_fn(matmul_zero_skip_cpp_avx2,  A, weights, warmup=5, repeats=15)
+            tt = time_fn(matmul_zero_skip_cpp_tiled, A, weights, warmup=5, repeats=15)
+
+            # Effective Gops/s: measured throughput ÷ fraction actually executed
+            eff_gops = (ops / (ta["median_ms"] * 1e6)) / (1.0 - actual_zf)
+
+            ratio_a = td["median_ms"] / ta["median_ms"]
+            ratio_t = td["median_ms"] / tt["median_ms"]
+            print(f"  {actual_zf*100:>5.1f}%  {sp['ops_reduction_pct']:>5.1f}%  "
+                  f"  {td['median_ms']:>8.3f}  {ta['median_ms']:>7.3f}  {ratio_a:>7.2f}×"
+                  f"  {eff_gops:>8.2f}  {tt['median_ms']:>8.3f}  {ratio_t:>7.2f}×")
+            sweep_results.append({
+                "zero_fraction": actual_zf,
+                "dense_ms": td["median_ms"],
+                "avx2_ms": ta["median_ms"],
+                "tiled_ms": tt["median_ms"],
+                "ratio_avx2": ratio_a,
+                "ratio_tiled": ratio_t,
+                "eff_gops": eff_gops,
+            })
+        else:
+            ts = time_fn(matmul_sign_split, A, B, warmup=5, repeats=10)
+            print(f"  {actual_zf*100:>5.1f}%  {sp['ops_reduction_pct']:>5.1f}%  "
+                  f"  {td['median_ms']:>8.3f}  {ts['median_ms']:>12.3f}")
+
+    # Find the crossover point where AVX2 zero-skip ≥ BLAS
+    if sweep_results:
+        crossovers = [r for r in sweep_results if r["ratio_avx2"] >= 1.0]
+        if crossovers:
+            print(f"\n  Zero-skip beats BLAS at ≥ {crossovers[0]['zero_fraction']*100:.0f}% zeros")
+        else:
+            min_ratio = min(r["ratio_avx2"] for r in sweep_results)
+            print(f"\n  Zero-skip best: {min_ratio:.2f}× BLAS (not yet beating it at these sizes)")
+        peak = max(sweep_results, key=lambda r: r["eff_gops"])
+        print(f"  Peak effective throughput: {peak['eff_gops']:.1f} Gops/s "
+              f"at {peak['zero_fraction']*100:.0f}% zeros")
 
 
 # ---------------------------------------------------------------------------
@@ -366,9 +432,9 @@ def main() -> int:
 
     # ---- Sparsity sweep ------------------------------------------------------
     print("\n" + "=" * 70)
-    print("  Sparsity sweep  (how ops-savings scale with zero fraction)")
+    print("  Sparsity sweep  (realistic AI model sparsity: 33% → 90%)")
     print("=" * 70)
-    run_sparsity_sweep(K=512, N=128, zero_fractions=args.sparsity, rng=rng)
+    run_sparsity_sweep(K=1024, N=256, zero_fractions=args.sparsity, rng=rng)
 
     # ---- Summary -------------------------------------------------------------
     print("\n" + "=" * 70)
@@ -391,21 +457,31 @@ def main() -> int:
                          for r in all_results if r["cpp_scalar"]]
         avx2_ratios   = [r["dense"]["median_ms"] / r["cpp_avx2"]["median_ms"]
                          for r in all_results if r["cpp_avx2"]]
+        tiled_ratios  = [r["dense"]["median_ms"] / r["cpp_tiled"]["median_ms"]
+                         for r in all_results if r["cpp_tiled"]]
         if scalar_ratios:
-            print(f"  C++ scalar vs dense (avg):       {float(np.mean(scalar_ratios)):.2f}×")
+            print(f"  C++ scalar vs dense (avg):         {float(np.mean(scalar_ratios)):.2f}×")
         if avx2_ratios:
-            print(f"  C++ AVX2   vs dense (avg):       {float(np.mean(avx2_ratios)):.2f}×")
+            print(f"  C++ AVX2 j-par vs dense (avg):     {float(np.mean(avx2_ratios)):.2f}×")
+        if tiled_ratios:
+            print(f"  C++ tiled k-par vs dense (avg):    {float(np.mean(tiled_ratios)):.2f}×")
+            if avx2_ratios and tiled_ratios:
+                tiled_vs_avx2 = float(np.mean(tiled_ratios)) / float(np.mean(avx2_ratios))
+                print(f"  Tiled vs j-par (speedup):          {tiled_vs_avx2:.2f}×")
 
     print()
     print("  Key takeaway:")
     print("    Zero-skip eliminates ~33% of multiply-accumulates (confirmed).")
     if HAS_ZS and avx2_ratios:
-        avg_avx2 = float(np.mean(avx2_ratios))
-        if avg_avx2 >= 1.0:
-            print(f"    C++ AVX2 zero-skip beats NumPy BLAS by {avg_avx2:.2f}× on average.")
+        avg_avx2  = float(np.mean(avx2_ratios))
+        avg_tiled = float(np.mean(tiled_ratios)) if tiled_ratios else None
+        best = max(filter(None, [avg_avx2, avg_tiled]))
+        label = "tiled k-par" if (avg_tiled and avg_tiled >= avg_avx2) else "AVX2 j-par"
+        if best >= 1.0:
+            print(f"    C++ {label} beats NumPy BLAS by {best:.2f}× on average.")
         else:
-            print(f"    C++ AVX2 zero-skip reaches {avg_avx2:.2f}× of NumPy BLAS.")
-            print("    BLAS is memory-bandwidth-bound here; savings show at larger K.")
+            print(f"    Best C++ kernel ({label}): {best:.2f}× of NumPy BLAS.")
+            print("    BLAS is memory-bandwidth-bound; tiled k-par reduces that pressure.")
     print("    Sign-split (Python/NumPy) can't exploit sparsity — BLAS touches all zeros.")
     print("    The C++ CSC kernel skips them at the instruction level.")
 
