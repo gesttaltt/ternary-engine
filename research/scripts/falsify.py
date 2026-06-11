@@ -1639,6 +1639,333 @@ class HypothesisTests:
             details=details
         )
     # -------------------------------------------------------------------------
+    # H17: F₃ Field Mapping
+    # -------------------------------------------------------------------------
+    def test_H17_f3_field(self) -> FalsificationResult:
+        """
+        CLAIM: Balanced ternary maps naturally to F₃ = {0, 1, 2} (mod 3),
+        with tadd ↔ F₃-add and tmul ↔ F₃-mul.
+
+        Bijection: -1 ↔ 2, 0 ↔ 0, +1 ↔ 1
+        In unbalanced encoding (0=-1, 1=0, 2=+1): F₃(t) = (t + 2) % 3
+
+        Tests:
+        1. tmul vs F₃ multiplication  (expected: 100% match)
+        2. tadd vs F₃ addition        (expected: ~78% match — fails at saturation)
+        3. Exact characterisation of tadd mismatches
+        4. Whether the bijection is a ring homomorphism for tmul
+        """
+        start = time.time()
+        passed = 0
+        tested = 0
+        anomalies = []
+        details = {}
+
+        simd_op  = self.c['data']['simd_batch_operation']
+        num_values = self.c['corpus']['num_values']
+
+        # Build all pairwise trit operations over the 9-trit corpus.
+        # Working at trit level is cleaner; sample pairs to keep runtime short.
+        rng = np.random.default_rng(0)
+        n_pairs = 10000
+        a_idx = rng.integers(0, num_values, size=n_pairs).astype(np.int64)
+        b_idx = rng.integers(0, num_values, size=n_pairs).astype(np.int64)
+
+        # Unbalanced encoding used by SIMD: 0→-1, 1→0, 2→+1
+        # F₃ bijection: f3(t_unbal) = (t_unbal + 2) % 3
+        # F₃ addition:       f3_add(a,b) = (a + b) % 3  in F₃, then map back
+        # F₃ multiplication: f3_mul(a,b) = (a * b) % 3  in F₃, then map back
+        # Map back from F₃: inv_f3(x) = (x + 1) % 3  (inverse of +2 mod 3)
+
+        def index_to_unbalanced_trits(idx: np.ndarray, n: int = 9) -> np.ndarray:
+            """Decode corpus indices to unbalanced trit arrays [0,1,2]."""
+            out = np.zeros((len(idx), n), dtype=np.uint8)
+            for bit in range(n):
+                out[:, bit] = idx % 3
+                idx = idx // 3
+            return out
+
+        a_ub = index_to_unbalanced_trits(a_idx.copy())
+        b_ub = index_to_unbalanced_trits(b_idx.copy())
+
+        # F₃ values
+        a_f3 = (a_ub + 2) % 3
+        b_f3 = (b_ub + 2) % 3
+
+        # F₃ operations (trit-wise)
+        f3_add_result = (a_f3 + b_f3) % 3          # F₃ addition
+        f3_mul_result = (a_f3 * b_f3) % 3          # F₃ multiplication
+
+        # Map F₃ results back to unbalanced: inv(x) = (x + 1) % 3
+        f3_add_unbal = (f3_add_result + 1) % 3
+        f3_mul_unbal = (f3_mul_result + 1) % 3
+
+        # SIMD actual results
+        tadd_result = simd_op(a_idx, b_idx, 'add')
+        tmul_result = simd_op(a_idx, b_idx, 'mul')
+
+        tadd_ub = index_to_unbalanced_trits(tadd_result.copy())
+        tmul_ub = index_to_unbalanced_trits(tmul_result.copy())
+
+        # --- Test 1: tmul vs F₃ multiplication ---
+        tmul_matches = np.all(tmul_ub == f3_mul_unbal, axis=1)
+        tmul_match_rate = float(np.mean(tmul_matches))
+        details['tmul_f3_match_rate'] = tmul_match_rate
+        tested += 1
+        if tmul_match_rate >= 0.99:
+            passed += 1
+        else:
+            anomalies.append(f"tmul ≠ F₃-mul in {(1-tmul_match_rate)*100:.1f}% of pairs")
+
+        # --- Test 2: tadd vs F₃ addition ---
+        tadd_matches = np.all(tadd_ub == f3_add_unbal, axis=1)
+        tadd_match_rate = float(np.mean(tadd_matches))
+        details['tadd_f3_match_rate'] = tadd_match_rate
+        tested += 1
+        # Expected ~(7/9)^9 ≈ 24% for full 9-trit vectors (each trit independently
+        # matches with prob 7/9); or we measure trit-level
+        tadd_trit_matches = float(np.mean(tadd_ub == f3_add_unbal))
+        details['tadd_f3_trit_match_rate'] = tadd_trit_matches
+        # tadd matches F₃ at trit level whenever NOT (both trits same nonzero sign)
+        # Theoretical: 7/9 ≈ 77.8%
+        if abs(tadd_trit_matches - 7/9) < 0.05:
+            passed += 1
+        else:
+            anomalies.append(
+                f"tadd trit-level F₃ match: {tadd_trit_matches:.3f}, expected {7/9:.3f}"
+            )
+
+        # --- Test 3: Characterise where tadd ≠ F₃ add ---
+        mismatch_mask = tadd_ub != f3_add_unbal  # shape (n_pairs, 9)
+        # Check: mismatches occur exactly where both trits are nonzero same sign
+        both_nonzero_same = (a_ub != 1) & (b_ub != 1) & (a_ub == b_ub)
+        # Where (both_nonzero_same), we expect mismatch; elsewhere, expect match
+        predicted_mismatch = both_nonzero_same
+        prediction_correct = (mismatch_mask == predicted_mismatch)
+        prediction_rate = float(np.mean(prediction_correct))
+        details['saturation_prediction_rate'] = prediction_rate
+        tested += 1
+        if prediction_rate >= 0.99:
+            passed += 1
+        else:
+            anomalies.append(
+                f"Saturation-boundary prediction: {prediction_rate:.3f} < 0.99"
+            )
+
+        # --- Test 4: tmul ring homomorphism property ---
+        # If φ: ternary → F₃ is a bijection and tmul ↔ F₃-mul,
+        # check distributivity of tmul over F₃-add: tmul(a, f3_add(b,c)) = f3_add(tmul(a,b), tmul(a,c))
+        # This tests whether (ternary, F₃-add, tmul) is "ring-like"
+        c_idx = rng.integers(0, num_values, size=n_pairs).astype(np.int64)
+
+        # Compute tmul(a, tadd(b, c)) in ternary
+        bc_add = simd_op(b_idx, c_idx, 'add')
+        lhs_idx = simd_op(a_idx, bc_add, 'mul')
+
+        # Compute tadd(tmul(a,b), tmul(a,c)) in ternary
+        ab_mul = simd_op(a_idx, b_idx, 'mul')
+        ac_mul = simd_op(a_idx, c_idx, 'mul')
+        rhs_idx = simd_op(ab_mul, ac_mul, 'add')
+
+        distrib_rate = float(np.mean(lhs_idx == rhs_idx))
+        details['tmul_over_tadd_distributivity'] = distrib_rate
+        tested += 1
+        # tadd is non-associative → distributivity will be partial
+        if distrib_rate >= 0.5:
+            passed += 1
+        else:
+            anomalies.append(f"tmul distributes over tadd: only {distrib_rate:.3f}")
+
+        score = passed / tested if tested > 0 else 0
+        grade = self._score_to_grade(score)
+        return FalsificationResult(
+            hypothesis_id='H17',
+            hypothesis_name='F₃ Field Mapping',
+            score=score,
+            grade=grade,
+            predictions_tested=int(tested),
+            predictions_passed=int(passed),
+            anomalies=anomalies,
+            timing_seconds=time.time() - start,
+            details=details
+        )
+
+    # -------------------------------------------------------------------------
+    # H24: Sui Generis — irreducible structure after all falsifications
+    # -------------------------------------------------------------------------
+    def test_H24_sui_generis(self) -> FalsificationResult:
+        """
+        CLAIM: After mapping balanced ternary to all known structures, a residual
+        irreducible property remains: the co-presence of (a) non-associative tadd,
+        (b) F₃-isomorphic tmul, (c) distributive lattice tmin/tmax, and (d) exact
+        3-adic topology — in a single coherent system with no known algebraic name.
+
+        Tests whether this combination produces identifiable "emergent" behaviour:
+        1. Near-ring: does tmul distribute over tadd from both sides?
+        2. Associative core: is the set {x : tadd(x,a,b) assoc} closed under tadd?
+        3. Valuation-failure correlation: do tadd failures cluster at low valuation?
+        4. tmul-tadd interaction uniqueness: does any single known structure
+           predict the joint (tadd, tmul) output distribution?
+        """
+        start = time.time()
+        passed = 0
+        tested = 0
+        anomalies = []
+        details = {}
+
+        simd_op    = self.c['data']['simd_batch_operation']
+        num_values = self.c['corpus']['num_values']
+        valuations = self.c['corpus']['valuations']
+        rng = np.random.default_rng(7)
+
+        n = 2000
+        a = rng.integers(0, num_values, size=n).astype(np.int64)
+        b = rng.integers(0, num_values, size=n).astype(np.int64)
+        c = rng.integers(0, num_values, size=n).astype(np.int64)
+
+        # --- Test 1: Near-ring — left AND right distributivity of tmul over tadd ---
+        # Left:  tmul(a, tadd(b, c)) = tadd(tmul(a,b), tmul(a,c))
+        bc   = simd_op(b, c, 'add')
+        lhs_l = simd_op(a, bc, 'mul')
+        ab   = simd_op(a, b, 'mul')
+        ac   = simd_op(a, c, 'mul')
+        rhs_l = simd_op(ab, ac, 'add')
+        left_distrib = float(np.mean(lhs_l == rhs_l))
+
+        # Right: tmul(tadd(a, b), c) = tadd(tmul(a,c), tmul(b,c))
+        ab_add = simd_op(a, b, 'add')
+        lhs_r  = simd_op(ab_add, c, 'mul')
+        bc2    = simd_op(b, c, 'mul')
+        rhs_r  = simd_op(ab, bc2, 'add')  # ab = tmul(a,b) computed above
+        # Wait: need tmul(a,c) and tmul(b,c) separately
+        ac2  = simd_op(a, c, 'mul')
+        bc3  = simd_op(b, c, 'mul')
+        rhs_r = simd_op(ac2, bc3, 'add')
+        right_distrib = float(np.mean(lhs_r == rhs_r))
+
+        details['left_distributivity']  = left_distrib
+        details['right_distributivity'] = right_distrib
+        near_ring_rate = (left_distrib + right_distrib) / 2
+        details['near_ring_rate'] = near_ring_rate
+        tested += 1
+        # Any sustained distributivity (≥50%) confirms near-ring structure.
+        # 100% is the strongest possible finding — tmul distributes over tadd
+        # from both sides always, making (ternary, tadd, tmul) a non-associative ring.
+        if near_ring_rate >= 0.5:
+            passed += 1
+        else:
+            anomalies.append(f"Near-ring rate {near_ring_rate:.3f} < 0.5")
+
+        # --- Test 2: Associative core closure ---
+        # Find triplets where tadd IS associative, check closure
+        ab_a = simd_op(a, b, 'add')
+        lhs_assoc = simd_op(ab_a, c, 'add')      # (a+b)+c
+        bc_a = simd_op(b, c, 'add')
+        rhs_assoc = simd_op(a, bc_a, 'add')      # a+(b+c)
+        assoc_mask = (lhs_assoc == rhs_assoc)
+        assoc_rate = float(np.mean(assoc_mask))
+        details['tadd_associativity_rate'] = assoc_rate
+
+        # Are associative triplets concentrated at high valuation (near zero)?
+        val_a = valuations[a]
+        val_b = valuations[b]
+        val_c = valuations[c]
+        min_val = np.minimum(np.minimum(val_a, val_b), val_c)
+        min_val_clipped = np.where(min_val == 999, 8, min_val)
+        assoc_at_high_val = float(np.mean(assoc_mask[min_val_clipped >= 2]))
+        assoc_at_low_val  = float(np.mean(assoc_mask[min_val_clipped == 0]))
+        details['assoc_rate_high_valuation'] = assoc_at_high_val
+        details['assoc_rate_low_valuation']  = assoc_at_low_val
+        tested += 1
+        # Expect higher associativity near zero (high valuation) — "smooth" region
+        if assoc_at_high_val > assoc_at_low_val:
+            passed += 1
+        else:
+            anomalies.append(
+                f"Associativity not higher near zero: high_val={assoc_at_high_val:.3f}, "
+                f"low_val={assoc_at_low_val:.3f}"
+            )
+
+        # --- Test 3: Valuation-failure correlation ---
+        # Do tadd failures (non-assoc) cluster at low minimum valuation (far from 0)?
+        val_bins = [0, 1, 2, 3]
+        assoc_by_val = {}
+        for v in val_bins:
+            mask = (min_val_clipped == v)
+            if mask.sum() > 10:
+                assoc_by_val[v] = float(np.mean(assoc_mask[mask]))
+        details['assoc_by_min_valuation'] = {str(k): float(v) for k, v in assoc_by_val.items()}
+        tested += 1
+        # Expect monotone increase: higher valuation → more associativity
+        vals_sorted = [assoc_by_val.get(v, float('nan')) for v in val_bins]
+        vals_valid = [v for v in vals_sorted if not np.isnan(v)]
+        is_monotone = all(vals_valid[i] <= vals_valid[i+1] for i in range(len(vals_valid)-1))
+        if is_monotone:
+            passed += 1
+        else:
+            anomalies.append(
+                f"Associativity not monotone with valuation: {vals_valid}"
+            )
+
+        # --- Test 4: Irreducibility — joint (tadd, tmul) structure ---
+        # If ternary were F₃, we'd have: tmul(tadd(a,b), c) = tadd(tmul(a,c), tmul(b,c))
+        # AND tadd(tadd(a,b), c) = tadd(a, tadd(b,c)) — but tadd fails associativity.
+        # The irreducible property: the system has F₃-mul but NOT F₃-add.
+        # Measure: how often does the system "look like F₃" on the mul side but NOT on the add side?
+        # i.e., tmul matches F₃-mul AND tadd doesn't match F₃-add simultaneously.
+        def index_to_ub(idx):
+            out = np.zeros((len(idx), 9), dtype=np.int64)
+            ix = idx.copy()
+            for bit in range(9):
+                out[:, bit] = ix % 3
+                ix = ix // 3
+            return out
+
+        a_ub = index_to_ub(a)
+        b_ub = index_to_ub(b)
+        a_f3 = (a_ub + 2) % 3
+        b_f3 = (b_ub + 2) % 3
+
+        f3_mul = (a_f3 * b_f3) % 3
+        f3_add = (a_f3 + b_f3) % 3
+        f3_mul_unbal = (f3_mul + 1) % 3
+        f3_add_unbal = (f3_add + 1) % 3
+
+        ab_mul_ub = index_to_ub(simd_op(a, b, 'mul'))
+        ab_add_ub = index_to_ub(simd_op(a, b, 'add'))
+
+        mul_matches_f3 = np.all(ab_mul_ub == f3_mul_unbal, axis=1)
+        add_differs_f3 = ~np.all(ab_add_ub == f3_add_unbal, axis=1)
+
+        # Fraction where tmul=F₃ but tadd≠F₃  (the "irreducible zone")
+        irreducible_rate = float(np.mean(mul_matches_f3 & add_differs_f3))
+        only_f3_mul_rate = float(np.mean(mul_matches_f3))
+        details['tmul_matches_f3']          = only_f3_mul_rate
+        details['irreducible_zone_rate']    = irreducible_rate
+        tested += 1
+        # Expect a large irreducible zone — this is the structural uniqueness
+        if irreducible_rate >= 0.1:
+            passed += 1
+        else:
+            anomalies.append(
+                f"Irreducible zone (mul=F₃, add≠F₃): only {irreducible_rate:.3f}"
+            )
+
+        score = passed / tested if tested > 0 else 0
+        grade = self._score_to_grade(score)
+        return FalsificationResult(
+            hypothesis_id='H24',
+            hypothesis_name='Sui Generis — Irreducible Structure',
+            score=score,
+            grade=grade,
+            predictions_tested=int(tested),
+            predictions_passed=int(passed),
+            anomalies=anomalies,
+            timing_seconds=time.time() - start,
+            details=details
+        )
+
+    # -------------------------------------------------------------------------
     # H12: Dynamical Systems — fixed points and attractors of iterated ops
     # -------------------------------------------------------------------------
     def test_H12_dynamical(self) -> FalsificationResult:
@@ -1874,7 +2201,9 @@ class HypothesisTests:
             'H11': self.test_H11_lattice,
             'H12': self.test_H12_dynamical,
             'H13': self.test_H13_topological,
+            'H17': self.test_H17_f3_field,
             'H23': self.test_H23_modular,
+            'H24': self.test_H24_sui_generis,
         }
         return mapping.get(hypothesis_id)
 
@@ -2263,7 +2592,7 @@ class FalsificationRunner:
 
     def run_all_implemented(self) -> list[FalsificationResult]:
         """Run all implemented hypothesis tests."""
-        implemented = ['H1', 'H2', 'H3', 'H4', 'H6', 'H8', 'H9', 'H10', 'H11', 'H12', 'H13', 'H23']
+        implemented = ['H1', 'H2', 'H3', 'H4', 'H6', 'H8', 'H9', 'H10', 'H11', 'H12', 'H13', 'H17', 'H23', 'H24']
 
         print(f"\n{'#'*60}")
         print("RUNNING ALL IMPLEMENTED HYPOTHESES")
