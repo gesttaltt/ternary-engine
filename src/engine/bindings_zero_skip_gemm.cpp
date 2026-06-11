@@ -224,4 +224,10 @@ PYBIND11_MODULE(ternary_zero_skip_gemm, m) {
 #else
     m.attr("has_avx2") = false;
 #endif
+
+#ifdef _OPENMP
+    m.attr("has_openmp") = true;
+#else
+    m.attr("has_openmp") = false;
+#endif
 }

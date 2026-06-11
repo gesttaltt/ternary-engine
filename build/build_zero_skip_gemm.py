@@ -33,15 +33,16 @@ def get_compiler_flags():
     if is_msvc:
         compile_args = [
             "/O2", "/GL", "/arch:AVX2", "/std:c++17", "/fp:fast",
-            "/GS-", "/Oi", "/Ot",
+            "/GS-", "/Oi", "/Ot", "/openmp",
         ]
         link_args = ["/LTCG"]
     else:
         compile_args = [
             "-O3", "-march=native", "-mavx2", "-mfma",
             "-std=c++17", "-flto", "-ffast-math", "-funroll-loops",
+            "-fopenmp",
         ]
-        link_args = ["-flto"]
+        link_args = ["-flto", "-fopenmp"]
 
     return compile_args, link_args
 
@@ -109,7 +110,8 @@ def validate():
     import numpy as np
     import ternary_zero_skip_gemm as zs
 
-    print(f"  AVX2: {zs.has_avx2}")
+    print(f"  AVX2:   {zs.has_avx2}")
+    print(f"  OpenMP: {zs.has_openmp}")
 
     rng = np.random.default_rng(0)
     M, K, N = 32, 60, 40

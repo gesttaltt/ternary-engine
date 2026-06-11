@@ -19,6 +19,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #ifdef __AVX2__
 #include <immintrin.h>
 #endif
@@ -96,6 +100,8 @@ void ternary_gemm_zero_skip_scalar(
     /* Accumulate into CT[N,M] (column-major output) */
     float* CT = (float*)calloc((size_t)N * M, sizeof(float));
 
+    /* Each j writes to its own CT row → embarrassingly parallel */
+    #pragma omp parallel for schedule(dynamic, 8)
     for (int j = 0; j < N; j++) {
         const int p0 = B_csc->col_ptr[j];
         const int p1 = B_csc->col_ptr[j + 1];
@@ -113,6 +119,7 @@ void ternary_gemm_zero_skip_scalar(
     }
 
     /* Transpose CT[N,M] → C[M,N] */
+    #pragma omp parallel for
     for (int m = 0; m < M; m++)
         for (int j = 0; j < N; j++)
             C[m * N + j] = CT[(size_t)j * M + m];
@@ -148,6 +155,8 @@ void ternary_gemm_zero_skip_avx2(
     /* Accumulate into CT[N,M] */
     float* CT = (float*)calloc((size_t)N * M, sizeof(float));
 
+    /* Each j writes to its own CT row → embarrassingly parallel */
+    #pragma omp parallel for schedule(dynamic, 8)
     for (int j = 0; j < N; j++) {
         const int p0 = B_csc->col_ptr[j];
         const int p1 = B_csc->col_ptr[j + 1];
@@ -176,6 +185,7 @@ void ternary_gemm_zero_skip_avx2(
     }
 
     /* Transpose CT[N,M] → C[M,N] */
+    #pragma omp parallel for
     for (int m = 0; m < M; m++)
         for (int j = 0; j < N; j++)
             C[m * N + j] = CT[(size_t)j * M + m];
