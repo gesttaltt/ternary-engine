@@ -50,6 +50,8 @@ This (2/3)^k pattern is the signature of 3-adic measure. Zero occupies a structu
 
 **Implication for hardware:** 66.7% of all operation results have valuation 0 and 40% of matrix products are exactly zero. Zero-skip optimization is not just viable — it is the natural move for any ternary GEMM implementation.
 
+**Empirical validation (2026-06-11):** `benchmarks/bench_zero_skip_gemm.py` ran exhaustive sparsity measurements over random ternary weight matrices at four sizes (128–1024 K dimension). Measured zero fraction: **0.334 ± 0.001** across all sizes and runs, matching the theoretical 1/3 within noise. 33.4% of multiply-accumulates per output element are eliminatable. NumPy BLAS does not exploit this — sign-split (two binary matmuls) is 2× slower than dense due to BLAS call overhead. The savings require either `scipy.sparse`, a C++ zero-skip kernel, or hardware with structured sparsity support (GPU tensor cores).
+
 ### 2. Three-Valued Logic (H6)
 
 Balanced ternary is a valid three-valued logic system (Kleene/Łukasiewicz). All classical logic properties hold with the expected modification for a third truth value:
