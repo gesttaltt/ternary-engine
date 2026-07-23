@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.4 · Updated 2025-01-02 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.5 · Updated 2026-07-23 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -478,15 +478,17 @@ python benchmarks/bench_phase0.py
 - 59,049 samples for binary operations
 - All operations: tnot, tadd, tmul, tmin, tmax
 
-**Phase 2A** - Proof-of-concept (tnot) 🔄 IN PROGRESS
-- Train tnot model to 100% accuracy
-- Validate learned weights
-- Go/No-Go decision point
+**Phase 2A** - Proof-of-concept (tnot) ✅ COMPLETE — GO (commit 0dfa6af)
+- tnot trained to 100% accuracy with ternary weights (QAT)
+- Go/No-Go decision point passed
 
-**Phase 2B** - Scale to all operations
-- Train tadd, tmul, tmin, tmax
-- Validate ≥99% accuracy requirement
-- Document learned weight patterns
+**Phase 2B** - Scale to all operations 🔄 IN PROGRESS
+- tadd: 100% exact, PASSED
+- tmul: 99.5% exact, PASSED
+- tmin: stalled mid-training at 99.3% (incomplete, no result.json) — needs resume
+- tmax: not started
+- GO criterion: ≥3/4 ops ≥99% with ≥1 at 100% — 2/4 confirmed so far
+- Resume with `python models/tritnet/train_phase2b.py` (script skips completed ops)
 
 **Phase 3** - C++ Integration
 - Export ternary weights to binary format
@@ -656,7 +658,7 @@ Future work should explore:
 **MSVC** - /O2 /GL /arch:AVX2 /std:c++17 /LTCG
 **GCC/Clang** - -O3 -march=native -mavx2 -flto -std=c++17
 
-**OpenMP** - Disabled by default (documented CI crashes)
+**OpenMP** - Enabled by default (-fopenmp / /openmp in build/build.py; disabled only on ARM and Apple Clang). Validated passing on Linux x64 (2026-07-23) via tests/python/test_omp.py.
 **AVX2 required** - Runtime CPU detection with graceful failure
 
 ---
@@ -921,15 +923,14 @@ pip install matplotlib transformers
 - 65/65 tests passing
 - 35,042 Mops/s peak throughput validated
 - MSVC build system proven
-- OpenMP disabled (documented CI crashes, root cause fixed but needs validation)
+- OpenMP enabled by default (see Build System section)
 
 ### Experimental
 
-**Linux/macOS** - Untested, use at own risk
-- Build scripts provided but not validated
-- CI disabled for OpenMP tests
-- Manual compilation commands untested
-- No production claims until validated
+**Linux/macOS** - Not production-validated per project standard, but locally functional
+- Local Linux x64 run (2026-07-23): all 5 test suites pass (65 tests), including OpenMP, via tests/run_tests.py
+- Build scripts provided but no formal benchmark/CI validation
+- No production claims until formally validated per project standard
 
 ### Target Platforms (Future)
 
@@ -943,24 +944,22 @@ pip install matplotlib transformers
 
 ### Production Gaps
 
-1. **Multi-platform validation** - Only Windows x64 proven
-2. **TritNet Phase 2 decision** - tnot 100% accuracy validation pending
-3. **Competitive benchmarking** - Only 2/5 criteria validated
-4. **Dense243 integration** - Pack/unpack work but module integration issues
+1. **Multi-platform validation** - Only Windows x64 formally proven; Linux x64 passes all tests locally (2026-07-23) but lacks formal benchmark/CI validation
+2. **TritNet Phase 2B decision pending** - Phase 2A GO achieved (tnot 100%, commit 0dfa6af). Phase 2B (tadd, tmul, tmin, tmax) in progress: tadd 100% PASS, tmul 99.5% PASS, tmin stalled mid-training (99.3%, incomplete), tmax not started. GO criterion: ≥3/4 ops ≥99% with ≥1 at 100% — 2/4 confirmed, need to resume `models/tritnet/train_phase2b.py` to finish tmin and run tmax
+3. **Competitive benchmarking** - Only 2/5 criteria validated; last run 2025-11-23, no more recent results
+4. **Dense243 integration** - Pack/unpack work but module integration issues; no built Dense243 module present in current environment
 
 ### Important Improvements
 
-5. **OpenMP re-enablement** - Fixed but needs CI validation
-6. **Phase 4.1 fusion** - Implementation complete, benchmarks pending
-7. **Documentation gaps** - Missing TRITNET_VISION.md, TRITNET_ROADMAP.md
-8. **Code duplication** - Between engines, needs refactoring
+5. **Phase 4.1 fusion** - Implementation complete; test_fusion.py passes, but dedicated performance benchmarks still pending
+6. **Code duplication** - Between engines, needs refactoring
 
 ### Nice to Have
 
-9. **Multi-dimensional arrays** - Currently 1D only
-10. **ARM/NEON support** - x86-64 AVX2 only
-11. **GPU/TPU acceleration** - For TritNet Phase 4+
-12. **Profiler integration** - Framework implemented but not integrated
+7. **Multi-dimensional arrays** - Currently 1D only
+8. **ARM/NEON support** - x86-64 AVX2 only
+9. **GPU/TPU acceleration** - For TritNet Phase 4+
+10. **Profiler integration** - Framework implemented but not integrated
 
 ---
 
@@ -1036,6 +1035,7 @@ pip install matplotlib transformers
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-07-23 | v1.5.0  | Corrected stale gaps: OpenMP is enabled by default (not disabled), TRITNET_VISION.md/TRITNET_ROADMAP.md exist, TritNet Phase 2A is GO (Phase 2B in progress, 2/4 ops passed), Linux x64 passes all tests locally |
 | 2025-01-02 | v1.4.0  | Updated falsification results (9/24 hypotheses), added H4 Tropical and H9 Information Theory |
 | 2025-12-31 | v1.3.0  | Added trained models section for falsification testing |
 | 2025-12-30 | v1.2.0  | Added Hyperbolic GEMM research section with 3-vae-gemm-v1 status, training instructions, falsification results |
@@ -1058,4 +1058,4 @@ pip install matplotlib transformers
 
 ---
 
-**Version:** 1.2.0 · **Updated:** 2025-12-30 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.5.0 · **Updated:** 2026-07-23 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
