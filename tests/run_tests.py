@@ -204,6 +204,13 @@ def main():
             'required': False,  # Optional module
             'optional': True,
             'requires_capability': None  # Will check for module in test itself
+        },
+        'dense243': {
+            'name': 'Dense243 Encoding Tests',
+            'script': TESTS_DIR / 'python' / 'test_dense243.py',
+            'required': False,  # Optional module; test self-skips if not built
+            'optional': True,
+            'requires_capability': None
         }
     }
 

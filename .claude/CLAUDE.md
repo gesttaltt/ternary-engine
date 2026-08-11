@@ -944,10 +944,10 @@ pip install matplotlib transformers
 
 ### Production Gaps
 
-1. **Multi-platform validation** - Only Windows x64 formally proven; Linux x64 passes all tests locally (2026-07-23) but lacks formal benchmark/CI validation
+1. **Multi-platform validation** - Only Windows x64 formally proven for benchmarks; Linux x64 CI added 2026-08-11 (.github/workflows/ci.yml builds engine + TritNet GEMM + Dense243 and runs full suite); benchmark validation on Linux still pending
 2. **TritNet Phase 2B decision pending** - Phase 2A GO achieved (tnot 100%, commit 0dfa6af). Phase 2B (tadd, tmul, tmin, tmax) in progress: tadd 100% PASS, tmul 99.5% PASS, tmin stalled mid-training (99.3%, incomplete), tmax not started. GO criterion: ≥3/4 ops ≥99% with ≥1 at 100% — 2/4 confirmed, need to resume `models/tritnet/train_phase2b.py` to finish tmin and run tmax
 3. **Competitive benchmarking** - Only 2/5 criteria validated; last run 2025-11-23, no more recent results
-4. **Dense243 integration** - Pack/unpack work but module integration issues; no built Dense243 module present in current environment
+4. **Dense243 integration** - RESOLVED on Linux (2026-08-11): build failed because build_dense243.py lacked AVX2 flags on GCC (-march=haswell -mavx2); fixed, module builds, 10/10 C++ tests pass, and new tests/python/test_dense243.py validates round-trip + all 5 ops against the reference engine (suite now 6/6). Windows /arch:AVX2 added but not yet re-validated on Windows
 
 ### Important Improvements
 

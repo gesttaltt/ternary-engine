@@ -40,5 +40,8 @@ jobs:
       - name: Build TritNet GEMM module
         run: python build/build_tritnet_gemm.py
 
+      - name: Build Dense243 module
+        run: python build/build_dense243.py
+
       - name: Run test suite
         run: python tests/run_tests.py --no-color

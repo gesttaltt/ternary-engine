@@ -55,6 +55,7 @@ if sys.platform == "win32":
     extra_compile_args = [
         "/O2",              # Maximum optimization
         "/GL",              # Whole program optimization
+        "/arch:AVX2",       # AVX2 SIMD (matches build.py)
         "/std:c++17",       # C++17 standard
         "/EHsc",            # Exception handling
         "/W3",              # Warning level 3
@@ -66,6 +67,8 @@ else:
     # GCC/Clang flags
     extra_compile_args = [
         "-O3",              # Maximum optimization
+        "-march=haswell",   # Haswell architecture (AVX2 support, matches build.py)
+        "-mavx2",           # Explicit AVX2 (required by SIMD headers)
         "-std=c++17",       # C++17 standard
         "-flto",            # Link-time optimization
         "-fvisibility=hidden",  # Hide symbols by default
