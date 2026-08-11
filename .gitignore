@@ -6,6 +6,7 @@ local/
 results/
 benchmarks/results/*
 !benchmarks/results/phase0_20251011_215139.json
+!benchmarks/results/fair_baseline_20260811_104629.json
 
 # Legacy code
 legacy/

@@ -169,7 +169,8 @@ Invalid:  0b11 (sanitized to 0)
 |--------|-------|
 | Peak throughput (fused) | 45.3 Gops/s |
 | Peak throughput (element-wise) | 39.1 Gops/s |
-| Average speedup vs Python | 8,234x |
+| Fused vs NumPy (same semantics, fair baseline) | 1.43x geomean |
+| tadd vs NumPy (saturated add) | 1.7-3.5x |
 | Platform validated | Windows x64 |
 
 ---

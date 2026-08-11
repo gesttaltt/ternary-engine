@@ -26,7 +26,7 @@ This document provides a comprehensive roadmap for implementing the identified i
 
 ### The Opportunity
 
-Ternary Engine has proven exceptional core performance (45.3 Gops/s, 8,234× speedup) but remains a research prototype. The path to production requires:
+Ternary Engine has proven exceptional core performance (45.3 Gops/s peak; fair NumPy baseline 2026-08-11) but remains a research prototype. The path to production requires:
 
 1. **Foundation** - PyPI package, binary wheels, CI/CD
 2. **Integration** - PyTorch, NumPy, HuggingFace
@@ -61,7 +61,7 @@ Phase 4: Expansion           Weeks 19-26   ████████████�
 
 | Strength | Evidence |
 |----------|----------|
-| **Core Performance** | 45.3 Gops/s, 8,234× speedup |
+| **Core Performance** | 45.3 Gops/s peak; fused 1.43× vs NumPy (fair baseline) |
 | **Memory Efficiency** | 8× reduction vs FP16 |
 | **SIMD Optimization** | AVX2 vectorization, 32 parallel trits |
 | **Test Coverage** | 65/65 tests passing |

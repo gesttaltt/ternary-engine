@@ -4,7 +4,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![C++ Standard](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
 [![Performance](https://img.shields.io/badge/peak-45300%20Mops/s-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
-[![Speedup](https://img.shields.io/badge/speedup-8234x%20avg-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
+[![Fair baseline](https://img.shields.io/badge/fused%20vs%20NumPy-1.4x-brightgreen)](https://github.com/gesttaltt/ternary-engine#performance)
 [![Platform](https://img.shields.io/badge/production-Windows%20x64-blue)](https://github.com/gesttaltt/ternary-engine#production-status)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -17,7 +17,7 @@ Production-grade balanced ternary arithmetic library with AVX2 SIMD vectorizatio
 
 ## Overview
 
-Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **peak throughput of 45,300 Mops/s** (45.3 Gops/s) with fusion operations and **8,234× average speedup** vs pure Python implementations (validated 2025-11-28, Windows x64).
+Ternary Engine implements high-performance balanced ternary logic operations using lookup table optimization, AVX2 SIMD vectorization (32 parallel operations), and operation fusion. Achieves **peak throughput of 45,300 Mops/s** (45.3 Gops/s) with fusion operations (validated 2025-11-28, Windows x64). Against NumPy implementing the same ternary semantics — the honest baseline — the engine reaches **1.7–3.5× on saturated addition** and **1.43× geometric mean on fused operations** (up to 6× on tnot∘tadd), with 0.84× geomean on single element-wise ops (Linux x64, 2026-08-11).
 
 > **Benchmark Methodology Note:** Performance metrics for ternary operations are *subject to analysis* as there is no standardized benchmarking methodology for trit-based computing. Measurements follow best practices (statistical rigor, load-aware benchmarking, reproducibility validation) but direct comparison with binary operations requires careful interpretation. Results represent actual measured throughput on validated test systems.
 
@@ -229,7 +229,7 @@ result = tc.tadd(trits, trits)
 - **Peak throughput (fusion)**: **45.3 Gops/s** (fused operations @ 1M elements)
 - **Peak throughput (element-wise)**: **39.1 Gops/s** (tnot @ 1M elements)
 - **Sustained throughput (typical)**: ~20-22 Gops/s
-- **Average speedup**: 8,234× vs pure Python
+- **Fair baseline vs NumPy (same semantics)**: tadd 1.7–3.5×, fused 1.43× geomean, single ops 0.84× geomean (Linux x64, 2026-08-11)
 
 Performance validated with system load monitoring and statistical rigor.
 See [docs/historical/benchmarks/](docs/historical/benchmarks/) for detailed methodology.
@@ -248,10 +248,34 @@ See [docs/historical/benchmarks/](docs/historical/benchmarks/) for detailed meth
 | | tmul | ~21,300 Mops/s | 100K | Stable |
 
 **Peak Performance: 45,300 Mops/s** (45.3 billion operations/second)
-**Average Speedup: 8,234×** vs pure Python (measured across all sizes)
 **Canonical Indexing Gain: 33%** via dual-shuffle + ADD optimization
 
 *(Mops/s = Million operations/second)*
+
+### Fair Baseline vs NumPy (2026-08-11, Linux x64)
+
+Each operation measured against the fastest NumPy implementation of the
+same ternary semantics on int8 (e.g. tadd → `np.clip(a+b,-1,1)`, with
+preallocated outputs favoring NumPy), median of 100 repeats, geometric-mean
+summary over cells where both sides had CV ≤ 15%
+(`benchmarks/python-with-interpreter-overhead/bench_fair_baseline.py`):
+
+| Group | Result | Why |
+|-------|--------|-----|
+| tadd (saturated add) | **1.7–3.5×** | Saturation costs NumPy an extra pass; free in the LUT |
+| tmul / tmin / tmax / tnot | 0.84× geomean (~parity, NumPy slightly ahead) | NumPy int8 ufuncs are already single AVX instructions |
+| Fused tnot(op(a,b)) | **1.43× geomean**, up to 6× on tnot∘tadd | One memory pass vs NumPy's 2–3 |
+| Memory density | 4× vs INT8 (5 trits/byte with Dense243) | 2-bit encoding |
+
+Measurement notes: the 1M-element transition zone is bimodal on the test
+machine (turbo/OpenMP variance) and cells with CV > 15% are excluded from
+the geomeans; all per-cell data including exclusions is in
+`benchmarks/results/fair_baseline_20260811_104629.json`.
+
+> **Historical note:** earlier releases advertised "8,234× average speedup
+> vs pure Python". That baseline is a strawman (any compiled code beats
+> interpreted Python by 10³–10⁴×; see benchmarks/SKEPTICAL_METRICS.md) and
+> is retained only as this historical footnote.
 
 **Scaling Behavior:**
 - Small arrays (1K elements): 500-833 Mops/s (function call overhead dominates)
@@ -879,7 +903,7 @@ pip install torch transformers
 **✅ What Works Excellently:**
 - Element-wise operations (tadd, tmul, tmin, tmax, tnot)
 - 45.3 Gops/s peak throughput with fusion, 39.1 Gops/s element-wise
-- 8,234× average speedup vs pure Python
+- Fair baseline vs NumPy: fused 1.43×, tadd 1.7–3.5× (2026-08-11)
 - 4× memory advantage over INT8, 8× over FP16
 - Operation fusion (7-35× speedup)
 - Canonical indexing (33% SIMD improvement)
@@ -973,7 +997,7 @@ See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md
 - ✅ **Operation fusion Phase 4.0** (1.6-15.5× validated speedup with statistical rigor)
 - ✅ C FFI layer (cross-language ready)
 - ✅ Comprehensive testing (16 test functions, all passing on Windows x64)
-- ✅ Performance benchmarking (45,300 Mops/s peak, 8,234× average speedup validated)
+- ✅ Performance benchmarking (45,300 Mops/s peak; fair NumPy baseline 2026-08-11)
 - ✅ Build system fixes (Python 3.12+ compatibility, OMP_NUM_THREADS auto-config)
 - ✅ Documentation restructuring (semantic organization of docs/ and reports/)
 
@@ -1138,14 +1162,14 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 - ✅ **Canonical indexing optimization** - 33% faster SIMD via dual-shuffle + ADD
 - ✅ **45.3 Gops/s peak throughput** - Fused operations at 1M elements
 - ✅ **39.1 Gops/s element-wise peak** - tnot @ 1M elements
-- ✅ **8,234× average speedup** vs pure Python
+- ✅ **1.43× fused / 1.7–3.5× tadd** vs same-semantics NumPy (fair baseline, 2026-08-11)
 - ✅ **Three-path architecture validated** - OpenMP + SIMD + scalar tail
 
 **Performance Summary (Validated 2025-11-28):**
 - ✅ **45.3 Gops/s peak** throughput with fusion operations
 - ✅ **39.1 Gops/s peak** throughput for element-wise operations
 - ✅ **33% canonical indexing gain** via dual-shuffle + ADD optimization
-- ✅ **8,234× average speedup** vs pure Python
+- ✅ **1.43× fused / 1.7–3.5× tadd** vs same-semantics NumPy (fair baseline, 2026-08-11)
 - ✅ **4× memory advantage** over INT8, 8× over FP16 (validated on 7B-405B models)
 - ⚠️ **Matmul optimization** - needs C++ SIMD optimization for AI/ML viability
 

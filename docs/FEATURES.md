@@ -429,7 +429,7 @@ typedef struct TernaryBackend {
 | Metric | Value | Platform |
 |--------|-------|----------|
 | Peak throughput | 35,042 Mops/s | Windows x64 |
-| Avg vs Python | 8,234× | Windows x64 |
+| Fused vs NumPy (fair baseline) | 1.43× | Linux x64 (2026-08-11) |
 | Fusion speedup | 1.5-4× | Windows x64 |
 
 ---

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Honest Performance Claims - 2026-08-11
+
+**The "8,234× vs pure Python" strawman is replaced by a fair NumPy baseline.**
+
+- New `bench_fair_baseline.py`: every op vs the fastest NumPy implementation
+  of the same ternary semantics (median of 100 repeats, geomean over cells
+  with CV ≤ 15% on both sides, preallocated outputs favoring NumPy).
+- Results (Linux x64, 2026-08-11): tadd **1.7–3.5×** (saturation is free in
+  the LUT), fused ops **1.43× geomean** (up to 6× on tnot∘tadd), single
+  element-wise ops 0.84× geomean (~parity, NumPy slightly ahead).
+- README badge, overview, and all claim sites updated; the old figure is
+  retained only as a labeled historical footnote. Linux status corrected to
+  "tests + CI validated, formal benchmark validation pending" per project
+  standard (no formal report existed behind the 2026-03-19 claim).
+- TritNet Phase 2B GO: 4/4 binary ops ≥99% with ternary weights (tadd 100%,
+  tmul 99.5%, tmin 99.9%, tmax 99.9%); learned weights show ~40% zeros,
+  matching the 3-adic sparsity structure.
+- Prior-art landscape documented (`research/PRIOR_ART_TERNARY_LANDSCAPE.md`);
+  llama.cpp TQ1_0 cited in Dense243 docs as anticipating the base-243 packing.
+
 ### Testing, CI & Dense243 - 2026-08-11
 
 **Linux x64 CI and closure of two long-standing test-coverage gaps.**

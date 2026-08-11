@@ -8,7 +8,7 @@ This analysis identifies opportunities for improvement, missing features, and st
 
 ## Executive Summary
 
-The Ternary Engine has excellent core performance (45.3 Gops/s, 8,234× speedup over Python), but significant gaps exist that prevent it from being a production-ready AI/ML solution.
+The Ternary Engine has excellent core performance (45.3 Gops/s peak; fair NumPy baseline 2026-08-11: fused 1.43×), but significant gaps exist that prevent it from being a production-ready AI/ML solution.
 
 ### Critical Gaps
 

@@ -1461,7 +1461,7 @@ Analyze the performance of recent benchmark runs:
 2. Compare against the documented baselines in CLAUDE.md:
    - Peak throughput: 45.3 Gops/s (fusion)
    - Element-wise: 39.1 Gops/s
-   - Average speedup: 8,234x vs Python
+   - Fair baseline: 1.43x fused vs NumPy (see bench_fair_baseline.py)
 3. Identify any regressions (>5% slowdown)
 4. Suggest optimization opportunities based on the data
 5. Generate a summary report with:
