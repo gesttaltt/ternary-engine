@@ -1,0 +1,16 @@
+{
+  "op": "tadd",
+  "seed": 42,
+  "p1_acc": 1.0,
+  "p1_epochs": -1,
+  "acc_after_rescale": 0.8928855657577515,
+  "best_acc": 1.0,
+  "p2_best_epoch": 1860,
+  "p2_epochs": 1861,
+  "elapsed_s": 564.4730319976807,
+  "converged": true,
+  "passed": true,
+  "weight_neg_pct": 20.08782679738562,
+  "weight_zero_pct": 40.59436274509804,
+  "weight_pos_pct": 39.31781045751634
+}

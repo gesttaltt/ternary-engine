@@ -1,0 +1,16 @@
+{
+  "op": "tmul",
+  "seed": 42,
+  "p1_acc": 1.0,
+  "p1_epochs": 173,
+  "acc_after_rescale": 0.5063591003417969,
+  "best_acc": 0.99491947889328,
+  "p2_best_epoch": 6768,
+  "p2_epochs": 10000,
+  "elapsed_s": 2794.7402505874634,
+  "converged": false,
+  "passed": true,
+  "weight_neg_pct": 26.286764705882355,
+  "weight_zero_pct": 40.32373366013072,
+  "weight_pos_pct": 33.38950163398693
+}
