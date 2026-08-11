@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Testing, CI & Dense243 - 2026-08-11
+
+**Linux x64 CI and closure of two long-standing test-coverage gaps.**
+
+- **CI (GitHub Actions):** `.github/workflows/ci.yml` builds `ternary_simd_engine`, TritNet GEMM, Dense243, and zero-skip GEMM on ubuntu-latest (Python 3.12) and runs the full test suite on every push/PR. First runs green (~1m15s). Closes Critical Gap #1 (no formal Linux validation).
+- **Dense243 Linux build fixed:** `build_dense243.py` lacked `-march=haswell -mavx2` on GCC/Clang, so the module never built on Linux ("target specific option mismatch"). Fixed both compiler branches (`/arch:AVX2` added on MSVC, pending Windows re-validation). Module now builds; C++ unit tests 10/10.
+- **New test suites:** `test_dense243.py` (pack/unpack round-trip incl. non-multiple-of-5 sizes; all 5 ops vs reference engine on 100K random trits) and `test_zero_skip_gemm.py` (CSC/CSR/scalar paths vs NumPy float64 reference across shapes and sparsities). Unified suite is now 7/7; both self-skip when the optional module is not built.
+- **Hygiene:** removed personal diagnostic scripts from repo root.
+
+### TritNet Phase 2 - 2026-07/2026-08
+
+**Neural networks learn exact ternary arithmetic with ternary weights.**
+
+- **Phase 2A GO:** two-phase QAT (float training → threshold-rescale warm-start → ternary STE fine-tune) reached **tnot 100%** exact with ternary weights, reversing the earlier NO-GO (2025-12) that used direct QAT.
+- **Phase 2B in progress:** `models/tritnet/train_phase2b.py` extends the recipe to binary ops (10-trit input, 2×128 hidden, 5×3 logits over the full 59,049-sample truth tables). Status: tadd **100%**, tmul **99.5%**, tmin ≥99.3% (training), tmax pending. GO criterion: ≥3/4 ops ≥99% with ≥1 at 100%.
+- Warm-resume fix: Phase 2 now resumes from `best_qat.pt` instead of restarting from the float rescale, preserving interrupted progress.
+
+### Zero-Skip GEMM - 2026-06-11
+
+**C++ AVX2 kernel exploiting ternary sparsity, with honest benchmarks.**
+
+- CSC j-parallel kernel with OpenMP (`ternary_gemm_zero_skip.cpp`), precomputed sparse index, A→AT transpose (fixes a 340× strided-access slowdown). K-parallel L2-tiled CSR variant implemented and measured 7–15% slower — documented, not adopted.
+- **Honest result** (256×1024×256): wall-clock beats OpenBLAS only near ~90% zeros (0.94×); at natural 33% ternary sparsity it runs at 0.29–0.64× BLAS. The validated value is operation-count/energy reduction (exactly the zero fraction) for per-MAC-cost hardware (ASIC/neuromorphic/edge), not CPU latency.
+- Details and tables: `research/FINDINGS.md`.
+
+### Falsification Research Framework - 2025-12 → 2026-06
+
+**Systematic hypothesis testing over the full 19,683-value corpus.**
+
+- 24-hypothesis catalog (`research/TERNARY_SEMANTIC_HYPOTHESES.md`) with `falsify.py` runner; 14/14 testable hypotheses supported; 3 intrinsic (p-adic, three-valued logic, lattice).
+- **Key discovery: `tadd` is non-associative for 79.6% of triplets** — saturated balanced ternary is not a group; algorithms assuming associativity are incorrect for this system. Saturation arithmetic characterized as sui generis (H24); F3 field structure via tmul-based construction (H17).
+- Scientific hygiene: H5/H7 removed as non-informative "furniture" tests; H23 rewritten to test saturated (not modular) arithmetic; 8 cross-cutting bugs fixed during review.
+
+### Platform & Legal - 2025-12 → 2026-03
+
+- Linux x64: full test suite passing locally (validated 2026-03-19, revalidated 2026-07-23); C++ native benchmark infrastructure added.
+- Repository ownership transfer record (gesttaltt → Ai-Whisperers); Founding IP & Shared Rights Agreement v2.0; OpenTimestamps snapshot covering 206 files.
+
 ### Documentation Restructuring - 2025-11-28
 
 **Major documentation reorganization for clarity and maintainability.**
