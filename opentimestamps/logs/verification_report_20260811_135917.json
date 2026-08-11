@@ -1,0 +1,17 @@
+{
+  "verification_date": "2026-08-11T13:59:17.709015Z",
+  "manifest_file": "manifest_20260811_135314.json",
+  "manifest_date": "2026-08-11T13:53:14.790135Z",
+  "manifest_integrity": true,
+  "ots_verified": false,
+  "results": {
+    "total_files": 209,
+    "verified": 209,
+    "modified": 0,
+    "missing": 0,
+    "errors": 0
+  },
+  "modified_files": [],
+  "missing_files": [],
+  "errors": []
+}

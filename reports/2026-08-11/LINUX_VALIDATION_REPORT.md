@@ -41,17 +41,49 @@ favoring NumPy. Evidence: `benchmarks/results/fair_baseline_20260811_104629.json
 | Fused tnot(op) | 1.43× geomean, up to 6× (tnot∘tadd) |
 | Measurement caveat | 1M-element zone bimodal on this machine (turbo/OpenMP); excluded cells disclosed in JSON |
 
-## 3. Competitive Suite (6 phases) — PENDING ⏳
+## 3. Competitive Suite (6 phases) — PARTIAL ⏳ (interrupted, resume next session)
 
-Running 2026-08-11. Results to be inserted here:
-- Phase 1: arithmetic vs NumPy INT8 — TBD
-- Phase 2: memory efficiency (7B/13B/70B models) — TBD
-- Phase 3: throughput at equivalent bit-width — TBD
-- Phase 4: neural workload patterns — TBD
-- Phase 5: model quantization — framework only in this suite; real
-  measurement requires bench_model_quantization.py (transformers + model
-  downloads; not yet run on Linux)
-- Phase 6: power consumption — RAPL present but requires root; not measured
+Run started 2026-08-11, interrupted after Phase 1–2 complete and Phase 3
+started (killed at user request to end the session; full raw output
+preserved in `reports/2026-08-11/competitive_partial_20260811.log`).
+
+**Two false starts before this data, both process-management errors, not
+benchmark errors:**
+1. First run was piped through `tail` inside a backgrounded shell — stdout
+   buffered in the pipe and was never flushed to disk. Killed after the
+   agreed 90-minute deadline with 0 recoverable lines (~91 min of compute
+   lost to an instrumentation mistake).
+2. Second run used `python3 -u` to an unbuffered log file — this one
+   worked (below) but was itself killed early when the user ended the
+   session, this time with output correctly salvaged.
+
+**Phase 1 (arithmetic vs NumPy INT8) — COMPLETE:**
+Speedup range 0.30×–0.90× across sizes/ops, average add 0.63×, average
+mul 0.68×. Suite's own verdict: **"✗ NEEDS WORK"**. Consistent with the
+fair-baseline finding (single-op geomean 0.84×, NumPy ufuncs are already
+single AVX instructions) — two independent methodologies agree the
+engine does not beat NumPy on raw single-op throughput.
+
+**Phase 2 (memory footprint) — COMPLETE:**
+Ternary vs INT8: **4.0×** advantage. Ternary vs INT4: **2.0×**. Dense243
+vs INT4: **2.5×**. Suite's own verdict: **"✓ SIGNIFICANT ADVANTAGE"**.
+This is the strongest validated claim in the whole suite and matches the
+README's memory-density claims.
+
+**Phase 3 (throughput at equivalent bit-width) — STARTED, not completed.**
+Setup logged (1GB footprint: ternary/INT2 4B elements, INT4 2B elements)
+before interruption.
+
+**Phase 4–6 — NOT RUN.** Phase 5 in this script is a descriptive framework
+only (prints strategy, no actual quantization); real measurement needs
+`bench_model_quantization.py` (requires `transformers` + model downloads,
+not yet run on Linux). Phase 6 needs root for RAPL (`energy_uj` permission
+denied as non-root on this machine).
+
+**TODO next session:** resume via
+`python3 -u benchmarks/python-with-interpreter-overhead/bench_competitive.py
+> <logfile> 2>&1 &` (always unbuffered + real file, never piped through
+`tail` in a background shell), let Phase 3–6 complete, fold results in here.
 
 ## 4. Absolute Throughput — PARTIAL ⚠️
 
