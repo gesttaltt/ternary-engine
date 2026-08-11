@@ -719,12 +719,13 @@ python benchmarks/utils/visualization.py results/competitive_results_*.json
 
 **Create timestamp:**
 ```bash
-python scripts/timestamp_snapshot.py --create
+python opentimestamps/timestamp_create.py
+# NOTE: runs immediately on invocation — it has no --help/--dry-run flags
 ```
 
 **Verify timestamp:**
 ```bash
-python scripts/timestamp_snapshot.py --verify timestamps/snapshot_YYYYMMDD_HHMMSS.ots
+python opentimestamps/timestamp_verify.py opentimestamps/timestamps/manifest_YYYYMMDD_HHMMSS.json.ots
 ```
 
 **Before major releases:**
