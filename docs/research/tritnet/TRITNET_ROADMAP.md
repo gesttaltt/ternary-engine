@@ -2,6 +2,12 @@
 
 **Doc-Type:** Implementation Roadmap · Version 1.0 · Created 2025-11-23
 
+> **STATUS NOTE (2026-08-11):** This document predates the Phase 2A GO
+> decision and uses an older phase numbering ("Phase 2: BitNet Training").
+> For current phase status (Phase 2A GO: tnot 100% ternary weights;
+> Phase 2B in progress: tadd/tmul/tmin/tmax), see the "TritNet Development"
+> section of `.claude/CLAUDE.md`, which is the source of truth.
+
 ---
 
 ## Executive Summary

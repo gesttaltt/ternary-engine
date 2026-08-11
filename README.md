@@ -13,7 +13,7 @@ Production-grade balanced ternary arithmetic library with AVX2 SIMD vectorizatio
 ## Production Status
 
 ✅ **Windows x64:** Production-ready (validated 2025-11-28)
-✅ **Linux x64:** Production-ready (validated 2026-03-19)
+🟡 **Linux x64:** Tests fully validated + CI on every push (2026-08-11); formal benchmark validation pending — no production performance claims yet per project standard
 
 ## Overview
 
@@ -897,7 +897,7 @@ pip install torch transformers
 
 **Platform Support:**
 - ✅ **Windows x64**: Production-ready (validated 2025-11-28)
-- ✅ **Linux x64**: Production-ready (validated 2026-03-19)
+- 🟡 **Linux x64**: Test suite + CI validated (2026-08-11); formal benchmark validation pending (project standard requires statistical benchmark reports before production claims)
 - ⚠️ **ARM/NEON**: Not yet supported (planned for future)
 
 **Technical Constraints:**
@@ -1129,9 +1129,9 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 ---
 
 **Version**: 1.3.0 - Operation Fusion & Canonical Indexing Optimization
-**Status**: Production (Windows x64, Linux x64), Experimental (macOS, ternary_engine/, TritNet)
-**Updated**: 2025-11-28
-**Platform**: Windows x64 (validated), Linux x64 (validated 2026-03-19), macOS (untested)
+**Status**: Production (Windows x64), Tests+CI validated (Linux x64), Experimental (macOS, ternary_engine/, TritNet)
+**Updated**: 2026-08-11
+**Platform**: Windows x64 (production, validated 2025-11-28), Linux x64 (tests + CI 2026-08-11, benchmarks pending), macOS (untested)
 
 **Recent Additions (2025-11-28):**
 - ✅ **Documentation restructuring** - Semantic organization of docs/ and reports/ directories

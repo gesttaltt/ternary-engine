@@ -44,7 +44,7 @@ This configuration defines **project-level standards** for the Ternary Engine co
 - Testing guide: [TESTING.md](../TESTING.md)
 - Contributing: [CONTRIBUTING.md](../CONTRIBUTING.md)
 - API reference: [docs/](../docs/)
-- TritNet roadmap: [docs/TRITNET_ROADMAP.md](../docs/TRITNET_ROADMAP.md)
+- TritNet roadmap: [docs/research/tritnet/TRITNET_ROADMAP.md](../docs/research/tritnet/TRITNET_ROADMAP.md) (2025-11-23; phase numbering superseded — CLAUDE.md "TritNet Development" section is the source of truth for phase status)
 
 ---
 

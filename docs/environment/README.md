@@ -11,7 +11,7 @@ Documentation for setting up Ternary Engine development environments on various 
 | Platform | Hardware | Status | Guide |
 |:---------|:---------|:-------|:------|
 | Windows x64 | Intel/AMD | Production | See main `README.md` |
-| Linux AMD | Zen 3+ | Production | [AMD_LINUX_SETUP_GUIDE.md](AMD_LINUX_SETUP_GUIDE.md) |
+| Linux AMD | Zen 3+ | Tests + CI validated (benchmarks pending) | [AMD_LINUX_SETUP_GUIDE.md](AMD_LINUX_SETUP_GUIDE.md) |
 | Linux Intel | Haswell+ | Planned | - |
 | macOS Intel | Haswell+ | Planned | - |
 | macOS ARM64 | Apple Silicon | Planned | - |
@@ -26,7 +26,7 @@ Documentation for setting up Ternary Engine development environments on various 
 | OpenMP | Validated | Validated | Experimental | Not Supported |
 | PGO Build | Validated | Untested | Untested | Untested |
 | All 65 Tests | Passing | Passing | TBD | TBD |
-| Peak 45 Gops/s | Validated | ~14 Gops/s | TBD | TBD |
+| Peak 45 Gops/s | Validated | ~14 Gops/s (informal sanity check, not a formal benchmark report) | TBD | TBD |
 
 ---
 
