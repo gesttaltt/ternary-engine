@@ -43,5 +43,8 @@ jobs:
       - name: Build Dense243 module
         run: python build/build_dense243.py
 
+      - name: Build zero-skip GEMM module
+        run: python build/build_zero_skip_gemm.py
+
       - name: Run test suite
         run: python tests/run_tests.py --no-color

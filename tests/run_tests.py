@@ -211,6 +211,13 @@ def main():
             'required': False,  # Optional module; test self-skips if not built
             'optional': True,
             'requires_capability': None
+        },
+        'zero_skip_gemm': {
+            'name': 'Zero-Skip GEMM Correctness Tests',
+            'script': TESTS_DIR / 'python' / 'test_zero_skip_gemm.py',
+            'required': False,  # Optional module; test self-skips if not built
+            'optional': True,
+            'requires_capability': None
         }
     }
 
