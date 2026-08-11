@@ -81,26 +81,72 @@ vs INT4: **2.5×**. Suite's own verdict: **"✓ SIGNIFICANT ADVANTAGE"**.
 This is the strongest validated claim in the whole suite and matches the
 README's memory-density claims.
 
-**Phase 3 (throughput at equivalent bit-width) — COMPLETE:**
-1.0GB footprint (ternary/INT2: 4B elements @ 2 bits; INT4: 2B elements @ 4
-bits). Ternary measured at **4.32 GOPS** (924.88ms/op, 4,324,907,808
-elements/sec). Suite's own verdict: **"⚠ NEEDS INT2/INT4 REFERENCE FOR
-COMPARISON"** — the script measures only the ternary side and never
-actually benchmarks an INT2/INT4 baseline to compare against, so this
-phase produces a number but not the comparison its own name promises.
-Treat as a baseline data point, not a validated advantage claim.
+**Phase 3 (throughput at equivalent bit-width) — COMPLETE, script fixed
+2026-08-11 (second pass, same session):**
+The original run (documented in the prior revision of this section) only
+ever measured the ternary side and printed "NEEDS INT2/INT4 REFERENCE FOR
+COMPARISON" without ever building one — plus a real bug: sizing
+`np.uint8` arrays as `bytes / 0.25` actually allocates 1 byte per element
+in that dtype, so the "1GB" test was silently 4× over budget (this is
+what drove the ~7.5GB RSS spike observed during that run). Both are fixed
+in `benchmarks/python-with-interpreter-overhead/bench_competitive.py`
+(see its Phase 3 docstring for full rationale). The fixed version measures
+FOUR representations, each genuinely occupying ~1GB:
 
-**Phase 4 (neural workload patterns) — COMPLETE:**
-Matmul speedup vs NumPy across 4 shapes (512×512 → 8192×1024): **0.06×,
-0.20×, 0.35×, 0.11×**, average **0.18×**. Suite's own verdict: **"✗ TOO
-SLOW FOR AI"**, with its own caveat that this path uses Python loops, not
-the compiled zero-skip/TritNet GEMM kernels already built and validated
-elsewhere in this repo (§1). This phase is measuring the wrong
-implementation for a fair comparison — the 0.18× figure characterizes the
-benchmark script's naive Python path, not the engine's actual GEMM
-capability. Re-running Phase 4 against `ternary_zero_skip_gemm` or
-`ternary_tritnet_gemm` directly (not through this script) would be needed
-before drawing any conclusion about matmul competitiveness.
+| Representation | Elements | GOPS |
+|---|---|---|
+| Ternary (engine native, 1 byte/trit) | 1.0B | **4.45** |
+| Ternary (Dense243, ~1.6 bits/trit, compiled) | 5.0B trits | **0.34** |
+| INT4 packed (2 lanes/byte, NumPy reference) | 2.0B | 0.035 |
+| INT2 packed (4 lanes/byte, NumPy reference) | 4.0B | 0.035 |
+
+INT2/INT4 are real bit-packed references (genuine unpack → saturating-add
+→ repack per op in NumPy — no dedicated compiled kernel exists for them
+here, same standard `bench_fair_baseline.py` already applies: "fastest
+reasonable NumPy implementation of the same semantics"). Comparing
+like-for-like density (Dense243 ≈1.6 bits/trit vs. INT2 exactly 2
+bits/element), suite's own computed verdict: **"✓ Dense243 is 9.6×
+FASTER than the INT2 NumPy reference at equivalent (~2-bit) density."**
+This is the strongest new evidence from this session — it validates the
+core thesis (a dedicated compiled ternary kernel beats naive sub-byte bit
+manipulation in plain NumPy) using an honestly-built comparison instead of
+a hand-waved one. Caveat: this is a NumPy-vs-compiled-C++ comparison, not
+NumPy-vs-hand-tuned-SIMD-INT2/INT4 — a dedicated INT2/INT4 SIMD kernel
+would likely close some of that 9.6× gap, so don't read this as "ternary
+beats INT2/INT4 in general," only "beats the NumPy reference we can
+actually build without one."
+
+**Phase 4 (neural workload patterns) — COMPLETE, script fixed 2026-08-11
+(second pass, same session):**
+The original per-row Python loop (`for i in range(M): tc.tmul(...);
+np.sum(...)`) mostly measured CPython dispatch overhead, not the engine's
+GEMM capability. Fixed to call the compiled, AVX2-vectorized
+`ternary_zero_skip_gemm.ZeroSkipWeights` kernel instead (sparse index
+built once per weight matrix, outside the timed loop — realistic for
+inference where weights are fixed and only activations vary), with every
+result checked against the NumPy reference for correctness (max abs
+error ≤ 9.92e-05 across all four shapes, float32-appropriate).
+
+| Shape | Ternary (compiled) | NumPy | Speedup |
+|---|---|---|---|
+| Small MLP 512×512 | 0.192ms | 0.019ms | 0.099× |
+| Medium 2048×2048 | 3.561ms | 0.734ms | 0.206× |
+| Large 4096×4096 | 9.493ms | 2.839ms | 0.299× |
+| Attention 8192×1024 | 5.269ms | 1.276ms | 0.242× |
+
+Average **0.21×**, suite verdict still **"✗ TOO SLOW FOR AI"** — but this
+number is now trustworthy: it's the actual compiled GEMM kernel,
+correctness-verified, at batch=1 (single-token decode) against random
+~33% -sparsity ternary weights. Two caveats worth testing before treating
+this as final: (1) real trained-model sparsity is closer to ~40% (see
+CLAUDE.md falsification notes on 3-adic sparsity in learned weights,
+H14/TritNet) vs. the ~33% a uniform random {-1,0,1} draw produces here,
+and (2) NumPy's BLAS is extremely well-optimized at batch=1 GEMV
+specifically — larger batches change the ratio (tested informally during
+development: batch 32 brought some shapes as high as 0.84×, still not a
+consistent win). Bottom line unchanged in direction (ternary GEMM is not
+yet competitive with NumPy/BLAS on this hardware) but now for the right
+reason — a real kernel-vs-kernel comparison, not an interpreter artifact.
 
 **Phase 5 (model quantization) — COMPLETE, descriptive only:**
 Confirmed framework-only as documented in the prior draft: prints strategy,
@@ -116,14 +162,17 @@ measure, no RAPL/nvidia-smi call attempted (unlike the earlier assumption
 that it would fail on permissions — it doesn't try). Zero new evidence.
 
 **Net effect on commercial viability criteria: still 2/5 validated**
-(memory efficiency ✓, throughput baseline measured but not comparative ⚠).
-Phases 3 and 4 as implemented in this script do not move the needle —
-Phase 3 lacks a comparison baseline and Phase 4 benchmarks a Python
-reference path instead of the engine's compiled kernels. Closing this gap
-for real needs either fixing the script (add INT2/INT4 reference arrays to
-Phase 3; call the compiled GEMM modules in Phase 4) or accepting the
-existing fair-baseline (§2) and zero-skip GEMM correctness suite (§1) as
-the more informative sources of truth on those two questions.
+(memory efficiency ✓, throughput baseline measured but not comparative ⚠) —
+the "Throughput at equivalent bit-width" criterion's checkbox status is
+unchanged even though the underlying Phase 3/4 script gaps are now fixed,
+because neither result crosses into an unambiguous win: Phase 3 shows
+ternary beating a NumPy INT2 *reference implementation* (9.6×) but that's
+not the same claim as beating a hardware-comparable INT2/INT4 kernel, and
+Phase 4's compiled-GEMM number (0.21× avg) is still sub-parity with NumPy.
+Both are now real, correctness-checked measurements rather than script
+artifacts, which is the actual deliverable here — the criteria table
+should be read as "honestly measured, not yet a validated advantage" for
+these two, not "still broken."
 
 ## 4. Absolute Throughput — PARTIAL ⚠️
 
@@ -137,12 +186,15 @@ Windows baseline remains TODO before quoting Linux absolute numbers.
 
 - Correctness: Linux x64 fully validated (tests + CI).
 - Fair-baseline: measured and published with disclosed methodology.
-- Competitive suite: all 6 phases now run. 2/5 commercial-viability
-  criteria validated (memory efficiency, and throughput baseline measured
-  without a comparative reference). Phases 3–4 surfaced script limitations
-  (missing INT2/INT4 reference, naive Python GEMM path) rather than
-  engine limitations — worth fixing the script before re-quoting those
-  numbers as engine performance claims.
+- Competitive suite: all 6 phases now run, and the Phase 3/4 script gaps
+  (missing INT2/INT4 reference, naive Python GEMM path) are fixed and
+  re-run. 2/5 commercial-viability criteria formally validated. New
+  evidence from the fixed phases: Dense243 beats a real NumPy INT2
+  reference 9.6× at equivalent bit density (Phase 3, strong positive);
+  the compiled zero-skip GEMM kernel is correctness-verified but still
+  0.21× NumPy on this hardware at batch=1 (Phase 4, negative but now
+  trustworthy). Neither flips a criterion to ✓ on its own, but both
+  replace guesswork with a real number.
 - Production status: remains "tests + CI validated" until section 4
   (absolute throughput vs Windows baseline) is also closed out.
 

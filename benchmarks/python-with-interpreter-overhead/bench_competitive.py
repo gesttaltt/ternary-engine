@@ -21,6 +21,8 @@ import numpy as np
 import time
 import json
 import argparse
+import gc
+import statistics
 from datetime import datetime
 from typing import Dict, List, Any, Tuple
 import sys
@@ -49,6 +51,72 @@ except ImportError:
             return (a - b) % 3
 
     tc = MockTC()
+
+
+def _packed_signed_reference(bits: int):
+    """
+    Build a bit-packed signed-integer reference (INT2/INT4) for Phase 3.
+
+    NumPy has no native dtype below 8 bits, so a genuine `bits`-wide
+    packed representation (`8 // bits` lanes per uint8 byte, signed range
+    [-2**(bits-1), 2**(bits-1)-1]) must pay a real unpack -> add -> clip
+    -> repack cost on every op. That IS the honest price of hitting that
+    bit density without a dedicated compiled kernel -- same standard
+    bench_fair_baseline.py already applies ("fastest reasonable NumPy
+    implementation of the same semantics").
+
+    Returns (lanes_per_byte, make_array(n_bytes, rng), saturating_add(a, b)).
+    """
+    lanes = 8 // bits
+    mask = (1 << bits) - 1
+    max_val = (1 << (bits - 1)) - 1
+    min_val = -(1 << (bits - 1))
+
+    def make_array(n_bytes: int, rng: np.random.Generator) -> np.ndarray:
+        packed = np.zeros(n_bytes, dtype=np.uint8)
+        for lane in range(lanes):
+            vals = rng.integers(min_val, max_val + 1, n_bytes, dtype=np.int16)
+            nib = (vals & mask).astype(np.uint8)
+            packed |= (nib << (lane * bits)).astype(np.uint8)
+        return packed
+
+    def saturating_add(a_packed: np.ndarray, b_packed: np.ndarray) -> np.ndarray:
+        out = np.zeros_like(a_packed)
+        for lane in range(lanes):
+            shift = lane * bits
+            a_lane = ((a_packed >> shift) & mask).astype(np.int16)
+            a_lane = np.where(a_lane > max_val, a_lane - (1 << bits), a_lane)
+            b_lane = ((b_packed >> shift) & mask).astype(np.int16)
+            b_lane = np.where(b_lane > max_val, b_lane - (1 << bits), b_lane)
+            s = np.clip(a_lane + b_lane, min_val, max_val)
+            nib = (s & mask).astype(np.uint8)
+            out |= (nib << shift).astype(np.uint8)
+        return out
+
+    return lanes, make_array, saturating_add
+
+
+def _adaptive_timing(fn, *args, target_total_s: float = 2.0, min_reps: int = 3, max_reps: int = 30):
+    """
+    Time fn(*args) with a rep count chosen so the WHOLE measurement takes
+    roughly target_total_s, instead of a fixed iteration count. Per-op
+    cost in Phase 3 spans two orders of magnitude across representations
+    (compiled SIMD vs NumPy bit-unpacking), so a fixed count is either
+    too slow for the cheap ops or too noisy for the expensive ones.
+
+    Returns (median_ns, reps).
+    """
+    fn(*args)  # warmup (also pays any first-call JIT/cache cost)
+    start = time.perf_counter_ns()
+    fn(*args)
+    one_ns = max(time.perf_counter_ns() - start, 1)
+    reps = max(min_reps, min(max_reps, int(target_total_s * 1e9 / one_ns)))
+    times = []
+    for _ in range(reps):
+        start = time.perf_counter_ns()
+        fn(*args)
+        times.append(time.perf_counter_ns() - start)
+    return statistics.median(times), reps
 
 
 class CompetitiveBenchmark:
@@ -306,65 +374,140 @@ class CompetitiveBenchmark:
         """
         Phase 3: Throughput at Equivalent Bit-Width
 
-        Compare operations/second when memory footprint is equal.
-        This is the REAL competition - comparing against other ultra-low bit schemes.
+        Compare saturating-add throughput across FOUR representations that
+        each genuinely occupy the same ~1GB footprint:
+
+          - Ternary (engine native): tc.tadd on the SIMD engine's actual
+            working format -- uint8, ONE BYTE per trit. Included for
+            continuity with Phase 1/2, but honestly labeled: this is NOT
+            2-bit packed, whatever the "2 bits of information" framing
+            elsewhere implies. It gets 4x the elements of the packed
+            representations below for the same byte budget.
+          - Ternary (Dense243, ~1.6 bits/trit): ternary_dense243_module.tadd
+            operating directly on packed dense243 bytes -- the actual
+            sub-byte-dense ternary format in this codebase.
+          - INT4 packed (2 signed nibbles/byte, NumPy reference): real
+            unpack -> add -> clip -> repack per op, see
+            _packed_signed_reference().
+          - INT2 packed (4 signed 2-bit lanes/byte, NumPy reference): same.
+
+        Fixed 2026-08-11: the prior version measured only the ternary side
+        and printed "NEEDS INT2/INT4 REFERENCE FOR COMPARISON" -- it never
+        built one. This version does, and its own array-size bug is fixed
+        too: `np.uint8` arrays sized for "elements = bytes / 0.25" actually
+        allocate 4x the intended 1GB (each element still costs 1 full byte
+        in that dtype), which is what running Phase 3 previously spiked
+        this machine to ~7.5GB RSS. See
+        reports/2026-08-11/LINUX_VALIDATION_REPORT.md for the full gap.
         """
         print("\n" + "=" * 80)
         print("PHASE 3: Throughput at Equivalent Bit-Width")
         print("=" * 80)
 
-        # Target: 1GB of data
-        target_bytes = 1_000_000_000
+        target_bytes = 1_000_000_000  # 1GB, genuinely enforced per representation below
+        rng = np.random.default_rng(42)
+        representations = []
 
-        # Ternary: 2 bits per element = 0.25 bytes
-        ternary_elements = int(target_bytes / 0.25)
+        print(f"\nTesting with {target_bytes / 1e9:.1f}GB memory footprint per representation:")
 
-        # INT4: 4 bits per element = 0.5 bytes
-        int4_elements = int(target_bytes / 0.5)
+        # --- Ternary, engine native format (1 byte/trit) ---
+        n_elem = target_bytes
+        a = rng.integers(0, 3, n_elem, dtype=np.uint8)
+        b = rng.integers(0, 3, n_elem, dtype=np.uint8)
+        t_ns, reps = _adaptive_timing(tc.tadd, a, b)
+        gops = (n_elem / t_ns)
+        representations.append({
+            'name': 'Ternary (engine native, 1 byte/trit)', 'bytes': n_elem,
+            'elements': n_elem, 'time_ns': t_ns, 'reps': reps, 'gops': gops,
+        })
+        print(f"\n  Ternary (engine native, 1 byte/trit): {n_elem:,} elements")
+        print(f"    {t_ns/1e6:.2f}ms/op ({reps} reps), {gops:.2f} GOPS")
+        del a, b
+        gc.collect()
 
-        # INT2: 2 bits per element = 0.25 bytes (SAME as ternary!)
-        int2_elements = int(target_bytes / 0.25)
+        # --- Ternary, Dense243 (~1.6 bits/trit, compiled, packed) ---
+        try:
+            import ternary_dense243_module as td
+            n_bytes = target_bytes
+            a = rng.integers(0, 243, n_bytes, dtype=np.uint8)  # 0-242 are all valid dense243 bytes
+            b = rng.integers(0, 243, n_bytes, dtype=np.uint8)
+            t_ns, reps = _adaptive_timing(td.tadd, a, b)
+            n_trits = n_bytes * 5  # DENSITY = 5 trits/byte
+            gops = (n_trits / t_ns)
+            representations.append({
+                'name': 'Ternary (Dense243, 1.6 bits/trit)', 'bytes': n_bytes,
+                'elements': n_trits, 'time_ns': t_ns, 'reps': reps, 'gops': gops,
+            })
+            print(f"\n  Ternary (Dense243, ~1.6 bits/trit): {n_trits:,} trits in {n_bytes:,} bytes")
+            print(f"    {t_ns/1e6:.2f}ms/op ({reps} reps), {gops:.2f} GOPS")
+            del a, b
+            gc.collect()
+        except ImportError:
+            print("\n  Dense243 module not built -- skipping (build/build_dense243.py)")
 
-        print(f"\nTesting with {target_bytes / 1e9:.1f}GB memory footprint:")
-        print(f"  Ternary: {ternary_elements:,} elements (2 bits each)")
-        print(f"  INT2:    {int2_elements:,} elements (2 bits each)")
-        print(f"  INT4:    {int4_elements:,} elements (4 bits each)")
+        # --- INT4 packed reference (2 lanes/byte) ---
+        lanes4, make4, add4 = _packed_signed_reference(4)
+        a = make4(target_bytes, rng)
+        b = make4(target_bytes, rng)
+        t_ns, reps = _adaptive_timing(add4, a, b)
+        n_elem4 = target_bytes * lanes4
+        gops = (n_elem4 / t_ns)
+        representations.append({
+            'name': 'INT4 packed (2 lanes/byte, NumPy ref)', 'bytes': target_bytes,
+            'elements': n_elem4, 'time_ns': t_ns, 'reps': reps, 'gops': gops,
+        })
+        print(f"\n  INT4 packed (NumPy reference, 2 lanes/byte): {n_elem4:,} elements")
+        print(f"    {t_ns/1e6:.2f}ms/op ({reps} reps), {gops:.2f} GOPS")
+        del a, b
+        gc.collect()
 
-        # Benchmark ternary
-        a = np.random.randint(0, 3, ternary_elements, dtype=np.uint8)
-        b = np.random.randint(0, 3, ternary_elements, dtype=np.uint8)
-
-        # Warmup
-        for _ in range(10):
-            _ = tc.tadd(a, b)
-
-        start = time.perf_counter_ns()
-        iterations = 100
-        for _ in range(iterations):
-            _ = tc.tadd(a, b)
-        ternary_time = (time.perf_counter_ns() - start) / iterations
-        ternary_gops = (ternary_elements / ternary_time) * 1e9 / 1e9
-
-        print(f"\nTernary:")
-        print(f"  Time per operation: {ternary_time/1e6:.2f}ms")
-        print(f"  Throughput:         {ternary_gops:.2f} GOPS")
-        print(f"  Elements/sec:       {ternary_elements / (ternary_time/1e9):,.0f}")
-
-        # Note: INT2/INT4 comparison would need actual implementations
-        # For now, we document the framework
+        # --- INT2 packed reference (4 lanes/byte) ---
+        lanes2, make2, add2 = _packed_signed_reference(2)
+        a = make2(target_bytes, rng)
+        b = make2(target_bytes, rng)
+        t_ns, reps = _adaptive_timing(add2, a, b)
+        n_elem2 = target_bytes * lanes2
+        gops = (n_elem2 / t_ns)
+        representations.append({
+            'name': 'INT2 packed (4 lanes/byte, NumPy ref)', 'bytes': target_bytes,
+            'elements': n_elem2, 'time_ns': t_ns, 'reps': reps, 'gops': gops,
+        })
+        print(f"\n  INT2 packed (NumPy reference, 4 lanes/byte): {n_elem2:,} elements")
+        print(f"    {t_ns/1e6:.2f}ms/op ({reps} reps), {gops:.2f} GOPS")
+        del a, b
+        gc.collect()
 
         self.results['phase3_throughput_equivalent_bitwidth'] = {
             'target_bytes': target_bytes,
-            'ternary_elements': ternary_elements,
-            'ternary_time_ns': ternary_time,
-            'ternary_gops': ternary_gops,
-            'note': 'INT2/INT4 comparison requires reference implementations'
+            'representations': representations,
+            'note': ('INT2/INT4 are NumPy bit-packed references (real unpack/add/repack '
+                     'per op -- no dedicated compiled kernel exists for them here, same '
+                     'standard bench_fair_baseline.py uses: "fastest reasonable NumPy '
+                     'implementation"). Dense243 uses the compiled module directly on '
+                     'packed bytes. Engine-native uses the SIMD engine\'s actual working '
+                     'format, which is 1 byte/trit, not 2-bit packed.'),
         }
 
-        print("\n" + "-" * 80)
+        # Verdict compares like-for-like: Dense243 (true packed ternary) vs
+        # the INT2 NumPy reference (same nominal 2-bit width). Computed from
+        # what was actually measured above, not hardcoded.
+        by_name = {r['name']: r['gops'] for r in representations}
+        dense_gops = by_name.get('Ternary (Dense243, 1.6 bits/trit)')
+        int2_gops = by_name.get('INT2 packed (4 lanes/byte, NumPy ref)')
+
         print("Phase 3 Summary:")
-        print(f"  Ternary throughput: {ternary_gops:.2f} GOPS at 1GB footprint")
-        print(f"  Verdict: ⚠ NEEDS INT2/INT4 REFERENCE FOR COMPARISON")
+        for r in representations:
+            print(f"  {r['name']:<42s} {r['gops']:>8.3f} GOPS")
+        if dense_gops is not None and int2_gops:
+            ratio = dense_gops / int2_gops
+            if ratio >= 1.0:
+                verdict = f"✓ Dense243 is {ratio:.1f}x FASTER than the INT2 NumPy reference at equivalent (~2-bit) density"
+            else:
+                verdict = f"✗ Dense243 is {1/ratio:.1f}x SLOWER than the INT2 NumPy reference at equivalent (~2-bit) density"
+        else:
+            verdict = "⚠ Dense243 module unavailable -- comparison incomplete"
+        print(f"  Verdict: {verdict}")
+        self.results['phase3_throughput_equivalent_bitwidth']['verdict'] = verdict
 
     def phase4_benchmark_nn_patterns(self):
         """
@@ -377,10 +520,34 @@ class CompetitiveBenchmark:
 
         This is critical: AI is matrix multiplication. If ternary ops are fast
         but matmul is slow, there's no viable AI solution.
+
+        Fixed 2026-08-11: the prior version benchmarked a per-row Python
+        loop (`for i in range(M): tc.tmul(...); np.sum(...)`), which mostly
+        measures CPython interpreter/dispatch overhead, not the engine's
+        actual GEMM capability -- this repo already has a compiled,
+        AVX2-vectorized ternary GEMM kernel
+        (ternary_zero_skip_gemm.ZeroSkipWeights) with its own correctness
+        suite (tests/python/test_zero_skip_gemm.py). This version calls
+        that instead. The sparse index is built ONCE per weight matrix,
+        outside the timed loop -- realistic for inference, where weights
+        are fixed and only activations change per call; index-build cost
+        would only belong in the timing if weights changed every call.
+        Every ternary result is also checked against the NumPy reference
+        (max abs error) so a speed number can't hide a correctness bug.
         """
         print("\n" + "=" * 80)
         print("PHASE 4: Neural Network Workload Patterns")
         print("=" * 80)
+
+        try:
+            import ternary_zero_skip_gemm as zsg
+        except ImportError:
+            print("\nternary_zero_skip_gemm not built -- skipping Phase 4")
+            print("Build with: python build/build_zero_skip_gemm.py")
+            self.results['phase4_neural_workload_patterns'] = {
+                'error': 'ternary_zero_skip_gemm not available'
+            }
+            return
 
         # Common layer sizes in neural networks
         configs = [
@@ -390,67 +557,81 @@ class CompetitiveBenchmark:
             ("Attention Head", 8192, 1024),
         ]
 
+        batch = 1  # single-token inference, matches this phase's original intent
+        rng = np.random.default_rng(42)
         results = []
 
         for name, M, N in configs:
             print(f"\n{name} ({M}x{N}):")
 
-            # Ternary weights and input
-            weights_tern = np.random.randint(0, 3, (M, N), dtype=np.uint8)
-            input_tern = np.random.randint(0, 3, N, dtype=np.uint8)
+            # Ternary weights, shape (M, N): M output neurons, N input features
+            weights = rng.integers(-1, 2, (M, N)).astype(np.int8)
+            weights_f32 = weights.astype(np.float32)
+            B = np.ascontiguousarray(weights.T)  # (N, M), zsg convention: C = A @ B
+            inp = rng.standard_normal((batch, N)).astype(np.float32)
 
-            # NumPy INT8 for comparison
-            weights_np = np.random.randint(-1, 2, (M, N), dtype=np.int8)
-            input_np = np.random.randint(-1, 2, N, dtype=np.int8)
+            # Precompute sparse index once -- see docstring on why this is
+            # excluded from the timed loop.
+            zw = zsg.ZeroSkipWeights(B)
+            sparsity = zw.info()['zero_fraction']
 
-            # Simulate matrix-vector multiply with ternary operations
-            # output[i] = sum(weights[i,:] * input[:])
             iterations = 100
 
-            # Ternary matmul (element-wise multiply then sum)
+            for _ in range(3):
+                _ = zw.gemm_tiled(inp)
+                _ = inp @ weights_f32.T
+
             start = time.perf_counter_ns()
             for _ in range(iterations):
-                output = np.zeros(M, dtype=np.int32)
-                for i in range(M):
-                    products = tc.tmul(weights_tern[i], input_tern)
-                    output[i] = np.sum(products)
+                out_tern = zw.gemm_tiled(inp)
             ternary_time = (time.perf_counter_ns() - start) / iterations
 
-            # NumPy matmul
             start = time.perf_counter_ns()
             for _ in range(iterations):
-                output_np = np.matmul(weights_np, input_np)
+                out_np = inp @ weights_f32.T
             numpy_time = (time.perf_counter_ns() - start) / iterations
 
-            # Calculate GOPS
-            ops_count = M * N  # Multiply-accumulate operations
+            max_err = float(np.max(np.abs(out_tern - out_np)))
+
+            ops_count = M * N * batch  # multiply-accumulate operations
             ternary_gops = (ops_count / ternary_time) * 1e9 / 1e9
             numpy_gops = (ops_count / numpy_time) * 1e9 / 1e9
             speedup = numpy_time / ternary_time
 
-            print(f"  Ternary: {ternary_time/1e6:>8.2f}ms, {ternary_gops:>8.2f} GOPS")
-            print(f"  NumPy:   {numpy_time/1e6:>8.2f}ms, {numpy_gops:>8.2f} GOPS")
-            print(f"  Speedup: {speedup:.2f}x")
+            print(f"  Ternary (zero-skip GEMM, {sparsity:.1%} zeros): "
+                  f"{ternary_time/1e6:>8.3f}ms, {ternary_gops:>8.2f} GOPS")
+            print(f"  NumPy:                                    "
+                  f"{numpy_time/1e6:>8.3f}ms, {numpy_gops:>8.2f} GOPS")
+            print(f"  Speedup: {speedup:.3f}x   (correctness max err: {max_err:.2e})")
 
             results.append({
                 'name': name,
                 'shape': (M, N),
+                'batch': batch,
+                'sparsity_zero_fraction': sparsity,
                 'ternary_ms': ternary_time / 1e6,
                 'numpy_ms': numpy_time / 1e6,
                 'ternary_gops': ternary_gops,
                 'numpy_gops': numpy_gops,
-                'speedup': speedup
+                'speedup': speedup,
+                'max_abs_error': max_err,
             })
 
         self.results['phase4_neural_workload_patterns'] = results
 
         avg_speedup = sum(r['speedup'] for r in results) / len(results)
+        max_err_overall = max(r['max_abs_error'] for r in results)
 
         print("\n" + "-" * 80)
         print("Phase 4 Summary:")
-        print(f"  Average matmul speedup: {avg_speedup:.2f}x")
+        print(f"  Average matmul speedup (compiled zero-skip GEMM vs NumPy): {avg_speedup:.3f}x")
+        print(f"  Max correctness error across all configs: {max_err_overall:.2e}")
         print(f"  Verdict: {'✓ VIABLE FOR AI' if avg_speedup > 0.5 else '✗ TOO SLOW FOR AI'}")
-        print(f"  Note: Current implementation uses Python loops - C++ SIMD would be faster")
+        print(f"  Note: batch={batch} (single-token decode) with ~33% random-ternary "
+              f"sparsity; NumPy's BLAS is extremely well-optimized at this scale, and "
+              f"real trained-model sparsity (~40%, see CLAUDE.md falsification notes) "
+              f"or larger batches would likely change this ratio -- re-run with those "
+              f"before citing a production number.")
 
     def phase5_model_quantization(self):
         """
