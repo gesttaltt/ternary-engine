@@ -311,12 +311,20 @@ def train_operation(
 
     qat_model = TritClassifier(in_features=in_features, hidden=hidden,
                                 n_out_trits=n_out_trits, threshold=threshold)
-    rescale_weights_for_qat(float_model, qat_model, threshold)
+
+    if qat_ckpt.exists():
+        # Warm-resume: continue from the best QAT weights instead of restarting
+        # from the float rescale, so an interrupted run keeps its progress and
+        # a worse fresh run can never overwrite a better saved checkpoint.
+        log(f"  [{op_name}] Resuming Phase 2 from checkpoint {qat_ckpt}")
+        qat_model.load_state_dict(torch.load(qat_ckpt, weights_only=True))
+    else:
+        rescale_weights_for_qat(float_model, qat_model, threshold)
 
     qat_model.eval()
     with torch.no_grad():
         acc_rescale = exact_match_accuracy(qat_model(X), Y)
-    log(f"  [{op_name}] After rescale+QAT: {acc_rescale*100:.1f}%")
+    log(f"  [{op_name}] Phase 2 starting accuracy: {acc_rescale*100:.1f}%")
 
     opt2 = optim.Adam(qat_model.parameters(), lr=lr_p2)
     sch2 = optim.lr_scheduler.ReduceLROnPlateau(opt2, patience=500, factor=0.5, min_lr=1e-6)
