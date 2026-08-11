@@ -153,31 +153,21 @@ models = {
 }
 ```
 
-### Falsification Results Summary (2025-01-02)
+### Falsification Results Summary (updated 2026-08-11)
 
-**9 of 24 hypotheses tested** - See `research/results/FALSIFICATION_SUMMARY.md` for details.
+**15 hypotheses tested, 0 falsified** — `research/FINDINGS.md` is the source of truth (full table, scores, and per-hypothesis analysis). H5 (Clifford) and H7 (Quantum) were REMOVED as non-informative furniture tests — do not reimplement them.
 
-| Hypothesis | Score | Grade | Status | Key Finding |
-|------------|-------|-------|--------|-------------|
-| H1 p-adic | 100% | A | INTRINSIC | Built into ternary representation |
-| H2 Ultrametric | 89.32% | B | Supported | Raw=100%, model=45% isoceles |
-| H3 Hyperbolic | 99.80% | A | Supported | VRC=0.035, target=-0.8 |
-| H4 Tropical | 87.20% | B | Supported | tadd distributes, tmul doesn't |
-| H6 Three-Valued | 100% | A | INTRINSIC | De Morgan laws hold |
-| H9 Information | 90.91% | B | Supported | Entropy confirms p-adic |
-| H10 Group Theory | 84.08% | B | Supported | **tadd non-associative (20%)** |
-| H11 Lattice | 100% | A | INTRINSIC | tmin/tmax distributive lattice |
-| H23 Modular | 56.53% | C | Weak | Products fail, mod-3 fails |
+Condensed status:
+- **INTRINSIC (5):** H1 p-adic, H2 ultrametric, H6 three-valued logic, H11 lattice, H13 topological (Cantor/3-adic)
+- **Supported (9):** H3 hyperbolic, H4 tropical, H8 category, H9 information, H10 group theory, H17 F₃ field, H23 modular (rewritten for saturation), H24 sui generis, H14 neural (TritNet QAT)
+- **Weak (1):** H12 dynamical (tmul period-2 collapses near zero trits)
 
-**Key Discovery:** tadd is non-associative for 79.6% of triplets - balanced ternary is NOT a group.
+**Key discoveries:**
+- **tadd is non-associative for 79.6% of triplets** — balanced ternary with saturation is NOT a group; the structure is a non-associative ring (H24: tmul distributes over tadd 100% both sides)
+- **tmul = F₃ multiplication exactly; tadd ≠ F₃ addition** at saturation (H17)
+- **H14 Neural:** tnot 100% with ternary weights (Phase 2A GO), extended 2026-08-11 by Phase 2B GO: all four binary ops ≥99% (tadd 100%, tmul 99.5%, tmin 99.9%, tmax 99.9%), learned weights ~40% zeros matching 3-adic sparsity
 
-**Next Session:** Implement remaining 15 hypotheses starting with Tier 2 (H5, H7, H8). Run `python research/scripts/falsify.py -H H5`.
-
-| Priority | Hypotheses | Difficulty |
-|----------|------------|------------|
-| Tier 2 | H5 Clifford, H7 Quantum, H8 Category | Medium |
-| Tier 3 | H12 Dynamical, H13 Topological, H14 Neural | Hard |
-| Tier 4 | H15-H22, H24 | Research |
+Remaining untested: H15-H16, H18-H22 (Tier 4 research; evaluate value before implementing).
 
 ---
 
