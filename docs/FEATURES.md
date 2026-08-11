@@ -71,7 +71,8 @@ Comprehensive catalog of all features, optimizations, and abstractions in the Te
 - **Density:** 5 trits/byte (95.3% utilization, 243/256 states)
 - **Formula:** `b = Σ(tᵢ + 1) × 3ⁱ` for i ∈ [0,4]
 - **Memory reduction:** 20% vs standard encoding
-- **Status:** Implementation complete, module build pending
+- **Status:** Module builds and passes tests on Linux (2026-08-11); Windows re-validation pending
+- **Prior art:** The base-243 packing is the same construction as llama.cpp's TQ1_0 format (2024, 1.6875 bits/weight) — see `research/PRIOR_ART_TERNARY_LANDSCAPE.md`
 
 **Files:**
 - `src/engine/dense243/ternary_dense243.h` - Core encoding

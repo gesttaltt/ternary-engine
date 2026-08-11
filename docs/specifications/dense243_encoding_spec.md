@@ -17,6 +17,14 @@
 
 **T5-Dense243** is a high-density ternary packing scheme that encodes **5 balanced trits** into a single 8-bit byte using base-243 representation, achieving **95.3% density** (243/256 states utilized) compared to the current 25% density (4 trits per byte, 2 bits each).
 
+> **Prior art (added 2026-08-11):** The base-243 construction (3⁵ = 243 < 256,
+> 5 trits/byte, 1.6875 bits/trit) is not unique to this project: llama.cpp's
+> **TQ1_0** ternary quantization format (2024) uses the identical packing and
+> predates this project's first OpenTimestamps snapshot (2025-11-23). What is
+> independent here is the implementation: LUT-based per-position extraction
+> tables, SIMD unpack path, and elementwise operations executed on packed
+> data. See `research/PRIOR_ART_TERNARY_LANDSCAPE.md` for the full landscape.
+
 ### Key Metrics
 
 | Metric | Current (2-bit) | T5-Dense243 | Improvement |

@@ -34,6 +34,13 @@
 //   - Large-scale storage (files, databases)
 //   - Network transmission (bandwidth-limited)
 //
+// PRIOR ART: The base-243 5-trits/byte construction (3^5 = 243 < 256) is
+//   not novel to this project — llama.cpp's TQ1_0 quantization format
+//   (2024) uses the same packing at 1.6875 bits/weight. See
+//   research/PRIOR_ART_TERNARY_LANDSCAPE.md. This implementation's
+//   specifics (LUT-based per-position extraction, operations on packed
+//   data) are independent.
+//
 // IMPLEMENTATION STATUS:
 //   Phase 1: Scalar proof-of-concept (this file)
 //   Phase 2: SIMD extraction kernels (future)
