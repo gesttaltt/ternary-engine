@@ -1,0 +1,16 @@
+{
+  "op": "tmax",
+  "seed": 42,
+  "p1_acc": 1.0,
+  "p1_epochs": 209,
+  "acc_after_rescale": 0.604379415512085,
+  "best_acc": 0.9985097050666809,
+  "p2_best_epoch": 7053,
+  "p2_epochs": 10000,
+  "elapsed_s": 3289.7348165512085,
+  "converged": false,
+  "passed": true,
+  "weight_neg_pct": 19.96527777777778,
+  "weight_zero_pct": 41.58496732026144,
+  "weight_pos_pct": 38.44975490196079
+}

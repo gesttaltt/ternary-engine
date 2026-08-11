@@ -482,13 +482,11 @@ python benchmarks/bench_phase0.py
 - tnot trained to 100% accuracy with ternary weights (QAT)
 - Go/No-Go decision point passed
 
-**Phase 2B** - Scale to all operations 🔄 IN PROGRESS
-- tadd: 100% exact, PASSED
-- tmul: 99.5% exact, PASSED
-- tmin: stalled mid-training at 99.3% (incomplete, no result.json) — needs resume
-- tmax: not started
-- GO criterion: ≥3/4 ops ≥99% with ≥1 at 100% — 2/4 confirmed so far
-- Resume with `python models/tritnet/train_phase2b.py` (script skips completed ops)
+**Phase 2B** - Scale to all operations ✅ COMPLETE — GO (2026-08-11)
+- tadd: 100% exact | tmul: 99.5% | tmin: 99.9% | tmax: 99.9% — 4/4 PASSED
+- GO criterion met: ≥3/4 ops ≥99% with ≥1 at 100%
+- All ops with ternary weights, ~40% zeros (consistent with 3-adic sparsity)
+- Checkpoints + result.json per op in models/tritnet/phase2b/
 
 **Phase 3** - C++ Integration
 - Export ternary weights to binary format
@@ -946,7 +944,7 @@ pip install matplotlib transformers
 ### Production Gaps
 
 1. **Multi-platform validation** - Only Windows x64 formally proven for benchmarks; Linux x64 CI added 2026-08-11 (.github/workflows/ci.yml builds engine + TritNet GEMM + Dense243 and runs full suite); benchmark validation on Linux still pending
-2. **TritNet Phase 2B decision pending** - Phase 2A GO achieved (tnot 100%, commit 0dfa6af). Phase 2B (tadd, tmul, tmin, tmax) in progress: tadd 100% PASS, tmul 99.5% PASS, tmin stalled mid-training (99.3%, incomplete), tmax not started. GO criterion: ≥3/4 ops ≥99% with ≥1 at 100% — 2/4 confirmed, need to resume `models/tritnet/train_phase2b.py` to finish tmin and run tmax
+2. **TritNet Phase 3 pending** - Phase 2B GO achieved 2026-08-11: 4/4 ops ≥99% with ternary weights (tadd 100%, tmul 99.5%, tmin 99.9%, tmax 99.9%). Next: Phase 3 C++ inference engine (weight export, C++ inference, TritNet-vs-LUT benchmark — the experiment that decides whether TritNet beats LUTs in practice; note LUT does ~20K fewer MACs per 5-trit op, see research/PRIOR_ART_TERNARY_LANDSCAPE.md context)
 3. **Competitive benchmarking** - Only 2/5 criteria validated; last run 2025-11-23, no more recent results
 4. **Dense243 integration** - RESOLVED on Linux (2026-08-11): build failed because build_dense243.py lacked AVX2 flags on GCC (-march=haswell -mavx2); fixed, module builds, 10/10 C++ tests pass, and new tests/python/test_dense243.py validates round-trip + all 5 ops against the reference engine (suite now 6/6). Windows /arch:AVX2 added but not yet re-validated on Windows
 
