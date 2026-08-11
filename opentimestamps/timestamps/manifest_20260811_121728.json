@@ -1,0 +1,1052 @@
+{
+  "timestamp_date": "2026-08-11T12:17:28.498204Z",
+  "hash_algorithm": "SHA512",
+  "project": "Ternary Engine",
+  "files": {
+    "CHANGELOG.md": {
+      "sha512": "358fd67a328b6b2cdd724ce0b55ee92ff3e223230b111565d93b2a5f4f00bceb6aea14fe240448a0cdbcc1e2d4d241104a79729b741bbc5aec23e2c1fb8c82c9",
+      "size_bytes": 33502,
+      "modified": "2026-08-11T08:32:16.819678"
+    },
+    "LICENSE": {
+      "sha512": "a23fdfa87ea35cbfb2f32adf390c7d84facc69d88f41ac99e7d054c08ed71f914f0cf1efc7877cc11db128ed10ee0c9e742111114ec3ed2a37b334a0ba056ab2",
+      "size_bytes": 11367,
+      "modified": "2026-06-09T10:46:08.723058"
+    },
+    "README.md": {
+      "sha512": "9cd21ad6a36966216ea98c099041c52fba6a93aeb92ca7aba6b76680bc59e3a23b9d141df5766e32df838663a4b40c7430631d75f586479f388c51408eb5ef53",
+      "size_bytes": 50102,
+      "modified": "2026-08-11T08:50:54.792233"
+    },
+    "benchmarks/bench_bridge_layer.py": {
+      "sha512": "d94c57543fab8aea9eb5feeb6d7b92087f24acfb8d177b3362833744240317659c722cca385ea0feeb9b6f0e217c30f524b9968c28d5f2202dfc8a7da3cd910a",
+      "size_bytes": 9788,
+      "modified": "2026-06-09T10:46:08.724058"
+    },
+    "benchmarks/bench_canonical_fix.py": {
+      "sha512": "5d1776b97991f75a0b5ad109e2b4410eed1ad152752700d82c5d176a8e4aa6f91466c395d8921948ff50b8931246eca745321b20d2ab03d4858376e81b077bcd",
+      "size_bytes": 9233,
+      "modified": "2026-06-09T10:46:08.725058"
+    },
+    "benchmarks/bench_conversion_breakdown.py": {
+      "sha512": "48a76f7806f290f292272f7971b29c0e963011e3d02bb27ad630ae91b203f183e17278ecc9a70dc1f25e0facb5a5e6981a0b77e8c668f2c945d3f08bd671ad90",
+      "size_bytes": 11300,
+      "modified": "2026-06-09T10:46:08.725058"
+    },
+    "benchmarks/bench_nn_quantization.py": {
+      "sha512": "f80ced163c0e1b6c49fb7ac67821ee3bf5529cc77be65ec5de63940701ecbdc58f71a14d9866507c08884336c02097e4218329c3652ae800354e6d253882d8de",
+      "size_bytes": 16724,
+      "modified": "2026-06-09T10:46:08.725058"
+    },
+    "benchmarks/bench_zero_skip_gemm.py": {
+      "sha512": "576ed5928b4703672f7c9ccc4283daab60d9b1092ed8ad3380cd17dfad604cd247cdfdcfda9b6a1bd7f84f757a495e1234b80385479c2e1dbf2620a614910a64",
+      "size_bytes": 20535,
+      "modified": "2026-06-11T14:19:13.982831"
+    },
+    "benchmarks/cpp-native-kernels/build_gops_bench.py": {
+      "sha512": "bcfba69ece4f0dc91dc5a5e4e8e706a92f2895464348cbbe6cbaa153c43b17c5b639d82ac81d6ce5fe8557c70ed21653aab84b4eeaf5f77795b9e20d43be755b",
+      "size_bytes": 6607,
+      "modified": "2026-06-09T10:46:08.726284"
+    },
+    "benchmarks/cpp-native-kernels/build_kernels.py": {
+      "sha512": "fd09fdeaed66942c4cf3e29dcfde0090a25de8c525ee43a007c5a2c5440f608b9815cf3ef54702ece8075c383acad7f025b446d260c3d91e7d67237c125fc64f",
+      "size_bytes": 5704,
+      "modified": "2026-06-09T10:46:08.727057"
+    },
+    "benchmarks/cpp-native-kernels/run_benchmark_automated.py": {
+      "sha512": "df8c6891c555536e5856e58569da3b1eca8d0c07b9c54c6053224bf27f0c9ef529675c12e0b09357b2fb279086f9f8352306494beeb7d3f7cede7340f21ff68f",
+      "size_bytes": 10374,
+      "modified": "2026-06-09T10:46:08.728168"
+    },
+    "benchmarks/deprecated/bench_backend_fusion.py": {
+      "sha512": "e0fdd002d0b213d57f5ee341ab4c650dd354b73f2c811d5a3dc0b1f1cbdd21ae4ccea5e97d90f58a837335f76245a92997b72e21a87c88efe16d9859cf47e397",
+      "size_bytes": 9761,
+      "modified": "2026-06-09T10:46:08.742945"
+    },
+    "benchmarks/deprecated/bench_backends.py": {
+      "sha512": "2557ce563b240c7d11512cba89ac0a898298b79b111121b6fcff504019bc73345d1e1b414482f96568768565f59580f67bf010ac260d3b049da91bc04c41c577",
+      "size_bytes": 12162,
+      "modified": "2026-06-09T10:46:08.742945"
+    },
+    "benchmarks/deprecated/bench_backends_improved.py": {
+      "sha512": "324eef3e5ab595c645b831da8418969b7f0c08294d7cdfbb2a39d696866f4f4bb2387869da6a9209e8e732117ae7725f68756072e7dab8ac9c1babb8f2cb8d31",
+      "size_bytes": 19336,
+      "modified": "2026-06-09T10:46:08.742945"
+    },
+    "benchmarks/deprecated/bench_fusion_phase41.py": {
+      "sha512": "dcc797dab1bb8517bc1eb2f253ef06adb9f7b176cf097197a60ba6b0a7de699a0aa93d6a6bd8c0ce9025c5e8608e355e381ca14f4870c5d29d4ca2fa3d8f6a26",
+      "size_bytes": 9804,
+      "modified": "2026-06-09T10:46:08.742945"
+    },
+    "benchmarks/deprecated/bench_fusion_poc.py": {
+      "sha512": "0cc0a7a1d5268f6f64ec2e5b5fd33f8c95345b689714058993cce5d633bcba5b56acf871947c807c79e8e5bfae57d688b2086ecafc69c7b17684a9988141e7e0",
+      "size_bytes": 14621,
+      "modified": "2026-06-09T10:46:08.742945"
+    },
+    "benchmarks/deprecated/bench_fusion_rigorous.py": {
+      "sha512": "8029dfa8375f59282b9ed3e3d312f81cb919826fd526a8f4fc23f7fff4d39a83fc15b6cdb0365f9756cf14d7143ff5be9d9ea6718faacfada1295cc61a14dc4e",
+      "size_bytes": 10173,
+      "modified": "2026-06-09T10:46:08.743057"
+    },
+    "benchmarks/deprecated/bench_fusion_simple.py": {
+      "sha512": "5445012be6504293b18323e5ce5f66ea3abe3abdb1ee27c77080f7404db78322e36898169dbb432b10a9717ca8fa7892ccd40cebb3e573765693e83e06e7ab02",
+      "size_bytes": 4120,
+      "modified": "2026-06-09T10:46:08.743057"
+    },
+    "benchmarks/deprecated/bench_fusion_validation.py": {
+      "sha512": "d54ffb17808c5315c45a75dd8df5dac60b343eae584b6b1c1d45c66d4537782f803a4d5a7b1ff45ab7b2adbb50a09b40aa112efd3f61884d2f734e117b93b967",
+      "size_bytes": 7779,
+      "modified": "2026-06-09T10:46:08.743057"
+    },
+    "benchmarks/deprecated/bench_with_load_context.py": {
+      "sha512": "e68cff7811f8659c1b3c68d3aacb5adf3d8b93094533f803fa1e0c531f40fa227b5b07af3ef72889f68d52ef7e1f6b75d8e00f6c5d19854266b5c4317e2921af",
+      "size_bytes": 16499,
+      "modified": "2026-06-09T10:46:08.743057"
+    },
+    "benchmarks/investigation/analyze_phase1_datasets.py": {
+      "sha512": "92dcb2a321b5b2ba191805b6b71a17e57264aabff85f8cc5891c796764796036cfe786e95ce356b4e1bccf7c34889e37520e07df5c03f85cade6cdc28132d17f",
+      "size_bytes": 5554,
+      "modified": "2026-06-09T10:46:08.744288"
+    },
+    "benchmarks/investigation/investigate_repetitive_performance.py": {
+      "sha512": "71ce41b3bb5240e0d38523e4ffc4c35d658cbbd6d907e5dbce270c86e834bdae4f4b049acfd78804d8365a1080b762b4bf607081e21573b224e9d42eeafb99f8",
+      "size_bytes": 16061,
+      "modified": "2026-06-09T10:46:08.744288"
+    },
+    "benchmarks/investigation/test_0121_pattern.py": {
+      "sha512": "aa01991341c50271ea0547b1d15789e44c9ea4dfea4eeea07ddee46494eb2ee48aa497796b21d65376dece920e54ea9f4626e59f23b95a5d8571153c0c93f9a4",
+      "size_bytes": 5724,
+      "modified": "2026-06-09T10:46:08.744288"
+    },
+    "benchmarks/macro/bench_image_pipeline.py": {
+      "sha512": "e89cd81f7c9fad772fe7e29c97d109e0a795c478aa0f8eb0f214614f14e29f78688aadccea2a69791ef17a44ca6c9c2be149644ed8550470035f1cf6561a9a9b",
+      "size_bytes": 8882,
+      "modified": "2026-06-09T10:46:08.744838"
+    },
+    "benchmarks/macro/bench_layer_forward.py": {
+      "sha512": "760af9d036f1f34d1175d1d81ba7ce2acbee9fec48603c881c8ee8cdca5e7e5ef24018fac64f0cb2a8a3096f1290ddad7e8375904a58517e849aa576c1889ef6",
+      "size_bytes": 7953,
+      "modified": "2026-06-09T10:46:08.744838"
+    },
+    "benchmarks/prototype/bench_gemm.py": {
+      "sha512": "0089ed5a1c4d7200aaaaeadcb7c1069f084e8b6039f30837c0eed933ba15ff74eb5328660c4e1a88787b9efcb72891d349a6658382e15cbe632f38b70321f55c",
+      "size_bytes": 11534,
+      "modified": "2026-06-09T10:46:08.745275"
+    },
+    "benchmarks/prototype/bench_gemm_isolated.py": {
+      "sha512": "0a2416f9238708573c550241d21aa77e994e670674a26e201ff4a210c94139daea9de6a5936229ce2c488d80ad20ce5ed96f212018cfc818989d2cfa25be7798",
+      "size_bytes": 12724,
+      "modified": "2026-06-09T10:46:08.745275"
+    },
+    "benchmarks/python-with-interpreter-overhead/bench_competitive.py": {
+      "sha512": "bf2e0341cd89ec212971d0cb172637f2d40fd24ac10776ab1c36fea71e9666da04ba955bd9270e5c04032c52a708a9f222786805dbf81afb1a6699b92257993f",
+      "size_bytes": 26007,
+      "modified": "2026-06-09T10:46:08.745681"
+    },
+    "benchmarks/python-with-interpreter-overhead/bench_dense243.py": {
+      "sha512": "9275cf143e46bcaac606663ce35d4951fe123455d1d0909aa28fe8f998b7c3553898cb014b7fc306ab223a0877ede1391c1afce1594b9cf531e172e8dc407cab",
+      "size_bytes": 11579,
+      "modified": "2026-06-09T10:46:08.745681"
+    },
+    "benchmarks/python-with-interpreter-overhead/bench_fair_baseline.py": {
+      "sha512": "504ea32cdee85c2e9658545da90068cd64524fb5a0756659d6ecbb9fe9441463f4b1931aada7fc8f2b16eac9fa9bff209e47b9f65e6c957c95b81a55390fe2c7",
+      "size_bytes": 8882,
+      "modified": "2026-08-11T08:39:12.389139"
+    },
+    "benchmarks/python-with-interpreter-overhead/bench_input_characteristics.py": {
+      "sha512": "1f58898b6609937d9ccc22520077127d69a79a5567e621715e8d97443f98670c31f782de75ca87106b4e01f492aa41a77b6e26aff9b82825f278253e7138b47c",
+      "size_bytes": 8580,
+      "modified": "2026-06-09T10:46:08.745681"
+    },
+    "benchmarks/python-with-interpreter-overhead/bench_model_quantization.py": {
+      "sha512": "e8e8c829572ae65803acfe2952aae796429f5abd35c69e82e7106c3c296e8afbc18152a2076e2b853f94e316738d5a006d8ea5e70e1a64d9a5ebe8fe29c86f12",
+      "size_bytes": 14132,
+      "modified": "2026-06-09T10:46:08.745681"
+    },
+    "benchmarks/python-with-interpreter-overhead/bench_power_efficiency.py": {
+      "sha512": "75d23f1066c65aaff77896db3518fdfc1b25cef2112e62898c80e1e8bb498511a7780cf76056e4139d653f28272c043092b36ad324dc61de972ce4fe2eeed2b8",
+      "size_bytes": 15212,
+      "modified": "2026-06-09T10:46:08.745681"
+    },
+    "benchmarks/python-with-interpreter-overhead/bench_regression_detect.py": {
+      "sha512": "afed818e990fa8ee16c082fd89564d0fca846963ea8c5370918cdadc4fa10758ecf7502f07d3eb71f33b5b3d87838bd5eb04d2a6f5635d0ddb5f91edf1628ca7",
+      "size_bytes": 8206,
+      "modified": "2026-06-09T10:46:08.745681"
+    },
+    "benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py": {
+      "sha512": "369c3f9c2e7d5ced56d9ddd408bda8c74de4e9dd005f49dbc99a1472ad8675039809c36886752082274ec26cae61f90ea54da52af0bf940ed3edfd61c9fdcd79",
+      "size_bytes": 16220,
+      "modified": "2026-06-09T10:46:08.745681"
+    },
+    "benchmarks/python-with-interpreter-overhead/bench_simd_fusion_ops.py": {
+      "sha512": "bb576418c3d937aa47ed4692fce97376b425a226db33096da7715912ef171ef5e56515a5ab9ae221f0b9c1fc8afcf2b4ba9407c9c7d0bcbdda25a8ca7889d932",
+      "size_bytes": 9246,
+      "modified": "2026-06-09T10:46:08.746057"
+    },
+    "benchmarks/python-with-interpreter-overhead/benchmark_framework.py": {
+      "sha512": "19474765ac6c334638bf59361d111e51ad08e2c55465be11c23b9b63a68f35b7ad8f84fc329a5e46b223ac73f5243ac5fadb55c312ce0d14f500ea723dd543ec",
+      "size_bytes": 12231,
+      "modified": "2026-06-09T10:46:08.746057"
+    },
+    "benchmarks/python-with-interpreter-overhead/build_competitive.py": {
+      "sha512": "fcb26b95088f7571ca09876652e9fb4ada3f063705af4c15e62123eea1de73fbf878ec40e38456b4911d1ca3e58822ff5e3eee7349cb09e41d73493741f27a98",
+      "size_bytes": 9439,
+      "modified": "2026-06-09T10:46:08.746057"
+    },
+    "benchmarks/python-with-interpreter-overhead/download_models.py": {
+      "sha512": "78418977c47d16770a0b3b97d09b0e1764f552f708f4b81ad996b61518a4f0cbc2e0dcc6a9bf79946fadd13dfcc1c0eb5e83f85c95636cbb8f5edf5fd9873c7d",
+      "size_bytes": 4794,
+      "modified": "2026-06-09T10:46:08.746057"
+    },
+    "benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py": {
+      "sha512": "fac9bbc1028514a2d9817c5dbe9780eff19c3e7f3fa31fa946041826204c6597db327a225e6ff7f5c58a19ee37d75352947756d8fbd24bf90aeb920746e35e1a",
+      "size_bytes": 7486,
+      "modified": "2026-06-09T11:09:07.252179"
+    },
+    "benchmarks/quick_simd_test.py": {
+      "sha512": "1e7c054f804babab3d27245c8d87ca717f256beeb33a6bf58995b8f5d500bfa609119a2c80e42ac828c7675c1dc32056805e252ba36f1d4150ead34a2c7a17e9",
+      "size_bytes": 3014,
+      "modified": "2026-06-09T10:46:08.746057"
+    },
+    "benchmarks/test_bridge_layer_performance.py": {
+      "sha512": "170e175952472607b3f2940ae4ea4c84e6c24ef0cf90a0c9ef35e263bda57435b8e39fb00e0907937ec0a7af01e325114895426dcf7a5e0f75244e69bf569ca5",
+      "size_bytes": 15202,
+      "modified": "2026-06-09T10:46:08.747057"
+    },
+    "benchmarks/test_falsification.py": {
+      "sha512": "5c0753e03146e385fb92bbe467d134f492bc81ef70cf523410a571bf154bfa6e7977c7f80da366842486b4cda504e469e4ba5b4e4734842e07d426301720486c",
+      "size_bytes": 16553,
+      "modified": "2026-06-09T10:46:08.747057"
+    },
+    "benchmarks/utils/benchmark_validator.py": {
+      "sha512": "02fbeb0cdfc2aa73b4a10033626fd55e62611a00deb15a29ac844e23e2c4b2f724bde007a281c077139397e3e718b03322833d13b531cbb99971f6a09bd9c48d",
+      "size_bytes": 12114,
+      "modified": "2026-06-09T10:46:08.747057"
+    },
+    "benchmarks/utils/geometric_metrics.py": {
+      "sha512": "77992d0811b9c0e82c913ab315e49d529102b2c5a6768f8162c00385346b00d94a91fe377192dc44d78ad300adcfb16bc68674e3bb13f1eb5b803859250e6f2e",
+      "size_bytes": 12050,
+      "modified": "2026-06-09T10:46:08.748159"
+    },
+    "benchmarks/utils/hardware_metrics.py": {
+      "sha512": "8e823b6e6c126e58f00feeb0a3ee680cfead44916445685fad9d93843f0c9e4080b6473e922bd4efa742b2c55807fc4c784fa5b672ca3ce1d6594ebce3723858",
+      "size_bytes": 12941,
+      "modified": "2026-06-09T10:46:08.748159"
+    },
+    "benchmarks/utils/system_load_monitor.py": {
+      "sha512": "cd751107507035139510768f16677c2f81c7ed94f119abfcbe08d548e31b5cbe0c05d78d99c68706413b2662b603616351298cfc43fa5804599e1183f657a3c4",
+      "size_bytes": 20134,
+      "modified": "2026-06-09T10:46:08.748159"
+    },
+    "benchmarks/utils/visualization.py": {
+      "sha512": "006ada9277a2dbe1da3e900c9a4365ad0be17363b0c5a87bba632bab56e8573c605c1f0b889a92179136eb13fb62739e9de10f312d4ba195fdb69f1224d4592e",
+      "size_bytes": 14263,
+      "modified": "2026-06-09T10:46:08.748159"
+    },
+    "benchmarks/utils/windows_power.py": {
+      "sha512": "49242db80d7178c06247920699b0c4ed5141655aa68e8a98d219c41928d97ed8be6740a98dacd2220c6835785478a4c4f2203648640b69c0ea8f110d44e2f87c",
+      "size_bytes": 8937,
+      "modified": "2026-06-09T10:46:08.748159"
+    },
+    "build/build.py": {
+      "sha512": "70c3b731bc680487f81ab0fd20e18043d42125acc9ac3c2c4ed85bf03d5c6f24fd7099cd2ce3a3350a35b459007a2523ae847f884061ced0fc9417e561a112ed",
+      "size_bytes": 7628,
+      "modified": "2026-06-09T11:09:12.133203"
+    },
+    "build/build_all.py": {
+      "sha512": "7c84d683e04506a414572c83f814f69f9454ebc808e26eefa6ad7dec3579b139a9f112c6c18f86044a8edf15a8fb6e0f9cb8ce0cbab0d4a84c5d80f8503571c4",
+      "size_bytes": 7199,
+      "modified": "2026-06-09T10:46:08.749085"
+    },
+    "build/build_backend.py": {
+      "sha512": "1aea17ef19764fcc1cd52fa3e54e25072087a3619e47a96bb1651bfa6bc241c358b1a373c58c2b1a2e37bba5daf23b594a3cc6f079cf549e510dcd9950b98ed6",
+      "size_bytes": 6167,
+      "modified": "2026-06-09T10:46:08.749085"
+    },
+    "build/build_dense243.py": {
+      "sha512": "86a71adfc3b9d0c4380599f3751f03c735a75615ef19d3289b86e0be3c42c2f825ffd194235e0da73205ef4cdf288abfb777d4fbc835a26b615a0b20a10da94f",
+      "size_bytes": 6736,
+      "modified": "2026-08-11T08:18:24.992312"
+    },
+    "build/build_pgo.py": {
+      "sha512": "9bcd894461ee300a4881bb4308f2ffa18f130b0acfd6859b3fe70b88a117ac40dcef46e01419e8025d5f3a3ffe241dc37af822d147c0994e9a344cd3811767cf",
+      "size_bytes": 17627,
+      "modified": "2026-06-09T10:46:08.749085"
+    },
+    "build/build_pgo_unified.py": {
+      "sha512": "71fadcefca8cfe35c98dce0e6aaa5d81a0dd82581205cbc70060b42e7a3389a91c980861e99751d5b9b8bd84ef4e61de9996301245f6b0ef07c912cef0c32857",
+      "size_bytes": 12210,
+      "modified": "2026-06-09T10:46:08.749085"
+    },
+    "build/build_reference.py": {
+      "sha512": "204585df5e807c989d4f6ad23b043c5c65e1b6b8f8f5afb1017f2b1263b76817a95ebbdb0214b070fb99b34fc760b519c0e8f033a597d9efbf1df5ae4b089a34",
+      "size_bytes": 4723,
+      "modified": "2026-06-09T10:46:08.749085"
+    },
+    "build/build_test_packing.py": {
+      "sha512": "ec4eba317c723a0f3d877fd064fc294db1118f9e5beb7824fed707f055195c5d73fb123233425629ae764a887b56c5190d01fb66ba9236091bbc83883b99ed81",
+      "size_bytes": 1516,
+      "modified": "2026-06-09T10:46:08.749085"
+    },
+    "build/build_tritnet_gemm.py": {
+      "sha512": "0357d37dbccb7f8ffd97a47afd67faa473723c353dbcc546ece001ce2c4c2266ba314c4fc53368aba01b6bcada61096a29656ae4f5da956c86867d8c5c023a7c",
+      "size_bytes": 9980,
+      "modified": "2026-06-09T11:09:02.204156"
+    },
+    "build/build_zero_skip_gemm.py": {
+      "sha512": "e6c14ad18ea6582a3e2aedd610bcc599ee2eee397488c63d7a83cc86e060f0617e5d997b7678bd913698abbacbea741a9d29cb8f490ed886d7ffdd97dfb90708",
+      "size_bytes": 4656,
+      "modified": "2026-06-11T09:28:01.257334"
+    },
+    "build/clean_all.py": {
+      "sha512": "af7c2fe1e6c607017a99271a4e2ad91e8cd3e6513757cbd2a40fb41a5e3bb361b283766f14346c65fb41bbc8c551d203690229842bb43a1e4ead6286e457cf60",
+      "size_bytes": 13309,
+      "modified": "2026-06-09T10:46:08.749085"
+    },
+    "docs/DEVELOPMENT_TOOLING.md": {
+      "sha512": "082af002cb4d287c8324a7463c39a20d99c8e64f2e1165fe6bbb339cbcbd81f2aea84ea81aa7d4787f9ef66ac1e78e3ee02df0a0de320cb470d9fc2e1e22473b",
+      "size_bytes": 46541,
+      "modified": "2026-06-09T10:46:08.749085"
+    },
+    "docs/FALSIFICATION_TEST_QUALITY_PLAN.md": {
+      "sha512": "5853ea0dda503b951e2c56b65964f06c6252b3a44cc092ec7e4f7a4f77fb4d14b691d19b1f2c861c1a40c41125b33e935b6fac6427d1b3d925e65bcbff281689",
+      "size_bytes": 18797,
+      "modified": "2026-06-09T10:46:08.750557"
+    },
+    "docs/FEATURES.md": {
+      "sha512": "82c98d8b0b38124bf560860492189daee3da706d532d5bde5ed7fc94e7314400ecc4d4ae5aff24679d5c692695b2212c5d742fa86e4defadba8c371464ef6f1a",
+      "size_bytes": 16812,
+      "modified": "2026-08-11T09:03:34.871968"
+    },
+    "docs/HYPERBOLIC_GEMM_RESEARCH.md": {
+      "sha512": "84f802de861b85422cc7b4ecc16860ff99201b5f2734e19d9c37b897a9056adc893c2951a2be124db0c0c77d26c127ae953c7dbb32303a2b771a28828592b606",
+      "size_bytes": 16714,
+      "modified": "2026-06-09T10:46:08.750557"
+    },
+    "docs/IP_AND_LICENSING_GUIDANCE.md": {
+      "sha512": "f9dfa13dd0793a9dfbaaf84c26b947b42437437e330766e6d529b53c7cb53d68d8aadf1e542884bf2f3e14b80ba214be9ca1d409325f4ed84c24a530c7d17f7a",
+      "size_bytes": 14742,
+      "modified": "2026-06-09T10:46:08.750557"
+    },
+    "docs/README.md": {
+      "sha512": "6377b7846b7b4a97c66b5778122163e76c1fee22b6c1f0206255ca46b9f48cf3057ba57cc956e9f80ed4c9875bddda39d921fcc38cf4165f3537ace7ae84af12",
+      "size_bytes": 7211,
+      "modified": "2026-06-09T10:46:08.750557"
+    },
+    "docs/SIMD_OPTIMIZATION_STATUS_2025-12-04.md": {
+      "sha512": "2091205dc59592cf26bb7d55fc24ac7b279c03f5104f1118169d544c88d2fbbacce3154eb20f42821c9475c17aacef6f2b2a11d01b23c22b90cd57f33cf0ffa8",
+      "size_bytes": 9646,
+      "modified": "2026-06-09T10:46:08.750557"
+    },
+    "docs/TERNARY_SEMANTIC_HYPOTHESES.md": {
+      "sha512": "7c1b09fbd94fd7c1574f6094daaed118c2b717b571f78f9f760d98e77ef8ffbcb0329065dc6318d74c68e13da69002ace1cb96ad3ac1ae701d8aa1e1692ccf69",
+      "size_bytes": 15763,
+      "modified": "2026-06-09T10:46:08.750557"
+    },
+    "docs/TRITNET_ANALYSIS_2025-12-04.md": {
+      "sha512": "95b29133cecc38cbb9081379ace8377596cd2ef6f2635d98112adbc014270b69828678f20de0536a8c42081be5796afd606ffada440839c0551dc32f37e4f3d4",
+      "size_bytes": 14830,
+      "modified": "2026-06-09T10:46:08.751057"
+    },
+    "docs/TRITNET_PHASE2_RESULTS_2025-12-04.md": {
+      "sha512": "4dd2e61354147c629de5d6dcd1fe3012e0ae1d826409bfae0482cd394fef7faf979c4dda2b133eaa55ef68454eecb23403c9daa83fa75e8904f8ed2cc7b2f9ae",
+      "size_bytes": 13632,
+      "modified": "2026-06-09T10:46:08.751057"
+    },
+    "docs/TRITNET_TRAINING_ANALYSIS_2025-12-04.md": {
+      "sha512": "3b2ce22eb67ba513a7fe2ca5a085e1055d8a94b6fd3b3111f90df749021ed06a22e778bf431e307fc422490ac7aa27336be63e072af423e50cb8494452c6a242",
+      "size_bytes": 13804,
+      "modified": "2026-06-09T10:46:08.751057"
+    },
+    "docs/api-reference/error-handling.md": {
+      "sha512": "a8a1354bd195382a973d4ac48efe29e3130f71bcc76a3ee77e906da613f6dbea20d0ddc75a9d5f507abe0d2298b4fd9fc04f237bf70b98b5828bef5788ca635a",
+      "size_bytes": 10061,
+      "modified": "2026-06-09T10:46:08.751057"
+    },
+    "docs/api-reference/headers.md": {
+      "sha512": "acaf1af485ca74b3b1440e4cb901cead73f8bf551288d83e0756f41e2571c9dd138368c51bb0598d5422c9fcdd40b62cdd20e3922d8f0d2a62cbe47c75857785",
+      "size_bytes": 2197,
+      "modified": "2026-06-09T10:46:08.752384"
+    },
+    "docs/api-reference/source-code-overview.md": {
+      "sha512": "0ebd7e67e3994736dde5822b1576bd76bd1f892f0c64b9ddf3b7cf603a6e15d2af399170d25590315864c2856db5039c0fd900911b9ee8fee6bb3710ac896abc",
+      "size_bytes": 22116,
+      "modified": "2026-06-09T10:46:08.752384"
+    },
+    "docs/api-reference/ternary-core-header.md": {
+      "sha512": "1105330ba4c906e313c399de2edf4c6d6a928de3ed40739d509fe9d0892f057d9dea5fbf1f292d2d21410033cbe84fc75a9ba880f42e36953ad92747748682b5",
+      "size_bytes": 13674,
+      "modified": "2026-06-09T10:46:08.752384"
+    },
+    "docs/api-reference/ternary-core-simd.md": {
+      "sha512": "5df052dc48b5225dae53fcfe83514cac41d30fc0801c902a4a313e44e0f954f204210b9cd561599287cedb0766d5b8f430b68d7861537ad74675fc136566783b",
+      "size_bytes": 20656,
+      "modified": "2026-06-09T10:46:08.752384"
+    },
+    "docs/architecture/ARCHITECTURE_EVOLUTION.md": {
+      "sha512": "ebac99fa00e4e8cc0c1dcafa8c0cdefe476ffa0fd04a39858f2a712198cd995078c9e83ba9bd8aeab99dc9d60c72fbfdbc19c74a4687a252922aa3b41966c368",
+      "size_bytes": 15913,
+      "modified": "2026-06-09T10:46:08.752384"
+    },
+    "docs/architecture/BRIDGE_ENDPOINTS_SPECIFICATION.md": {
+      "sha512": "b2787d74e7e3483a6b97a530c2500f25d9a880d94d046fabfee4821fc8fb2bbcf5dc7835949a744421929089c2da53d05d9538c54b787eaceb7c46c5aa68fbc4",
+      "size_bytes": 16890,
+      "modified": "2026-06-09T10:46:08.753278"
+    },
+    "docs/architecture/BRIDGE_LAYER_ARCHITECTURE.md": {
+      "sha512": "4f2516731fa96b7160259267740349f244a53e5e1ef262a46f839578023b34803b9b60403632c66539d5ac96dcf10eb63a2b36ce9d8871cd9478e122aa6818f0",
+      "size_bytes": 17076,
+      "modified": "2026-06-09T10:46:08.753278"
+    },
+    "docs/architecture/CANONICAL_INDEXING_FIX.md": {
+      "sha512": "524606d7ee413d8fc2be911a2133e0eed8fc074c4eb07b20ac21d6660a58ebfaab1f844d3f46737dcdf4062a5e9c14a9c9f50f7e9e457986ce5fd26e42d4c6b0",
+      "size_bytes": 6806,
+      "modified": "2026-06-09T10:46:08.753278"
+    },
+    "docs/architecture/architecture.md": {
+      "sha512": "4d92d474f294de790559116bd91a6f1395df0f7d56987b5cc61a8c37cd6b55fc2564f6977b54ac74532ec6688526843cce7a8ae28a59bdb3be57a1fdb270d449",
+      "size_bytes": 15183,
+      "modified": "2026-06-09T10:46:08.753278"
+    },
+    "docs/architecture/optimization-complexity-rationale.md": {
+      "sha512": "f66a7ec191584bc1d9314a92d5358cdd19c1d112e02a9abdd57b2b2185a0dbd12f307f93b80c5de13fd0d40da8fa10ffc235a2db2ae16c081dedf5c64ca0687a",
+      "size_bytes": 25788,
+      "modified": "2026-06-09T10:46:08.753278"
+    },
+    "docs/architecture/optimization-roadmap.md": {
+      "sha512": "474a5a26a81799cef9bd13a0b43fd0d52a829e8e6dff6a8509e43de732f8d37ab9aa9b63f981bd2a96e1ad72aa0f34c0c4576c039880f531a0e65d2d668c168a",
+      "size_bytes": 23382,
+      "modified": "2026-06-09T10:46:08.753278"
+    },
+    "docs/audits/DEAD_CODE_INVENTORY.md": {
+      "sha512": "cc81a4295a2dd742a932a8215f6170b81adcaa21aecf6643ee04523b7d7146f49a2291174ca3df318e0ca38271b46399b0ed77344dd2537122dec4be85cc5ecb",
+      "size_bytes": 14192,
+      "modified": "2026-06-09T10:46:08.753278"
+    },
+    "docs/audits/DISABLED_OPTIMIZATIONS.md": {
+      "sha512": "a00e48bc11fdfe3bae8cf8eac601d19fc8be674ed34eb01e89db67f1fab6b2b1046a5bdcfc5ebf8244db303b26665db019f7fda9df9c91a62c99d118471a6caa",
+      "size_bytes": 20817,
+      "modified": "2026-06-09T10:46:08.754588"
+    },
+    "docs/audits/README.md": {
+      "sha512": "9d9bf8245eb0d276933e1379cd08802cae2493c3c1c1b0410fef68a99d548352c60283e414e1978578cdf3839c9c3e3669bc5e7fc81b0b4e6f5fde00710bd0ee",
+      "size_bytes": 4605,
+      "modified": "2026-06-09T10:46:08.754588"
+    },
+    "docs/audits/REMEDIATION_GUIDE.md": {
+      "sha512": "a2076020de3793e296df6c9e79b32326708de18833be43992bfaf1d3e6eee61e8a837744f1d08167af0d61fd5959b709f833b3ee22faf8d901c8837848a0097a",
+      "size_bytes": 16315,
+      "modified": "2026-06-09T10:46:08.754588"
+    },
+    "docs/audits/TEST_COVERAGE_GAPS.md": {
+      "sha512": "71505d80e6f5541f9dd9a7bdd3fde26e57509752a9436605b8f438feaccf105db21aee71c096ed949310321791c6ad86674b0ba4adca934fc72b7304c717e663",
+      "size_bytes": 23566,
+      "modified": "2026-06-09T10:46:08.754588"
+    },
+    "docs/audits/UNUSED_INFRASTRUCTURE.md": {
+      "sha512": "fa236992234707b18139a8f96709c60abbf3fae60ae5e8c4ada8c4ce92fe39f65e673928e1ce411133860d392040d774a1518b920e7525f9c396fc3c0f250dbe",
+      "size_bytes": 19782,
+      "modified": "2026-06-09T10:46:08.754588"
+    },
+    "docs/build-system/README.md": {
+      "sha512": "09649957182a4ed2ef96c35ad3cd79df162ed698ed7e5b40551717f0b9ca24d7ed4c7c08c311cc510f737f354759b1064f70bc732bfc60028630327b415bf801",
+      "size_bytes": 17446,
+      "modified": "2026-06-09T10:46:08.754588"
+    },
+    "docs/build-system/artifact-organization.md": {
+      "sha512": "94ec867a05fa930d637a1eee6542ad8f372dd836f7d78b5047dae09604f0e72d7b948d4eca45ea989422c412c894bb3befff29f61ddeb3376c8b8b16fe754b61",
+      "size_bytes": 9660,
+      "modified": "2026-06-09T10:46:08.755680"
+    },
+    "docs/build-system/cleanup-system.md": {
+      "sha512": "bd158e26dde559088210544657e25941ec33d7b13e8e4720e2a46b4f7a070865a00c016f285248e170c83774dd75b95c363af4dcc08546cd2ae5376947ff316b",
+      "size_bytes": 20520,
+      "modified": "2026-06-09T10:46:08.755680"
+    },
+    "docs/build-system/setup-pgo.md": {
+      "sha512": "7e4806d6337fd51592d7a842a1086459f5c38d88bde2272f14dbb9709a0b03fc4835f3fb6abb6efd0cc91564e8050bb7f913feaa92850e2a552b864897cd9568",
+      "size_bytes": 17661,
+      "modified": "2026-06-09T10:46:08.755680"
+    },
+    "docs/build-system/setup-reference.md": {
+      "sha512": "504e38bed6731a1a9621539d3fe3a8a15cc8174864f49c14412362a313da18f979680f73d85443ce5019fe82aefe9aea522660a674472e69dfad8db97bbc3103",
+      "size_bytes": 15291,
+      "modified": "2026-06-09T10:46:08.755680"
+    },
+    "docs/build-system/setup-standard.md": {
+      "sha512": "33010d6cdff4f3cda2e0b90f20bfb9883eb5a3ebbd98e0f3d3e24c40212589213a618928a8a3cac271cf6e3a325f072c74907c421b5a0f16a1d3bd063553c8b6",
+      "size_bytes": 12556,
+      "modified": "2026-06-09T10:46:08.755680"
+    },
+    "docs/environment/AMD_LINUX_SETUP_GUIDE.md": {
+      "sha512": "166b87e062d23784991904ba1167ac849b5a0a8b8e1c805cfd9df2746906868ea7c217e88313be734376dee4aefdc9263cc2387a662906371c6cb8dc21d9012a",
+      "size_bytes": 12157,
+      "modified": "2026-06-09T10:46:08.755680"
+    },
+    "docs/environment/README.md": {
+      "sha512": "aeca58cb23ffccb2e7d2ad87a2c54a1870ea488e98ec4320c0dbbf1207f6183221d8fe6847662020992e54663d6b9a725f29bd309f718f006f5dc815413ef519",
+      "size_bytes": 2292,
+      "modified": "2026-08-11T08:51:03.474583"
+    },
+    "docs/features/micro-vs-macro-speedup.md": {
+      "sha512": "f1808a87f7e037d51a7ea81b5823a67b2619ee2a85e4080dcd105fe0edf8f2a8845ef2d6639e133fe9f84b42e522242ca49f9559b31b369513f1e894500f4c54",
+      "size_bytes": 8344,
+      "modified": "2026-06-09T10:46:08.756057"
+    },
+    "docs/features/optimization-leverage-report.md": {
+      "sha512": "abc654d72dbc8bec725f18ef89758e1e5e482162586488a4b1110487f438aefa465ac0a58dfd0c8b74136a02363c7909f49ee4224adb19234cfce79b9a3e255c",
+      "size_bytes": 12569,
+      "modified": "2026-06-09T10:46:08.757017"
+    },
+    "docs/features/phase4-fusion-plan.md": {
+      "sha512": "f1b0489c518411c3e6ca0bd31016fc39200043fd7eae9e6c0a43344b784b68abefdda969d07c1fe7e272a84c279e4090c1b7d5c39e3de454845e823ab27b965b",
+      "size_bytes": 35042,
+      "modified": "2026-06-09T10:46:08.757017"
+    },
+    "docs/features/phase4-poc-readme.md": {
+      "sha512": "77ce130aee7c19c4267b94ca073c9bc48339f18875910dbf71d4d65fc0d5c0770ffa0157b55ad5f98c71930158ef91a6210242c7cbf6dfb573b68728074885a4",
+      "size_bytes": 15218,
+      "modified": "2026-06-09T10:46:08.757017"
+    },
+    "docs/general-readme.md": {
+      "sha512": "cdacc3ee5ea9f6cc9e39f9f80a38dda9f3a593cdaea5d5623ed74a434e35636280aae9bfedb2b04c08a6d46edebc4abad5d32d0ea44fdd9bfadf7fef1234b0c8",
+      "size_bytes": 11112,
+      "modified": "2026-06-09T10:46:08.757056"
+    },
+    "docs/historical/BACKEND_FUSION_FINDINGS.md": {
+      "sha512": "5bd5529a30e43a07c13d4d81d02c8bbdf19744ef15b3b428d664c701dcaf03c44e5c8afcd32056aad48a8961aec394b7f836d04523584d24d480d6b0f6175984",
+      "size_bytes": 8576,
+      "modified": "2026-06-09T10:46:08.757056"
+    },
+    "docs/historical/BASELINE-PRE-AUTOLUT.md": {
+      "sha512": "f8fa977764b7cb0a065145cae60a9398b268715bd4d9af8386ca06530ac7a21975987b8fb7f4ed6cb55afd523a5d43d81a676ef1eab85f45d0cfb9951a9f8955",
+      "size_bytes": 7882,
+      "modified": "2026-06-09T10:46:08.757992"
+    },
+    "docs/historical/CANONICAL_INDEXING_ANALYSIS.md": {
+      "sha512": "bc09b5b1b0fa73b36ed788f81e0812ad0fccb5733492ac9f3cef1e2ee21f66091da1b21d8c8459402ba90a9d2af6a8ac404759d335f4908ab4faaa7960ca315d",
+      "size_bytes": 10590,
+      "modified": "2026-06-09T10:46:08.757992"
+    },
+    "docs/historical/COMPETITIVE_FINDINGS_SUMMARY.md": {
+      "sha512": "85b8406156b47dfdf74e4e6644befe04db38c0663214bab82b8820254858bc67741f6c3d735a9cb7db2c358f8051ecaf1bfc72393092264ee882c6c41127f1f4",
+      "size_bytes": 13052,
+      "modified": "2026-06-09T10:46:08.757992"
+    },
+    "docs/historical/GEMM_DISCOVERY_2025-11-23.md": {
+      "sha512": "7508c50d45ce66a2d12536a84aa116a25cf25e82bc42b5179da489278779bde6804e856dfbc9df09c478595dcabcfc1dcb1fed9df936c857e515dcd8837fc87b",
+      "size_bytes": 18923,
+      "modified": "2026-06-09T10:46:08.757992"
+    },
+    "docs/historical/ISSUE_OPENMP_CRASHES.md": {
+      "sha512": "4cb847ed3ff5e8c28e047239340d2e05480de68479bb75684844796e2cba47f05e5144380f6a942773efab485ab33de59ec24d6059c203f02052ae1ee7262183",
+      "size_bytes": 10810,
+      "modified": "2026-06-09T10:46:08.757992"
+    },
+    "docs/historical/OPTIMIZATION_SUMMARY_2025-11-23.md": {
+      "sha512": "a79ab5cf3048b2c7e7243d0df31e2d8d0594a43a340ecf42cebeeb4a8e483b42a962eed85cab0af39fa03f10cb04ea7a85059bcaae85ec018e3f56c58ccaf7b8",
+      "size_bytes": 18870,
+      "modified": "2026-06-09T10:46:08.758056"
+    },
+    "docs/historical/audits/COMPONENT_AUDIT_2025-11-24.md": {
+      "sha512": "5a36cb947acc3862a59d5af3fb3e76bc2dbaa259e1f3a4eafb79ba43aed35856615b9af44f56f21ccfbd46f93f44b7cf7e023cfcfd5df4edc03c5ed8021af8f7",
+      "size_bytes": 9102,
+      "modified": "2026-06-09T10:46:08.758056"
+    },
+    "docs/historical/audits/COMPONENT_MIGRATION_PLAN.md": {
+      "sha512": "35a657e4ff1939817aac13cc0fadb99b2fd30f5801a715d2115cd571f44c9b6d119cb70f1d7ab77e2dc030e4ed30f26c1aace85f4c69fa83abb62896b5eea6c3",
+      "size_bytes": 15241,
+      "modified": "2026-06-09T10:46:08.759129"
+    },
+    "docs/historical/audits/TECHNICAL_DEBT_CATALOG.md": {
+      "sha512": "edc2c235474a62aac780f15c4392aeb7764684ff9acb9696b2d8136c91e725efe2be2771987b046a4b17e134b154f785754e2432ef7ec5e017fc49010c2e70c5",
+      "size_bytes": 18559,
+      "modified": "2026-06-09T10:46:08.759129"
+    },
+    "docs/historical/benchmarks/BENCHMARK_FINDINGS_2025-11-25.md": {
+      "sha512": "401a61cb2ef5602e0c09d9e3da60de980e049f56c7657a59a7dd9c6e6f837b0a70ede70448d9c87b09d448a30d895189d416f400065c185556a7c551a8e53fd1",
+      "size_bytes": 8632,
+      "modified": "2026-06-09T10:46:08.759129"
+    },
+    "docs/historical/benchmarks/BENCHMARK_RESULTS_2025-11-25.md": {
+      "sha512": "5127a4645e648dea6981f10792bce5190f99db2156f33fd99dab3988f755caa7519b0ec7fa3d61e5c6dff292c28ab961ea568c84f1154d54acbd73edcb73cbd8",
+      "size_bytes": 9571,
+      "modified": "2026-06-09T10:46:08.759661"
+    },
+    "docs/historical/phases/PHASE_3.2_DUAL_SHUFFLE_ANALYSIS.md": {
+      "sha512": "17d2113046448e8feb9eb53f7f260494c5be32acff39bd6d70780165afac2dcb5e4bce3226b9bc78649b1afb9ed93d2e9de0e7b8aab71961d568ec05595791b5",
+      "size_bytes": 11927,
+      "modified": "2026-06-09T10:46:08.759661"
+    },
+    "docs/historical/phases/PHASE_3.3_FUSION_BASELINE.md": {
+      "sha512": "d39837e04974671c9d28214b246aa3d9f1ca56b00c0ddb330729cdc598e2713fd19e88cb607ee1ea09b6a9c23ef9389c2ecfdcdb928b2d56e6f127f30d6a5158",
+      "size_bytes": 15419,
+      "modified": "2026-06-09T10:46:08.760036"
+    },
+    "docs/historical/phases/PHASE_4_MATRIX_MULTIPLICATION_STATUS.md": {
+      "sha512": "d9441f97e841cf5d9d1ba3556b6320ada6a13dc7689a0575b6ae56da47f4701b75302b148ceae871105c28ef930b15ca11a2897acc36f156f0681a866722e3ff",
+      "size_bytes": 24053,
+      "modified": "2026-06-09T10:46:08.760036"
+    },
+    "docs/opportunities/DEPLOYMENT_DISTRIBUTION.md": {
+      "sha512": "52e97da13f019bffe26399627cb5f5e20dbb9d19f8fa1d90a703de952f7e699a10bd0b283a33330baaec3281d292cba2f413cb5cc5484689399a9ff40485caa9",
+      "size_bytes": 25482,
+      "modified": "2026-06-09T10:46:08.760036"
+    },
+    "docs/opportunities/INTEGRATION_OPPORTUNITIES.md": {
+      "sha512": "b3684ec8a370106c5c6fa1abd6050c0848f27add3dfcabe88923117baed04374bcea03100910159d1cecab5e14047d6a7ab3570800a1bad1eae3b7b332e89fe4",
+      "size_bytes": 27275,
+      "modified": "2026-06-09T10:46:08.760700"
+    },
+    "docs/opportunities/MISSING_FEATURES.md": {
+      "sha512": "96f8fc4e2a139b8eb3d079b0d34d410df4498290d220ad9c5e6002ae3dd7149975bc2f0075ccbeefdcc9855007335cec071ea9d5615cd9f5f199f7dafe720d11",
+      "size_bytes": 16057,
+      "modified": "2026-06-09T10:46:08.760700"
+    },
+    "docs/opportunities/README.md": {
+      "sha512": "cdc9f79b1ed7a6c668b3019ae31dcbe1e6f9e646a16e049d7f94ee51c2281864ebc85835130ebcb32bd61c16c12abce9ea8e7d0e9ba37322e3832e8f92237786",
+      "size_bytes": 5037,
+      "modified": "2026-06-09T10:46:08.760700"
+    },
+    "docs/opportunities/STRATEGIC_ROADMAP.md": {
+      "sha512": "af123bd347b4c7434a88646c66a902fc2457460e747a4785579215bceb5dd438c2848b3a8793e16c781e935ce5f898e817b28b571cd93e3615c36518682b8cb4",
+      "size_bytes": 19778,
+      "modified": "2026-06-09T10:46:08.760700"
+    },
+    "docs/opportunities/related-projects/EDGE_AI_FRAMEWORKS.md": {
+      "sha512": "a50030dd3692b21db66d53383bb420557ba276e34f850da3e840aa9c591ffc298688360f4fa8dfd8a31f088ddb151d7d69e59bd9dd9fd181911e13ea6170f1ec",
+      "size_bytes": 23382,
+      "modified": "2026-06-09T10:46:08.760700"
+    },
+    "docs/opportunities/related-projects/INFERENCE_ENGINES.md": {
+      "sha512": "5140121cb3d616b095c627715aaa779ffed9b8dc5205b5f613a6cdcc72aa58b7ac55d2e101930ccea2549dcdcfa7d7e6c930dc401e6f8abc1c7601e897f39807",
+      "size_bytes": 22145,
+      "modified": "2026-06-09T10:46:08.761609"
+    },
+    "docs/opportunities/related-projects/QUANTIZATION_LIBRARIES.md": {
+      "sha512": "c21de137cef4bc7a9f09e45b365517f26e42ecd3298c4f0f074a6bd12e4597b55fde922ec625af2d476954e8936ac2e4cb07c3ef584e5a2e217b2c04670c23b1",
+      "size_bytes": 23648,
+      "modified": "2026-06-09T10:46:08.761609"
+    },
+    "docs/opportunities/related-projects/README.md": {
+      "sha512": "47711521250ca926ae6fde4619688010c8489c1232fe23fbedcd6561ac67cb255cf34566ad929b2792ec0075173516a28d26ecc19f4b9be77d6e882808a47fa8",
+      "size_bytes": 8637,
+      "modified": "2026-06-09T10:46:08.761609"
+    },
+    "docs/opportunities/related-projects/RESEARCH_RESOURCES.md": {
+      "sha512": "3068e693935e2a6538ea8505d35f93cc19f957d6cfa82fa1e8718f5f6aa18ba588fed327fae1f235c49e1941cf637ce922c2e1039338dd2515e3417c8d60b564",
+      "size_bytes": 11398,
+      "modified": "2026-06-09T10:46:08.761609"
+    },
+    "docs/opportunities/related-projects/SIMD_OPTIMIZATION.md": {
+      "sha512": "c3ca8189a95fd2ab436016c30e1b9900f0245544f224e77ccb1384a57fbd16a4109fdd497c47c24ddc89fc4d095c18f5cd9ac5749b4f3d40e64c4dac712453b1",
+      "size_bytes": 17691,
+      "modified": "2026-06-09T10:46:08.761609"
+    },
+    "docs/opportunities/related-projects/TERNARY_BINARY_NETWORKS.md": {
+      "sha512": "24d62e210fac2e482ae531b34b336f0107ae5e6d21538832051c4876fb769bc657bc07dd185a0e444e24cdbc16bdcb8189741efa4b22450566246188134b57ee",
+      "size_bytes": 20503,
+      "modified": "2026-06-09T10:46:08.761609"
+    },
+    "docs/pgo/CLANG_INSTALLATION.md": {
+      "sha512": "0cb46fb131e4fe436acebb4249bca37fb3dd3d6c2a10c977a4dd737c6d1d80cf3bdca01a1df3d228666961bae37bba557e6227022c1af4cecb58b1bb1f4e333e",
+      "size_bytes": 6874,
+      "modified": "2026-06-09T10:46:08.761609"
+    },
+    "docs/pgo/PGO_AND_PATHS_FIX_REPORT.md": {
+      "sha512": "ebfc0b73f16977d4121e4624f5d72c90b261a2e8db666d54c7055f7b50e63e91e6c10748a383e4bc2147335f328611f1cdf967c9b881ff7231595a86463c741e",
+      "size_bytes": 9811,
+      "modified": "2026-06-09T10:46:08.762056"
+    },
+    "docs/pgo/PGO_LIMITATIONS.md": {
+      "sha512": "90d60fb6a8a918346154eae3e4c8514d7da6076eba7b62856563ced0b4c1a71aebb3af2386c3077338a3a255da0c63920126cdd863cd5df26a1901d2a3231505",
+      "size_bytes": 6565,
+      "modified": "2026-06-09T10:46:08.762056"
+    },
+    "docs/pgo/README.md": {
+      "sha512": "9087bedbfea3c2ed92c545b6bc7464680eeae40b379ea5a06d89d9b7cac8122fbba6ca5db21cdaf8169df00e0cdac2c1bd6f02cd2f3f7e163dd7383e6573fa61",
+      "size_bytes": 8831,
+      "modified": "2026-06-09T10:46:08.762056"
+    },
+    "docs/planning/ARM_NEON_ROADMAP.md": {
+      "sha512": "c3da3e1daa5e6c67cc56f09c287ef3bda8566a6e23f5a9ee47529e2d3e49a5dcbd1dcc0946985f044c93c32edd5334c9e830f80e062072d0eb0b5f97fca79753",
+      "size_bytes": 11063,
+      "modified": "2026-06-09T10:46:08.762056"
+    },
+    "docs/planning/ROADMAP.md": {
+      "sha512": "8f262c7de682a09298c75ed45228deeafcc7a995856f3d2f2ac5033417c1bb3ea4301fd139e6c5fe5ac34ce77e9f0c1e5bf6168a31cf8be079bd566aaac323ff",
+      "size_bytes": 13751,
+      "modified": "2026-06-09T10:46:08.763328"
+    },
+    "docs/planning/backend_api_design.md": {
+      "sha512": "59416c95bd1dfbefa4d28c086be84a16c3bc4f203f1ee01d5475de23100902fa21da0fc189354b310682816344e6c9fe7e3d239e0de0a85ba809dfba0d1c40dd",
+      "size_bytes": 14575,
+      "modified": "2026-06-09T10:46:08.763328"
+    },
+    "docs/planning/v1.2.0_implementation_plan_HISTORICAL.md": {
+      "sha512": "362cf3225a09aa42535378a9f2db5c31832f976be74aaf2be31f32b932aa506c25f2c6147b8905a621c3c267c7169c1a31156ba49dce5c842b9814d921942560",
+      "size_bytes": 29520,
+      "modified": "2026-06-09T10:46:08.763328"
+    },
+    "docs/profiling/README.md": {
+      "sha512": "6d627019499df53bf1f6cc413c57240badef172265fc65a1e6cdd17bfd19fffe2fe0e30ebde0b60abf5e2bd6d292732b62d70baf51e4aa3ff2bc6b71688b9d4d",
+      "size_bytes": 7467,
+      "modified": "2026-06-09T10:46:08.763328"
+    },
+    "docs/research/bitnet/BITNET_ARCHITECTURE_ANALYSIS.md": {
+      "sha512": "18549729eb56056ad9352e7f7d8f27da0042b94be3ad213e72abe5019f87a0a779fad74eab5f0cd684f0a9d0b8023022929582dbe0003202a26c86224f1b18b8",
+      "size_bytes": 18677,
+      "modified": "2026-06-09T10:46:08.764175"
+    },
+    "docs/research/bitnet/BITNET_INTEGRATION_STRATEGY.md": {
+      "sha512": "ec8f9f6e8e9e1469728bf5dead1dc37315c4a008f9c5ae8f919f63d6d454d7b02952806a041751c5f93ef7bc891b70bdd410ce93543252d1da05a468771baefc",
+      "size_bytes": 16222,
+      "modified": "2026-06-09T10:46:08.764407"
+    },
+    "docs/research/gemm-ml-optimization/COMPARISON_TABLE.md": {
+      "sha512": "aa39dad6c25021b5f8d4d9c3050dda0339c160e3bed1871aff2acc9e74058c8ba73b38b4ce206d44f3252eb79dcf8fd3a090be1b4c0a89e3f7a58c51747569aa",
+      "size_bytes": 3156,
+      "modified": "2026-06-09T10:46:08.764407"
+    },
+    "docs/research/gemm-ml-optimization/INVARIANTS_ANALYSIS.md": {
+      "sha512": "6eb99f2d2228b41f317330037aaa287df76a07e3918ec530284d1008950dce9b8a76379b8c7a94fa1c09a0ea429818029477746e3bbace54f54ca4c364393bb2",
+      "size_bytes": 7706,
+      "modified": "2026-06-09T10:46:08.764710"
+    },
+    "docs/research/gemm-ml-optimization/README.md": {
+      "sha512": "9ea2993f8925be65bcce0f51ee6cd8d094a57feacce8b445a7ec68e592d70194c1ad552823775bd8f3593cef18440fe5dac919d8e5ecc8a1de0f3d5508732d14",
+      "size_bytes": 10668,
+      "modified": "2026-06-09T10:46:08.764710"
+    },
+    "docs/research/gemm-ml-optimization/VAE_MANIFOLD_EXPLORATION.md": {
+      "sha512": "074c086992ff177021f79f8a808dca72ecb8077f8e27db0098485da5edd15b4a7fee68950372c3fd3be16b873111ae94bd337c4f9effcbd70201db19edadd1c2",
+      "size_bytes": 11137,
+      "modified": "2026-06-09T10:46:08.764710"
+    },
+    "docs/research/tritnet/TRITNET_GEMM_STATUS.md": {
+      "sha512": "1528b42dabf502060a7c7ced502f2f4916f62af21411506669f92e77fcda3de2f3205534144362e614517fb43c5e390fca927164b8d3111020f9e36ce34e82b5",
+      "size_bytes": 11197,
+      "modified": "2026-06-09T10:46:08.764710"
+    },
+    "docs/research/tritnet/TRITNET_ROADMAP.md": {
+      "sha512": "f05b681bc2d65e764201bdada21e01df4762322606f587e98d36b276b084a03cfe379230d71332e121947b40ca731fec756a888ed424318a47021d989df2c275",
+      "size_bytes": 16025,
+      "modified": "2026-08-11T08:51:19.234221"
+    },
+    "docs/research/tritnet/TRITNET_VISION.md": {
+      "sha512": "e0ca04a42a3ccd45fa7b2e3543d5a093b1cfb9ee8063bd21ac99d99b7a5e9a549df99fd8bd4c384f08674d7fc42e815ee3315c98c70027a16e7e6fc1e9e5f26e",
+      "size_bytes": 23517,
+      "modified": "2026-06-09T10:46:08.765312"
+    },
+    "docs/specifications/dense243_encoding_spec.md": {
+      "sha512": "c32bc0ea20d2ccb6558a0cbdb393e8b5dafc6d3a29a877189efd3861c03b130eb220453198baad0ef8763e82db12a5c417a28f158e28bd73d7b6166000828cd9",
+      "size_bytes": 10956,
+      "modified": "2026-08-11T09:03:44.015052"
+    },
+    "docs/specifications/encoding_ecosystem_overview.md": {
+      "sha512": "495886e7766195b5b0ada19f73d2ad01a4ddbf7feabc38d929a6c0f26d1b5a5c71dd9290af2a17de232e1df4feeda70eedf43ab8e6b85031063a5562f008d8b8",
+      "size_bytes": 13889,
+      "modified": "2026-06-09T10:46:08.765957"
+    },
+    "docs/specifications/triadsextet_encoding_spec.md": {
+      "sha512": "6e5a95a0b6f7be5238aed44cdac6bae946833732773c192b0369b31da9b34b56649d617be38f3f2c149f02d861cd60275e0f4b8c6b2633f11e9ffc32ff6a4cbf",
+      "size_bytes": 17085,
+      "modified": "2026-06-09T10:46:08.765957"
+    },
+    "opentimestamps/transfers/TRANSFER_20251215_GESTTALTT_TO_AIWHISPERERS.md": {
+      "sha512": "11fd597c76e8b5f94bd25284b51c5c08ed0dc386302e0c8d19257a6d8985aae6688aa677755fc1f304813c85dd8d1d7ce7ebeb6966db991448211b66cd23a1f6",
+      "size_bytes": 12378,
+      "modified": "2026-06-09T10:46:08.856136"
+    },
+    "pyproject.toml": {
+      "sha512": "b517f3f71030d05d01da6b829163e78fb0fe866066bcf4712a2a3192dcecb014bcd84e84f5683acfac1c0d63b549614d790464c0f248309489f039a996840aea",
+      "size_bytes": 7421,
+      "modified": "2026-06-09T10:46:08.857053"
+    },
+    "scripts/generate_compile_commands.py": {
+      "sha512": "fcdc2ecc3ffa04bcf1445f1c8bcd321f8c96daa6a0b730fa760dcc73d3ebf5a1543c9008ceefca93dc0491739388636362a2cb552b8815286eb37a599a0bef9f",
+      "size_bytes": 4500,
+      "modified": "2026-06-09T10:46:08.866236"
+    },
+    "scripts/setup_dev_environment.py": {
+      "sha512": "a77a3c09c889b957294c65aeb3f8d04de74964ebe6909acb7800f4d91e52e03af1a2e9e6bed9d489dca4220d781bb3ff9c648d05f58e0a5e1d0b9460c66b108f",
+      "size_bytes": 12823,
+      "modified": "2026-06-09T10:46:08.867039"
+    },
+    "src/core/algebra/ternary_algebra.h": {
+      "sha512": "af24560133fd071c093d2c25ed5343abfabbe422128af18f85f84393d035e75e4c48f2b7e339ab8e67f973b875368c6025abb1599a9db48b0c245f0e4703901d",
+      "size_bytes": 7671,
+      "modified": "2026-06-09T10:46:08.867245"
+    },
+    "src/core/algebra/ternary_canonical_lut.h": {
+      "sha512": "797ab2a66a796a0105e3532c175c292edfcc5bcc56885175663c44134c4bf3f72044bf067f388dd8b3c319a5f67eb59f4188d893bc741bb288f3ab691871a7e9",
+      "size_bytes": 10052,
+      "modified": "2026-06-09T10:46:08.867466"
+    },
+    "src/core/algebra/ternary_lut_gen.h": {
+      "sha512": "cc1c1d94430fc044621de423ae64789c3b7c02f700c54ef9bd3f65ce5dc8dc94fa233432a4d5e33b0565bf0592ce25813d4f45c93e1dba8d1baca4ce9c4fd6b6",
+      "size_bytes": 6112,
+      "modified": "2026-06-09T10:46:08.867466"
+    },
+    "src/core/common/ternary_errors.h": {
+      "sha512": "199767ba5a3411d70c2b7fa41559843bb5a4f7d122c0e08fa4a214079c3a8e2e373490574b80ce01e82c4ddbb45da7d1b698852fa2f54c4d545d1f9eb51ee66c",
+      "size_bytes": 4172,
+      "modified": "2026-06-09T10:46:08.867466"
+    },
+    "src/core/config/optimization_config.h": {
+      "sha512": "8d547c49aa011984dd2c58a1638e9b1543cb07e7100a854367c38d2339bb6c304b4ab0b8166b5275a27c3d5e8745ace80fa834a917905c7083281cf0988c20e8",
+      "size_bytes": 5385,
+      "modified": "2026-06-09T10:46:08.867466"
+    },
+    "src/core/core_api.h": {
+      "sha512": "427b1a68d623cf2bf3b4eff6ed158dac4aa213f2a3b2d7184c38e5356fe8eb3e3ddb4cd5686ac281cfaeb198c51aa164c5bfa8f73dedf7896822d1d92f13a78f",
+      "size_bytes": 3375,
+      "modified": "2026-06-09T10:46:08.867466"
+    },
+    "src/core/embeddings/ternary_embedding_lut.h": {
+      "sha512": "74b1a2a59ee85507384613a1ec4aa0d46acc83a6b3fffa4070fea19d4d97aef6454c178509e4cd987c49af0373a03827486518e5eed77125e42f985873a4b714",
+      "size_bytes": 7898,
+      "modified": "2026-06-09T10:46:08.867466"
+    },
+    "src/core/ffi/ternary_c_api.h": {
+      "sha512": "ebf0e6bd52fe4e8dd0b58de1f8ed144488871df4e2aa85fcf448e6b3946d6d5c8afbceef36ceafb3ca4fef425c79d2583a8906cb7bafd0cdd43ee0af3e1577bd",
+      "size_bytes": 7808,
+      "modified": "2026-06-09T10:46:08.867466"
+    },
+    "src/core/packing/octet_pack.h": {
+      "sha512": "6ab397847eb971ded40d7b766d5f1cc2f0e893d1394dda2a952011a86d9f4d5415d9738333ac07218a4f94ec45f094d982359e78c21e1ed83d455c8e861c88ce",
+      "size_bytes": 8689,
+      "modified": "2026-06-09T10:46:08.867466"
+    },
+    "src/core/packing/sixtet_pack.h": {
+      "sha512": "85fd24868eed05462310d637080d89d3935805090ef2c25fb6d9dc95c12a020e2e4116c5824a9fe3828963b1be809741b388c8d351a0cb076cb67ed8de34445a",
+      "size_bytes": 9729,
+      "modified": "2026-06-09T10:46:08.868693"
+    },
+    "src/core/profiling/ternary_profiler.h": {
+      "sha512": "ed7d4425a980a528c23854cfaff75c1eeab11757d551447af6135fa82d6b60ec5392e963bc2b5e0ab547e6829844d87ef386a4d2dae91033a25a6d14bfac8e1e",
+      "size_bytes": 9531,
+      "modified": "2026-06-09T10:46:08.868693"
+    },
+    "src/core/simd/backend_avx2_v1_baseline.cpp": {
+      "sha512": "5c8c3ef046d76c872a80f5fe3c9ebdfd21016dfecec46e1623c174173007121e8fe8dcea130fbad860e68f29b1e88643343683629b5d3fb5a982b44c71455956",
+      "size_bytes": 4583,
+      "modified": "2026-06-09T10:46:08.868693"
+    },
+    "src/core/simd/backend_avx2_v2_optimized.cpp": {
+      "sha512": "84540f7f2a5f546c42fd9c77902ee8faa8d20ba34132634b8e4fbfcb4fe494e5ec736050c4b3c2e966ceaac12ce71040959d313f2aac70cc254e2a0db047ba98",
+      "size_bytes": 23548,
+      "modified": "2026-06-09T10:46:08.869054"
+    },
+    "src/core/simd/backend_plugin_api.h": {
+      "sha512": "58710d0ec2dd00b90f25c4365cb892b2a202130c9b29bede7fb9a83db27fc8cfad254f2fd91e5d9044da1982b65e8de4e055cf725a528125a5263f22b41748ab",
+      "size_bytes": 10449,
+      "modified": "2026-06-09T10:46:08.869054"
+    },
+    "src/core/simd/backend_registry_dispatch.cpp": {
+      "sha512": "bdc3d9508c4625ece81af5b60bf62635cac5dfefb188fd12d43e642aab651463f8ca93e6e6b9ce7319ce1b9eda160ac1e752464067ed8226b7da2f1e2ebe01a8",
+      "size_bytes": 10978,
+      "modified": "2026-06-09T10:46:08.869054"
+    },
+    "src/core/simd/backend_scalar_impl.cpp": {
+      "sha512": "2eb61e2579be2b8b077f351635bea42a144afd49b6624e9d6e72e0f4359353fe018d81bd9afbe7b57d0206f376a246fc9ec10d407b8d6e49be921d33c1f14c76",
+      "size_bytes": 4242,
+      "modified": "2026-06-09T10:46:08.869054"
+    },
+    "src/core/simd/cpu_simd_capability.h": {
+      "sha512": "2e141a626cb2476d1cf79f1d9f60d9d6d4fa229ed0e8e75b05c273395b16d9e828a8c82153fbce0fbfc1c9ddb9ff17e234a214760185ac2e0be3d97e533688dd",
+      "size_bytes": 6032,
+      "modified": "2026-06-09T10:46:08.869054"
+    },
+    "src/core/simd/fused_binary_unary_ops.h": {
+      "sha512": "29cf289cd875b1181abe7d609d1aca5161e751b5bfc04c9d28545ed0f8cab56dfd8964477ef713fbd5caaa3c3a7d68ab95f3b32c29d2697133b433f40e84c555",
+      "size_bytes": 10570,
+      "modified": "2026-06-09T10:46:08.869829"
+    },
+    "src/core/simd/fused_bridge_ops.h": {
+      "sha512": "5843c8c0e5acc3ab0df6c8fc4724a78f562eb1e6ee1b308dcf212055f6b2ee2650ee0dde458ae3b49361482a802a08960dbfe2696b386f533b05fa1466c47861",
+      "size_bytes": 14073,
+      "modified": "2026-06-09T10:46:08.869829"
+    },
+    "src/core/simd/opt_canonical_index.h": {
+      "sha512": "616332ab6a49e51b233906c2fb7355136a6375943a2a6f4d2103e3299c33a79ef1e5162b2151afcac437c08d0e5161a5d8d1be956b6d801d94f398f99ed76e9a",
+      "size_bytes": 9100,
+      "modified": "2026-06-09T10:46:08.869829"
+    },
+    "src/core/simd/opt_dual_shuffle_xor.h": {
+      "sha512": "045c85dd2347679644708c87a711b8522b010879d314229812641c373eee7be0b2c0fe2fb44938b0c5096774aaa412ed2e7d0d69a1d7c8ae32912d825ef74d6f",
+      "size_bytes": 13507,
+      "modified": "2026-06-09T10:46:08.870053"
+    },
+    "src/core/simd/opt_lut_256byte_expanded.h": {
+      "sha512": "72598a2dde7412843006d2506a5fbde617dfecec27b8fe539177eea2d930ee1969d1b60c0f68fcccbcc817adeda9cd9d0d55ef38181e161eeb702e6ca17c4d48",
+      "size_bytes": 11608,
+      "modified": "2026-06-09T10:46:08.870053"
+    },
+    "src/core/simd/scalar_golden_baseline.h": {
+      "sha512": "6a881dbfadea0be841f5fd2e2be7d88c7aadd518fdb7a0dfae5a55ad996659693ac04bf6cc1412fa3518c38dc87ab61c3d7a6345735b49d73a0009d82ccb5e78",
+      "size_bytes": 9719,
+      "modified": "2026-06-09T10:46:08.870053"
+    },
+    "src/core/simd/simd_avx2_32trit_ops.h": {
+      "sha512": "ecfc2e3c80a7c5690037db1679791c2b807f8aff17eb93ec433414bfb64d64d3cfa780c16a4c5bd6a9189f2868a1dc65bed7391f692a3179bab097d24ea1caef",
+      "size_bytes": 4159,
+      "modified": "2026-06-09T10:46:08.870053"
+    },
+    "src/core/simd/ternary_gemm_zero_skip.cpp": {
+      "sha512": "a13ff9548d66eda5732b494b06ce1f19df566a8209e2aa22499284140e8f4a862724e474f2e52dda82b92de74e8c4d75243b4f9b77c8528b235d257c23d80523",
+      "size_bytes": 14269,
+      "modified": "2026-06-11T09:27:14.146996"
+    },
+    "src/core/simd/ternary_gemm_zero_skip.h": {
+      "sha512": "bc4648328d3000a24c1dde3890332974dc685ab1ae8bc983f50991113a695ec5d49ffe7995892651edc604f414c0f77edce80470abebce90d88101a15763a790",
+      "size_bytes": 4060,
+      "modified": "2026-06-11T09:24:55.696422"
+    },
+    "src/engine/bindings_backend_api.cpp": {
+      "sha512": "8ac04e8a33cd8bf8229ffae62d5fc8af78c797e6c8665d468cecb1710e68d91b5ee5fee6cff0c042bba129aacc359d89a1cb0d262f5295f5aba7b4e44076cbd0",
+      "size_bytes": 12773,
+      "modified": "2026-06-09T10:46:08.870053"
+    },
+    "src/engine/bindings_core_ops.cpp": {
+      "sha512": "999d4f86fc1b236a5c5837851080d4ae64b64a349380a2d73521d634121babe486f5e424a64ccdd2d2354817e7fd802af3959d7a20d8e5fdf002a306f0e58339",
+      "size_bytes": 27351,
+      "modified": "2026-06-09T11:09:24.456261"
+    },
+    "src/engine/bindings_dense243.cpp": {
+      "sha512": "fb1164e4ced64d0608916e0a9f5e795ac42732ab750e51a2d920f57acb184f1e7cdb13ac6b6fddebf3f87ebef402fd15623087ec2f57a5208fb0595065c05bf2",
+      "size_bytes": 12199,
+      "modified": "2026-06-09T10:46:08.871429"
+    },
+    "src/engine/bindings_tritnet_gemm.cpp": {
+      "sha512": "f4b89c07921f1dfb6b5568999df7f32cf6a3a2ec7c607ff8694e4a12c6c3438c957c45dad425dcfb68fe0a596b9762d01e3c93e143095ad513bbfb7097b6fd7c",
+      "size_bytes": 11001,
+      "modified": "2026-06-09T10:46:08.871429"
+    },
+    "src/engine/bindings_zero_skip_gemm.cpp": {
+      "sha512": "50d5a911cf6228ef5e8e29a7fce8ad294f7ac993cb9639a93b7d59bb71e4d7e47cd91c94be9ad40661d73aeacba134012c45c1ed1c89b261144b9c5613e613b6",
+      "size_bytes": 9150,
+      "modified": "2026-06-11T09:27:53.353575"
+    },
+    "src/engine/dense243/ternary_dense243.h": {
+      "sha512": "69ffc2122f43dc7370e1f8d759a8338648046ad1ed8d6d25b6ee6db5ce5e0cc227a47f3e0806d390b2e17cac25bd22923442ac23ea0a7d259003e01771cc7ff2",
+      "size_bytes": 10315,
+      "modified": "2026-08-11T09:03:31.041357"
+    },
+    "src/engine/dense243/ternary_dense243_simd.h": {
+      "sha512": "8f37b18b5b9f173af27ad450a573e159711056c1d65ddb210329bb731e903af41a824e8043cc80b85442cd2a9c7b5499412eca169f25adc1330b47f01ad711a9",
+      "size_bytes": 15290,
+      "modified": "2026-06-09T10:46:08.872014"
+    },
+    "src/engine/dense243/ternary_triadsextet.h": {
+      "sha512": "43ab3fe3e137f6c3a5ffef8a3f00569a107b056ea3807a46a3b5051c9136766f27de993cacb83321e570ae13690b17ade3cd9ff267ed06294843c47e9fb0ea33",
+      "size_bytes": 14876,
+      "modified": "2026-06-09T10:46:08.872014"
+    },
+    "tests/python/compile_test.py": {
+      "sha512": "799df65b9d39ad5cce0844ece376f297d0164362981ca96c3da0ae1d3162c775dfcb9995d843b3a6f85b746480214d87c985d47f4f4b872220002c2d8248bc76",
+      "size_bytes": 3015,
+      "modified": "2026-06-09T10:46:08.873052"
+    },
+    "tests/python/quality_gates.py": {
+      "sha512": "3b96635cb1fff8e6d76c33177958fa1d983b286eea98eea8efc280b640903f18d19d29d4e863c59f0aa1821c030e3b310a91c970471f88489472b50e785d1f71",
+      "size_bytes": 20781,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/run_simd_harness.py": {
+      "sha512": "8b5d43705fb8c3d686b99fe4d292130b77e445020c446083a27ea6842e39a806015624b6a697c74fb5e5b0aed4a70f18977c27bf4fd82b11d99f80c1c066c0cf",
+      "size_bytes": 16339,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/setup_test.py": {
+      "sha512": "e89788aacda78be8b6e010d42081591d6d56ae1601744d316e27c899af7c44cbcfdb1d509808b3fde8f08af7699b7eb4e5329bc61142cc3451164e04fabd29c2",
+      "size_bytes": 602,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_backend_integration.py": {
+      "sha512": "7009a3294ca80fc7f51c1246d238ffee4b19e77accd4d267dfe367524f8d743508f4617e66b1a7bb2b02f14a447eca834ccac7caf663ac9c976870f31772bb2b",
+      "size_bytes": 15170,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_canonical_lut.py": {
+      "sha512": "a69bd5e3fd97495238c7a124a4254d52b260591b149e407f37b11966f8090fc6c243feec651ecd32445f6923a5e368e100382b0f155e3d06dfce238971c44b19",
+      "size_bytes": 5372,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_capabilities.py": {
+      "sha512": "73457f02574bccc564e0df225970cb0bd0dbce9442ae9ce13f9db92fd35989ed1ee7496e26e98a49b55c7eee502aa6486ec9046b6b0544acf529aee6061becc2",
+      "size_bytes": 6450,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_dense243.py": {
+      "sha512": "1bad05fdabd8b792544c30c53036a3696647ad51ea70bc61045a3270f4494b3d5d00d0891598a8e1eac7aeb9b394df92582139d0adc8fb7d6926ff642fc38a49",
+      "size_bytes": 3648,
+      "modified": "2026-08-11T08:19:57.996830"
+    },
+    "tests/python/test_dual_shuffle_validation.py": {
+      "sha512": "89dc30f90c1b6795198f611e521d20849698ca85d6b56345b1ce852bead111ca9aa0cf4448fb4ea0db871474556cae051110483e5ee9cad41d489d6de6cf16d1",
+      "size_bytes": 6899,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_errors.py": {
+      "sha512": "d7d571f0535b93e0cc83b0b2d5fc37037b07ebd9cf364a974c2048844b767af5bbdf9378fa2053d61d2fd4831af07394239bb6780bac1050cc02427e34fa8853",
+      "size_bytes": 8597,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_fused_op_bug.py": {
+      "sha512": "faa526c30c51c2b0815bc39859e1e74cc75554d4d7d2f6b33a8e4f9107ef523d3da5aab0e91f300e0918961232ef123794f70b82571eecb6b164ad7ef997deeb",
+      "size_bytes": 2332,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_fusion.py": {
+      "sha512": "b009745de32cdc6c69a58241e6cf314fde492c8ef35856193b32a1fd64251bf31b61911dd34e05eaab9280572525b1c29a0b8287640cff357dd52730fdd856a0",
+      "size_bytes": 9578,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_fusion_correctness.py": {
+      "sha512": "98e043c6b44cd2d55ae9b8382f4a1af2cec0d483605506679e1246018af334fbc1c2fa84f30c6a7fa9898bc459092f17f1721410b4c0a5d0682d31b9d056ae61",
+      "size_bytes": 4816,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_omp.py": {
+      "sha512": "50902f4682555e000bac67179b6b5081bee8ba0f00e51ef80a406b084f19d1e29aec847a2993fba7dcc9bc155d06fcd3fa20aacbd20a63e2377240243314d16e",
+      "size_bytes": 3258,
+      "modified": "2026-06-09T11:10:12.332611"
+    },
+    "tests/python/test_path_fixes.py": {
+      "sha512": "c39f95c1bcf6a2ce1aee68611b9f855cdc43c2252872e2c18fce07a8d9261aa4195c18de172b42ff2ed758a1605facdd9575eeed886853809e96b90cb9253e2e",
+      "size_bytes": 5549,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_phase0.py": {
+      "sha512": "663d58258ef8108446751a1023ed0500ada9519b50341f8a48693471e63a86a0d5f5aceb7d0126721f08776c01647d4c4ce9e46609ef0034deabb3ed43f3a721",
+      "size_bytes": 7439,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_simd_python.py": {
+      "sha512": "721e9c54e980c3f99ddc86fca29af09e1f884d0415653fc366bf58aa2b679c7c4b60223246a961412f341b08c16fa829ce763d906473f5e7f9bcd0fc9178e0ca",
+      "size_bytes": 546,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_simd_validation.py": {
+      "sha512": "e58b098c5004c106800cc26e7c637c0c7f120f6683813f247058bb36c3c311974a5885a9f934f36e773215e42bdebf2ea685818c8556bab29095285acf826159",
+      "size_bytes": 9875,
+      "modified": "2026-06-09T10:46:08.874088"
+    },
+    "tests/python/test_tritnet_gemm_integration.py": {
+      "sha512": "3f66fe23579766cf7cd28800a6cf934dada9c7edf62ad436c1ce6a2755467cfebe0374956c974059c449a385c58335b2f6d7ec30a5f96a6a15e6ed4080a751df",
+      "size_bytes": 7352,
+      "modified": "2026-06-09T10:46:08.875052"
+    },
+    "tests/python/test_zero_skip_gemm.py": {
+      "sha512": "833a113cec5e2c920f6fd54ef3a9ce7b6d9b5fe3dac1bd63055b7dc718bed2456056033ddc65cc5e85412bc7bdced940ddc37f66f8c6d2b4ae4190bbc90380f0",
+      "size_bytes": 6001,
+      "modified": "2026-08-11T08:27:58.654534"
+    },
+    "tests/run_tests.py": {
+      "sha512": "2953620a7385ffc997d42b95f214ab6eb3ef0a09dd1be82c23cc505e3093bec54852666225f434d3f652f44a73089faf60709acebaf42959984e41c42f284b86",
+      "size_bytes": 10649,
+      "modified": "2026-08-11T08:28:15.484857"
+    }
+  }
+}
