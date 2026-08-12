@@ -75,3 +75,6 @@ toolkit/
 !NOTICE
 !CONTRIBUTING.md
 build_log.txt
+
+# Personal Claude Code preferences (not project config; contents vary per contributor)
+.claude/CLAUDE.local.md
