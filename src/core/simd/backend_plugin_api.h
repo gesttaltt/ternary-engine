@@ -328,4 +328,4 @@ ternary_backend_shutdown();
 }
 #endif
 
-#endif  // TERNARY_BACKEND_INTERFACE_H
+#endif  // BACKEND_PLUGIN_API_H

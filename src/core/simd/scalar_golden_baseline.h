@@ -301,4 +301,4 @@ inline PropertyTestResult test_tnot_properties() {
 
 } // namespace ternary_reference
 
-#endif // TERNARY_SCALAR_REFERENCE_H
+#endif // SCALAR_GOLDEN_BASELINE_H

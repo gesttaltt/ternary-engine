@@ -249,4 +249,4 @@ static inline uint8_t fused_tnot_tmax_scalar(uint8_t a, uint8_t b) {
 //
 // =============================================================================
 
-#endif // TERNARY_FUSION_H
+#endif // FUSED_BINARY_UNARY_OPS_H

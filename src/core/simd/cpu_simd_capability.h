@@ -182,4 +182,4 @@ inline const char* simd_level_name(SIMDLevel level) {
     }
 }
 
-#endif // TERNARY_CPU_DETECT_H
+#endif // CPU_SIMD_CAPABILITY_H

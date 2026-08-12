@@ -361,4 +361,4 @@ __m256i result_vec = tadd_lut256b_avx2(a_vec, b_vec);
 }
 #endif
 
-#endif  // TERNARY_LUT_256B_H
+#endif  // OPT_LUT_256BYTE_EXPANDED_H
