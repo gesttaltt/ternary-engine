@@ -171,26 +171,38 @@ py::array_t<uint8_t> process_binary_array(
         // OPT-NUMA: guided scheduling for multi-CCD CPUs (Ryzen/EPYC)
         // Guided schedule adapts chunk sizes dynamically
         // Note: proc_bind(spread) removed for MSVC compatibility (OpenMP 4.0 feature)
-        #pragma omp parallel for schedule(guided, 4)
-        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
-            // OPT-PREFETCH: Prefetch next cache lines to hide memory latency
-            if (idx + PREFETCH_DIST < n_simd_blocks) {
-                _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
-                _mm_prefetch((const char*)(b_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+        // FENCE FIX: split into parallel + for so each thread can sfence its own
+        // NT stores exactly once, after its share of the loop but before the
+        // region's implicit join barrier. A single sfence per thread guarantees
+        // that thread's writes are globally visible; sfence-per-block (the prior
+        // version) issued the same guarantee ~n_simd_blocks/32 times redundantly.
+        #pragma omp parallel
+        {
+            #pragma omp for schedule(guided, 4)
+            for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
+                // OPT-PREFETCH: Prefetch next cache lines to hide memory latency
+                if (idx + PREFETCH_DIST < n_simd_blocks) {
+                    _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+                    _mm_prefetch((const char*)(b_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+                }
+
+                __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
+                __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + idx));
+                __m256i vr = simd_op(va, vb);
+
+                // OPT-STREAM: Use streaming stores for very large arrays to reduce cache pollution
+                // FIX: Alignment check performed above, safe to use streaming stores here
+                if (use_streaming) {
+                    _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
+                } else {
+                    _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+                }
             }
 
-            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
-            __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + idx));
-            __m256i vr = simd_op(va, vb);
-
-            // OPT-STREAM: Use streaming stores for very large arrays to reduce cache pollution
-            // FIX: Alignment check performed above, safe to use streaming stores here
+            // Fence once per thread, after this thread's share of streaming
+            // stores, before the parallel region's implicit barrier.
             if (use_streaming) {
-                _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
-                // Fence inside parallel region so all worker threads' NT stores are ordered
                 _mm_sfence();
-            } else {
-                _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
             }
         }
 
@@ -248,28 +260,37 @@ py::array_t<uint8_t> process_unary_array(
         // OPT-NUMA: guided scheduling for multi-CCD CPUs (Ryzen/EPYC)
         // Guided schedule adapts chunk sizes dynamically
         // Note: proc_bind(spread) removed for MSVC compatibility (OpenMP 4.0 feature)
-        #pragma omp parallel for schedule(guided, 4)
-        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
-            // OPT-PREFETCH: Prefetch next cache lines to hide memory latency
-            if (idx + PREFETCH_DIST < n_simd_blocks) {
-                _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+        // FENCE FIX: split into parallel + for so each thread can sfence its own
+        // NT stores exactly once, after its share of the loop but before the
+        // region's implicit join barrier. A single sfence issued by only the
+        // master thread after the (combined) parallel-for join does not fence
+        // other worker threads' non-temporal stores — see process_binary_array.
+        #pragma omp parallel
+        {
+            #pragma omp for schedule(guided, 4)
+            for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
+                // OPT-PREFETCH: Prefetch next cache lines to hide memory latency
+                if (idx + PREFETCH_DIST < n_simd_blocks) {
+                    _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+                }
+
+                __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
+                __m256i vr = simd_op(va);
+
+                // OPT-STREAM: Use streaming stores for very large arrays to reduce cache pollution
+                // FIX: Alignment check performed above, safe to use streaming stores here
+                if (use_streaming) {
+                    _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
+                } else {
+                    _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+                }
             }
 
-            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
-            __m256i vr = simd_op(va);
-
-            // OPT-STREAM: Use streaming stores for very large arrays to reduce cache pollution
-            // FIX: Alignment check performed above, safe to use streaming stores here
+            // Fence once per thread, after this thread's share of streaming
+            // stores, before the parallel region's implicit barrier.
             if (use_streaming) {
-                _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
-            } else {
-                _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+                _mm_sfence();
             }
-        }
-
-        // Memory fence after streaming stores to ensure visibility
-        if (use_streaming) {
-            _mm_sfence();
         }
 
         i = n_simd_blocks;
@@ -388,26 +409,32 @@ py::array_t<int8_t> process_binary_array_int8(
         ssize_t n_simd_blocks = (n / 32) * 32;
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(r_ptr);
 
-        #pragma omp parallel for schedule(guided, 4)
-        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
-            if (idx + PREFETCH_DIST < n_simd_blocks) {
-                _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
-                _mm_prefetch((const char*)(b_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
-            }
+        // FENCE FIX: split into parallel + for so each thread can sfence its own
+        // NT stores exactly once, after its share of the loop but before the
+        // region's implicit join barrier — see process_binary_array.
+        #pragma omp parallel
+        {
+            #pragma omp for schedule(guided, 4)
+            for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
+                if (idx + PREFETCH_DIST < n_simd_blocks) {
+                    _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+                    _mm_prefetch((const char*)(b_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+                }
 
-            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
-            __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + idx));
-            __m256i vr = simd_op(va, vb);
+                __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
+                __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + idx));
+                __m256i vr = simd_op(va, vb);
+
+                if (use_streaming) {
+                    _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
+                } else {
+                    _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+                }
+            }
 
             if (use_streaming) {
-                _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
-            } else {
-                _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+                _mm_sfence();
             }
-        }
-
-        if (use_streaming) {
-            _mm_sfence();
         }
 
         i = n_simd_blocks;
@@ -460,24 +487,30 @@ py::array_t<int8_t> process_unary_array_int8(
         ssize_t n_simd_blocks = (n / 32) * 32;
         bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(r_ptr);
 
-        #pragma omp parallel for schedule(guided, 4)
-        for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
-            if (idx + PREFETCH_DIST < n_simd_blocks) {
-                _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
-            }
+        // FENCE FIX: split into parallel + for so each thread can sfence its own
+        // NT stores exactly once, after its share of the loop but before the
+        // region's implicit join barrier — see process_binary_array.
+        #pragma omp parallel
+        {
+            #pragma omp for schedule(guided, 4)
+            for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
+                if (idx + PREFETCH_DIST < n_simd_blocks) {
+                    _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
+                }
 
-            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
-            __m256i vr = simd_op(va);
+                __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
+                __m256i vr = simd_op(va);
+
+                if (use_streaming) {
+                    _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
+                } else {
+                    _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+                }
+            }
 
             if (use_streaming) {
-                _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
-            } else {
-                _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
+                _mm_sfence();
             }
-        }
-
-        if (use_streaming) {
-            _mm_sfence();
         }
 
         i = n_simd_blocks;

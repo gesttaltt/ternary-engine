@@ -92,7 +92,10 @@ void ternary_gemm_zero_skip_avx2(
 
 /* AVX2 k-parallel tiled kernel (CSR, OpenMP over k, thread-private CT).
  * Parallelises over activation rows so each thread's AT slice fits in L2.
- * Falls back to ternary_gemm_zero_skip_avx2 when OpenMP is absent. */
+ * When OpenMP is absent, runs a single-threaded k-loop with the same CSR
+ * SAXPY inner loop (not a call into ternary_gemm_zero_skip_avx2 — that
+ * kernel takes a CSC, not a CSR, and is a separately maintained code path;
+ * a fix to one SAXPY loop is not automatically applied to the other). */
 void ternary_gemm_zero_skip_tiled(
     int M, int N, int K,
     const float*       A,

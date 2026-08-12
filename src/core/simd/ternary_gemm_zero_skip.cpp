@@ -16,6 +16,7 @@
 #include "ternary_gemm_zero_skip.h"
 #include <stdlib.h>
 #include <string.h>
+#include <new>  /* std::bad_alloc: extern "C" linkage doesn't block C++ exceptions here */
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -31,18 +32,28 @@
 
 TernaryCSC* build_ternary_csc(const int8_t* B, int K, int N) {
     TernaryCSC* csc = (TernaryCSC*)malloc(sizeof(TernaryCSC));
+    if (!csc) return nullptr;
     csc->K = K;
     csc->N = N;
 
+    /* size_t loop bound: K*N as int overflows past ~46340x46340 (INT_MAX) */
+    size_t total = (size_t)K * (size_t)N;
     int nnz = 0;
-    for (int i = 0; i < K * N; i++) {
+    for (size_t i = 0; i < total; i++) {
         if (B[i] != 0) nnz++;
     }
     csc->nnz = nnz;
 
-    csc->col_ptr = (int*)malloc((N + 1) * sizeof(int));
-    csc->row_idx = (int*)malloc(nnz * sizeof(int));
-    csc->signs   = (int8_t*)malloc(nnz * sizeof(int8_t));
+    csc->col_ptr = (int*)malloc((size_t)(N + 1) * sizeof(int));
+    csc->row_idx = (int*)malloc((size_t)nnz * sizeof(int));
+    csc->signs   = (int8_t*)malloc((size_t)nnz * sizeof(int8_t));
+    if (!csc->col_ptr || !csc->row_idx || !csc->signs) {
+        free(csc->col_ptr);
+        free(csc->row_idx);
+        free(csc->signs);
+        free(csc);
+        return nullptr;
+    }
 
     /* B is [K, N] row-major: B[k, j] = B[k*N + j] */
     int ptr = 0;
@@ -83,18 +94,28 @@ void free_ternary_csc(TernaryCSC* csc) {
 
 TernaryCSR* build_ternary_csr(const int8_t* B, int K, int N) {
     TernaryCSR* csr = (TernaryCSR*)malloc(sizeof(TernaryCSR));
+    if (!csr) return nullptr;
     csr->K = K;
     csr->N = N;
 
+    /* size_t loop bound: K*N as int overflows past ~46340x46340 (INT_MAX) */
+    size_t total = (size_t)K * (size_t)N;
     int nnz = 0;
-    for (int i = 0; i < K * N; i++) {
+    for (size_t i = 0; i < total; i++) {
         if (B[i] != 0) nnz++;
     }
     csr->nnz = nnz;
 
-    csr->row_ptr = (int*)malloc((K + 1) * sizeof(int));
-    csr->col_idx = (int*)malloc(nnz * sizeof(int));
-    csr->signs   = (int8_t*)malloc(nnz * sizeof(int8_t));
+    csr->row_ptr = (int*)malloc((size_t)(K + 1) * sizeof(int));
+    csr->col_idx = (int*)malloc((size_t)nnz * sizeof(int));
+    csr->signs   = (int8_t*)malloc((size_t)nnz * sizeof(int8_t));
+    if (!csr->row_ptr || !csr->col_idx || !csr->signs) {
+        free(csr->row_ptr);
+        free(csr->col_idx);
+        free(csr->signs);
+        free(csr);
+        return nullptr;
+    }
 
     int ptr = 0;
     csr->row_ptr[0] = 0;
@@ -135,11 +156,13 @@ void ternary_gemm_zero_skip_scalar(
     float*            C
 ) {
     float* AT = (float*)malloc((size_t)K * M * sizeof(float));
+    if (!AT) throw std::bad_alloc();
     for (int m = 0; m < M; m++)
         for (int k = 0; k < K; k++)
             AT[k * M + m] = A[m * K + k];
 
     float* CT = (float*)calloc((size_t)N * M, sizeof(float));
+    if (!CT) { free(AT); throw std::bad_alloc(); }
 
     #pragma omp parallel for schedule(dynamic, 8)
     for (int j = 0; j < N; j++) {
@@ -181,11 +204,13 @@ void ternary_gemm_zero_skip_avx2(
     float*            C
 ) {
     float* AT = (float*)malloc((size_t)K * M * sizeof(float));
+    if (!AT) throw std::bad_alloc();
     for (int m = 0; m < M; m++)
         for (int k = 0; k < K; k++)
             AT[k * M + m] = A[m * K + k];
 
     float* CT = (float*)calloc((size_t)N * M, sizeof(float));
+    if (!CT) { free(AT); throw std::bad_alloc(); }
 
     #pragma omp parallel for schedule(dynamic, 8)
     for (int j = 0; j < N; j++) {
@@ -247,6 +272,7 @@ void ternary_gemm_zero_skip_tiled(
 #ifdef _OPENMP
     /* Transpose A[M,K] → AT[K,M] so each k-row is a contiguous M-vector */
     float* AT = (float*)malloc((size_t)K * M * sizeof(float));
+    if (!AT) throw std::bad_alloc();
     for (int m = 0; m < M; m++)
         for (int k = 0; k < K; k++)
             AT[k * M + m] = A[m * K + k];
@@ -256,6 +282,7 @@ void ternary_gemm_zero_skip_tiled(
     /* Pre-allocate all thread-local CT arrays contiguously.
      * Thread t uses CT_all + t*N*M.  calloc zeros everything. */
     float* CT_all = (float*)calloc((size_t)nthreads * N * M, sizeof(float));
+    if (!CT_all) { free(AT); throw std::bad_alloc(); }
 
     /* Phase 1: k-parallel SAXPY into thread-private CT_local.
      *
@@ -298,6 +325,7 @@ void ternary_gemm_zero_skip_tiled(
     /* Phase 2: reduce CT_all[nthreads × N × M] → CT[N, M].
      * Parallelise over j so each thread reduces its own output rows. */
     float* CT = (float*)calloc((size_t)N * M, sizeof(float));
+    if (!CT) { free(AT); free(CT_all); throw std::bad_alloc(); }
 
     #pragma omp parallel for schedule(static)
     for (int j = 0; j < N; j++) {
@@ -328,11 +356,13 @@ void ternary_gemm_zero_skip_tiled(
 
 #else  /* !_OPENMP: single-threaded k-loop, same algorithm without reduction */
     float* AT = (float*)malloc((size_t)K * M * sizeof(float));
+    if (!AT) throw std::bad_alloc();
     for (int m = 0; m < M; m++)
         for (int k = 0; k < K; k++)
             AT[k * M + m] = A[m * K + k];
 
     float* CT = (float*)calloc((size_t)N * M, sizeof(float));
+    if (!CT) { free(AT); throw std::bad_alloc(); }
 
     for (int k = 0; k < K; k++) {
         const float* at_row = AT + (size_t)k * M;
@@ -385,20 +415,26 @@ void ternary_gemm_zero_skip_tiled(
 ) {
     /* No AVX2: build a CSC and run scalar */
     TernaryCSC* csc = (TernaryCSC*)malloc(sizeof(TernaryCSC));
+    if (!csc) throw std::bad_alloc();
     csc->K   = K;
     csc->N   = N;
     csc->nnz = B_csr->nnz;
     /* Rebuild col_ptr / row_idx from CSR */
-    csc->col_ptr = (int*)calloc(N + 1, sizeof(int));
-    csc->row_idx = (int*)malloc(B_csr->nnz * sizeof(int));
-    csc->signs   = (int8_t*)malloc(B_csr->nnz * sizeof(int8_t));
+    csc->col_ptr = (int*)calloc((size_t)(N + 1), sizeof(int));
+    csc->row_idx = (int*)malloc((size_t)B_csr->nnz * sizeof(int));
+    csc->signs   = (int8_t*)malloc((size_t)B_csr->nnz * sizeof(int8_t));
+    if (!csc->col_ptr || !csc->row_idx || !csc->signs) {
+        free(csc->col_ptr); free(csc->row_idx); free(csc->signs); free(csc);
+        throw std::bad_alloc();
+    }
     for (int k = 0; k < K; k++) {
         for (int p = B_csr->row_ptr[k]; p < B_csr->row_ptr[k + 1]; p++)
             csc->col_ptr[B_csr->col_idx[p] + 1]++;
     }
     for (int j = 0; j < N; j++)
         csc->col_ptr[j + 1] += csc->col_ptr[j];
-    int* fill = (int*)calloc(N, sizeof(int));
+    int* fill = (int*)calloc((size_t)N, sizeof(int));
+    if (!fill) { free_ternary_csc(csc); throw std::bad_alloc(); }
     for (int k = 0; k < K; k++) {
         for (int p = B_csr->row_ptr[k]; p < B_csr->row_ptr[k + 1]; p++) {
             int j = B_csr->col_idx[p];
