@@ -138,19 +138,19 @@ class Dense243Benchmark:
 
             # Warmup
             for _ in range(100):
-                encoded = td243.encode(data)
-                decoded = td243.decode(encoded, size)
+                encoded = td243.pack(data)
+                decoded = td243.unpack(encoded, size)
 
             # Benchmark encoding
             start = time.perf_counter_ns()
             for _ in range(iterations):
-                encoded = td243.encode(data)
+                encoded = td243.pack(data)
             encode_time = (time.perf_counter_ns() - start) / iterations
 
             # Benchmark decoding
             start = time.perf_counter_ns()
             for _ in range(iterations):
-                decoded = td243.decode(encoded, size)
+                decoded = td243.unpack(encoded, size)
             decode_time = (time.perf_counter_ns() - start) / iterations
 
             # Roundtrip
@@ -209,22 +209,22 @@ class Dense243Benchmark:
 
             # Benchmark Dense243 (with encoding overhead)
             # Encode inputs
-            a_enc = td243.encode(a)
-            b_enc = td243.encode(b)
+            a_enc = td243.pack(a)
+            b_enc = td243.pack(b)
 
             for _ in range(100):
-                a_dec = td243.decode(a_enc, size)
-                b_dec = td243.decode(b_enc, size)
+                a_dec = td243.unpack(a_enc, size)
+                b_dec = td243.unpack(b_enc, size)
                 result = tc.tadd(a_dec, b_dec)
-                result_enc = td243.encode(result)
+                result_enc = td243.pack(result)
 
             start = time.perf_counter_ns()
             for _ in range(iterations):
                 # Decode -> Operate -> Encode
-                a_dec = td243.decode(a_enc, size)
-                b_dec = td243.decode(b_enc, size)
+                a_dec = td243.unpack(a_enc, size)
+                b_dec = td243.unpack(b_enc, size)
                 result = tc.tadd(a_dec, b_dec)
-                result_enc = td243.encode(result)
+                result_enc = td243.pack(result)
             dense243_time = (time.perf_counter_ns() - start) / iterations
 
             overhead = ((dense243_time - standard_time) / standard_time) * 100
@@ -276,6 +276,7 @@ class Dense243Benchmark:
         print("=" * 80)
 
         # Memory efficiency
+        avg_reduction = None
         if 'memory_efficiency' in self.results and self.results['memory_efficiency']:
             mem = self.results['memory_efficiency']
             avg_reduction = sum(mem['reduction_factor']) / len(mem['reduction_factor'])
@@ -299,7 +300,16 @@ class Dense243Benchmark:
         print("VERDICT")
         print("=" * 80)
         print("Dense243 Trade-off:")
-        print("  ✓ 2.5x better memory efficiency")
+        # Was a hardcoded "2.5x" here, disconnected from (and contradicting)
+        # the actually-measured avg_reduction printed above — found
+        # 2026-08-12. 2.5x looks like it came from comparing Dense243's
+        # 1.58 bits/trit against a 4-bit/trit (INT4-style) baseline, not the
+        # "standard ternary" (1 byte/trit) baseline this benchmark's own
+        # memory_efficiency section actually measures against.
+        if avg_reduction is not None:
+            print(f"  ✓ {avg_reduction:.2f}x better memory efficiency")
+        else:
+            print("  ✓ Better memory efficiency (see measurements above)")
         print("  ✗ Encoding/decoding overhead for operations")
         print("\nBest Use Cases:")
         print("  • Model storage and distribution")
