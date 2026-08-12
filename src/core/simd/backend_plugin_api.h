@@ -215,11 +215,16 @@ void ternary_dispatch_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, siz
 /**
  * Fusion operations dispatch (Phase 4.1)
  * These eliminate intermediate arrays for performance
+ *
+ * Return false (and leave dst untouched) if there is no active backend or
+ * the active backend doesn't implement this fused op (e.g. AVX2_v1, whose
+ * fused_tnot_* pointers are NULL) — callers must check this and raise
+ * rather than returning dst's uninitialized contents to the caller.
  */
-void ternary_dispatch_fused_tnot_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
-void ternary_dispatch_fused_tnot_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
-void ternary_dispatch_fused_tnot_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
-void ternary_dispatch_fused_tnot_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+bool ternary_dispatch_fused_tnot_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+bool ternary_dispatch_fused_tnot_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+bool ternary_dispatch_fused_tnot_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+bool ternary_dispatch_fused_tnot_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
 
 // ============================================================================
 // Backend Initialization

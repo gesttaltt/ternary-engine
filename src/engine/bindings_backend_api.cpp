@@ -255,7 +255,8 @@ py::array_t<uint8_t> dispatch_fused_tnot_tadd(py::array_t<uint8_t> A, py::array_
     py::array_t<uint8_t> result(n);
     auto r = result.mutable_unchecked<1>();
 
-    ternary_dispatch_fused_tnot_tadd(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+    if (!ternary_dispatch_fused_tnot_tadd(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error("fused_tnot_tadd: no active backend, or active backend does not implement this fused op");
 
     return result;
 }
@@ -275,7 +276,8 @@ py::array_t<uint8_t> dispatch_fused_tnot_tmul(py::array_t<uint8_t> A, py::array_
     py::array_t<uint8_t> result(n);
     auto r = result.mutable_unchecked<1>();
 
-    ternary_dispatch_fused_tnot_tmul(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+    if (!ternary_dispatch_fused_tnot_tmul(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error("fused_tnot_tmul: no active backend, or active backend does not implement this fused op");
 
     return result;
 }
@@ -295,7 +297,8 @@ py::array_t<uint8_t> dispatch_fused_tnot_tmin(py::array_t<uint8_t> A, py::array_
     py::array_t<uint8_t> result(n);
     auto r = result.mutable_unchecked<1>();
 
-    ternary_dispatch_fused_tnot_tmin(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+    if (!ternary_dispatch_fused_tnot_tmin(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error("fused_tnot_tmin: no active backend, or active backend does not implement this fused op");
 
     return result;
 }
@@ -315,7 +318,8 @@ py::array_t<uint8_t> dispatch_fused_tnot_tmax(py::array_t<uint8_t> A, py::array_
     py::array_t<uint8_t> result(n);
     auto r = result.mutable_unchecked<1>();
 
-    ternary_dispatch_fused_tnot_tmax(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+    if (!ternary_dispatch_fused_tnot_tmax(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error("fused_tnot_tmax: no active backend, or active backend does not implement this fused op");
 
     return result;
 }

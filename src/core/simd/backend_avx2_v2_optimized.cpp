@@ -13,7 +13,14 @@
  *
  * v1.3.0 Changes:
  * - Switched from traditional indexing idx=(a<<2)|b to canonical idx=(a*3)+b
- * - Using canonical LUTs from ternary_canonical_lut.h
+ * - Using canonical LUTs (TADD_LUT_CANONICAL etc.) from ternary_algebra.h —
+ *   the same single source of truth used by the tested SIMD path
+ *   (simd_avx2_32trit_ops.h, fused_bridge_ops.h). A separate, divergently-
+ *   padded duplicate previously lived in ternary_canonical_lut.h (removed
+ *   2026-08-12: it redefined make_canonical_binary_lut/make_canonical_unary_lut
+ *   under the same names as ternary_lut_gen.h, which broke this file's build
+ *   whenever both got included; the 9 valid-entry values were identical, only
+ *   the never-exercised padding entries 9-15 differed).
  * - Expected 12-18% performance improvement over traditional indexing
  */
 
@@ -25,8 +32,7 @@
 #include "opt_dual_shuffle_xor.h"
 #include "fused_binary_unary_ops.h"            // Phase 4.1 fusion operations
 #include "cpu_simd_capability.h"
-#include "../algebra/ternary_algebra.h"        // Scalar operations for fallback
-#include "../algebra/ternary_canonical_lut.h"  // Canonical LUTs
+#include "../algebra/ternary_algebra.h"        // Scalar ops + canonical LUTs (TADD_LUT_CANONICAL etc.)
 #include "../config/optimization_config.h"      // OMP_THRESHOLD, STREAM_THRESHOLD, PREFETCH_DIST
 #include <immintrin.h>
 #include <xmmintrin.h>                         // _mm_prefetch
@@ -49,13 +55,14 @@ static bool g_canonical_luts_initialized = false;
 static void init_canonical_luts(void) {
     if (g_canonical_luts_initialized) return;
 
-    // Canonical 16-byte LUTs from ternary_canonical_lut.h
+    // Canonical 16-byte LUTs from ternary_algebra.h (single source of truth,
+    // shared with the tested SIMD path — see file header comment above)
     // These LUTs are organized for idx=(a*3)+b indexing
-    g_tadd_canonical_lut_256 = broadcast_lut_16(TADD_CANONICAL_LUT.data());
-    g_tmul_canonical_lut_256 = broadcast_lut_16(TMUL_CANONICAL_LUT.data());
-    g_tmax_canonical_lut_256 = broadcast_lut_16(TMAX_CANONICAL_LUT.data());
-    g_tmin_canonical_lut_256 = broadcast_lut_16(TMIN_CANONICAL_LUT.data());
-    g_tnot_canonical_lut_256 = broadcast_lut_16(TNOT_CANONICAL_LUT.data());
+    g_tadd_canonical_lut_256 = broadcast_lut_16(TADD_LUT_CANONICAL.data());
+    g_tmul_canonical_lut_256 = broadcast_lut_16(TMUL_LUT_CANONICAL.data());
+    g_tmax_canonical_lut_256 = broadcast_lut_16(TMAX_LUT_CANONICAL.data());
+    g_tmin_canonical_lut_256 = broadcast_lut_16(TMIN_LUT_CANONICAL.data());
+    g_tnot_canonical_lut_256 = broadcast_lut_16(TNOT_LUT_CANONICAL.data());
 
     // Initialize dual-shuffle LUTs (future enhancement)
     // init_dual_shuffle_luts();  // TODO: Enable for additional performance

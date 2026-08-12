@@ -198,36 +198,40 @@ void ternary_dispatch_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, siz
 // Fusion Operations Dispatch (Phase 4.1)
 // ============================================================================
 
-void ternary_dispatch_fused_tnot_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
+bool ternary_dispatch_fused_tnot_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     if (!g_active_backend || !g_active_backend->fused_tnot_tadd) {
         fprintf(stderr, "Error: No active backend or fused_tnot_tadd not implemented\n");
-        return;
+        return false;
     }
     g_active_backend->fused_tnot_tadd(dst, a, b, n);
+    return true;
 }
 
-void ternary_dispatch_fused_tnot_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
+bool ternary_dispatch_fused_tnot_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     if (!g_active_backend || !g_active_backend->fused_tnot_tmul) {
         fprintf(stderr, "Error: No active backend or fused_tnot_tmul not implemented\n");
-        return;
+        return false;
     }
     g_active_backend->fused_tnot_tmul(dst, a, b, n);
+    return true;
 }
 
-void ternary_dispatch_fused_tnot_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
+bool ternary_dispatch_fused_tnot_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     if (!g_active_backend || !g_active_backend->fused_tnot_tmin) {
         fprintf(stderr, "Error: No active backend or fused_tnot_tmin not implemented\n");
-        return;
+        return false;
     }
     g_active_backend->fused_tnot_tmin(dst, a, b, n);
+    return true;
 }
 
-void ternary_dispatch_fused_tnot_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
+bool ternary_dispatch_fused_tnot_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     if (!g_active_backend || !g_active_backend->fused_tnot_tmax) {
         fprintf(stderr, "Error: No active backend or fused_tnot_tmax not implemented\n");
-        return;
+        return false;
     }
     g_active_backend->fused_tnot_tmax(dst, a, b, n);
+    return true;
 }
 
 // ============================================================================

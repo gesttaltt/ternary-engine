@@ -329,8 +329,13 @@ def test_cross_backend_correctness(tb):
         a = np.random.randint(0, 3, n, dtype=np.uint8)
         b = np.random.randint(0, 3, n, dtype=np.uint8)
 
-        # Collect results from each backend
+        # Collect results from each backend. Fused ops are optional per
+        # backend (e.g. AVX2_v1 deliberately leaves fused_tnot_* NULL) —
+        # the dispatcher now raises RuntimeError for those instead of
+        # silently returning uninitialized memory, so treat that specific
+        # exception as "not supported" (skip), not a correctness failure.
         results = {}
+        unsupported = set()  # (backend_name, op) pairs the backend doesn't implement
         for backend_name in backend_names:
             tb.set_backend(backend_name)
             results[backend_name] = {
@@ -339,22 +344,32 @@ def test_cross_backend_correctness(tb):
                 'tmul': tb.tmul(a, b),
                 'tmax': tb.tmax(a, b),
                 'tmin': tb.tmin(a, b),
-                'fused_tnot_tadd': tb.fused_tnot_tadd(a, b),
-                'fused_tnot_tmul': tb.fused_tnot_tmul(a, b),
-                'fused_tnot_tmin': tb.fused_tnot_tmin(a, b),
-                'fused_tnot_tmax': tb.fused_tnot_tmax(a, b),
             }
+            for op, fn in (('fused_tnot_tadd', tb.fused_tnot_tadd),
+                           ('fused_tnot_tmul', tb.fused_tnot_tmul),
+                           ('fused_tnot_tmin', tb.fused_tnot_tmin),
+                           ('fused_tnot_tmax', tb.fused_tnot_tmax)):
+                try:
+                    results[backend_name][op] = fn(a, b)
+                except RuntimeError as e:
+                    if 'not implement' in str(e):
+                        unsupported.add((backend_name, op))
+                    else:
+                        raise
 
         # Compare all backends against the first one (reference)
         reference_name = backend_names[0]
         reference_results = results[reference_name]
 
         all_match = True
-        ops_to_test = ['tnot', 'tadd', 'tmul', 'tmax', 'tmin', 
+        ops_to_test = ['tnot', 'tadd', 'tmul', 'tmax', 'tmin',
                        'fused_tnot_tadd', 'fused_tnot_tmul', 'fused_tnot_tmin', 'fused_tnot_tmax']
-        
+
         for backend_name in backend_names[1:]:
             for op in ops_to_test:
+                if (backend_name, op) in unsupported or (reference_name, op) in unsupported:
+                    print(f"  - Skip: {op} not implemented by {backend_name if (backend_name, op) in unsupported else reference_name}")
+                    continue
                 if not arrays_equal(reference_results[op], results[backend_name][op]):
                     print(f"  ✗ Mismatch: {reference_name}.{op} != {backend_name}.{op}")
                     all_match = False
