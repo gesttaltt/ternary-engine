@@ -272,4 +272,4 @@ __m256i results = _mm256_shuffle_epi8(LUT_vec, indices);
 }
 #endif
 
-#endif  // TERNARY_CANONICAL_INDEX_H
+#endif  // OPT_CANONICAL_INDEX_H

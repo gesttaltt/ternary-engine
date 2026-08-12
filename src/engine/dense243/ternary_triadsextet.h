@@ -78,9 +78,12 @@ constexpr uint8_t SEXTET_MAX_VALID = 26;
 // Compile-time Helpers
 // =============================================================================
 
-// Note: ipow is already defined in ternary_dense243.h if included
-// Define it here for standalone use
-#ifndef TERNARY_DENSE243_H
+// Note: ipow is shared with ternary_dense243.h; TERNARY_IPOW_DEFINED (not
+// TERNARY_DENSE243_H) guards it so definition order between the two headers
+// doesn't matter — see ternary_dense243.h for why the previous guard broke
+// if this header was included first.
+#ifndef TERNARY_IPOW_DEFINED
+#define TERNARY_IPOW_DEFINED
 constexpr uint32_t ipow(uint32_t base, uint32_t exp) {
     uint32_t result = 1;
     for (uint32_t i = 0; i < exp; ++i) {

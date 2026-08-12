@@ -59,17 +59,24 @@
 // =============================================================================
 
 namespace {
-    // Helper: Broadcast 256-byte LUT to both 128-bit lanes of AVX2 register
-    // Note: Dense243 extraction LUTs are already 256 bytes (full coverage)
+    // Helper: Broadcast the first 16 bytes of a LUT to both 128-bit lanes.
+    //
+    // WARNING (found 2026-08-12, see below): this only ever exposes 16 of the
+    // LUT's 256 entries to _mm256_shuffle_epi8. VPSHUFB addresses within each
+    // 128-bit lane using ONLY the index byte's bits[3:0] (4 bits -> 0-15);
+    // bits[6:4] are ignored entirely (not part of the address, not masked —
+    // just don't matter), and bit[7] forces the output byte to 0 if set. So
+    // for a genuinely 256-valued index (as Dense243-packed bytes are, values
+    // 0-242): indices 16-127 silently alias to lut[index & 0x0F] (wrong
+    // entry), and indices 128-255 always produce 0 regardless of which of
+    // those 128 values it was (decodes as trit -1), because bit 7 is set.
+    // The comment this replaced claimed indices "wrap around" for 128-255,
+    // which is incorrect — they don't wrap, they're forced to zero.
+    // A 256-entry lookup cannot be done with a single vpshufb per lane; this
+    // needs either 16 selects on sub-ranges or a different algorithm.
+    // See dense243_extract_t0_simd etc. below — DO NOT USE, extracts wrong
+    // trits for any packed byte value >= 16.
     static inline __m256i broadcast_dense243_lut(const uint8_t* lut) {
-        // For 256-byte LUTs, we need two 128-bit loads to cover all indices
-        // However, _mm256_shuffle_epi8 only uses lower 4 bits for indexing,
-        // so we can just load the first 128 bytes and broadcast
-        // (indices 128-255 wrap around due to 4-bit index limitation)
-
-        // Actually, _mm256_shuffle_epi8 uses bit 7 to determine lane,
-        // and bits 3:0 for the shuffle index within each 128-bit lane.
-        // So we need to broadcast the first 128 bytes to both lanes.
         __m128i lut_128 = _mm_loadu_si128((const __m128i*)lut);
         return _mm256_broadcastsi128_si256(lut_128);
     }
@@ -91,39 +98,61 @@ namespace {
         {}
     };
 
-    // Static instance - initialized once before main()
-    static const Dense243BroadcastedLUTs g_dense243_luts;
+    // Lazily-initialized (function-local static = thread-safe "magic static"
+    // in C++11+). Was previously a namespace-scope global, whose constructor
+    // — running real AVX2 intrinsics (_mm_loadu_si128, _mm256_broadcastsi128_si256)
+    // with no has_avx2() gate — executed unconditionally as part of this
+    // shared object's static initializers at dlopen() time, before
+    // PYBIND11_MODULE's own has_avx2() check in bindings_dense243.cpp ever
+    // runs. On a CPU without AVX2, `import ternary_dense243_module` would
+    // crash with SIGILL instead of a clean Python error. Deferring
+    // construction to first actual call means it only runs if one of the
+    // (currently unused, and — see warning above — broken) extraction
+    // functions is actually invoked.
+    static inline const Dense243BroadcastedLUTs& get_dense243_luts() {
+        static const Dense243BroadcastedLUTs luts;
+        return luts;
+    }
 }  // anonymous namespace
 
 // =============================================================================
 // SIMD Extraction Kernels
 // =============================================================================
 
+// *** BROKEN — DO NOT CALL (found 2026-08-12) ***
 // Extract trit position 0 from 32 Dense243-packed bytes
 // Input:  32 packed bytes (each containing 5 trits)
 // Output: 32 trits at position 0 (2-bit encoding)
+//
+// _mm256_shuffle_epi8 can only address 16 entries per 128-bit lane (index
+// bits[3:0]); a packed Dense243 byte is a genuine 0-242 value, so this
+// returns the wrong trit for any packed byte >= 16 (see the warning on
+// broadcast_dense243_lut above for the exact failure mode). Currently
+// unreachable from any production or test path — do not wire this up
+// until it's redesigned (e.g. selecting among 16-entry sub-tables, or a
+// non-shuffle-based extraction).
 static inline __m256i dense243_extract_t0_simd(__m256i packed) {
-    return _mm256_shuffle_epi8(g_dense243_luts.extract_t0, packed);
+    return _mm256_shuffle_epi8(get_dense243_luts().extract_t0, packed);
 }
 
-// Extract trit position 1 from 32 Dense243-packed bytes
+// *** BROKEN — DO NOT CALL, see dense243_extract_t0_simd above ***
 static inline __m256i dense243_extract_t1_simd(__m256i packed) {
-    return _mm256_shuffle_epi8(g_dense243_luts.extract_t1, packed);
+    return _mm256_shuffle_epi8(get_dense243_luts().extract_t1, packed);
 }
 
-// Extract trit position 2 from 32 Dense243-packed bytes
+// *** BROKEN — DO NOT CALL, see dense243_extract_t0_simd above ***
 static inline __m256i dense243_extract_t2_simd(__m256i packed) {
-    return _mm256_shuffle_epi8(g_dense243_luts.extract_t2, packed);
+    return _mm256_shuffle_epi8(get_dense243_luts().extract_t2, packed);
 }
 
-// Extract trit position 3 from 32 Dense243-packed bytes
+// *** BROKEN — DO NOT CALL, see dense243_extract_t0_simd above ***
 static inline __m256i dense243_extract_t3_simd(__m256i packed) {
-    return _mm256_shuffle_epi8(g_dense243_luts.extract_t3, packed);
+    return _mm256_shuffle_epi8(get_dense243_luts().extract_t3, packed);
 }
 
-// Extract trit position 4 from 32 Dense243-packed bytes
+// *** BROKEN — DO NOT CALL, see dense243_extract_t0_simd above ***
 static inline __m256i dense243_extract_t4_simd(__m256i packed) {
-    return _mm256_shuffle_epi8(g_dense243_luts.extract_t4, packed);
+    return _mm256_shuffle_epi8(get_dense243_luts().extract_t4, packed);
 }
 
 // =============================================================================
@@ -180,11 +209,11 @@ static inline __m256i dense243_pack_simd(
     // o1_times_3 = o1 + o1 + o1
     __m256i o1_times_3 = _mm256_add_epi8(o1, _mm256_add_epi8(o1, o1));
 
-    // o2_times_9 = o2 * 9 (using shift and add: o2*9 = o2*8 + o2 = (o2<<3) + o2)
-    __m256i o2_shifted = _mm256_slli_epi16(o2, 3);  // Shift 16-bit words, not bytes
-    // For byte-level, we need to use addition chains
-    // o2*9 = o2*8 + o2, but we can't shift bytes directly
-    // Alternative: o2*9 = o2*3*3 = (o2 + o2 + o2) + (o2 + o2 + o2) + (o2 + o2 + o2)
+    // o2_times_9 = o2 * 9. AVX2 has no byte-lane shift (_mm256_slli_epi16
+    // shifts 16-bit words, which straddle byte-lane boundaries and would be
+    // wrong here — a first attempt at "o2<<3" using it was abandoned in
+    // favor of the addition chain below, which is what's actually used).
+    // o2*9 = o2*3*3 = (o2 + o2 + o2) + (o2 + o2 + o2) + (o2 + o2 + o2)
     __m256i o2_times_3 = _mm256_add_epi8(o2, _mm256_add_epi8(o2, o2));
     __m256i o2_times_9 = _mm256_add_epi8(o2_times_3, _mm256_add_epi8(o2_times_3, o2_times_3));
 
@@ -239,6 +268,11 @@ static inline void dense243_pack_scalar_block(
 // =============================================================================
 // Complete Unpack-Operate-Repack Pipeline
 // =============================================================================
+//
+// *** Everything below calls the BROKEN extraction functions above and
+// inherits the same "wrong trit for any packed byte >= 16" bug. Not safe
+// to use until that's fixed. Currently unreachable from any production or
+// test path. ***
 
 // Perform binary operation on Dense243-encoded data (SIMD kernel)
 // Input:  2× __m256i packed Dense243 vectors (32 bytes each = 160 trits)

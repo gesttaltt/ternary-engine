@@ -59,7 +59,16 @@
 // Compile-time Helpers
 // =============================================================================
 
-// Constexpr integer power function (for 3^n calculations)
+// Constexpr integer power function (for 3^n calculations).
+// TERNARY_IPOW_DEFINED is a dedicated sentinel (not this file's own include
+// guard) so ternary_triadsextet.h's copy of this function — see that file —
+// stays correctly order-independent regardless of which header a
+// translation unit includes first. Previously guarded on
+// TERNARY_DENSE243_H, which only worked if this file happened to be
+// included first; including triadsextet.h first then this file in the same
+// TU redefined ipow and failed to compile.
+#ifndef TERNARY_IPOW_DEFINED
+#define TERNARY_IPOW_DEFINED
 constexpr uint32_t ipow(uint32_t base, uint32_t exp) {
     uint32_t result = 1;
     for (uint32_t i = 0; i < exp; ++i) {
@@ -67,6 +76,7 @@ constexpr uint32_t ipow(uint32_t base, uint32_t exp) {
     }
     return result;
 }
+#endif
 
 // Compile-time validation
 static_assert(ipow(3, 0) == 1, "ipow(3, 0) should be 1");

@@ -414,4 +414,4 @@ __m256i result = tadd_dual_shuffle(a, b);  // two shuffles + XOR
 }
 #endif
 
-#endif  // TERNARY_DUAL_SHUFFLE_H
+#endif  // OPT_DUAL_SHUFFLE_XOR_H

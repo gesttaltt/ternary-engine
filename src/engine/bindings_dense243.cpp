@@ -122,19 +122,32 @@ py::array_t<uint8_t> unpack_from_dense243(py::array_t<uint8_t> packed, ssize_t n
         num_trits = num_bytes * 5;
     }
 
+    // num_trits can't exceed the packed buffer's actual capacity (5 trits/byte).
+    // Without this check, the loop below simply runs out of source bytes and
+    // leaves trits[num_bytes*5 .. num_trits) uninitialized — py::array_t's
+    // allocation is not zero-initialized, so the caller would silently get
+    // back uninitialized heap memory instead of an error.
+    if ((size_t)num_trits > num_bytes * 5) {
+        throw std::invalid_argument(
+            "unpack_from_dense243: num_trits (" + std::to_string(num_trits) +
+            ") exceeds packed buffer capacity (" + std::to_string(num_bytes * 5) +
+            " = " + std::to_string(num_bytes) + " bytes * 5 trits/byte)");
+    }
+
     py::array_t<uint8_t> trits_2bit(num_trits);
     auto trits = trits_2bit.mutable_unchecked<1>();
 
-    // Unpack byte by byte
+    // Unpack byte by byte, stopping as soon as num_trits trits are written
+    // (the last source byte may only be partially needed).
     size_t trit_idx = 0;
-    for (size_t byte_idx = 0; byte_idx < num_bytes && trit_idx < num_trits; ++byte_idx) {
+    for (size_t byte_idx = 0; byte_idx < num_bytes && trit_idx < (size_t)num_trits; ++byte_idx) {
         Dense243Unpacked unpacked = dense243_unpack(packed_data[byte_idx]);
 
-        if (trit_idx + 0 < num_trits) trits[trit_idx++] = unpacked.t0;
-        if (trit_idx + 0 < num_trits) trits[trit_idx++] = unpacked.t1;
-        if (trit_idx + 0 < num_trits) trits[trit_idx++] = unpacked.t2;
-        if (trit_idx + 0 < num_trits) trits[trit_idx++] = unpacked.t3;
-        if (trit_idx + 0 < num_trits) trits[trit_idx++] = unpacked.t4;
+        if (trit_idx < (size_t)num_trits) trits[trit_idx++] = unpacked.t0;
+        if (trit_idx < (size_t)num_trits) trits[trit_idx++] = unpacked.t1;
+        if (trit_idx < (size_t)num_trits) trits[trit_idx++] = unpacked.t2;
+        if (trit_idx < (size_t)num_trits) trits[trit_idx++] = unpacked.t3;
+        if (trit_idx < (size_t)num_trits) trits[trit_idx++] = unpacked.t4;
     }
 
     return trits_2bit;
