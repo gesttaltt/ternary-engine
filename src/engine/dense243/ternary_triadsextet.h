@@ -58,6 +58,7 @@
 #define TERNARY_TRIADSEXTET_H
 
 #include <stdint.h>
+#include <stddef.h>  // size_t — see ternary_lut_gen.h for why this is explicit
 #include <array>
 #include "core/algebra/ternary_lut_gen.h"  // For int_to_trit_constexpr, trit_to_int_constexpr
 

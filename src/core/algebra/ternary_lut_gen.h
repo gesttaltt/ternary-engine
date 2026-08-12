@@ -34,6 +34,10 @@
 #define TERNARY_LUT_GEN_H
 
 #include <stdint.h>
+#include <stddef.h>  // size_t — used below; was previously relying on transitive
+                     // inclusion via whatever included this header first (e.g.
+                     // pybind11 in the real build), which fails when this file
+                     // (or core_api.h, which pulls it in) is compiled standalone
 #include <array>
 
 // --- Constexpr conversion functions for compile-time evaluation ---

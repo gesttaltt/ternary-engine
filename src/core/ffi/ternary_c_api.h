@@ -26,16 +26,25 @@
 //
 // USAGE EXAMPLE (Rust):
 //
-//   use std::os::raw::{c_void, c_size_t};
+//   use std::os::raw::c_size_t;
 //
 //   extern "C" {
-//       fn tadd_simd_u8(a: *const u8, b: *const u8, r: *mut u8, n: c_size_t);
+//       fn ternary_detect_simd_level() -> i32;
+//       fn ternary_tadd_u8(a: *const u8, b: *const u8, r: *mut u8, n: c_size_t);
 //   }
 //
 //   let a = vec![0b00, 0b01, 0b10];  // [-1, 0, +1]
 //   let b = vec![0b10, 0b01, 0b00];  // [+1, 0, -1]
 //   let mut r = vec![0; 3];
-//   unsafe { tadd_simd_u8(a.as_ptr(), b.as_ptr(), r.as_mut_ptr(), 3); }
+//   unsafe {
+//       // IMPORTANT: this binary is compiled with AVX2 codegen unconditionally
+//       // (see ternary_tadd_u8 etc. below — no internal has_avx2() gate).
+//       // Call ternary_detect_simd_level() and confirm it returns >= 1 before
+//       // calling any operation below; on a CPU without AVX2 they will crash
+//       // with SIGILL, not a catchable error.
+//       assert!(ternary_detect_simd_level() >= 1, "AVX2 required");
+//       ternary_tadd_u8(a.as_ptr(), b.as_ptr(), r.as_mut_ptr(), 3);
+//   }
 //
 // =============================================================================
 
@@ -56,6 +65,12 @@ extern "C" {
 // --- Binary Operations (element-wise) ---
 // All operations process arrays of 2-bit trits packed in uint8_t
 // Encoding: 0b00 = -1, 0b01 = 0, 0b10 = +1, 0b11 = invalid
+//
+// SAFETY: this header always compiles the SIMD path with AVX2 codegen and
+// has no internal has_avx2() runtime gate (unlike the Python bindings,
+// which check before dispatching). Callers MUST call
+// ternary_detect_simd_level() (below) and confirm it returns >= 1 before
+// calling any operation on this page, or risk SIGILL on non-AVX2 hardware.
 
 /**
  * Ternary addition: R[i] = clamp(A[i] + B[i], -1, +1)

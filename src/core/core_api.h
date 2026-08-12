@@ -27,12 +27,16 @@
 // - FFI layer: Pure C API for cross-language integration
 //
 // ARCHITECTURE:
-// - ternary_core/ contains mathematically stable, validated components
-// - ternary_engine/ contains experimental optimizations (not included here)
+// - src/core/ contains mathematically stable, validated components
+// - src/engine/ contains the Python bindings and experimental optimizations
+//   not included here (e.g. Dense243 — see TERNARY_CORE_HAS_DENSE243 below)
 // - This file establishes the boundary between kernel and engine
 //
 // USAGE:
-//   #include "ternary_core/core_api.h"
+//   #include "core/core_api.h"
+//
+// (directories were renamed from ternary_core/ternary_engine to core/engine;
+// this comment previously referenced the old paths)
 //
 // =============================================================================
 
