@@ -131,6 +131,13 @@ def build_module(naive_only=False, verbose=False, clean=False):
     define_macros = []
     if not naive_only:
         define_macros.append(("__AVX2__", "1"))
+        # Distinct from __AVX2__ (which -mavx2 defines automatically on every
+        # build, naive-only or not): this specifically signals that
+        # tritnet_gemm_avx2.cpp is actually in `sources` for this build, so
+        # bindings_tritnet_gemm.cpp knows it's safe to declare/call
+        # tritnet_gemm_f32_avx2 without risking an undefined-symbol link
+        # error in a --naive-only build.
+        define_macros.append(("TRITNET_HAS_AVX2_KERNEL", "1"))
 
     # Print build configuration
     print(f"\nPlatform: {platform.system()} {platform.machine()}")

@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <cmath>
+#include <chrono>
 
 // Platform-specific aligned memory allocation (must be defined early)
 #if defined(_WIN32)
@@ -239,6 +240,11 @@ int tritnet_get_optimal_tile_size(int cache_level) {
 
 /**
  * @brief Benchmark GEMM performance
+ *
+ * Runs the naive kernel `num_runs` times and returns the average wall-clock
+ * time per run. Previously a placeholder that unconditionally returned 0.0
+ * (fixed 2026-08-12) — exposed to Python as ternary_tritnet_gemm.benchmark(),
+ * so callers were silently getting a meaningless "0ms" result.
  */
 double tritnet_benchmark_gemm(int M, int N, int K, int num_runs) {
     // Allocate test matrices
@@ -254,14 +260,18 @@ double tritnet_benchmark_gemm(int M, int N, int K, int num_runs) {
         B[i] = (uint8_t)(rand() % 243);  // Valid Dense243 values
     }
 
-    // Warm-up run
+    // Warm-up run (not timed)
     tritnet_gemm_f32(M, N, K, A, B, C);
 
-    // Benchmark runs
-    // TODO: Add actual timing with high-resolution clock
+    // Timed runs
+    auto start = std::chrono::steady_clock::now();
+    for (int run = 0; run < num_runs; run++) {
+        tritnet_gemm_f32(M, N, K, A, B, C);
+    }
+    auto end = std::chrono::steady_clock::now();
 
-    // Placeholder: return 0 for now
-    double avg_time_ms = 0.0;
+    double total_ms = std::chrono::duration<double, std::milli>(end - start).count();
+    double avg_time_ms = total_ms / num_runs;
 
     // Cleanup
     aligned_free_impl(A);
@@ -273,8 +283,23 @@ double tritnet_benchmark_gemm(int M, int N, int K, int num_runs) {
 
 /**
  * @brief Validate GEMM correctness against reference
+ *
+ * Compares the AVX2 kernel against the naive reference. Previously called
+ * tritnet_gemm_f32 against itself for both "test" and "reference" — always
+ * returning exactly 0.0, which reads as "perfect correctness" while
+ * actually validating nothing (fixed 2026-08-12; this is
+ * ternary_tritnet_gemm.validate() in the public Python API).
+ *
+ * When this build doesn't have the AVX2 kernel compiled in
+ * (TRITNET_HAS_AVX2_KERNEL not defined, i.e. --naive-only), there is no
+ * second implementation to validate against — returns -1.0f (not a valid
+ * abs-error value) rather than a misleading 0.0.
  */
 float tritnet_validate_gemm(int M, int N, int K) {
+#ifndef TRITNET_HAS_AVX2_KERNEL
+    (void)M; (void)N; (void)K;
+    return -1.0f;  // No second implementation in this build to compare against
+#else
     // Allocate test matrices
     float* A = (float*)aligned_alloc_impl(64, M * K * sizeof(float));
     uint8_t* B = (uint8_t*)aligned_alloc_impl(64, (K / 5) * N * sizeof(uint8_t));
@@ -289,11 +314,11 @@ float tritnet_validate_gemm(int M, int N, int K) {
         B[i] = (uint8_t)(i % 243);
     }
 
-    // Compute reference (naive implementation)
+    // Reference: naive implementation
     tritnet_gemm_f32(M, N, K, A, B, C_ref);
 
-    // Compute test (same for now, but would be SIMD version later)
-    tritnet_gemm_f32(M, N, K, A, B, C_test);
+    // Test: AVX2 implementation
+    tritnet_gemm_f32_avx2(M, N, K, A, B, C_test);
 
     // Find maximum absolute error
     float max_error = 0.0f;
@@ -311,4 +336,5 @@ float tritnet_validate_gemm(int M, int N, int K) {
     aligned_free_impl(C_ref);
 
     return max_error;
+#endif
 }

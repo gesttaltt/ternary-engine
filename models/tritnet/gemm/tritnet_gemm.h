@@ -170,6 +170,32 @@ double tritnet_benchmark_gemm(int M, int N, int K, int num_runs);
 float tritnet_validate_gemm(int M, int N, int K);
 
 // ============================================================================
+// AVX2 entry point (only declared/linkable when the AVX2 source file was
+// actually compiled into this build — see build/build_tritnet_gemm.py's
+// TRITNET_HAS_AVX2_KERNEL define, set only when not --naive-only).
+//
+// Found 2026-08-12: this was never declared here, so bindings_tritnet_gemm.cpp
+// had no way to call it even though tritnet_gemm_avx2.cpp compiles a full,
+// non-stub implementation into the shipped module — the public gemm()
+// Python API silently always ran the ~10-15x slower naive path, with the
+// AVX2 kernel built but unreachable dead code. __AVX2__ alone can't gate
+// this: -mavx2 is passed to every build in get_compiler_flags() regardless
+// of --naive-only, so __AVX2__ is defined even when tritnet_gemm_avx2.cpp
+// (the file that actually defines this function) isn't in `sources`.
+// ============================================================================
+
+#ifdef TRITNET_HAS_AVX2_KERNEL
+void tritnet_gemm_f32_avx2(
+    int M,
+    int N,
+    int K,
+    const float* A,
+    const uint8_t* B_packed,
+    float* C
+);
+#endif
+
+// ============================================================================
 // Internal API (not for external use)
 // ============================================================================
 

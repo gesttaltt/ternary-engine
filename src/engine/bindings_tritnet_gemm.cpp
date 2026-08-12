@@ -11,6 +11,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include "tritnet_gemm.h"  // Resolved via include_dirs in build script
+#include "core/simd/cpu_simd_capability.h"  // has_avx2() runtime check
 #include <stdexcept>
 
 namespace py = pybind11;
@@ -63,7 +64,23 @@ py::array_t<float> py_gemm(
     py::array_t<float> C({M, N});
     auto C_buf = C.request();
 
-    // Call C function
+    // Dispatch to the AVX2 kernel when this build actually compiled it in
+    // (TRITNET_HAS_AVX2_KERNEL) and the running CPU supports AVX2. Found
+    // 2026-08-12: this call always went to the naive path before, even
+    // though tritnet_gemm_avx2.cpp's ~10-15x-faster kernel was built into
+    // every non-naive-only module — it was simply never wired up.
+#ifdef TRITNET_HAS_AVX2_KERNEL
+    if (has_avx2()) {
+        tritnet_gemm_f32_avx2(
+            M, N, K,
+            static_cast<const float*>(A_buf.ptr),
+            static_cast<const uint8_t*>(B_buf.ptr),
+            static_cast<float*>(C_buf.ptr)
+        );
+        return C;
+    }
+#endif
+
     tritnet_gemm_f32(
         M, N, K,
         static_cast<const float*>(A_buf.ptr),
@@ -235,12 +252,14 @@ double py_benchmark(int M, int N, int K, int num_runs = 10) {
 }
 
 /**
- * @brief Validate GEMM correctness
+ * @brief Validate GEMM correctness (compares AVX2 kernel against naive reference)
  *
  * @param M  Matrix dimension
  * @param N  Matrix dimension
  * @param K  Matrix dimension
- * @return   Maximum absolute error (should be < 1e-6 for FP32)
+ * @return   Maximum absolute error (should be < 1e-6 for FP32), or -1.0 if
+ *           this module was built --naive-only (no AVX2 kernel to compare
+ *           the reference against)
  */
 float py_validate(int M, int N, int K) {
     if (K % 5 != 0) {

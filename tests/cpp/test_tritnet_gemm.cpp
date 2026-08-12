@@ -7,7 +7,9 @@
  * @date 2025-11-23
  */
 
-#include "../include/tritnet_gemm.h"
+// Path fixed 2026-08-12: pre-reorg path (tests/include/) no longer exists;
+// real location is models/tritnet/gemm/, resolved via -I in the build.
+#include "tritnet_gemm.h"
 #include <iostream>
 #include <cmath>
 #include <cstring>

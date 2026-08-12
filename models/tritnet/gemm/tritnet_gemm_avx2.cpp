@@ -20,13 +20,27 @@
  * Dense243 stores 5 trits/byte, so 3 bytes = 15 trits.
  * This unpacks them into an array for SIMD processing.
  *
- * @param packed  Pointer to 3 Dense243 bytes
- * @param trits   Output array [16] (padded to 16 for SIMD alignment)
+ * @param packed      Pointer to the first of 3 Dense243 bytes
+ * @param row_stride  Distance (in bytes) between consecutive K_packed rows
+ *                     at the same output column — i.e. N, since B_packed is
+ *                     stored row-major as [K_packed, N]. NOT 1: the 3 bytes
+ *                     needed here are 3 consecutive *rows* (k_group/5,
+ *                     k_group/5+1, k_group/5+2) at the same column, not 3
+ *                     consecutive flat-array bytes.
+ * @param trits       Output array [16] (padded to 16 for SIMD alignment)
+ *
+ * Found 2026-08-12 via tritnet_validate_gemm: the call site previously read
+ * packed[0], packed[1], packed[2] (row_stride implicitly 1), which is only
+ * correct when N==1. For any N>1 this silently read 3 bytes from the same
+ * row at columns n, n+1, n+2 instead of 3 rows at column n — i.e. the wrong
+ * weights entirely. This was undetected because tritnet_validate_gemm
+ * compared the naive implementation against itself (see
+ * tritnet_gemm_naive.cpp) and therefore could never have caught it.
  */
-static inline void unpack_dense243_15_avx2(const uint8_t* packed, int8_t* trits) {
+static inline void unpack_dense243_15_avx2(const uint8_t* packed, int row_stride, int8_t* trits) {
     // Unpack 3 bytes (15 trits) using same algorithm as naive version
     for (int b = 0; b < 3; b++) {
-        int value = packed[b];
+        int value = packed[b * row_stride];
         for (int i = 0; i < 5; i++) {
             int remainder = value % 3;
             value /= 3;
@@ -77,7 +91,7 @@ void tritnet_gemm_kernel_avx2_8x(
             // Unpack 15 weights for this column
             int8_t trits[16];  // Aligned to 16 for SIMD
             int pack_idx = (k_group / 5) * N + n;
-            unpack_dense243_15_avx2(&B_packed[pack_idx], trits);
+            unpack_dense243_15_avx2(&B_packed[pack_idx], N, trits);
 
             // Process 15 weight positions (or remaining K)
             int k_max = (k_group + 15 < K) ? 15 : (K - k_group);
@@ -206,6 +220,20 @@ void tritnet_gemm_f32_avx2_fused(
  *
  * Tiles the computation for L1/L2 cache efficiency.
  * Uses 3-level tiling: L1 (32×32), L2 (128×128), L3 (512×512).
+ *
+ * *** BROKEN — not declared in tritnet_gemm.h, not called from anywhere in
+ * this repo (confirmed 2026-08-12) ***. Has the same class of bug just
+ * fixed in tritnet_gemm_f32_avx2/unpack_dense243_15_avx2: it calls
+ * tritnet_gemm_kernel_avx2_8x(A_tile, B_tile, C_tile, k_block, n_block),
+ * passing the TILE width (n_block) as that kernel's N — but the kernel
+ * uses N both as its column loop bound AND as the row stride for indexing
+ * into B_packed. B_tile is a sub-view into the full [K_packed, N_full]
+ * matrix, so its row stride is N_full, not n_block; using n_block corrupts
+ * the same way the just-fixed bug did. Not fixed here because nothing
+ * exercises this path to verify a fix against (unlike the reachable bug,
+ * which tritnet_validate_gemm now genuinely catches) — would need
+ * tritnet_gemm_kernel_avx2_8x's signature split into a real N (loop
+ * bound) and a separate row_stride parameter.
  */
 void tritnet_gemm_f32_avx2_tiled(
     int M,
