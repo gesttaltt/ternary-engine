@@ -53,18 +53,33 @@ typedef SSIZE_T ssize_t;
 // OPT-PHASE3-01: Adaptive threshold scales with CPU core count
 // Formula: 32K elements per thread ensures good load balancing across CPU tiers
 // FIX: Clamp hardware_concurrency() to [1, 64] (can return 0 on some VMs)
+// The TERNARY_OMP_THRESHOLD override (see TUNING NOTES below) previously had
+// no effect — this constant was unconditionally computed regardless of
+// whether the macro was defined. Fixed 2026-08-12.
+#ifdef TERNARY_OMP_THRESHOLD
+static const ssize_t OMP_THRESHOLD = TERNARY_OMP_THRESHOLD;
+#else
 static const ssize_t OMP_THRESHOLD = 32768 * std::max(1u, std::min(64u, std::thread::hardware_concurrency()));
+#endif
 
 // OPT-STREAM: Streaming store threshold (arrays exceeding L3 cache size)
 // Typical L3: 8-32 MB; use streaming stores for arrays > 1M elements (~1 MB)
 // Non-temporal stores reduce cache pollution for memory-bound workloads
+#ifdef TERNARY_STREAM_THRESHOLD
+static const ssize_t STREAM_THRESHOLD = TERNARY_STREAM_THRESHOLD;
+#else
 static const ssize_t STREAM_THRESHOLD = 1000000;
+#endif
 
 // OPT-PHASE3-03: Prefetch distance tuning
 // Prefetch stride for hiding memory latency (can be tuned per CPU family)
 // 512 bytes = 16 × 32-byte cache lines, optimal for Zen 2/4 and Raptor Lake
 // Adjust to 256 for older CPUs or 1024 for server-class processors
+#ifdef TERNARY_PREFETCH_DIST
+constexpr int PREFETCH_DIST = TERNARY_PREFETCH_DIST;
+#else
 constexpr int PREFETCH_DIST = 512;
+#endif
 
 // =============================================================================
 // COMPILE-TIME FEATURE FLAGS

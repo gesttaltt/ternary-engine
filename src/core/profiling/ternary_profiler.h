@@ -18,14 +18,22 @@
 // IMPLEMENTATION STATUS
 // =============================================================================
 //
-// **INTEGRATED - PRODUCTION READY**
+// **CALL SITES INTEGRATED; PROFILER BACKENDS UNVERIFIED**
 //
 // This header provides cross-platform profiler integration for performance analysis.
-// Status:
-//   - VTune (ITT API): Fully integrated, tested with Intel VTune Profiler
+// Status (corrected 2026-08-12 — this section previously overclaimed, see
+// CLAUDE.md "Critical Gaps" for the reconciled status):
+//   - Call sites: genuinely wired into the hot path — see
+//     TERNARY_PROFILE_TASK_BEGIN/END usage in bindings_core_ops.cpp
+//   - VTune (ITT API): macros implemented, but no build script in build/
+//     ever defines TERNARY_ENABLE_VTUNE — "tested with Intel VTune
+//     Profiler" was not something this repo's own build system can
+//     substantiate; treat as unverified until someone actually builds
+//     with -DTERNARY_ENABLE_VTUNE -littnotify and confirms
 //   - NVTX (CUDA/GPU): Framework ready, awaiting GPU port
 //   - Perfetto: Stub placeholder for future web-based tracing
-//   - Default (no-op): Zero overhead when profiling disabled
+//   - Default (no-op, what every current build actually uses): Zero
+//     overhead when profiling disabled
 //
 // =============================================================================
 // DESIGN RATIONALE
@@ -58,7 +66,7 @@
 //   g++ -O3 ...
 //
 // USAGE EXAMPLE:
-//   #include "ternary_core/profiling/ternary_profiler.h"
+//   #include "core/profiling/ternary_profiler.h"
 //
 //   TERNARY_PROFILE_DOMAIN(g_domain, "TernaryCore");
 //   TERNARY_PROFILE_TASK_NAME(g_simd_loop, "SIMD_Loop");

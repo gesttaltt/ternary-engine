@@ -952,7 +952,7 @@ pip install matplotlib transformers
 7. **Multi-dimensional arrays** - Currently 1D only
 8. **ARM/NEON support** - x86-64 AVX2 only
 9. **GPU/TPU acceleration** - For TritNet Phase 4+
-10. **Profiler integration** - Framework implemented but not integrated
+10. **Profiler integration** - Corrected 2026-08-12: framework IS integrated — `TERNARY_PROFILE_TASK_BEGIN`/`END` call sites genuinely exist in `bindings_core_ops.cpp`'s hot paths, contradicting this gap's prior wording. What's actually missing: no build script in `build/` ever defines `TERNARY_ENABLE_VTUNE`/`_NVTX`/`_PERFETTO`, so every current build only exercises the no-op stub — the backends (VTune ITT API, NVTX, Perfetto) are unbuilt and unverified, not "not integrated." `src/core/profiling/ternary_profiler.h`'s own former claim of "tested with Intel VTune Profiler" was corrected to reflect this at the same time.
 
 ---
 
