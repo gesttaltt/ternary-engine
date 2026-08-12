@@ -154,44 +154,49 @@ const TernaryBackend* ternary_backend_get_active(void) {
 // Dispatch Functions
 // ============================================================================
 
-void ternary_dispatch_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
+bool ternary_dispatch_tnot(uint8_t* dst, const uint8_t* src, size_t n) {
     if (!g_active_backend || !g_active_backend->tnot) {
         fprintf(stderr, "Error: No active backend or tnot not implemented\n");
-        return;
+        return false;
     }
     g_active_backend->tnot(dst, src, n);
+    return true;
 }
 
-void ternary_dispatch_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
+bool ternary_dispatch_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     if (!g_active_backend || !g_active_backend->tadd) {
         fprintf(stderr, "Error: No active backend or tadd not implemented\n");
-        return;
+        return false;
     }
     g_active_backend->tadd(dst, a, b, n);
+    return true;
 }
 
-void ternary_dispatch_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
+bool ternary_dispatch_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     if (!g_active_backend || !g_active_backend->tmul) {
         fprintf(stderr, "Error: No active backend or tmul not implemented\n");
-        return;
+        return false;
     }
     g_active_backend->tmul(dst, a, b, n);
+    return true;
 }
 
-void ternary_dispatch_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
+bool ternary_dispatch_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     if (!g_active_backend || !g_active_backend->tmax) {
         fprintf(stderr, "Error: No active backend or tmax not implemented\n");
-        return;
+        return false;
     }
     g_active_backend->tmax(dst, a, b, n);
+    return true;
 }
 
-void ternary_dispatch_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
+bool ternary_dispatch_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
     if (!g_active_backend || !g_active_backend->tmin) {
         fprintf(stderr, "Error: No active backend or tmin not implemented\n");
-        return;
+        return false;
     }
     g_active_backend->tmin(dst, a, b, n);
+    return true;
 }
 
 // ============================================================================

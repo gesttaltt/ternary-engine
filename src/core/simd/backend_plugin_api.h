@@ -204,13 +204,20 @@ const TernaryBackend* ternary_backend_get_active(void);
  *
  * These functions automatically use the best available backend
  * Users should call these instead of backend functions directly
+ *
+ * Return false (and leave dst untouched) if there is no active backend
+ * (e.g. dispatch called before ternary_backend_set_active()/init()) —
+ * callers must check this and raise rather than returning dst's
+ * uninitialized contents to the caller (see the fused-op dispatch fix
+ * below, 2026-08-12, for the same bug in this file's previous void
+ * signature).
  */
 
-void ternary_dispatch_tnot(uint8_t* dst, const uint8_t* src, size_t n);
-void ternary_dispatch_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
-void ternary_dispatch_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
-void ternary_dispatch_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
-void ternary_dispatch_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+bool ternary_dispatch_tnot(uint8_t* dst, const uint8_t* src, size_t n);
+bool ternary_dispatch_tadd(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+bool ternary_dispatch_tmul(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+bool ternary_dispatch_tmax(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
+bool ternary_dispatch_tmin(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n);
 
 /**
  * Fusion operations dispatch (Phase 4.1)

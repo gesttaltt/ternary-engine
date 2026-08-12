@@ -148,7 +148,8 @@ py::array_t<uint8_t> dispatch_tnot(py::array_t<uint8_t> A) {
     auto r = result.mutable_unchecked<1>();
 
     // Dispatch through backend
-    ternary_dispatch_tnot(r.mutable_data(0), a.data(0), static_cast<size_t>(n));
+    if (!ternary_dispatch_tnot(r.mutable_data(0), a.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error("tnot: no active backend (call init()/set_backend() first)");
 
     return result;
 }
@@ -171,7 +172,8 @@ py::array_t<uint8_t> dispatch_tadd(py::array_t<uint8_t> A, py::array_t<uint8_t> 
     auto r = result.mutable_unchecked<1>();
 
     // Dispatch through backend
-    ternary_dispatch_tadd(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+    if (!ternary_dispatch_tadd(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error("tadd: no active backend (call init()/set_backend() first)");
 
     return result;
 }
@@ -191,7 +193,8 @@ py::array_t<uint8_t> dispatch_tmul(py::array_t<uint8_t> A, py::array_t<uint8_t> 
     py::array_t<uint8_t> result(n);
     auto r = result.mutable_unchecked<1>();
 
-    ternary_dispatch_tmul(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+    if (!ternary_dispatch_tmul(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error("tmul: no active backend (call init()/set_backend() first)");
 
     return result;
 }
@@ -211,7 +214,8 @@ py::array_t<uint8_t> dispatch_tmax(py::array_t<uint8_t> A, py::array_t<uint8_t> 
     py::array_t<uint8_t> result(n);
     auto r = result.mutable_unchecked<1>();
 
-    ternary_dispatch_tmax(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+    if (!ternary_dispatch_tmax(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error("tmax: no active backend (call init()/set_backend() first)");
 
     return result;
 }
@@ -231,7 +235,8 @@ py::array_t<uint8_t> dispatch_tmin(py::array_t<uint8_t> A, py::array_t<uint8_t> 
     py::array_t<uint8_t> result(n);
     auto r = result.mutable_unchecked<1>();
 
-    ternary_dispatch_tmin(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n));
+    if (!ternary_dispatch_tmin(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error("tmin: no active backend (call init()/set_backend() first)");
 
     return result;
 }
