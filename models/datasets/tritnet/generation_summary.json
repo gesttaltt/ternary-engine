@@ -1,35 +1,35 @@
 {
   "total_samples": 236439,
-  "total_size_mb": 78.33485889434814,
+  "total_size_mb": 72.4739818572998,
   "operations": [
     {
       "operation": "tadd",
       "samples": 59049,
-      "file_size_mb": 19.57728862762451,
+      "file_size_mb": 18.113117218017578,
       "coverage": "100% (all 243\u00b2 combinations)"
     },
     {
       "operation": "tmul",
       "samples": 59049,
-      "file_size_mb": 19.55280303955078,
+      "file_size_mb": 18.088631629943848,
       "coverage": "100% (all 243\u00b2 combinations)"
     },
     {
       "operation": "tmin",
       "samples": 59049,
-      "file_size_mb": 19.61299419403076,
+      "file_size_mb": 18.148822784423828,
       "coverage": "100% (all 243\u00b2 combinations)"
     },
     {
       "operation": "tmax",
       "samples": 59049,
-      "file_size_mb": 19.532931327819824,
+      "file_size_mb": 18.06875991821289,
       "coverage": "100% (all 243\u00b2 combinations)"
     },
     {
       "operation": "tnot",
       "samples": 243,
-      "file_size_mb": 0.058841705322265625,
+      "file_size_mb": 0.054650306701660156,
       "coverage": "100% (all 243 combinations)"
     }
   ],

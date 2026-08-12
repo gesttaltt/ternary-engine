@@ -473,9 +473,13 @@ def export_weights_to_numpy(
     Export quantized ternary weights as NumPy arrays.
 
     Saves weights in format suitable for C++ integration:
-        - W1.npy: [in_features, hidden_size]
-        - W2.npy: [hidden_size, hidden_size]
-        - W3.npy: [hidden_size, out_features]
+        One Wi.npy per TernaryLinear submodule found on the model, in
+        definition order (named_children()) — Wi.npy: [in_features_i,
+        out_features_i]. Shallow models (TritNetUnary/TritNetBinary):
+        W1, W2, W3. Deep models (TritNetUnaryDeep/TritNetBinaryDeep, which
+        add layer4/layer5/projection for skip connections): W1-W6, with
+        W6 = projection (registered last in __init__, even though it runs
+        first in forward()).
 
     Args:
         model: Trained TritNet model
@@ -484,23 +488,35 @@ def export_weights_to_numpy(
     filepath = Path(filepath)
     filepath.mkdir(parents=True, exist_ok=True)
 
-    layer_names = ['layer1', 'layer2', 'layer3']
-    weight_names = ['W1', 'W2', 'W3']
+    # Discover every TernaryLinear submodule in definition order, rather
+    # than assuming a fixed ['layer1', 'layer2', 'layer3']. Found
+    # 2026-08-12: TritNetUnaryDeep/TritNetBinaryDeep have layer1..layer5
+    # PLUS a projection layer for their skip connections (6 TernaryLinear
+    # layers total) — the hardcoded 3-name list silently exported only
+    # W1-W3 and dropped layer4, layer5, and projection with no error,
+    # producing an incomplete export that doesn't match what the model's
+    # forward() actually computes for --architecture deep.
+    ternary_layers = [
+        (name, module) for name, module in model.named_children()
+        if isinstance(module, TernaryLinear)
+    ]
 
-    for layer_name, weight_name in zip(layer_names, weight_names):
-        layer = getattr(model, layer_name)
-        if isinstance(layer, TernaryLinear):
-            w_ternary = layer.get_quantized_weights().cpu().numpy()
+    if not ternary_layers:
+        raise ValueError(f"No TernaryLinear layers found on {type(model).__name__}")
 
-            # Transpose for C++ row-major layout
-            w_ternary_t = w_ternary.T
+    for i, (layer_name, layer) in enumerate(ternary_layers, start=1):
+        weight_name = f"W{i}"
+        w_ternary = layer.get_quantized_weights().cpu().numpy()
 
-            # Save as int8 array
-            w_int8 = w_ternary_t.astype(np.int8)
-            output_file = filepath / f"{weight_name}.npy"
-            np.save(output_file, w_int8)
+        # Transpose for C++ row-major layout
+        w_ternary_t = w_ternary.T
 
-            print(f"✓ Exported {weight_name}: {w_int8.shape} → {output_file}")
+        # Save as int8 array
+        w_int8 = w_ternary_t.astype(np.int8)
+        output_file = filepath / f"{weight_name}.npy"
+        np.save(output_file, w_int8)
+
+        print(f"✓ Exported {weight_name} ({layer_name}): {w_int8.shape} → {output_file}")
 
 
 if __name__ == "__main__":

@@ -109,16 +109,35 @@ def phase_datasets():
     summary_file = datasets_dir / "generation_summary.json"
 
     if summary_file.exists():
-        print("\n" + "="*70)
-        print("Truth Tables Already Generated")
-        print("="*70)
         with open(summary_file) as f:
             summary = json.load(f)
-        print(f"Total samples: {summary['total_samples']:,}")
-        print(f"Total size: {summary['total_size_mb']:.2f} MB")
-        print(f"Operations: {', '.join([op['operation'] for op in summary['operations']])}")
-        print("\nSkipping regeneration. To regenerate, delete models/datasets/tritnet/ first.")
-        return 0
+
+        # Found 2026-08-12: this used to trust summary_file.exists() alone
+        # as proof the actual *_truth_table.json files were present. On
+        # this checkout they weren't (only generation_summary.json and
+        # README.md exist in models/datasets/tritnet/) — presumably a
+        # previous generation run wrote the summary but not, or no longer
+        # has, the per-operation files. That silently skipped regeneration
+        # and left training with nothing to load. Verify each file the
+        # summary itself claims to have produced actually exists before
+        # trusting it.
+        missing = [
+            op['operation'] for op in summary['operations']
+            if not (datasets_dir / f"{op['operation']}_truth_table.json").exists()
+        ]
+
+        if not missing:
+            print("\n" + "="*70)
+            print("Truth Tables Already Generated")
+            print("="*70)
+            print(f"Total samples: {summary['total_samples']:,}")
+            print(f"Total size: {summary['total_size_mb']:.2f} MB")
+            print(f"Operations: {', '.join([op['operation'] for op in summary['operations']])}")
+            print("\nSkipping regeneration. To regenerate, delete models/datasets/tritnet/ first.")
+            return 0
+
+        print(f"⚠ generation_summary.json exists but is missing truth tables for: {', '.join(missing)}")
+        print("  Regenerating all truth tables.")
 
     return run_command(
         [sys.executable, str(script)],
@@ -126,8 +145,29 @@ def phase_datasets():
     )
 
 
-def phase_training(operation: str = None, train_all: bool = False):
-    """Train TritNet models."""
+def phase_training(operation: str = None, train_all: bool = False, use_phase2b: bool = False):
+    """Train TritNet models.
+
+    use_phase2b=True runs models/tritnet/train_phase2b.py — the QAT
+    pipeline that actually produced the documented Phase 2B GO results
+    (tadd 100%, tmul 99.5%, tmin 99.9%, tmax 99.9%; see phase2b/*/result.json
+    and CLAUDE.md). Found 2026-08-12: before this flag existed, this
+    function only ever called src/train_tritnet.py, an older MSE-based
+    pipeline with no QAT-during-training and no relationship to the actual
+    GO decision — running `run_tritnet.py --all` (the documented top-level
+    workflow) trained and validated a known-inferior model and never
+    touched the real Phase 2B pipeline at all. train_phase2b.py takes no
+    CLI arguments (it always trains all 4 binary ops, tadd/tmul/tmin/tmax,
+    with its own resume-if-already-passed logic), so `operation`/`train_all`
+    are ignored when use_phase2b is set.
+    """
+    if use_phase2b:
+        script = PROJECT_ROOT / "models" / "tritnet" / "train_phase2b.py"
+        if not script.exists():
+            print(f"❌ Script not found: {script}")
+            return 1
+        return run_command([sys.executable, str(script)], "Training Phase 2B (QAT, all 4 binary ops)")
+
     script = PROJECT_ROOT / "models" / "tritnet" / "src" / "train_tritnet.py"
 
     if not script.exists():
@@ -168,42 +208,61 @@ def phase_validation():
     print("TritNet Model Validation")
     print("="*70)
 
-    # Load all training histories
+    # Prefer models/tritnet/phase2b/<op>/result.json — the real, structured
+    # results from train_phase2b.py (the QAT pipeline that actually achieved
+    # the documented Phase 2B GO decision) — over the legacy *_history.json
+    # glob below. Found 2026-08-12: this function previously read ONLY the
+    # legacy files, which are stale/from a different, inferior pipeline
+    # (verified on disk: tritnet_tadd_history.json records 15.8% final
+    # accuracy, while phase2b/tadd/result.json — the actual GO result —
+    # records 100%). Silently produced a NO-GO verdict contradicting
+    # CLAUDE.md's documented "Phase 2B GO" status.
+    accuracy = {}   # op -> accuracy in [0, 1]
+    source = {}     # op -> which file the accuracy came from, for the table
+
+    phase2b_dir = models_dir / "phase2b"
+    if phase2b_dir.exists():
+        for result_file in sorted(phase2b_dir.glob("*/result.json")):
+            with open(result_file) as f:
+                data = json.load(f)
+            op = data.get('op') or result_file.parent.name
+            accuracy[op] = data['best_acc']
+            source[op] = f"phase2b/{op}/result.json"
+
+    # Legacy history files: only used for operations phase2b didn't cover
+    # (e.g. tnot, validated separately in Phase 2A) — never to override a
+    # phase2b result, which is the higher-confidence source.
     history_files = list(models_dir.glob("*_history.json"))
-
-    if not history_files:
-        print("❌ No training histories found")
-        return 1
-
-    results = {}
     for history_file in history_files:
         with open(history_file) as f:
             data = json.load(f)
-        results[data['metadata']['operation']] = data['metadata']
+        op = data['metadata']['operation']
+        if op not in accuracy:
+            accuracy[op] = data['metadata']['final_accuracy']
+            source[op] = history_file.name
+
+    if not accuracy:
+        print("❌ No training histories or phase2b results found")
+        return 1
 
     # Print results table
-    print("\nOperation | Accuracy | Epochs | Time (s) | Parameters")
+    print("\nOperation | Accuracy | Source")
     print("-" * 70)
 
-    for operation in sorted(results.keys()):
-        meta = results[operation]
-        accuracy = meta['final_accuracy'] * 100
-        epochs = meta['epochs_trained']
-        time_s = meta['training_time_seconds']
-        params = meta.get('hidden_size', 'N/A')
-
-        print(f"{operation:5s}     | {accuracy:6.2f}%  | {epochs:6d} | {time_s:8.1f} | {params}")
+    for operation in sorted(accuracy.keys()):
+        acc = accuracy[operation]
+        print(f"{operation:5s}     | {acc*100:6.2f}%  | {source[operation]}")
 
     # Go/No-Go decision
     print("\n" + "="*70)
     print("Go/No-Go Decision")
     print("="*70)
 
-    successful = [op for op, meta in results.items() if meta['final_accuracy'] > 0.99]
-    perfect = [op for op, meta in results.items() if meta['final_accuracy'] >= 0.9999]
+    successful = [op for op, acc in accuracy.items() if acc > 0.99]
+    perfect = [op for op, acc in accuracy.items() if acc >= 0.9999]
 
-    print(f"\nOperations with >99% accuracy: {len(successful)}/{len(results)}")
-    print(f"Operations with 100% accuracy: {len(perfect)}/{len(results)}")
+    print(f"\nOperations with >99% accuracy: {len(successful)}/{len(accuracy)}")
+    print(f"Operations with 100% accuracy: {len(perfect)}/{len(accuracy)}")
 
     if successful:
         print(f"  >99%: {', '.join(successful)}")
@@ -279,6 +338,18 @@ Examples:
     )
 
     parser.add_argument(
+        "--phase2b",
+        action="store_true",
+        help=(
+            "Use train_phase2b.py (QAT pipeline, the one that actually "
+            "produced the documented Phase 2B GO results) instead of the "
+            "legacy src/train_tritnet.py. Applies to --phase training and "
+            "--all; ignores --train/--train-all since train_phase2b.py "
+            "always trains all 4 binary ops itself."
+        )
+    )
+
+    parser.add_argument(
         "--skip-checks",
         action="store_true",
         help="Skip prerequisite checks"
@@ -312,7 +383,7 @@ Examples:
         if exit_code != 0:
             return exit_code
 
-        exit_code = phase_training(train_all=True)
+        exit_code = phase_training(train_all=True, use_phase2b=args.phase2b)
         if exit_code != 0:
             return exit_code
 
@@ -324,12 +395,14 @@ Examples:
             exit_code = phase_datasets()
 
         elif args.phase == "training":
-            if args.train_all:
+            if args.phase2b:
+                exit_code = phase_training(use_phase2b=True)
+            elif args.train_all:
                 exit_code = phase_training(train_all=True)
             elif args.train:
                 exit_code = phase_training(operation=args.train)
             else:
-                print("❌ Must specify --train <op> or --train-all with --phase training")
+                print("❌ Must specify --train <op>, --train-all, or --phase2b with --phase training")
                 exit_code = 1
 
         elif args.phase == "validation":

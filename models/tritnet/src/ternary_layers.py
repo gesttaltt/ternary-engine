@@ -474,7 +474,9 @@ class TernaryActivation(nn.Module):
 
     def extra_repr(self) -> str:
         """String representation for debugging."""
-        return f'threshold={self.threshold}' if self.threshold else 'sign'
+        # Match forward()'s `is not None` check — threshold=0.0 is a valid,
+        # explicitly-set value (distinct from unset/None), not falsy.
+        return f'threshold={self.threshold}' if self.threshold is not None else 'sign'
 
 
 # Convenience functions

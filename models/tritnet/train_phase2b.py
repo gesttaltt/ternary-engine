@@ -260,22 +260,32 @@ def train_operation(
     # ---- Phase 1: float weights ----
     float_model = TritClassifierFloat(in_features=in_features, hidden=hidden, n_out_trits=n_out_trits)
 
+    # Warm-resume, mirroring the Phase 2 QAT resume below: a saved
+    # checkpoint only sets the starting weights, it does NOT mean Phase 1
+    # is done. Found 2026-08-12: this used to load the checkpoint and
+    # unconditionally treat it as finished (p1_epochs=-1, no further
+    # training), unlike Phase 2's resume path (already fixed, commit
+    # d5b9fc1) which continues training from the checkpoint. If the
+    # process was killed during Phase 1 before target_acc, best_float.pt
+    # holds whatever accuracy it had at the last improvement — re-running
+    # would silently accept that undertrained checkpoint and proceed
+    # straight into Phase 2 from a poor float baseline.
     if float_ckpt.exists():
         log(f"  [{op_name}] Resuming Phase 1 from checkpoint {float_ckpt}")
         float_model.load_state_dict(torch.load(float_ckpt, weights_only=True))
-        float_model.eval()
-        with torch.no_grad():
-            p1_acc = exact_match_accuracy(float_model(X), Y)
-        p1_epochs = -1  # resumed
-        log(f"  [{op_name}] Loaded float checkpoint: exact={p1_acc*100:.1f}%")
+
+    float_model.eval()
+    with torch.no_grad():
+        p1_acc = exact_match_accuracy(float_model(X), Y)
+    best_p1 = p1_acc
+    p1_epochs = 0
+    t0 = time.time()
+
+    if p1_acc >= target_acc:
+        log(f"  [{op_name}] Loaded float checkpoint already at target: exact={p1_acc*100:.1f}%")
     else:
         opt1 = optim.Adam(float_model.parameters(), lr=lr_p1)
         sch1 = optim.lr_scheduler.ReduceLROnPlateau(opt1, patience=300, factor=0.5, min_lr=1e-5)
-
-        t0 = time.time()
-        p1_acc = 0.0
-        p1_epochs = 0
-        best_p1 = 0.0
 
         for epoch in range(max_epochs_p1):
             float_model.train()
@@ -303,8 +313,8 @@ def train_operation(
             if p1_acc >= target_acc:
                 break
 
-        log(f"  [{op_name}] Phase1 done: exact={p1_acc*100:.1f}% in {p1_epochs} epochs  "
-            f"({time.time()-t0:.1f}s)")
+    log(f"  [{op_name}] Phase1 done: exact={p1_acc*100:.1f}% in {p1_epochs} epochs  "
+        f"({time.time()-t0:.1f}s)")
 
     # ---- Phase 2: QAT warm-start ----
     qat_ckpt = ckpt_path(op_name, 'best_qat')

@@ -32,8 +32,16 @@ from pathlib import Path
 from typing import List, Tuple, Dict, Any
 import numpy as np
 
-# Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+# Add project root to path. File is models/tritnet/src/generate_truth_tables.py,
+# 3 directories deep from repo root — needs 4 .parent calls (file -> src/ ->
+# tritnet/ -> models/ -> repo root), not 3. The previous 3-.parent version
+# resolved to .../models/ instead of the repo root, so the --output-dir
+# default below silently wrote every truth table to
+# models/models/datasets/tritnet/ instead of models/datasets/tritnet/ —
+# found 2026-08-12 when phase_datasets() in run_tritnet.py (fixed in the
+# same commit) started actually checking whether the files were where the
+# rest of the pipeline expects them.
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import dense243 module

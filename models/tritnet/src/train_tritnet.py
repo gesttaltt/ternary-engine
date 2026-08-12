@@ -244,6 +244,12 @@ def train_tritnet(
         print("  WARNING: Cross-entropy not yet implemented, using MSE instead")
         criterion = nn.MSELoss()
         use_crossentropy = False
+        # Record what was actually used, not what was requested — this gets
+        # saved into the .tritnet metadata and history JSON below (see
+        # 'loss_type': loss_type). Previously left as 'crossentropy', so
+        # saved results falsely claimed cross-entropy was used, making any
+        # later comparison of 'mse' vs 'crossentropy' runs meaningless.
+        loss_type = 'mse'
     else:
         raise ValueError(f"Unknown loss type: {loss_type}")
 
@@ -456,8 +462,11 @@ def main():
     results = {}
 
     for operation in operations:
-        # Determine hidden size
-        if args.hidden_size:
+        # Determine hidden size. args.hidden_size defaults to None (argparse,
+        # no `default=` set) when not provided — must check `is not None`,
+        # not truthiness, or an explicit `--hidden-size 0` is silently
+        # treated as "not provided" and overridden with the 8/16 default.
+        if args.hidden_size is not None:
             hidden_size = args.hidden_size
         else:
             hidden_size = 8 if operation == 'tnot' else 16
