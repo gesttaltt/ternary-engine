@@ -28,7 +28,7 @@ import argparse
 import numpy as np
 
 # Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))  # fixed 2026-08-12: was 1 dirname() short of repo root
 
 try:
     import ternary_simd_engine as tc

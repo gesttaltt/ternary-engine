@@ -25,7 +25,7 @@ from datetime import datetime
 import numpy as np
 
 # Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent  # fixed 2026-08-12: was 1 .parent short of repo root
 sys.path.insert(0, str(PROJECT_ROOT))
 
 try:

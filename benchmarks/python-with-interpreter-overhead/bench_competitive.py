@@ -29,7 +29,7 @@ import sys
 import os
 
 # Add parent directory to path to import ternary engine
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))  # fixed 2026-08-12: was 1 dirname() short of repo root
 
 try:
     import ternary_simd_engine as tc

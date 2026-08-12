@@ -35,8 +35,13 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 
-# Add parent directory to path
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+# Add parent directory to path. File is models/tritnet/src/train_tritnet.py,
+# 3 directories deep from repo root — needs 4 .parent calls, not 3 (same
+# off-by-one bug found and fixed in generate_truth_tables.py earlier this
+# session: this used to resolve to .../models/, doubling every path built
+# from it below into models/models/... — dataset dir, checkpoint dir, and
+# this very sys.path.insert). Found 2026-08-12.
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "models" / "tritnet" / "src"))
 
 from ternary_layers import count_parameters, count_ternary_parameters

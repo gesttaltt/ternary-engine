@@ -22,7 +22,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Get project root
-PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()  # fixed 2026-08-12: was 1 .parent short of repo root
 
 def print_header(title):
     """Print section header"""
