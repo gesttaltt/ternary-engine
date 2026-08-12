@@ -15,6 +15,14 @@
  *
  * Memory: 1.2 MB for [19683, 16] float32 embeddings
  *
+ * STATUS: Research artifact, not integrated. Nothing in src/ includes this
+ * header and it has no test coverage. Moved here from src/core/embeddings/
+ * on 2026-08-12 — src/core/ is documented (CLAUDE.md) as the production
+ * kernel requiring comprehensive test coverage, which this doesn't have.
+ * Consumes ternary_embeddings.bin, produced by ../create_embedding_lut.py
+ * in this directory. Promote back to src/core/ if/when it gains real
+ * callers and tests.
+ *
  * @date 2025-12-29
  * @version 1.0
  */
