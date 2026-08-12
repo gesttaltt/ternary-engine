@@ -157,6 +157,7 @@ void ternary_gemm_zero_skip_scalar(
 ) {
     float* AT = (float*)malloc((size_t)K * M * sizeof(float));
     if (!AT) throw std::bad_alloc();
+    #pragma omp parallel for
     for (int m = 0; m < M; m++)
         for (int k = 0; k < K; k++)
             AT[k * M + m] = A[m * K + k];
@@ -197,6 +198,28 @@ void ternary_gemm_zero_skip_scalar(
 
 #ifdef __AVX2__
 
+/* Signed SAXPY: ct_row[0..M) += (sign>0 ? +1 : -1) * at_row[0..M), AVX2 FMA
+ * with a scalar tail. Shared by the avx2 (CSC) and tiled (CSR, both the
+ * OpenMP and no-OpenMP-fallback branches) kernels below — previously
+ * copy-pasted three times, so a fix to one loop wasn't automatically
+ * applied to the others (see ternary_gemm_zero_skip.h doc-comment fix,
+ * 2026-08-12). static inline: expected to fully inline under -O3 -flto,
+ * same as the pre-refactor copies. */
+static inline void saxpy_signed_avx2(float* ct_row, const float* at_row, int8_t sign, int M) {
+    const __m256 vsign = (sign > 0) ? _mm256_set1_ps(1.0f)
+                                    : _mm256_set1_ps(-1.0f);
+    int m = 0;
+    for (; m + 8 <= M; m += 8) {
+        __m256 av = _mm256_loadu_ps(at_row + m);
+        __m256 cv = _mm256_loadu_ps(ct_row + m);
+        cv = _mm256_fmadd_ps(vsign, av, cv);
+        _mm256_storeu_ps(ct_row + m, cv);
+    }
+    const float fsign = (float)sign;
+    for (; m < M; m++)
+        ct_row[m] += fsign * at_row[m];
+}
+
 void ternary_gemm_zero_skip_avx2(
     int M, int N, int K,
     const float*      A,
@@ -205,6 +228,7 @@ void ternary_gemm_zero_skip_avx2(
 ) {
     float* AT = (float*)malloc((size_t)K * M * sizeof(float));
     if (!AT) throw std::bad_alloc();
+    #pragma omp parallel for
     for (int m = 0; m < M; m++)
         for (int k = 0; k < K; k++)
             AT[k * M + m] = A[m * K + k];
@@ -221,20 +245,8 @@ void ternary_gemm_zero_skip_avx2(
         for (int p = p0; p < p1; p++) {
             const int    k     = B_csc->row_idx[p];
             const int8_t sign  = B_csc->signs[p];
-            const __m256 vsign = (sign > 0) ? _mm256_set1_ps(1.0f)
-                                            : _mm256_set1_ps(-1.0f);
             const float* at_row = AT + (size_t)k * M;
-
-            int m = 0;
-            for (; m + 8 <= M; m += 8) {
-                __m256 av = _mm256_loadu_ps(at_row + m);
-                __m256 cv = _mm256_loadu_ps(ct_row + m);
-                cv = _mm256_fmadd_ps(vsign, av, cv);
-                _mm256_storeu_ps(ct_row + m, cv);
-            }
-            const float fsign = (float)sign;
-            for (; m < M; m++)
-                ct_row[m] += fsign * at_row[m];
+            saxpy_signed_avx2(ct_row, at_row, sign, M);
         }
     }
 
@@ -273,6 +285,7 @@ void ternary_gemm_zero_skip_tiled(
     /* Transpose A[M,K] → AT[K,M] so each k-row is a contiguous M-vector */
     float* AT = (float*)malloc((size_t)K * M * sizeof(float));
     if (!AT) throw std::bad_alloc();
+    #pragma omp parallel for
     for (int m = 0; m < M; m++)
         for (int k = 0; k < K; k++)
             AT[k * M + m] = A[m * K + k];
@@ -304,20 +317,8 @@ void ternary_gemm_zero_skip_tiled(
             for (int p = p0; p < p1; p++) {
                 const int    j     = B_csr->col_idx[p];
                 const int8_t sign  = B_csr->signs[p];
-                const __m256 vsign = (sign > 0) ? _mm256_set1_ps(1.0f)
-                                                : _mm256_set1_ps(-1.0f);
                 float* ct_row = CT_local + (size_t)j * M;
-
-                int m = 0;
-                for (; m + 8 <= M; m += 8) {
-                    __m256 av = _mm256_loadu_ps(at_row + m);
-                    __m256 cv = _mm256_loadu_ps(ct_row + m);
-                    cv = _mm256_fmadd_ps(vsign, av, cv);
-                    _mm256_storeu_ps(ct_row + m, cv);
-                }
-                const float fsign = (float)sign;
-                for (; m < M; m++)
-                    ct_row[m] += fsign * at_row[m];
+                saxpy_signed_avx2(ct_row, at_row, sign, M);
             }
         }
     } /* end parallel: implicit barrier before reduction */
@@ -371,19 +372,8 @@ void ternary_gemm_zero_skip_tiled(
         for (int p = p0; p < p1; p++) {
             const int    j     = B_csr->col_idx[p];
             const int8_t sign  = B_csr->signs[p];
-            const __m256 vsign = (sign > 0) ? _mm256_set1_ps(1.0f)
-                                            : _mm256_set1_ps(-1.0f);
             float* ct_row = CT + (size_t)j * M;
-            int m = 0;
-            for (; m + 8 <= M; m += 8) {
-                __m256 av = _mm256_loadu_ps(at_row + m);
-                __m256 cv = _mm256_loadu_ps(ct_row + m);
-                cv = _mm256_fmadd_ps(vsign, av, cv);
-                _mm256_storeu_ps(ct_row + m, cv);
-            }
-            const float fsign = (float)sign;
-            for (; m < M; m++)
-                ct_row[m] += fsign * at_row[m];
+            saxpy_signed_avx2(ct_row, at_row, sign, M);
         }
     }
 
