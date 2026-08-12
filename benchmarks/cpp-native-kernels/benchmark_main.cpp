@@ -50,7 +50,11 @@ namespace json {
 
     struct Object {
         std::map<std::string, Value> fields;
-        void add(const std::string& key, const Value& val) { fields[key] = val; }
+        // insert_or_assign, not fields[key] = val: operator[] on a missing
+        // key default-constructs a Value first, then assigns — but Value
+        // has no default constructor (every ctor takes a value), so
+        // fields[key] = val fails to compile. Found 2026-08-12.
+        void add(const std::string& key, const Value& val) { fields.insert_or_assign(key, val); }
         std::string str() const {
             std::string s = "{";
             bool first = true;
@@ -87,7 +91,12 @@ namespace json {
     };
 }
 
-using clock_t = std::chrono::steady_clock;
+// Named bench_clock_t, not clock_t: collides with the C standard library's
+// own ::clock_t (typedef'd in <time.h>, transitively pulled in by <chrono>
+// on glibc/libstdc++) — reproduced 2026-08-12 on Linux/GCC. Same bug as
+// include/timer.h had (see that file, which this duplicates rather than
+// includes).
+using bench_clock_t = std::chrono::steady_clock;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utility: deterministic RNG for trits
@@ -110,9 +119,9 @@ template <typename F>
 double time_ns(F&& fn, int repeats = 5) {
     double total = 0;
     for (int i = 0; i < repeats; ++i) {
-        auto s = clock_t::now();
+        auto s = bench_clock_t::now();
         fn();
-        auto e = clock_t::now();
+        auto e = bench_clock_t::now();
         total += std::chrono::duration<double, std::nano>(e - s).count();
     }
     return total / repeats;

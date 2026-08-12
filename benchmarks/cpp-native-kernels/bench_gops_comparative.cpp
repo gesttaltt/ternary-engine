@@ -60,6 +60,7 @@
 #include <random>
 #include <string>
 #include <cmath>
+#include <cstring>  // std::memcpy — used below, wasn't included
 #include <algorithm>
 #include <numeric>
 #include <fstream>

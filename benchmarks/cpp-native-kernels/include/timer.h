@@ -7,8 +7,19 @@
 
 #include <chrono>
 #include <functional>
+#include <algorithm>  // std::min_element, std::max_element — used below, wasn't included
+#include <numeric>    // std::accumulate — used below, wasn't included
+#include <tuple>       // std::tuple — used below, wasn't included
+#include <vector>      // std::vector — used below, wasn't included
 
-using clock_t = std::chrono::steady_clock;
+// Named bench_clock_t, not clock_t: `using clock_t = ...` collides with the
+// C standard library's own ::clock_t (typedef'd in <time.h>, transitively
+// pulled in by <chrono> on glibc/libstdc++) — "conflicting declaration"
+// compile error, reproduced 2026-08-12 on Linux/GCC. This file has no
+// Linux/macOS build script (only .bat files exist alongside it), so this
+// was presumably never compiled outside MSVC, where <chrono> apparently
+// doesn't transitively expose a conflicting ::clock_t the same way.
+using bench_clock_t = std::chrono::steady_clock;
 
 /**
  * Time a function's execution with multiple repeats
@@ -21,9 +32,9 @@ template <typename F>
 double time_ns(F&& fn, int repeats = 5) {
     double total = 0.0;
     for (int i = 0; i < repeats; ++i) {
-        auto start = clock_t::now();
+        auto start = bench_clock_t::now();
         fn();
-        auto end = clock_t::now();
+        auto end = bench_clock_t::now();
         total += std::chrono::duration<double, std::nano>(end - start).count();
     }
     return total / repeats;
@@ -42,9 +53,9 @@ std::tuple<double, double, double> time_stats(F&& fn, int repeats = 5) {
     times.reserve(repeats);
 
     for (int i = 0; i < repeats; ++i) {
-        auto start = clock_t::now();
+        auto start = bench_clock_t::now();
         fn();
-        auto end = clock_t::now();
+        auto end = bench_clock_t::now();
         times.push_back(std::chrono::duration<double, std::nano>(end - start).count());
     }
 
