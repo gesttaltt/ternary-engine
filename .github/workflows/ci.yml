@@ -1,8 +1,12 @@
 name: CI
 
-# Linux x64 validation: build the SIMD engine + TritNet GEMM modules and run
-# the full test suite (65 tests across 5 suites). Formalizes the local Linux
-# validation of 2026-07-23 (see CLAUDE.md "Critical Gaps" #1).
+# Linux x64 validation: build the SIMD engine, TritNet GEMM, Dense243,
+# zero-skip GEMM, and backend modules, then run the full test suite
+# (13 suites as of 2026-08-12 — expanded from the original 7-suite/65-test
+# run_tests.py after triaging the previously-unwired test files in
+# tests/python/; see commit history for what was added and why).
+# Formalizes the local Linux validation of 2026-07-23 (see CLAUDE.md
+# "Critical Gaps" #1).
 #
 # Note: Windows x64 remains the production-validated platform. This workflow
 # guards against regressions on Linux; it does not replace the Windows
@@ -45,6 +49,9 @@ jobs:
 
       - name: Build zero-skip GEMM module
         run: python build/build_zero_skip_gemm.py
+
+      - name: Build backend module
+        run: python build/build_backend.py
 
       - name: Run test suite
         run: python tests/run_tests.py --no-color

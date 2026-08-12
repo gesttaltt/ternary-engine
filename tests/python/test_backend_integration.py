@@ -436,7 +436,16 @@ def main():
     print("Ternary Backend Integration Tests (v1.2.0)")
     print("="*70)
 
-    # Import backend module
+    # Import backend module. ternary_backend is optional (not part of the
+    # standard `python build/build.py` workflow) — skip gracefully rather
+    # than failing, matching test_dense243.py's convention for optional
+    # modules.
+    try:
+        import ternary_backend as _probe  # noqa: F401
+    except ImportError:
+        print("[SKIP] ternary_backend not built (optional). Run: python build/build_backend.py")
+        return 0
+
     tb = test_backend_import()
     if tb is None:
         print("\n❌ FATAL: Cannot import ternary_backend module")

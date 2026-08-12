@@ -218,6 +218,48 @@ def main():
             'required': False,  # Optional module; test self-skips if not built
             'optional': True,
             'requires_capability': None
+        },
+        'canonical_lut': {
+            'name': 'Canonical LUT Verification Tests',
+            'script': TESTS_DIR / 'python' / 'test_canonical_lut.py',
+            'required': True,
+            'optional': False,
+            'requires_capability': None
+        },
+        'simd_validation': {
+            'name': 'SIMD Layer Validation Tests',
+            'script': TESTS_DIR / 'python' / 'test_simd_validation.py',
+            'required': True,
+            'optional': False,
+            'requires_capability': None
+        },
+        'fusion_correctness': {
+            'name': 'Fusion Operations Correctness Tests',
+            'script': TESTS_DIR / 'python' / 'test_fusion_correctness.py',
+            'required': False,  # Experimental feature, same as 'fusion'
+            'optional': True,
+            'requires_capability': 'fusion'
+        },
+        'backend_integration': {
+            'name': 'Backend System Integration Tests',
+            'script': TESTS_DIR / 'python' / 'test_backend_integration.py',
+            'required': False,  # Optional module (ternary_backend); test self-skips if not built
+            'optional': True,
+            'requires_capability': None
+        },
+        'fused_op_regression': {
+            'name': 'Fused Op Regression Test (tnot+tadd)',
+            'script': TESTS_DIR / 'python' / 'test_fused_op_bug.py',
+            'required': False,  # Same fusion feature gate as 'fusion'
+            'optional': True,
+            'requires_capability': 'fusion'
+        },
+        'quality_gates': {
+            'name': 'Quality Gates (pre-release checks)',
+            'script': TESTS_DIR / 'python' / 'quality_gates.py',
+            'required': True,
+            'optional': False,
+            'requires_capability': None
         }
     }
 

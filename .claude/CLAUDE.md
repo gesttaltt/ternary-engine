@@ -220,6 +220,8 @@ Remaining untested: H15-H16, H18-H22 (Tier 4 research; evaluate value before imp
 - bindings_core_ops.cpp - Python module for core SIMD operations (ternary_simd_engine)
 - bindings_dense243.cpp - Python module for Dense243 encoding (ternary_dense243_module)
 - bindings_tritnet_gemm.cpp - Python module for TritNet GEMM operations
+- bindings_zero_skip_gemm.cpp - Python module for zero-skip ternary GEMM (ternary_zero_skip_gemm; used by competitive benchmark Phase 4, build/build_zero_skip_gemm.py, in CI)
+- bindings_backend_api.cpp - Python module for the pluggable backend system (ternary_backend; Scalar/AVX2_v1/AVX2_v2 selectable at runtime, build/build_backend.py, added to CI 2026-08-12 — was previously undocumented and failed to compile, see "Critical Gaps" #1)
 - lib/dense243/ - High-density encoding library (5 trits/byte, validated)
 
 **scripts/** - Build and development automation
@@ -228,7 +230,7 @@ Remaining untested: H15-H16, H18-H22 (Tier 4 research; evaluate value before imp
 - orchestration/ - High-level workflows
 
 **benchmarks/** - Competitive analysis suite
-**tests/** - Comprehensive test suite (65 tests)
+**tests/** - Test suite, 13 suites via `run_tests.py` as of 2026-08-12 (expanded from 7/"65 tests" — see "Critical Gaps" #1)
 **docs/** - API reference and architecture documentation
 
 ### Deployment Status Markers
@@ -626,6 +628,8 @@ Future work should explore:
 
 **Standard build** - `python build/build.py`
 **Dense243 module** - `python build/build_dense243.py`
+**Zero-skip GEMM module** - `python build/build_zero_skip_gemm.py`
+**Backend module** - `python build/build_backend.py` (pluggable Scalar/AVX2_v1/AVX2_v2 backend system)
 **PGO (Clang)** - `python build/build_pgo_unified.py --clang`
 **PGO (MSVC)** - `python build/build_pgo.py full`
 **Cleanup** - `python build/clean_all.py`
@@ -933,7 +937,7 @@ pip install matplotlib transformers
 
 ### Production Gaps
 
-1. **Multi-platform validation** - Only Windows x64 formally proven for benchmarks; Linux x64 CI added 2026-08-11 (.github/workflows/ci.yml builds engine + TritNet GEMM + Dense243 and runs full suite); benchmark validation on Linux still pending
+1. **Multi-platform validation** - Only Windows x64 formally proven for benchmarks; Linux x64 CI added 2026-08-11 (.github/workflows/ci.yml builds engine + TritNet GEMM + Dense243 + zero-skip GEMM + backend, runs full suite); benchmark validation on Linux still pending. Suite expanded 2026-08-12 from 7 to 13 wired suites — `tests/run_tests.py` and CI previously ran only 7 of ~17 real test files under `tests/python/` (including `quality_gates.py`, whose own header says it "must pass before any release", and `test_backend_integration.py`, the largest Python test file). Triaged all un-wired files: 6 passed and are now wired (`test_canonical_lut.py`, `test_simd_validation.py`, `test_fusion_correctness.py`, `test_backend_integration.py`, `test_fused_op_bug.py`, `quality_gates.py`); 2 were genuinely dead and removed (`test_simd_python.py` — truncated mid-docstring, never valid Python; `test_path_fixes.py` — its own `PROJECT_ROOT` path math was off by 2 `.parent` levels, and it referenced a `build_fusion.py`/`ternary_fusion_engine` that no longer exist post-fusion-merge, so every check in it either silently skipped or hard-failed); `test_dual_shuffle_validation.py` correctly reports failure — it tests dual-shuffle XOR, an explicitly-labeled "future enhancement" not yet implemented (see `backend_avx2_v2_optimized.cpp` header), left un-wired as a known limitation rather than a bug; `compile_test.py`/`setup_test.py`/`run_simd_harness.py` are dev utilities, not suites, left as-is. Wiring `test_backend_integration.py` required first fixing why `build/build_backend.py` (undocumented, not previously in CI) failed to compile at all on Linux — see TritNet/backend note below.
 2. **TritNet Phase 3 pending** - Phase 2B GO achieved 2026-08-11: 4/4 ops ≥99% with ternary weights (tadd 100%, tmul 99.5%, tmin 99.9%, tmax 99.9%). Next: Phase 3 C++ inference engine (weight export, C++ inference, TritNet-vs-LUT benchmark — the experiment that decides whether TritNet beats LUTs in practice; note LUT does ~20K fewer MACs per 5-trit op, see research/PRIOR_ART_TERNARY_LANDSCAPE.md context)
 3. **Competitive benchmarking** - Only 2/5 criteria validated. Full 6-phase Linux x64 run COMPLETE, including a same-session fix for the Phase 3/4 script gaps (2026-08-11, see reports/2026-08-11/LINUX_VALIDATION_REPORT.md §3): Phase 1 (arithmetic) "NEEDS WORK" (0.63-0.68x avg, matches fair-baseline finding that single ops are ~parity/behind NumPy); Phase 2 (memory) "SIGNIFICANT ADVANTAGE" (4.0x vs INT8, matches README claim); Phase 3 (throughput @ bit-width) FIXED — now benchmarks real INT2/INT4 NumPy-packed references alongside engine-native and Dense243 ternary, all sized to a genuine 1GB footprint (the old version silently allocated 4x that); verdict: Dense243 is 9.6x faster than the INT2 reference at equivalent (~2-bit) density; Phase 4 (neural workload) FIXED — now calls the compiled `ternary_zero_skip_gemm.ZeroSkipWeights` kernel (sparse index precomputed, correctness-checked against NumPy, max err ~1e-4) instead of a naive Python loop; result: still "TOO SLOW FOR AI" at 0.21x avg (batch=1, ~33% random sparsity vs ~40% in real trained weights) but now a trustworthy kernel-vs-kernel number; Phase 5-6 remain descriptive-only (no measurement code, confirmed by inspection). Net: criteria count unchanged at 2/5 (neither fixed phase crosses into an unambiguous "beats NumPy" claim), but both numbers are now real measurements instead of script artifacts.
 4. **Dense243 integration** - RESOLVED on Linux (2026-08-11): build failed because build_dense243.py lacked AVX2 flags on GCC (-march=haswell -mavx2); fixed, module builds, 10/10 C++ tests pass, and new tests/python/test_dense243.py validates round-trip + all 5 ops against the reference engine (suite now 6/6). Windows /arch:AVX2 added but not yet re-validated on Windows
