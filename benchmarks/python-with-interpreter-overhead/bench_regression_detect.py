@@ -32,16 +32,21 @@ class ComparisonResult:
     change_percent: float
     before_ns_per_elem: float
     after_ns_per_elem: float
+    # Found 2026-08-12: is_regression/is_improvement used to hardcode +/-5.0
+    # regardless of this field, so --threshold (parsed in main(), documented
+    # in this file's own usage string) had no effect at all. Default matches
+    # the CLI's own --threshold default.
+    threshold: float = 5.0
 
     @property
     def is_regression(self) -> bool:
         """Check if this is a performance regression"""
-        return self.change_percent < -5.0  # More than 5% slower
+        return self.change_percent < -self.threshold
 
     @property
     def is_improvement(self) -> bool:
         """Check if this is a performance improvement"""
-        return self.change_percent > 5.0  # More than 5% faster
+        return self.change_percent > self.threshold
 
 
 def load_benchmark_results(filepath: Path) -> Dict:
@@ -50,7 +55,7 @@ def load_benchmark_results(filepath: Path) -> Dict:
         return json.load(f)
 
 
-def compare_benchmarks(before: Dict, after: Dict) -> List[ComparisonResult]:
+def compare_benchmarks(before: Dict, after: Dict, threshold: float = 5.0) -> List[ComparisonResult]:
     """Compare two benchmark result sets"""
     results = []
 
@@ -70,6 +75,14 @@ def compare_benchmarks(before: Dict, after: Dict) -> List[ComparisonResult]:
             # Calculate change percentage
             before_mops = before_r['throughput_mops']
             after_mops = after_r['throughput_mops']
+            if before_mops == 0:
+                # Degenerate baseline (0 throughput) — no meaningful percent
+                # change to compute. Found 2026-08-12: this used to divide
+                # by before_mops unconditionally and crash with
+                # ZeroDivisionError on any such entry. Skip it with a
+                # warning rather than aborting the whole comparison run.
+                print(f"WARNING: skipping {key} — before_mops is 0 (no baseline throughput to compare against)")
+                continue
             change_percent = ((after_mops - before_mops) / before_mops) * 100
 
             comparison = ComparisonResult(
@@ -79,7 +92,8 @@ def compare_benchmarks(before: Dict, after: Dict) -> List[ComparisonResult]:
                 after_mops=after_mops,
                 change_percent=change_percent,
                 before_ns_per_elem=before_r['time_ns_per_elem'],
-                after_ns_per_elem=after_r['time_ns_per_elem']
+                after_ns_per_elem=after_r['time_ns_per_elem'],
+                threshold=threshold,
             )
             results.append(comparison)
 
@@ -206,7 +220,7 @@ def main():
     after = load_benchmark_results(after_path)
 
     # Compare results
-    comparisons = compare_benchmarks(before, after)
+    comparisons = compare_benchmarks(before, after, threshold=args.threshold)
 
     if not comparisons:
         print("\nWARNING: No matching benchmarks found between the two files.")

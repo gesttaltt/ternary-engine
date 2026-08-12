@@ -1,5 +1,5 @@
 """
-bench_phase0.py - Production-grade Python benchmark suite for Ternary Engine
+bench_simd_core_ops.py - Production-grade Python benchmark suite for Ternary Engine
 
 Copyright 2025 Ternary Engine Contributors
 Licensed under the Apache License, Version 2.0

@@ -122,7 +122,13 @@ class BenchmarkRunner:
         # 95% confidence interval for the mean
         n = len(times_ns)
         ci_margin = 1.96 * (stdev / math.sqrt(n)) if n > 1 else 0.0
-        ci_lower = mean - ci_margin
+        # Timing data is strictly non-negative, but a naive symmetric
+        # Gaussian CI doesn't know that — a single severe outlier among
+        # otherwise-tight samples can push ci_margin past mean, giving a
+        # negative ci_lower that reads as nonsense for a "time" quantity
+        # and (worse) propagates into speedup_upper below as a
+        # division by a negative or zero number. Found 2026-08-12.
+        ci_lower = max(0.0, mean - ci_margin)
         ci_upper = mean + ci_margin
 
         return {
@@ -181,13 +187,26 @@ class BenchmarkRunner:
         stats_baseline = self._compute_statistics(times_baseline)
         stats_optimized = self._compute_statistics(times_optimized)
 
-        # Compute speedup
-        speedup = stats_baseline['median'] / stats_optimized['median']
+        # Compute speedup. Found 2026-08-12: no zero guard here or below —
+        # each sample is a single un-batched call (perf_counter_ns() around
+        # one function invocation), so a trivial optimized_fn or a coarse
+        # timer resolution can legitimately measure 0ns, and ci_lower can
+        # be exactly 0.0 even after the clamp above (mean == ci_margin).
+        if stats_optimized['median'] == 0:
+            speedup = float('inf') if stats_baseline['median'] > 0 else 1.0
+        else:
+            speedup = stats_baseline['median'] / stats_optimized['median']
 
         # Compute 95% CI for speedup
         # Using ratio of means with delta method approximation
-        speedup_lower = stats_baseline['ci_lower'] / stats_optimized['ci_upper']
-        speedup_upper = stats_baseline['ci_upper'] / stats_optimized['ci_lower']
+        if stats_optimized['ci_upper'] == 0:
+            speedup_lower = float('inf') if stats_baseline['ci_lower'] > 0 else 1.0
+        else:
+            speedup_lower = stats_baseline['ci_lower'] / stats_optimized['ci_upper']
+        if stats_optimized['ci_lower'] == 0:
+            speedup_upper = float('inf') if stats_baseline['ci_upper'] > 0 else 1.0
+        else:
+            speedup_upper = stats_baseline['ci_upper'] / stats_optimized['ci_lower']
 
         # Quality checks
         is_stable = (

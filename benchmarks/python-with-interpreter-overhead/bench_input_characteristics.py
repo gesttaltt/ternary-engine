@@ -32,8 +32,18 @@ from pathlib import Path
 from datetime import datetime
 import numpy as np
 
-# Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+# Add project root to path. File is benchmarks/python-with-interpreter-overhead/
+# bench_input_characteristics.py, 2 directories deep from repo root — needs 3
+# .parent calls (file -> python-with-interpreter-overhead/ -> benchmarks/ ->
+# repo root), not 2. The previous 2-.parent version resolved to .../benchmarks/,
+# one level short, breaking the `from benchmarks.utils.X import Y` package
+# imports below whenever PYTHONPATH doesn't already happen to include the
+# repo root some other way. Found 2026-08-12: this was masked in dev shells
+# with a stray PYTHONPATH=.:./api left over from unrelated tooling (now
+# cleaned up), which fooled sys.path into finding `benchmarks` via cwd
+# instead of via this computation — reproduced the real failure by
+# unsetting PYTHONPATH: ModuleNotFoundError: No module named 'benchmarks.utils'.
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import measurement modules

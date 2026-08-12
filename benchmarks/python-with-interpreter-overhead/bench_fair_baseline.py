@@ -50,6 +50,15 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 import ternary_simd_engine as eng  # noqa: E402
 
+
+def safe_stdev(data) -> float:
+    """statistics.stdev() requires >= 2 samples; --repeats 1 (a legitimate
+    quick smoke-test value — argparse has no minimum on it) crashed every
+    cell with StatisticsError before this. A single sample has no variance
+    to report, so 0.0 is the honest answer, not an error.
+    Found 2026-08-12."""
+    return statistics.stdev(data) if len(data) >= 2 else 0.0
+
 SEED = 42
 DEFAULT_SIZES = [1_000, 10_000, 100_000, 1_000_000, 10_000_000]
 DEFAULT_REPEATS = 30
@@ -163,11 +172,11 @@ def bench_cell(op_name, engine_fn, numpy_fn, is_binary, size, repeats, rng):
         'op': op_name,
         'size': size,
         'engine_median_us': med_e * 1e6,
-        'engine_std_us': statistics.stdev(t_e) * 1e6,
-        'engine_cv': statistics.stdev(t_e) / statistics.mean(t_e),
+        'engine_std_us': safe_stdev(t_e) * 1e6,
+        'engine_cv': safe_stdev(t_e) / statistics.mean(t_e),
         'numpy_median_us': med_n * 1e6,
-        'numpy_std_us': statistics.stdev(t_n) * 1e6,
-        'numpy_cv': statistics.stdev(t_n) / statistics.mean(t_n),
+        'numpy_std_us': safe_stdev(t_n) * 1e6,
+        'numpy_cv': safe_stdev(t_n) / statistics.mean(t_n),
         'engine_mops_s': size / med_e / 1e6,
         'numpy_mops_s': size / med_n / 1e6,
         'speedup': med_n / med_e,
