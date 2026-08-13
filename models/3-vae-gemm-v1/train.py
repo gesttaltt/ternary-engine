@@ -91,6 +91,12 @@ class Trainer:
 
         # Frozen embeddings for operation training
         self.frozen_embeddings = None
+        # Tracks whether the encoder is actually frozen right now -- used
+        # by train_epoch() to decide whether cached frozen_embeddings can
+        # be reused (true "frozen" phase) or must be recomputed every epoch
+        # (encoder is training, so cached embeddings drift stale). See
+        # freeze_encoder()/unfreeze_all() and the note in train_epoch().
+        self.encoder_frozen = False
 
     def setup_optimizer(self, lr: float = 1e-4, weight_decay: float = 1e-5):
         """Setup optimizer and scheduler."""
@@ -111,6 +117,7 @@ class Trainer:
         for name, param in self.model.named_parameters():
             if 'operation_head' not in name:
                 param.requires_grad = False
+        self.encoder_frozen = True
 
         trainable = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         total = sum(p.numel() for p in self.model.parameters())
@@ -120,6 +127,7 @@ class Trainer:
         """Unfreeze all parameters."""
         for param in self.model.parameters():
             param.requires_grad = True
+        self.encoder_frozen = False
 
     def compute_frozen_embeddings(self):
         """Compute and cache frozen embeddings from encoder."""
@@ -144,8 +152,16 @@ class Trainer:
         total_vrc = 0
         num_batches = 0
 
-        # Ensure we have frozen embeddings
-        if self.frozen_embeddings is None:
+        # Ensure we have (fresh) embeddings for ORALoss's ranking negatives.
+        # unfreeze_all() previously had no way to invalidate this cache --
+        # frozen_embeddings was computed once at the freeze/unfreeze
+        # boundary and never recomputed again, so every epoch after
+        # unfreezing ranked against embeddings from an encoder state that
+        # was already stale and drifting further every epoch. Now
+        # recomputed every epoch whenever the encoder isn't actually frozen
+        # (self.encoder_frozen, set by freeze_encoder()/unfreeze_all()), and
+        # only cached/reused while it truly is frozen. Found 2026-08-13.
+        if self.frozen_embeddings is None or not self.encoder_frozen:
             self.compute_frozen_embeddings()
 
         # Zip operation and triplet loaders

@@ -387,8 +387,16 @@ class TripletDataset(Dataset):
         self.indices_c = np.random.randint(0, num_values, size=num_samples)
         self.embeddings = embeddings
 
-        # Precompute valuations
-        self.valuations = np.array([self._valuation(i) for i in range(num_values)])
+        # Precompute valuations. `i` here is the RAW encoding index
+        # (idx = sum((trit_k+1)*3^k), range [0, num_values-1]), not the
+        # decoded balanced-ternary value -- the true zero (all-zero trits)
+        # lives at idx_offset = (num_values-1)//2, not at idx=0 (which
+        # decodes to the most negative representable value). Valuation must
+        # be computed on the DECODED value (i - idx_offset), same bug class
+        # already found and fixed in research/scripts/falsify.py's
+        # build_corpus(). Found 2026-08-13.
+        idx_offset = (num_values - 1) // 2
+        self.valuations = np.array([self._valuation(i - idx_offset) for i in range(num_values)])
 
     def _valuation(self, n: int, max_val: int = 9) -> int:
         if n == 0:

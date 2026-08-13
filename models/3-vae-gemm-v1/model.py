@@ -225,12 +225,22 @@ class VAEGemmV1(nn.Module):
 
     def _build_valuation_table(self):
         """Precompute valuation table."""
+        # `idx` here is the RAW encoding index (idx = sum((trit_k+1)*3^k)),
+        # not the decoded balanced-ternary value -- the true zero (all-zero
+        # trits) lives at idx_offset = (num_values-1)//2, not at idx=0
+        # (which decodes to the most negative representable value). This
+        # used to special-case idx==0 as the max-valuation "zero" case and
+        # compute v3(idx) directly on the raw index otherwise, inverting
+        # which point was treated as p-adically near zero -- same bug class
+        # already found and fixed in research/scripts/falsify.py's
+        # build_corpus(). Found 2026-08-13.
+        idx_offset = (self.config.num_values - 1) // 2
         valuations = torch.zeros(self.config.num_values, dtype=torch.long)
         for idx in range(self.config.num_values):
-            if idx == 0:
+            n = idx - idx_offset
+            if n == 0:
                 valuations[idx] = self.config.num_trits
             else:
-                n = idx
                 v = 0
                 while n % 3 == 0 and v < self.config.num_trits:
                     n //= 3

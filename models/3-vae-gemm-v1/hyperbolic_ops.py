@@ -335,9 +335,20 @@ class UltrametricAttractorField(nn.Module):
         """Initialize attractors with p-adic structure."""
         attractors = torch.zeros(self.num_values, self.embedding_dim)
 
+        # `idx` is the RAW encoding index (idx = sum((trit_k+1)*3^k)), not
+        # the decoded balanced-ternary value -- the true zero (all-zero
+        # trits) lives at idx_offset = (num_values-1)//2, not at idx=0
+        # (which decodes to the most negative representable value).
+        # self._valuation() must be called on the DECODED value, or the
+        # most-negative-valued attractor gets placed at the center (max
+        # valuation) and the true-zero attractor gets placed at the
+        # boundary -- same bug class already found and fixed in
+        # research/scripts/falsify.py's build_corpus(). Found 2026-08-13.
+        idx_offset = (self.num_values - 1) // 2
+
         for idx in range(self.num_values):
             # Compute valuation
-            val = self._valuation(idx)
+            val = self._valuation(idx - idx_offset)
 
             # Target radius: high valuation → near center
             target_r = 0.9 - (val / self.num_trits) * 0.8
@@ -744,12 +755,24 @@ class HyperbolicOperationModel(nn.Module):
 
     def _build_valuation_table(self):
         """Precompute valuations."""
+        # `idx` here is the RAW encoding index (idx = sum((trit_k+1)*3^k)),
+        # not the decoded balanced-ternary value -- the true zero (all-zero
+        # trits) lives at idx_offset = (num_values-1)//2, not at idx=0
+        # (which decodes to the most negative representable value). This
+        # used to special-case idx==0 as the max-valuation "zero" case and
+        # compute v3(idx) directly on the raw index otherwise, inverting
+        # which point was treated as p-adically near zero -- same bug class
+        # already found and fixed in research/scripts/falsify.py's
+        # build_corpus() (and identically in model.py's
+        # VAEGemmV1._build_valuation_table, fixed alongside this one).
+        # Found 2026-08-13.
+        idx_offset = (self.num_values - 1) // 2
         valuations = torch.zeros(self.num_values, dtype=torch.long)
         for idx in range(self.num_values):
-            if idx == 0:
+            n = idx - idx_offset
+            if n == 0:
                 valuations[idx] = self.num_trits
             else:
-                n = idx
                 v = 0
                 while n % 3 == 0 and v < self.num_trits:
                     n //= 3
@@ -887,7 +910,13 @@ class HyperbolicOperationLoss(nn.Module):
         radii = embeddings.norm(dim=-1)
 
         # Target radius: high valuation → small radius
-        max_val = valuations.max().float()
+        # max_val can be 0 whenever every sample in a mini-batch happens to
+        # have valuation 0 (the majority class -- ~2/3 of all 19,683
+        # values), which produces a 0/0 NaN with no guard. Every other
+        # division in this file clamps its denominator the same way (e.g.
+        # the Mobius-addition denom above); this one didn't. Found
+        # 2026-08-13.
+        max_val = valuations.max().float().clamp(min=1e-5)
         target_radii = 0.9 - (valuations.float() / max_val) * 0.8
 
         return F.mse_loss(radii, target_radii)
