@@ -172,6 +172,16 @@ def export_encoder_weights(
         weight_key = f"{encoder_prefix}.{fc_name}.weight"
         bias_key = f"{encoder_prefix}.{fc_name}.bias"
 
+        # Unlike the encoder-layer loop above, this indexed state_dict
+        # directly with no existence guard. Not every Encoder architecture
+        # in this directory has both heads -- create_embedding_lut.py's own
+        # Encoder class (same directory) defines only fc_mu, no fc_logvar
+        # -- so a checkpoint from that architecture would raise an
+        # unguarded KeyError here instead of skipping the missing layer the
+        # way the rest of this function is written to do. Found 2026-08-13.
+        if weight_key not in state_dict:
+            continue
+
         weight = state_dict[weight_key]
         bias = state_dict[bias_key]
 
@@ -358,8 +368,16 @@ def main():
     output_dir = base_dir / "gemm_export"
     output_dir.mkdir(exist_ok=True)
 
-    # Best checkpoint from validation
-    checkpoint_path = base_dir / "v5_11_homeostasis" / "epoch_20.pt"
+    # Best checkpoint from validation. CLAUDE.md documents this path as
+    # v5_11_homeostasis/best.pt, not epoch_20.pt -- prefer best.pt (the
+    # documented source of truth) and fall back to epoch_20.pt so this
+    # still works if the checkpoint was only saved under its per-epoch
+    # name. Same mismatch existed identically in create_embedding_lut.py
+    # and test_vae_gemm.py; fixed in all three. Found 2026-08-13.
+    checkpoint_dir = base_dir / "v5_11_homeostasis"
+    checkpoint_path = checkpoint_dir / "best.pt"
+    if not checkpoint_path.exists():
+        checkpoint_path = checkpoint_dir / "epoch_20.pt"
 
     print("="*70)
     print("VAE to Dense243 GEMM Export")

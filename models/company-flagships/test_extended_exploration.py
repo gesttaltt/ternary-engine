@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Quick test of extended exploration pipeline."""
 
+import sys
 import time
 import json
 import numpy as np
@@ -14,7 +15,16 @@ from explore_gemm_extended import (
     analyze_gap_structure
 )
 
-def main():
+def main() -> int:
+    # Previously this function had zero assert statements and
+    # unconditionally printed "ALL PIPELINE TESTS PASSED" after calling
+    # each pipeline stage regardless of what it returned, so a regression
+    # (NaN, an out-of-range rate, a stage silently returning garbage) would
+    # still report success and exit 0. Added sanity checks per stage below
+    # -- deliberately loose (structural/range checks, not exact value
+    # assertions) since this is a smoke test over real trained embeddings
+    # with no fixed expected output, not a fixture-based unit test. Found
+    # 2026-08-13.
     print("=" * 70)
     print("QUICK PIPELINE TEST")
     print("=" * 70)
@@ -35,6 +45,10 @@ def main():
     print(f"   Time: {time.time()-t0:.1f}s")
     print(f"   ADD ultrametric: {op_results['add']['ultrametric_rate']:.2%}")
     print(f"   MUL ultrametric: {op_results['mul']['ultrametric_rate']:.2%}")
+    for op in ('add', 'mul'):
+        rate = op_results[op]['ultrametric_rate']
+        assert np.isfinite(rate) and 0.0 <= rate <= 1.0, \
+            f"{op} ultrametric_rate out of range: {rate}"
 
     # Test 2: Lattice (500 samples)
     print("\n2. Testing lattice analysis...")
@@ -42,6 +56,8 @@ def main():
     lattice = analyze_multiscale_lattice(explorer, num_samples=500)
     print(f"   Time: {time.time()-t0:.1f}s")
     print(f"   Mean distance: {lattice['distance_stats']['mean']:.4f}")
+    assert np.isfinite(lattice['distance_stats']['mean']), \
+        f"lattice mean distance is not finite: {lattice['distance_stats']['mean']}"
 
     # Test 3: Ultrametric (1K triplets)
     print("\n3. Testing ultrametric analysis...")
@@ -49,6 +65,9 @@ def main():
     ultra = analyze_ultrametric_extended(explorer, num_triplets=1000)
     print(f"   Time: {time.time()-t0:.1f}s")
     print(f"   Correlation: {ultra['euclidean_ultrametric_correlation']:.4f}")
+    corr = ultra['euclidean_ultrametric_correlation']
+    assert np.isfinite(corr) and -1.0 <= corr <= 1.0, \
+        f"ultrametric correlation out of range: {corr}"
 
     # Test 4: GEMM map (50x50)
     print("\n4. Testing GEMM map generation (50x50)...")
@@ -57,6 +76,10 @@ def main():
     print(f"   Time: {time.time()-t0:.1f}s")
     print(f"   Match rate: {gemm_map['match_rate']:.2%}")
     print(f"   Mean distance: {gemm_map['mean_distance']:.4f}")
+    assert np.isfinite(gemm_map['match_rate']) and 0.0 <= gemm_map['match_rate'] <= 1.0, \
+        f"gemm_map match_rate out of range: {gemm_map['match_rate']}"
+    assert np.isfinite(gemm_map['mean_distance']) and gemm_map['mean_distance'] >= 0.0, \
+        f"gemm_map mean_distance invalid: {gemm_map['mean_distance']}"
 
     # Test 5: Gap analysis
     print("\n5. Testing gap analysis...")
@@ -64,6 +87,8 @@ def main():
     gap = analyze_gap_structure({'add': gemm_map['distance_map']})
     print(f"   Time: {time.time()-t0:.1f}s")
     print(f"   Gap regions: {gap['add']['num_gap_regions']}")
+    assert gap['add']['num_gap_regions'] >= 0, \
+        f"num_gap_regions is negative: {gap['add']['num_gap_regions']}"
 
     print("\n" + "=" * 70)
     print("ALL PIPELINE TESTS PASSED")
@@ -88,6 +113,7 @@ def main():
         json.dump(mini_results, f, indent=2)
 
     print(f"\nSaved mini results to {output_dir / 'mini_test_results.json'}")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

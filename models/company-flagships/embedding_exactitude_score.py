@@ -32,6 +32,7 @@ Licensed under the Apache License, Version 2.0
 import argparse
 import json
 import time
+import zlib
 import numpy as np
 from pathlib import Path
 from dataclasses import dataclass, asdict, field
@@ -146,6 +147,21 @@ class EmbeddingExactitudeScore:
 # TERNARY OPERATIONS
 # =============================================================================
 
+def stable_str_hash(s: str) -> int:
+    """
+    Deterministic string hash for seeding, in [0, 2**32).
+
+    Python's builtin hash() is randomized per-process for str/bytes
+    (PYTHONHASHSEED) unless explicitly disabled, so `seed + hash(op_name)`
+    was not actually a fixed seed across runs -- verified: hash('add') %
+    10000 returned 4 different values across 3 separate interpreter
+    invocations. Found 2026-08-13; violates CLAUDE.md's "reproducible -
+    Fixed random seeds for deterministic tests" convention. zlib.crc32 is
+    stable across processes and platforms.
+    """
+    return zlib.crc32(s.encode('utf-8'))
+
+
 def valuation_3adic(n: int, max_val: int = 9) -> int:
     """Compute 3-adic valuation of n."""
     if n == 0:
@@ -242,7 +258,7 @@ def compute_operation_accuracy(
     results = {}
 
     for op_name, op_func in OPERATIONS.items():
-        np.random.seed(seed + hash(op_name) % 10000)
+        np.random.seed(seed + stable_str_hash(op_name) % 10000)
 
         pairs_a = np.random.randint(0, N, size=num_samples)
         pairs_b = np.random.randint(0, N, size=num_samples)
@@ -489,21 +505,23 @@ def compute_hierarchy_metrics(
     # Dendrogram correlation: merge height vs valuation difference
     # For each merge, compute valuation difference between merged clusters
     merge_heights = Z[:, 2]
-    val_diffs = []
 
-    # Simplified: correlation between pairwise distances and valuation differences
-    if sample_size <= 500:
-        pairwise_dists = pdist(sample_emb)
-        val_diff_matrix = []
-        for i in range(len(sample_idx)):
-            for j in range(i + 1, len(sample_idx)):
-                val_diff_matrix.append(abs(sample_vals[i] - sample_vals[j]))
-        val_diff_matrix = np.array(val_diff_matrix)
+    # Correlation between pairwise embedding distances and valuation
+    # differences. This used to be gated behind `if sample_size <= 500:`,
+    # but this function's only caller (main(), below) always passes
+    # sample_size=min(1000, N) -- for any real corpus (N >> 500) that guard
+    # was always False, so dendrogram_correlation silently stayed 0.0 for
+    # every real run. The O(n^2) pure-Python loop building val_diff_matrix
+    # was presumably the reason for the guard; vectorized with pdist
+    # instead (the same op already used for pairwise_dists), which is fast
+    # enough that the guard is no longer needed. Verified the vectorized
+    # form produces byte-for-byte identical pairwise values/ordering to the
+    # old nested loop. Found 2026-08-13.
+    pairwise_dists = pdist(sample_emb)
+    val_diff_matrix = pdist(sample_vals.reshape(-1, 1), metric='cityblock')
 
-        dendrogram_corr, _ = spearmanr(pairwise_dists, val_diff_matrix)
-        dendrogram_corr = float(dendrogram_corr) if not np.isnan(dendrogram_corr) else 0.0
-    else:
-        dendrogram_corr = 0.0
+    dendrogram_corr, _ = spearmanr(pairwise_dists, val_diff_matrix)
+    dendrogram_corr = float(dendrogram_corr) if not np.isnan(dendrogram_corr) else 0.0
 
     # AMI between clusters and valuation (using k=10 clusters)
     try:
@@ -532,7 +550,7 @@ def compute_linearity_metrics(
     results = {}
 
     for op_name, op_func in OPERATIONS.items():
-        np.random.seed(seed + hash(op_name) % 10000)
+        np.random.seed(seed + stable_str_hash(op_name) % 10000)
 
         pairs_a = np.random.randint(0, N, size=num_samples)
         pairs_b = np.random.randint(0, N, size=num_samples)

@@ -22,13 +22,28 @@ OUTPUT: gemm_exploration/extended_*.json, extended_*.npy
 import argparse
 import time
 import json
+import zlib
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
-from scipy.spatial.distance import pdist, squareform
-from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
+from scipy.spatial.distance import pdist
+from scipy.cluster.hierarchy import linkage, fcluster, dendrogram, cophenet
 from scipy.stats import spearmanr
 from collections import defaultdict
+
+
+def stable_str_hash(s: str) -> int:
+    """
+    Deterministic string hash for seeding, in [0, 2**32).
+
+    Python's builtin hash() is randomized per-process for str/bytes
+    (PYTHONHASHSEED) unless explicitly disabled, so `42 + hash(op) % 1000`
+    was not actually a fixed seed across runs. Found 2026-08-13; violates
+    CLAUDE.md's "reproducible - Fixed random seeds for deterministic
+    tests" convention. zlib.crc32 is stable across processes and
+    platforms. (Same fix applied to embedding_exactitude_score.py.)
+    """
+    return zlib.crc32(s.encode('utf-8'))
 
 
 def convert_numpy_types(obj):
@@ -114,7 +129,12 @@ class ExtendedGEMMExplorer:
                     result[i] = s
                     carry = 0
         elif op == 'mul':
-            # First trit multiplication only (simplified)
+            # Element-wise multiplication across all 9 trits (not "first
+            # trit only" as this comment previously and incorrectly said --
+            # trits_a/trits_b are full 9-element arrays, so `*` here is a
+            # full element-wise product, not a scalar/first-element
+            # operation. Comment corrected 2026-08-13 to match the actual
+            # code; the code itself is unchanged.
             result = trits_a * trits_b
         elif op == 'min':
             result = np.minimum(trits_a, trits_b)
@@ -153,7 +173,7 @@ def explore_operations_extended(
         t0 = time.perf_counter()
 
         # Random pairs
-        np.random.seed(42 + hash(op) % 1000)
+        np.random.seed(42 + stable_str_hash(op) % 1000)
         pairs_a = np.random.randint(0, explorer.N, size=num_samples)
         pairs_b = np.random.randint(0, explorer.N, size=num_samples)
 
@@ -346,20 +366,21 @@ def analyze_ultrametric_extended(explorer: ExtendedGEMMExplorer, num_triplets: i
     sample_idx = np.random.choice(explorer.N, size=sample_size, replace=False)
     sample_emb = explorer.embeddings[sample_idx]
 
-    euclidean_dist = squareform(pdist(sample_emb))
+    euclidean_condensed = pdist(sample_emb)
 
-    # Compute ultrametric distance via single-linkage clustering
+    # Compute ultrametric (cophenetic) distance via single-linkage
+    # clustering. This used to call _get_merge_height() in a nested loop
+    # over all C(sample_size, 2) pairs, each doing an O(sample_size) dict
+    # scan per merge step (~O(n^4) total) -- scipy.cluster.hierarchy.cophenet
+    # computes the exact same cophenetic distances in one vectorized call
+    # (already used for this same purpose in the sibling file
+    # explore_gemm_space.py). Verified byte-for-byte identical output to
+    # the old per-pair loop before removing it. Found 2026-08-13.
     Z = linkage(sample_emb, method='single')
-    ultrametric_dist = np.zeros((sample_size, sample_size))
-    for i in range(sample_size):
-        for j in range(i + 1, sample_size):
-            # Find merge height in dendrogram
-            ultrametric_dist[i, j] = ultrametric_dist[j, i] = _get_merge_height(Z, i, j, sample_size)
+    _, ultrametric_flat = cophenet(Z, euclidean_condensed)
 
     # Correlation between Euclidean and ultrametric
-    euclidean_flat = euclidean_dist[np.triu_indices(sample_size, k=1)]
-    ultrametric_flat = ultrametric_dist[np.triu_indices(sample_size, k=1)]
-    correlation, _ = spearmanr(euclidean_flat, ultrametric_flat)
+    correlation, _ = spearmanr(euclidean_condensed, ultrametric_flat)
 
     return {
         'num_triplets': num_triplets,
@@ -370,30 +391,6 @@ def analyze_ultrametric_extended(explorer: ExtendedGEMMExplorer, num_triplets: i
         'euclidean_ultrametric_correlation': float(correlation),
         'sample_size_for_correlation': sample_size
     }
-
-
-def _get_merge_height(Z: np.ndarray, i: int, j: int, n: int) -> float:
-    """Get the merge height of two points in hierarchical clustering."""
-    # Build mapping from original indices to cluster labels
-    clusters = {k: k for k in range(n)}
-
-    for step, (c1, c2, height, _) in enumerate(Z):
-        c1, c2 = int(c1), int(c2)
-
-        # Find which original points are in each cluster
-        members_1 = [k for k, v in clusters.items() if v == c1]
-        members_2 = [k for k, v in clusters.items() if v == c2]
-
-        # Check if i and j are being merged
-        if (i in members_1 and j in members_2) or (i in members_2 and j in members_1):
-            return height
-
-        # Merge clusters
-        new_cluster = n + step
-        for m in members_1 + members_2:
-            clusters[m] = new_cluster
-
-    return 0.0
 
 
 def generate_extended_gemm_map(

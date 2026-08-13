@@ -259,7 +259,16 @@ class OriginalDecoder(nn.Module):
 def main():
     base_dir = Path(__file__).parent
     export_dir = base_dir / "gemm_export"
-    checkpoint_path = base_dir / "v5_11_homeostasis" / "epoch_20.pt"
+    # CLAUDE.md documents this checkpoint's path as
+    # v5_11_homeostasis/best.pt, not epoch_20.pt -- prefer best.pt (the
+    # documented source of truth) and fall back to epoch_20.pt so this
+    # still works if the checkpoint was only saved under its per-epoch
+    # name. Same mismatch existed identically in create_embedding_lut.py
+    # and export_vae_to_gemm.py; fixed in all three. Found 2026-08-13.
+    checkpoint_dir = base_dir / "v5_11_homeostasis"
+    checkpoint_path = checkpoint_dir / "best.pt"
+    if not checkpoint_path.exists():
+        checkpoint_path = checkpoint_dir / "epoch_20.pt"
 
     print("="*70)
     print("VAE GEMM Inference Test")

@@ -403,8 +403,23 @@ def generate_soft_gemm_map(explorer: SoftGEMMExplorer,
                 result_trits = ternary_add(a_trits, b_trits)
             elif operation == 'mul':
                 result_trits = ternary_mul_elementwise(a_trits, b_trits)
+            elif operation == 'min':
+                result_trits = ternary_min(a_trits, b_trits)
+            elif operation == 'max':
+                result_trits = ternary_max(a_trits, b_trits)
             else:
-                result_trits = a_trits
+                # Previously silently fell through to `result_trits = a_trits`
+                # (identity) for any unrecognized operation instead of
+                # raising -- min/max are already implemented and used
+                # identically in operation_neighborhood() above, so this
+                # is now consistent with that. A genuinely unknown
+                # operation string still fails loudly rather than silently
+                # computing discrete_match_map against the wrong ground
+                # truth. Found 2026-08-13.
+                raise ValueError(
+                    f"generate_soft_gemm_map: unsupported operation '{operation}' "
+                    f"(expected one of: add, mul, min, max)"
+                )
             discrete_result = trits_to_index(result_trits)
             discrete_match_map[i, j] = (nearest == discrete_result)
 
@@ -517,6 +532,15 @@ def main():
     print("="*70)
 
     # Save operation exploration results
+    # save_results (per op) used to be computed here and then discarded --
+    # the loop variable was overwritten each iteration and never read
+    # afterward, so this whole block had no effect: the `report` dict below
+    # is built directly from operation_results, not from save_results, and
+    # ends up with less detail (soft_gap_mean/max only, no std/min) than
+    # what this block already computed. Collected into a dict keyed by op
+    # and merged into report['operations'][op] below instead of discarding
+    # it. Found 2026-08-13.
+    soft_gap_stats_by_op = {}
     for op, results in operation_results.items():
         # Remove large arrays for JSON
         save_results = {k: v for k, v in results.items()
@@ -527,6 +551,7 @@ def main():
             'min': float(np.min(results['soft_gap_distribution'])),
             'max': float(np.max(results['soft_gap_distribution']))
         }
+        soft_gap_stats_by_op[op] = save_results['soft_gap_stats']
 
     # Save comprehensive report (convert all numpy types to Python types for JSON)
     report = {
@@ -538,8 +563,7 @@ def main():
             'discrete_in_top1': float(operation_results[op]['discrete_in_top1_rate']),
             'discrete_in_top5': float(operation_results[op]['discrete_in_top5_rate']),
             'mean_dist_to_discrete': float(operation_results[op]['mean_dist_to_discrete']),
-            'soft_gap_mean': float(np.mean(operation_results[op]['soft_gap_distribution'])),
-            'soft_gap_max': float(np.max(operation_results[op]['soft_gap_distribution']))
+            'soft_gap_stats': soft_gap_stats_by_op[op],
         } for op in operations},
         'lattice': {
             'distance_peaks': [float(p) for p in lattice['distance_peaks']],

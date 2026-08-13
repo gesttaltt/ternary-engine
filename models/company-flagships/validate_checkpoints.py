@@ -576,6 +576,8 @@ def test_algebraic_properties(inputs: torch.Tensor,
     # Test properties
     add_comm = 0
     mul_comm = 0
+    add_assoc = 0
+    mul_assoc = 0
     add_identity = 0
     mul_identity = 0
     not_involution = 0
@@ -603,9 +605,17 @@ def test_algebraic_properties(inputs: torch.Tensor,
         if a[0] == mul_one[0]:
             mul_identity += 1
 
-        # Sample a second operand for commutativity
+        # Sample second and third operands for commutativity/associativity.
+        # AlgebraicMetrics.tadd_associativity/tmul_associativity were
+        # declared in the dataclass (and documented in its docstring) but
+        # never actually computed here -- this loop only ever sampled a
+        # second operand, so both metrics silently stayed at the dataclass
+        # default of 0.0 for every checkpoint, indistinguishable from a
+        # genuine "never associative" result. Found 2026-08-13.
         idx2 = np.random.choice(len(inputs))
         b = to_balanced(inputs[idx2])[:5]
+        idx3 = np.random.choice(len(inputs))
+        c = to_balanced(inputs[idx3])[:5]
 
         # ADD commutativity: a + b == b + a
         ab = ternary_add(a, b)[:5]
@@ -619,11 +629,27 @@ def test_algebraic_properties(inputs: torch.Tensor,
         if ab_mul == ba_mul:
             mul_comm += 1
 
+        # ADD associativity: (a + b) + c == a + (b + c)
+        bc = ternary_add(b, c)[:5]
+        lhs_add = ternary_add(ab, c)[:5]
+        rhs_add = ternary_add(a, bc)[:5]
+        if lhs_add == rhs_add:
+            add_assoc += 1
+
+        # MUL associativity: (a * b) * c == a * (b * c)
+        bc_mul = ternary_mul(b, c)[:5]
+        lhs_mul = ternary_mul(ab_mul, c)[:5]
+        rhs_mul = ternary_mul(a, bc_mul)[:5]
+        if lhs_mul == rhs_mul:
+            mul_assoc += 1
+
     metrics.tnot_involution = not_involution / N
     metrics.tadd_identity = add_identity / N
     metrics.tmul_identity = mul_identity / N
     metrics.tadd_commutativity = add_comm / N
     metrics.tmul_commutativity = mul_comm / N
+    metrics.tadd_associativity = add_assoc / N
+    metrics.tmul_associativity = mul_assoc / N
 
     return metrics
 
