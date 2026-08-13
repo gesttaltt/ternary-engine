@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.6 · Updated 2026-08-12 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.7 · Updated 2026-08-13 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -949,17 +949,124 @@ pip install matplotlib transformers
 7. **TritNet training pipeline duplication** - `train_phase2a.py`/`train_phase2b.py` duplicate their QAT training code (STE, TernaryLinearQAT, TritClassifier, rescale_weights_for_qat) near-verbatim instead of sharing a module. Demonstrated concretely 2026-08-12: a checkpoint-resume correctness bug had to be found and fixed separately in each file because there's no shared code a single fix would apply to.
 8. **`BenchmarkRunner` unused** - `benchmarks/python-with-interpreter-overhead/benchmark_framework.py`'s `BenchmarkRunner` class is imported nowhere except itself and a deprecated file; `bench_fair_baseline.py`, `bench_simd_core_ops.py`, and `bench_simd_fusion_ops.py` each hand-roll their own warmup/measure/stats logic instead, with inconsistent statistical rigor between them (found 2026-08-12 while fixing a crash in `BenchmarkRunner` that none of the three active scripts would have hit, since none of them use it).
 
-### Pending from the 2026-08-12 code review session
+### 2026-08-12/13 code review session — closed out
 
-Full report: reports/2026-08-12/CODE_REVIEW_SESSION_REPORT.md. Not yet reviewed
-(ran out of session time, not because anything looked suspicious):
-`benchmarks/utils/` (4 of 6 files), `benchmarks/macro/`, `research/`,
-`opentimestamps/`. The path-resolution bug hunt that found 12 broken files (see gap
-#3's caveat above) covered two specific idioms
-(`Path(__file__).parent...` chains and `os.path.dirname(os.path.dirname(...))`
-chains) — worth a second, more general pass, especially over the still-unreviewed
-directories above. `benchmarks/deprecated/` has 5 more files with the identical bug,
-intentionally left unfixed (deprecated, out of scope).
+Full reports: reports/2026-08-12/CODE_REVIEW_SESSION_REPORT.md (original session)
+and reports/2026-08-13/CODE_REVIEW_SESSION_REPORT.md (continuation, condensed
+below). The four areas left pending on
+2026-08-12 (`benchmarks/utils/` 4 of 6 files, `benchmarks/macro/`, `research/`,
+`opentimestamps/`) and the broader path-resolution sweep have all now been
+reviewed; nothing remains queued from this review effort. Findings:
+
+- **`benchmarks/utils/geometric_metrics.py`** — `autocorrelation(lag=0)` crashed
+  with a broadcast `ValueError`: `x[:-lag]` with `lag=0` is Python's
+  negative-zero-slicing gotcha (`x[:-0] == x[:0]`, empty array) instead of the
+  full array. Fixed with an explicit `lag > 0` branch; verified across 4 cases.
+- **`benchmarks/utils/benchmark_validator.py`** — two related bugs, both
+  root-caused to `extract_performance()` returning `0.0` for both "genuinely
+  zero" and "not found in this JSON's schema": (1) `compare_performance()`
+  reported a false -100% regression instead of "no data" whenever a JSON's
+  schema didn't match one of the 3 hardcoded formats (e.g. this repo's real
+  `fair_baseline_*.json`, keyed under `'cells'`); (2) `generate_report()` had
+  no way to know `load_data()` had failed, so a missing/corrupt input file
+  rendered as "Total Benchmarks: 0, Failed: 0, Status: PASS, Action: proceed
+  with merge" instead of a failure report. Fixed: `extract_performance()` now
+  returns `Optional[float]` (`None` = not found), comparisons get an explicit
+  `NO_DATA` status, and a `data_loaded` flag gates report generation. Both
+  reproduced with synthetic inputs and verified fixed.
+- **`benchmarks/utils/visualization.py`** — `_format_phase4`/
+  `_generate_phase4_html` crashed with `TypeError` on the `{'error': '...'}`
+  dict `bench_competitive.py` emits when `ternary_zero_skip_gemm` isn't built
+  (a non-empty dict is truthy, so execution fell through to iterating its
+  string keys). `_format_phase3` checked for a `'ternary_gops'` key that no
+  longer exists in Phase 3's output since its 2026-08-11 fix (gap #3) — always
+  reported "No data available" even with real data present. Phase 3 was also
+  never rendered in the HTML report at all (no `_generate_phase3_html`
+  existed). All three fixed; verified together against a synthetic JSON
+  matching the real schemas.
+- **`benchmarks/utils/windows_power.py`** — `benchmark_operation()` sampled
+  power (blocking PowerShell calls, up to their own 5-10s timeouts) inside the
+  same timed loop used to measure `ops_per_sec`, deflating throughput by
+  however much sampling overhead landed mid-benchmark. Fixed by tracking
+  operation-only elapsed time separately. Also confirmed and documented (not
+  merged, YAGNI): this entire module is unimported anywhere in the repo —
+  `bench_power_efficiency.py`, its only conceivable caller, reimplements an
+  independent `WindowsPowerMonitor` from scratch instead (same duplication
+  shape as gap #7).
+- **`benchmarks/macro/`** (`bench_image_pipeline.py`, `bench_layer_forward.py`)
+  — reviewed and run end-to-end; both correct, no bugs found.
+- **`opentimestamps/{timestamp_create,timestamp_verify}.py`** — reviewed;
+  `timestamp_create.py` has real side effects (can submit to the public
+  Bitcoin blockchain via the `ots` CLI) so was read-reviewed only, not
+  executed. `timestamp_verify.py` is read-only and was actually run against a
+  real manifest, correctly flagging genuine file changes from earlier in this
+  session. Both had `datetime.utcnow()` deprecation warnings (Python 3.12+);
+  fixed in both, re-verified clean with `-W error::DeprecationWarning`.
+- **`research/scripts/falsify.py`** — the highest-value findings of this
+  continuation, all reproduced against the real pipeline before and after:
+  - `ComponentLoader.build_corpus()` computed `valuations[i] = v3(i)` on the
+    **raw** corpus encoding index instead of `v3(i - idx_offset)` on the
+    **decoded** balanced-ternary value (`idx_offset = 9841`, the all-zero-trits
+    index). This silently swapped which indices looked "near zero": the true
+    ternary zero (raw index 9841) got valuation 0, while the most negative
+    value (raw index 0) got valuation 999. Corrupted every pointwise lookup
+    (H3's valuation-radius-correlation test, H24's associativity-vs-valuation
+    bucketing); aggregate histograms were unaffected (invariant under a
+    constant shift over a complete residue system).
+  - `test_H9_information`'s "zero is special" check called `v3(9841)` (the raw
+    index) instead of `v3(0)` (the decoded value, via the same
+    `idx - idx_offset` pattern H23 already used elsewhere in the file) —
+    always failed regardless of any real structure. Verified: H9 now scores
+    100% with `zero_is_special=True` (was unconditionally `False` before).
+  - `test_H1_padic` sliced `all_results[:10000]` from a concatenation of ~4
+    operations' LUT results (~50K samples each) — drew entirely from
+    whichever operation's dict-insertion order came first, not a
+    representative mix. Fixed with a fixed-seed uniform random sample;
+    verified H1 now shows the expected cross-operation valuation distribution.
+  - `main()`'s pre-flight guard checked only `status['data']`/
+    `status['corpus']`, not `status['luts']`/`status['hyperbolic']` — since
+    corpus-building doesn't depend on either, the guard could pass while they
+    failed silently, and `test_H1_padic`/`test_H9_information`/
+    `test_H3_hyperbolic` (each with an unconditional `self.c['luts']` or
+    `self.c['hyperbolic']` access) would then raise a bare `KeyError`,
+    masked by the generic exception handler into an opaque `grade='E'`. Added
+    descriptive guards to all three tests and an upfront `[WARN]` in `main()`.
+  - `test_H24_sui_generis`'s right-distributivity block computed a value from
+    the wrong operands, discarded it, then recomputed correctly from
+    duplicate calls of values already available from the left-distributivity
+    test just above — 3 wasted SIMD calls per run, including one fully dead
+    computation with a leftover "Wait: need tmul(a,c)..." comment marking the
+    in-place bug-fix. Cleaned up; verified byte-for-byte identical output.
+  - Also fixed: docstring referenced a `--tier` flag never wired into
+    `argparse` (only `--hypothesis`/`--all` exist); missing `OUTPUT:` line and
+    return-type hint on `main()` per CLAUDE.md conventions.
+  - Documented but not fixed (structural/methodology, not wrong-answer bugs,
+    same policy as gaps #7/#8): `compute_3adic_valuation` is independently
+    reimplemented in 10 places across the repo with drifting clamp values and
+    no canonical source (the `ebm` module the comment cites no longer exists
+    in the tree); all 14 `test_H*()` methods hand-roll identical
+    scoring/result-construction boilerplate; `H4`/`H10`/`H11`/`H23` each
+    reseed the global RNG to the same state, making their samples
+    bit-for-bit identical (not independent) when run together via `--all`;
+    `H8`'s categorical tests call the SIMD op ~1300 times on single-element
+    arrays instead of batching, ~185x more calls than necessary.
+- **Broader path-resolution sweep** — systematically checked every
+  `ROOT`/`PROJECT_ROOT`-style `Path(__file__).parent` chain in the repo (~50
+  assignments across 48 files using `sys.path` manipulation) against each
+  file's actual directory depth, not just the two idioms the 2026-08-12 sweep
+  covered. Found 2 more instances of the same off-by-one bug in
+  `tests/python/compile_test.py` and `tests/python/run_simd_harness.py` (both
+  2 directories deep but computed with only 2 `.parent` calls instead of 3,
+  doubling `"tests"` into a nonexistent `tests/tests/...` path); fixed. Both
+  scripts' target file, `test_simd_correctness.cpp`, had also independently
+  moved to `tests/cpp/` — fixed that too, though it made no practical
+  difference before the fix either way (the file didn't resolve under any
+  path prior to this). Both remain Windows/MSVC-only dev utilities, not
+  wired into `tests/run_tests.py`, per gap #1. No other instances found; a
+  couple of other flagged candidates (`build_gops_bench.py`, `build_kernels.py`
+  in `benchmarks/cpp-native-kernels/`) were checked and confirmed already
+  correct.
+- `tests/run_tests.py`: 13/13 still pass after every fix in this session.
 
 ### Nice to Have
 
@@ -1042,6 +1149,7 @@ intentionally left unfixed (deprecated, out of scope).
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-13 | v1.7.0  | Closed out the 2026-08-12 session's pending scope (benchmarks/utils/, benchmarks/macro/, research/, opentimestamps/, broader path sweep): fixed a real correctness bug in falsify.py's build_corpus() that silently swapped which corpus index looked "near zero" (raw vs. decoded valuation), plus 3 related falsify.py bugs (H9's zero-check, H1's skewed sample, main()'s missing luts/hyperbolic pre-flight guard) and a dead-code cleanup, all reproduced and verified against the real pipeline; fixed a false-regression bug in benchmark_validator.py (ambiguous 0.0 for "not found" vs. genuine zero) and a false-PASS-on-load-failure bug; fixed two visualization.py crashes (phase4 error-dict, stale phase3 schema) and phase3's total absence from HTML reports; fixed 2 more instances of the path off-by-one bug (tests/python/compile_test.py, run_simd_harness.py) plus a stale subdirectory reference. Full reports: reports/2026-08-12/CODE_REVIEW_SESSION_REPORT.md (original) + reports/2026-08-13/CODE_REVIEW_SESSION_REPORT.md (continuation) |
 | 2026-08-12 | v1.6.0  | Code review session (19 commits, a527da0..32eada2): removed foreign .claude/ config dump; fixed a real correctness bug in the TritNet AVX2 GEMM kernel (was also unreachable from Python); found the TritNet orchestrator never actually ran the pipeline that achieved Phase 2B GO; found a systemic path-resolution bug in 12 files including bench_competitive.py (silent mock-fallback risk, flagged in gap #3); test suite expanded 7→13 wired suites. Full report: reports/2026-08-12/CODE_REVIEW_SESSION_REPORT.md |
 | 2026-07-23 | v1.5.0  | Corrected stale gaps: OpenMP is enabled by default (not disabled), TRITNET_VISION.md/TRITNET_ROADMAP.md exist, TritNet Phase 2A is GO (Phase 2B in progress, 2/4 ops passed), Linux x64 passes all tests locally |
 | 2025-01-02 | v1.4.0  | Updated falsification results (9/24 hypotheses), added H4 Tropical and H9 Information Theory |
@@ -1066,4 +1174,4 @@ intentionally left unfixed (deprecated, out of scope).
 
 ---
 
-**Version:** 1.6.0 · **Updated:** 2026-08-12 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.7.0 · **Updated:** 2026-08-13 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
