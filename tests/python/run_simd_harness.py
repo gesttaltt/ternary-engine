@@ -31,8 +31,17 @@ import platform
 
 class Config:
     """Test configuration"""
-    PROJECT_ROOT = Path(__file__).parent.parent
-    TEST_SOURCE = PROJECT_ROOT / "tests" / "test_simd_correctness.cpp"
+    # Path(__file__) is tests/python/run_simd_harness.py -- 2 directories
+    # deep, so 3 .parent calls are needed to reach repo root, not 2 (2
+    # landed on tests/, which doubled "tests" into a nonexistent
+    # tests/tests/... path below and put BUILD_DIR/RESULTS_DIR under
+    # tests/ instead of the repo root). Separately, test_simd_correctness.cpp
+    # itself has since moved to tests/cpp/, not tests/ directly. Both found
+    # 2026-08-13; this script is dev tooling not wired into
+    # tests/run_tests.py (see CLAUDE.md gap #1), so left unexercised beyond
+    # fixing the path math.
+    PROJECT_ROOT = Path(__file__).parent.parent.parent
+    TEST_SOURCE = PROJECT_ROOT / "tests" / "cpp" / "test_simd_correctness.cpp"
     BUILD_DIR = PROJECT_ROOT / "build" / "simd_harness"
     RESULTS_DIR = PROJECT_ROOT / "local-reports" / "simd_verification"
 

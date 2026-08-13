@@ -10,9 +10,17 @@ import os
 from pathlib import Path
 
 def main():
-    project_root = Path(__file__).parent.parent
-    test_source = project_root / "tests" / "test_simd_correctness.cpp"
-    output_exe = project_root / "tests" / "test_simd_correctness.exe"
+    # Path(__file__) is tests/python/compile_test.py -- 2 directories deep,
+    # so 3 .parent calls are needed to reach repo root, not 2 (2 landed on
+    # tests/, doubling the "tests" segment below into a nonexistent
+    # tests/tests/... path). Separately, test_simd_correctness.cpp itself
+    # has since moved to tests/cpp/, not tests/ directly. Both found
+    # 2026-08-13; this script is Windows/MSVC-only dev tooling not wired
+    # into tests/run_tests.py (see CLAUDE.md gap #1), so left unexercised
+    # on Linux beyond fixing the path math.
+    project_root = Path(__file__).parent.parent.parent
+    test_source = project_root / "tests" / "cpp" / "test_simd_correctness.cpp"
+    output_exe = project_root / "tests" / "cpp" / "test_simd_correctness.exe"
 
     print("=" * 70)
     print("  Compiling SIMD Correctness Tests")
