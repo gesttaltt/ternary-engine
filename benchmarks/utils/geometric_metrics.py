@@ -99,9 +99,13 @@ class GeometricMetrics:
         if variance_x == 0:
             return 1.0  # Perfectly correlated (constant array)
 
-        # Autocorrelation at lag
+        # Autocorrelation at lag. x[:-lag] is wrong for lag=0: Python
+        # evaluates -0 as 0, so x[:-0] == x[:0] (empty) instead of the full
+        # array, crashing the broadcast below instead of returning the
+        # mathematically correct lag-0 autocorrelation of 1.0. Found
+        # 2026-08-12.
         x_lagged = x[lag:]
-        x_original = x[:-lag]
+        x_original = x[:len(x) - lag] if lag > 0 else x
 
         covariance = np.mean((x_original - mean_x) * (x_lagged - mean_x))
         correlation = covariance / (variance_x + 1e-10)  # Avoid division by zero

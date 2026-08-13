@@ -10,7 +10,7 @@ import os
 import sys
 import glob
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Set
 
@@ -78,7 +78,7 @@ def compute_sha512(file_path: Path) -> str:
 def create_manifest(files: Set[Path], output_file: Path) -> Dict:
     """Create a manifest of all files with their SHA512 hashes"""
     manifest = {
-        "timestamp_date": datetime.utcnow().isoformat() + "Z",
+        "timestamp_date": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "hash_algorithm": "SHA512",
         "project": "Ternary Engine",
         "files": {}
@@ -176,7 +176,7 @@ def main():
     print(f"\nFound {len(files)} files to timestamp\n")
 
     # Create timestamp identifier
-    timestamp_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     manifest_file = TIMESTAMP_DIR / f"manifest_{timestamp_id}.json"
 
     # Create manifest with all file hashes
@@ -201,7 +201,7 @@ def main():
     with open(log_file, 'w') as f:
         f.write(f"Timestamp Creation Log\n")
         f.write(f"=" * 60 + "\n")
-        f.write(f"Date: {datetime.utcnow().isoformat()}Z\n")
+        f.write(f"Date: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}\n")
         f.write(f"Files timestamped: {len(manifest['files'])}\n")
         f.write(f"Manifest: {manifest_file.name}\n")
         f.write(f"Manifest SHA512: {manifest_hash}\n")

@@ -1,5 +1,8 @@
 """
-Visualization utilities for benchmark results
+visualization.py - Visualization utilities for benchmark results
+
+Copyright 2025 Ternary Engine Contributors
+Licensed under the Apache License, Version 2.0
 
 Generates charts and reports from benchmark JSON output:
 - Performance comparison charts
@@ -7,17 +10,19 @@ Generates charts and reports from benchmark JSON output:
 - Power consumption analysis
 - Comprehensive HTML reports
 
-Usage:
+USAGE:
     from utils.visualization import BenchmarkVisualizer
 
     viz = BenchmarkVisualizer()
     viz.load_results("results/competitive_results_20250123_120000.json")
     viz.generate_report("report.html")
+OUTPUT: report.txt (text) and/or report.html (HTML) summarizing the loaded
+benchmark JSON's phases.
 """
 
 import json
 import os
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 
 
@@ -144,24 +149,53 @@ class BenchmarkVisualizer:
         return lines
 
     def _format_phase3(self, data: Dict) -> List[str]:
-        """Format Phase 3 results"""
+        """
+        Format Phase 3 results.
+
+        Rewritten 2026-08-13: the 'ternary_gops'/'ternary_elements' keys
+        this used to check for don't exist in bench_competitive.py's output
+        since its 2026-08-11 fix (see CLAUDE.md gap #3) -- current Phase 3
+        output is {'target_bytes', 'representations': [...], 'note',
+        'verdict'}, so this always fell through to "No data available" even
+        when real data was present.
+        """
         lines = []
 
-        if 'ternary_gops' in data:
-            lines.append(f"\nTernary throughput: {data['ternary_gops']:.2f} GOPS")
-            lines.append(f"Elements tested:    {data['ternary_elements']:,}")
-            lines.append(f"Memory footprint:   {data['target_bytes'] / 1e9:.1f} GB")
-        else:
+        if not data or 'representations' not in data:
             lines.append("No data available")
+            return lines
+
+        lines.append(f"\nMemory footprint per representation: {data.get('target_bytes', 0) / 1e9:.1f} GB")
+        lines.append(f"{'Representation':>42} | {'Elements':>15} | {'Throughput':>12}")
+        lines.append("-" * 76)
+
+        for rep in data['representations']:
+            lines.append(
+                f"{rep['name']:>42} | {rep['elements']:>15,} | {rep['gops']:>9.2f} GOPS"
+            )
+
+        lines.append("-" * 76)
+        if 'verdict' in data:
+            lines.append(f"Verdict: {data['verdict']}")
 
         return lines
 
-    def _format_phase4(self, data: List[Dict]) -> List[str]:
+    def _format_phase4(self, data: Union[List[Dict], Dict]) -> List[str]:
         """Format Phase 4 results"""
         lines = []
 
         if not data:
             lines.append("No data available")
+            return lines
+
+        if isinstance(data, dict):
+            # bench_competitive.py emits {'error': '...'} instead of a list
+            # when ternary_zero_skip_gemm wasn't built (see
+            # build/build_zero_skip_gemm.py). A bare dict is truthy, so the
+            # `if not data` guard above doesn't catch it -- iterating it
+            # below used to yield the string key 'error' and crash on
+            # result['shape']. Found 2026-08-13.
+            lines.append(f"No data available ({data.get('error', 'unrecognized phase4 data')})")
             return lines
 
         lines.append("\nMatrix Multiplication Performance:")
@@ -214,6 +248,7 @@ class BenchmarkVisualizer:
         # Phase summaries
         html.append(self._generate_phase1_html())
         html.append(self._generate_phase2_html())
+        html.append(self._generate_phase3_html())
         html.append(self._generate_phase4_html())
 
         html.append("</body>")
@@ -355,6 +390,49 @@ class BenchmarkVisualizer:
 
         return "\n".join(html)
 
+    def _generate_phase3_html(self) -> str:
+        """
+        Generate HTML for Phase 3.
+
+        Added 2026-08-13: this phase was previously never rendered in the
+        HTML report at all -- generate_html_report() only ever called
+        _generate_phase1_html/_generate_phase2_html/_generate_phase4_html,
+        with no _generate_phase3_html existing to call.
+        """
+        if 'phase3_throughput_equivalent_bitwidth' not in self.results:
+            return ""
+
+        data = self.results['phase3_throughput_equivalent_bitwidth']
+        if not data or 'representations' not in data:
+            return ""
+
+        html = []
+        html.append("<h2>Phase 3: Throughput at Equivalent Bit-Width</h2>")
+        html.append(f"<p>Memory footprint per representation: "
+                     f"{data.get('target_bytes', 0) / 1e9:.1f} GB</p>")
+        html.append("<table>")
+        html.append("<tr>")
+        html.append("<th>Representation</th>")
+        html.append("<th>Elements</th>")
+        html.append("<th>Throughput (GOPS)</th>")
+        html.append("</tr>")
+
+        for rep in data['representations']:
+            html.append("<tr>")
+            html.append(f"<td style='text-align: left;'>{rep['name']}</td>")
+            html.append(f"<td>{rep['elements']:,}</td>")
+            html.append(f"<td>{rep['gops']:.2f}</td>")
+            html.append("</tr>")
+
+        html.append("</table>")
+
+        if 'verdict' in data:
+            html.append("<div class='summary'>")
+            html.append(f"<p><strong>Verdict:</strong> <span class='highlight'>{data['verdict']}</span></p>")
+            html.append("</div>")
+
+        return "\n".join(html)
+
     def _generate_phase4_html(self) -> str:
         """Generate HTML for Phase 4"""
         if 'phase4_neural_workload_patterns' not in self.results:
@@ -363,6 +441,15 @@ class BenchmarkVisualizer:
         data = self.results['phase4_neural_workload_patterns']
         if not data:
             return ""
+
+        if isinstance(data, dict):
+            # Same {'error': '...'} shape handled in _format_phase4 -- a
+            # bare dict is truthy so `if not data` doesn't catch it, and
+            # iterating it below used to crash on result['shape']. Found
+            # 2026-08-13.
+            html = ["<h2>Phase 4: Neural Network Workloads</h2>"]
+            html.append(f"<p>No data available ({data.get('error', 'unrecognized phase4 data')})</p>")
+            return "\n".join(html)
 
         html = []
         html.append("<h2>Phase 4: Neural Network Workloads</h2>")

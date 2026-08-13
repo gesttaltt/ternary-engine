@@ -16,8 +16,10 @@ Licensed under the Apache License, Version 2.0
 
 USAGE:
     python research/scripts/falsify.py --hypothesis H1
-    python research/scripts/falsify.py --tier tier1_easy
     python research/scripts/falsify.py --all
+OUTPUT:
+    Per-hypothesis grade/score printed to stdout, plus a full JSON summary
+    written to research/results/falsification_YYYYMMDD_HHMMSS.json.
 """
 
 import json
@@ -233,7 +235,18 @@ class ComponentLoader:
             index_to_trits = self.components['data']['index_to_trits']
 
             num_values = 19683
-            valuations = np.array([v3(i) for i in range(num_values)])
+            # Corpus indices are the RAW encoding (idx = sum((trit_i+1)*3^i),
+            # range [0, 19682]) with the decoded balanced-ternary value equal
+            # to idx - idx_offset (idx_offset = 9841 = the all-zero-trits
+            # index, same convention H23 uses at ~line 1527). valuations
+            # must be v3 of the DECODED value, not the raw index -- v3(i)
+            # here used to invert which indices looked "near zero" (e.g.
+            # idx=9841, the true zero, got v3(9841)=0; idx=0, the most
+            # negative value, got v3(0)=999) for every downstream consumer
+            # that looks valuations up pointwise by index (H3's VRC test,
+            # H24's associativity-vs-valuation bucketing). Found 2026-08-13.
+            idx_offset = (num_values - 1) // 2
+            valuations = np.array([v3(i - idx_offset) for i in range(num_values)])
 
             # Build trit representations
             trits = np.array([index_to_trits(i, 9) for i in range(num_values)])
@@ -362,6 +375,18 @@ class HypothesisTests:
         details = {}
 
         v3 = self.c['corpus']['v3']
+        if 'luts' not in self.c:
+            # load_or_create_luts() failed silently from this test's point
+            # of view -- main()'s pre-flight guard only checks
+            # status['data']/status['corpus'], not status['luts'], so this
+            # unconditional access used to raise a bare KeyError: 'luts'
+            # that run_hypothesis's generic except swallowed into an opaque
+            # grade='E' result. Found 2026-08-13.
+            raise RuntimeError(
+                "H1 requires self.c['luts'], but LUT loading/creation failed "
+                "(see '[ERROR] LUT creation failed' in the component-loading "
+                "output above for the root cause)."
+            )
         luts = self.c['luts']
 
         # Test 1: Ultrametric inequality on REAL operation results
@@ -400,7 +425,17 @@ class HypothesisTests:
         # Test 2: Valuation distribution of operation results
         print("  Testing valuation distribution...")
         all_results = np.concatenate([d['results'] for d in luts.values()])
-        result_valuations = np.array([v3(int(r)) for r in all_results[:10000]])
+        # all_results[:10000] used to slice only the head of the
+        # concatenation -- since luts has ~4 operation keys each
+        # contributing ~50,000 samples, this drew entirely (or almost
+        # entirely) from whichever operation's results dict insertion put
+        # first, not a representative mix across add/mul/min/max. Sample
+        # uniformly at random instead (fixed seed for reproducibility,
+        # matching this file's convention elsewhere). Found 2026-08-13.
+        rng_h1 = np.random.default_rng(42)
+        sample_size = min(10000, len(all_results))
+        sample_idx = rng_h1.choice(len(all_results), size=sample_size, replace=False)
+        result_valuations = np.array([v3(int(r)) for r in all_results[sample_idx]])
 
         unique_vals, counts = np.unique(result_valuations, return_counts=True)
         val_dist = dict(zip(unique_vals.tolist(), (counts / counts.sum()).tolist()))  # noqa: B905
@@ -583,6 +618,18 @@ class HypothesisTests:
         anomalies = []
         details = {}
 
+        if 'hyperbolic' not in self.c:
+            # Unlike H2's guarded access to the same dict (gated behind
+            # 'trained_model' in self.c), this was unconditional -- if
+            # load_hyperbolic() failed (e.g. missing torch/hyperbolic_ops.py
+            # import), main()'s pre-flight guard doesn't check
+            # status['hyperbolic'] either, so this used to raise a bare
+            # KeyError: 'hyperbolic'. Found 2026-08-13.
+            raise RuntimeError(
+                "H3 requires self.c['hyperbolic'], but hyperbolic module "
+                "loading failed (see '[ERROR] Hyperbolic operations failed' "
+                "in the component-loading output above for the root cause)."
+            )
         PoincareOps = self.c['hyperbolic']['PoincareOperations']
 
         # Test 1: Geodesic midpoint equidistance
@@ -1157,6 +1204,15 @@ class HypothesisTests:
         simd_op = self.c['data']['simd_batch_operation']
         v3 = self.c['corpus']['v3']
         valuations = self.c['corpus']['valuations']
+        if 'luts' not in self.c:
+            # Same gap as test_H1_padic: main()'s pre-flight guard doesn't
+            # check status['luts'], so this used to raise a bare
+            # KeyError: 'luts'. Found 2026-08-13.
+            raise RuntimeError(
+                "H9 requires self.c['luts'], but LUT loading/creation failed "
+                "(see '[ERROR] LUT creation failed' in the component-loading "
+                "output above for the root cause)."
+            )
         luts = self.c['luts']
 
         print("  Testing information-theoretic properties...")
@@ -1301,8 +1357,15 @@ class HypothesisTests:
 
         # Test 6: Zero has special information status (high valuation = low info)
         print("    Zero information content...")
-        zero_idx = 9841  # Middle index (all zeros)
-        zero_valuation = v3(zero_idx)
+        zero_idx = 9841  # Middle index (all zeros); DECODED value is 0, not
+        # the raw index -- v3 must be called on the decoded balanced-ternary
+        # value (zero_idx - idx_offset = 0), not the raw corpus index
+        # 9841 itself (9841 % 3 == 1, so v3(9841) was always 0, making this
+        # test always fail regardless of any real ternary structure). Same
+        # class of bug fixed in build_corpus()'s valuations array. Found
+        # 2026-08-13.
+        idx_offset = 9841  # (num_values - 1) // 2, num_values = 19683
+        zero_valuation = v3(zero_idx - idx_offset)
 
         tested += 1
         if zero_valuation >= 8:  # Zero should have very high valuation
@@ -1833,14 +1896,16 @@ class HypothesisTests:
         left_distrib = float(np.mean(lhs_l == rhs_l))
 
         # Right: tmul(tadd(a, b), c) = tadd(tmul(a,c), tmul(b,c))
+        # (previously computed rhs_r from ab/bc2 -- ab is tmul(a,b), not one
+        # of the two terms right-distributivity actually needs -- then
+        # immediately discarded and recomputed correctly from freshly
+        # re-derived ac2/bc3, wasting 2 simd_op calls on dead code. ac
+        # (tmul(a,c)) is already available from the left-distributivity
+        # test above; only tmul(b,c) needs computing. Found 2026-08-13.)
         ab_add = simd_op(a, b, 'add')
         lhs_r  = simd_op(ab_add, c, 'mul')
-        bc2    = simd_op(b, c, 'mul')
-        rhs_r  = simd_op(ab, bc2, 'add')  # ab = tmul(a,b) computed above
-        # Wait: need tmul(a,c) and tmul(b,c) separately
-        ac2  = simd_op(a, c, 'mul')
-        bc3  = simd_op(b, c, 'mul')
-        rhs_r = simd_op(ac2, bc3, 'add')
+        bc_mul = simd_op(b, c, 'mul')
+        rhs_r  = simd_op(ac, bc_mul, 'add')
         right_distrib = float(np.mean(lhs_r == rhs_r))
 
         details['left_distributivity']  = left_distrib
@@ -2691,7 +2756,7 @@ test_saturated_arithmetic = HypothesisTests.test_H23_modular
 # CLI
 # =============================================================================
 
-def main():
+def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -2720,6 +2785,18 @@ def main():
     if not all([status['data'], status['corpus']]):
         print("\n[FATAL] Core components failed to load. Cannot proceed.")
         return 1
+
+    # 'luts'/'hyperbolic' are not gated by the fatal check above (corpus
+    # building doesn't need them), so a failure here doesn't stop the run --
+    # but it does mean specific hypotheses will fail. H1/H9/H3 now raise a
+    # descriptive RuntimeError instead of a bare KeyError when this happens
+    # (see their guards), but surface it here too so it's visible before
+    # any test even starts. Found 2026-08-13.
+    if not status.get('luts'):
+        print("[WARN] LUT loading/creation failed -- H1 and H9 will fail (need self.c['luts']).")
+    if not status.get('hyperbolic'):
+        print("[WARN] Hyperbolic module failed to load -- H3 will fail (need self.c['hyperbolic']); "
+              "H2's embedding-space sub-test will also be skipped.")
 
     # Run tests
     if args.hypothesis:

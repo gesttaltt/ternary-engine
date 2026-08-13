@@ -32,7 +32,7 @@ import json
 import sys
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 import argparse
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
@@ -65,6 +65,11 @@ class BenchmarkValidator:
         self.baseline_data = None
         self.current_data = None
         self.validation_results = {}
+        # Distinguishes "load_data() never succeeded" from "it succeeded and
+        # found zero regressions" — both used to look identical to
+        # generate_report() (empty validation_results -> reported as PASS).
+        # See load_data()/generate_report().
+        self.data_loaded = False
 
     def load_data(self) -> bool:
         """Load benchmark data from JSON files."""
@@ -73,6 +78,7 @@ class BenchmarkValidator:
                 self.baseline_data = json.load(f)
             with open(self.current_file, 'r') as f:
                 self.current_data = json.load(f)
+            self.data_loaded = True
             return True
         except FileNotFoundError as e:
             print(f"❌ ERROR: Benchmark file not found: {e}")
@@ -81,7 +87,7 @@ class BenchmarkValidator:
             print(f"❌ ERROR: Invalid JSON format: {e}")
             return False
 
-    def extract_performance(self, data: Dict, operation: str, size: int) -> float:
+    def extract_performance(self, data: Dict, operation: str, size: int) -> Optional[float]:
         """
         Extract performance value from benchmark data.
 
@@ -91,7 +97,13 @@ class BenchmarkValidator:
             size: Array size (e.g., 1000000)
 
         Returns:
-            Throughput in Mops/s
+            Throughput in Mops/s, or None if this operation/size isn't
+            present under any of the three JSON schemas this method
+            understands. Returning 0.0 for that case used to be
+            indistinguishable from a genuine (and alarming) zero-throughput
+            measurement, which made compare_performance() report a false
+            -100% regression instead of "no data" whenever a JSON's schema
+            didn't match. Found 2026-08-13.
         """
         # Handle different JSON formats
         if 'benchmarks' in data:
@@ -107,9 +119,12 @@ class BenchmarkValidator:
         elif 'results' in data:
             # Format 3: results dict
             key = f"{operation}_{size}"
-            return data['results'].get(key, {}).get('throughput_mops', 0.0)
+            entry = data['results'].get(key)
+            if entry is not None:
+                return entry.get('throughput_mops', 0.0)
+            return None
 
-        return 0.0
+        return None
 
     def compare_performance(self) -> Dict[str, Dict]:
         """
@@ -133,10 +148,29 @@ class BenchmarkValidator:
             baseline_perf = self.extract_performance(self.baseline_data, operation, size)
             current_perf = self.extract_performance(self.current_data, operation, size)
 
-            if baseline_perf == 0.0:
-                # No baseline available, use hardcoded v1.3.0 values
+            if baseline_perf is None:
+                # No baseline available in this JSON's schema; fall back to
+                # the hardcoded v1.3.0 reference values.
                 key = f"{operation}_{size//1000000}M"
-                baseline_perf = BASELINE_PERFORMANCE.get(key, 0.0)
+                baseline_perf = BASELINE_PERFORMANCE.get(key)
+
+            if baseline_perf is None or current_perf is None:
+                # Genuinely missing data (not found in any recognized
+                # schema, or absent from BASELINE_PERFORMANCE) -- report as
+                # NO_DATA rather than silently comparing against/from a 0.0
+                # that would read as a false -100% regression. Found
+                # 2026-08-13.
+                comparisons[f"{operation}@{size}"] = {
+                    'operation': operation,
+                    'size': size,
+                    'baseline_mops': baseline_perf,
+                    'current_mops': current_perf,
+                    'delta_mops': None,
+                    'delta_percent': None,
+                    'regression': False,
+                    'status': 'NO_DATA',
+                }
+                continue
 
             if baseline_perf > 0.0:
                 delta = current_perf - baseline_perf
@@ -184,10 +218,16 @@ class BenchmarkValidator:
         for key, result in self.validation_results.items():
             op = result['operation']
             size = result['size']
+            status = result['status']
+
+            if status == 'NO_DATA':
+                print(f"{op}@{size:<10} {'N/A':>10} Mops {'N/A':>10} Mops "
+                      f"{'N/A':>9} ⚠️  NO_DATA (not found in schema)")
+                continue
+
             baseline = result['baseline_mops']
             current = result['current_mops']
             delta_pct = result['delta_percent']
-            status = result['status']
 
             status_symbol = "✅" if status == "PASS" else "❌"
             print(f"{op}@{size:<10} {baseline:>10.2f} Mops {current:>10.2f} Mops "
@@ -210,6 +250,37 @@ class BenchmarkValidator:
         """Generate human-readable validation report."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        if not self.data_loaded:
+            # load_data() never succeeded (missing file / bad JSON), so
+            # validation_results is still {}. That used to render below as
+            # "Total Benchmarks: 0, Failed: 0 -> Status: PASS, Action:
+            # proceed with merge" -- a false PASS report generated for data
+            # that was never actually validated. Report the real failure
+            # instead. Found 2026-08-13.
+            report = f"""# Benchmark Validation Report
+
+**Date:** {timestamp}
+**Baseline:** {self.baseline_file.name}
+**Current:** {self.current_file.name}
+
+---
+
+## Summary
+
+- **Status:** ❌ FAIL - Could not load benchmark data
+
+Benchmark data failed to load from one or both input files (see console
+output above for the specific error). No comparisons were run.
+
+**Action:** Fix the input file path/format and re-run validation. Do not
+treat this report's absence of failures as a pass.
+"""
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, 'w') as f:
+                f.write(report)
+            print(f"📄 Report saved to: {output_path}")
+            return
+
         report = f"""# Benchmark Validation Report
 
 **Date:** {timestamp}
@@ -226,10 +297,13 @@ class BenchmarkValidator:
         # Count passes and failures
         passes = sum(1 for r in self.validation_results.values() if r['status'] == 'PASS')
         failures = sum(1 for r in self.validation_results.values() if r['status'] == 'FAIL')
+        no_data = sum(1 for r in self.validation_results.values() if r['status'] == 'NO_DATA')
 
         report += f"- **Total Benchmarks:** {len(self.validation_results)}\n"
         report += f"- **Passed:** {passes}\n"
         report += f"- **Failed:** {failures}\n"
+        if no_data:
+            report += f"- **No Data:** {no_data} (operation/size not found in either JSON's schema)\n"
         report += f"- **Status:** {'✅ PASS' if failures == 0 else '❌ FAIL'}\n\n"
 
         report += "---\n\n## Detailed Results\n\n"
@@ -239,10 +313,15 @@ class BenchmarkValidator:
         for key, result in self.validation_results.items():
             op = result['operation']
             size = result['size']
+            status = result['status']
+
+            if status == 'NO_DATA':
+                report += f"| {op}@{size} | N/A | N/A | N/A | ⚠️ NO_DATA |\n"
+                continue
+
             baseline = result['baseline_mops']
             current = result['current_mops']
             delta_pct = result['delta_percent']
-            status = result['status']
             status_symbol = "✅" if status == "PASS" else "❌"
 
             report += f"| {op}@{size} | {baseline:.2f} | {current:.2f} | {delta_pct:+.1f} | {status_symbol} {status} |\n"

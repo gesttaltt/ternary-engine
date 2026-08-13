@@ -1,5 +1,8 @@
 """
-Windows Power Monitoring Utilities
+windows_power.py - Windows Power Monitoring Utilities
+
+Copyright 2025 Ternary Engine Contributors
+Licensed under the Apache License, Version 2.0
 
 Uses native Windows tools to monitor power consumption:
 - PowerShell performance counters
@@ -7,6 +10,18 @@ Uses native Windows tools to monitor power consumption:
 - System power state tracking
 
 Requires: Admin privileges for some counters
+
+NOTE (2026-08-13): This module is not currently imported anywhere in the
+repo. benchmarks/python-with-interpreter-overhead/bench_power_efficiency.py
+-- its only conceivable caller -- reimplements an independent
+WindowsPowerMonitor(PowerMonitor) class from scratch instead. Same
+duplication pattern already logged for the TritNet Phase 2a/2b training
+pipelines (CLAUDE.md gap #7); left as-is rather than merged, per project
+policy of not doing speculative refactors, but documented so a future
+session doesn't have to rediscover it.
+
+USAGE: python benchmarks/utils/windows_power.py
+OUTPUT: Prints system power info and a 5-second power-sampling test to stdout.
 """
 
 import subprocess
@@ -224,10 +239,19 @@ class WindowsPowerBenchmark:
         start_time = time.time()
         iterations = 0
         last_sample_time = start_time
+        # Tracks time spent in operation_fn() only, excluding the blocking
+        # PowerShell calls issued by self.monitor.sample() (each can take
+        # up to its own 5-10s subprocess timeout). Used for ops_per_sec
+        # below instead of the raw wall-clock `elapsed`, which used to
+        # include that sampling overhead and would understate throughput
+        # any time a sample happened to land mid-loop. Found 2026-08-13.
+        operation_time = 0.0
 
         while (time.time() - start_time) < duration_seconds:
             # Run operation
+            op_start = time.time()
             operation_fn()
+            operation_time += time.time() - op_start
             iterations += 1
 
             # Sample power at intervals
@@ -240,8 +264,8 @@ class WindowsPowerBenchmark:
         # Get final statistics
         power_stats = self.monitor.stop_monitoring()
 
-        # Calculate operation metrics
-        ops_per_sec = iterations / elapsed
+        # Calculate operation metrics (see operation_time comment above)
+        ops_per_sec = iterations / operation_time if operation_time > 0 else 0
 
         # Energy calculation (very rough)
         avg_power = power_stats.get('average_cpu_power_watts', 25)

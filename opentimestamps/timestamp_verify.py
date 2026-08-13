@@ -9,7 +9,7 @@ import json
 import os
 import sys
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -300,11 +300,11 @@ def main():
         print("Some files have been modified, are missing, or had errors.")
 
     # Save verification report
-    timestamp_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     report_file = LOG_DIR / f"verification_report_{timestamp_id}.json"
 
     report = {
-        "verification_date": datetime.utcnow().isoformat() + "Z",
+        "verification_date": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "manifest_file": manifest_name,
         "manifest_date": manifest['timestamp_date'],
         "manifest_integrity": manifest_ok,
