@@ -356,8 +356,17 @@ def compute_valuation_metrics(embeddings: np.ndarray) -> ValuationMetrics:
     N = embeddings.shape[0]
     num_trits = int(np.log(N) / np.log(3) + 0.5)
 
-    # Compute valuations and radii
-    valuations = np.array([valuation_3adic(i, num_trits) for i in range(N)])
+    # Compute valuations and radii. `i` is the RAW encoding index (see
+    # index_to_trits below), not the decoded balanced-ternary value -- the
+    # true zero (all-zero trits) lives at idx_offset = (N-1)//2, not at
+    # i=0 (which decodes to the most negative representable value).
+    # valuation_3adic() must be called on the DECODED value (i -
+    # idx_offset), or this corrupts the VRC (valuation-radius correlation)
+    # this function exists to compute. Same bug class already found and
+    # fixed elsewhere in this file (compute_hierarchy_metrics, below) and
+    # across models/. Found 2026-08-13.
+    idx_offset = (N - 1) // 2
+    valuations = np.array([valuation_3adic(i - idx_offset, num_trits) for i in range(N)])
     radii = np.linalg.norm(embeddings, axis=1)
 
     # Correlation
@@ -477,7 +486,10 @@ def compute_hierarchy_metrics(
     np.random.seed(seed)
     sample_idx = np.random.choice(N, size=min(sample_size, N), replace=False)
     sample_emb = embeddings[sample_idx]
-    sample_vals = np.array([valuation_3adic(i, num_trits) for i in sample_idx])
+    # sample_idx entries are RAW encoding indices, not decoded values --
+    # same fix as compute_valuation_metrics() above. Found 2026-08-13.
+    idx_offset = (N - 1) // 2
+    sample_vals = np.array([valuation_3adic(i - idx_offset, num_trits) for i in sample_idx])
 
     # Hierarchical clustering
     Z = linkage(sample_emb, method='ward')

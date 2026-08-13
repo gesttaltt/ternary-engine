@@ -486,11 +486,23 @@ def validate_dual_vae(state_dict: Dict, config: Dict, result: ValidationResult):
     all_inputs = []
     all_valuations = []
 
+    # `i` is the RAW encoding index (int_to_base3(i,9) -> standard_to_balanced
+    # decodes it via trit_k = (i // 3^k % 3) - 1, i.e. idx = sum((trit_k+1)*3^k)
+    # inverted), not the decoded balanced-ternary value -- the true zero
+    # (all-zero trits) lives at idx_offset = (N-1)//2 = 9841, not at i=0
+    # (which decodes to the most negative representable value).
+    # compute_valuation() must be called on the DECODED value (i -
+    # idx_offset), or this directly corrupts hierarchy_A/hierarchy_B below
+    # (Spearman(valuation, radius) -- the VRC metric CLAUDE.md documents as
+    # "-0.83" for the homeostasis checkpoint). Same bug class already found
+    # and fixed in research/scripts/falsify.py's build_corpus() and 4 sites
+    # in models/3-vae-gemm-v1/. Found 2026-08-13.
+    idx_offset = (N - 1) // 2
     for i in range(N):
         trits = int_to_base3(i, 9)
         balanced = standard_to_balanced(trits)
         all_inputs.append(balanced)
-        all_valuations.append(compute_valuation(i))
+        all_valuations.append(compute_valuation(i - idx_offset))
 
     inputs = torch.tensor(all_inputs, dtype=torch.float32)
     valuations = np.array(all_valuations)

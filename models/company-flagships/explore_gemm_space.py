@@ -117,8 +117,16 @@ class SoftGEMMExplorer:
         self.N = len(embeddings)
         self.dim = embeddings.shape[1]
 
-        # Pre-compute valuations
-        self.valuations = np.array([compute_valuation(i) for i in range(self.N)])
+        # Pre-compute valuations. `i` is the RAW encoding index (see
+        # index_to_trits below: idx = sum((trit_k+1)*3^k)), not the decoded
+        # balanced-ternary value -- the true zero (all-zero trits) lives at
+        # idx_offset = (N-1)//2 = 9841, not at i=0 (which decodes to the
+        # most negative representable value). compute_valuation() must be
+        # called on the DECODED value (i - idx_offset), same bug class
+        # already found and fixed in research/scripts/falsify.py's
+        # build_corpus() and other sites across models/. Found 2026-08-13.
+        idx_offset = (self.N - 1) // 2
+        self.valuations = np.array([compute_valuation(i - idx_offset) for i in range(self.N)])
 
         # Pre-compute radii
         self.radii = np.linalg.norm(embeddings, axis=1)

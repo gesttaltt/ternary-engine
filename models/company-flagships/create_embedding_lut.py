@@ -133,6 +133,15 @@ def main():
 
     all_inputs = []
     valuations = []
+    # `i` is the RAW encoding index (trits decoded below via
+    # trit_k = (i // 3^k % 3) - 1, i.e. idx = sum((trit_k+1)*3^k)), not the
+    # decoded balanced-ternary value -- the true zero (all-zero trits)
+    # lives at idx_offset = (N-1)//2 = 9841, not at i=0 (which decodes to
+    # the most negative representable value). compute_valuation() must be
+    # called on the DECODED value (i - idx_offset), same bug class already
+    # found and fixed in research/scripts/falsify.py's build_corpus() and
+    # 5 other sites across models/. Found 2026-08-13.
+    idx_offset = (N - 1) // 2
     for i in range(N):
         trits = []
         val = i
@@ -140,7 +149,7 @@ def main():
             trits.append((val % 3) - 1)
             val //= 3
         all_inputs.append(trits)
-        valuations.append(compute_valuation(i))
+        valuations.append(compute_valuation(i - idx_offset))
 
     inputs = torch.tensor(all_inputs, dtype=torch.float32)
     valuations = np.array(valuations)

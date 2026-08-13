@@ -80,8 +80,15 @@ class ExtendedGEMMExplorer:
         self.norms = np.linalg.norm(embeddings, axis=1)
         self.normalized = embeddings / (self.norms[:, None] + 1e-8)
 
-        # Precompute valuations
-        self.valuations = np.array([self._valuation(i) for i in range(self.N)])
+        # Precompute valuations. `i` is the RAW encoding index, not the
+        # decoded balanced-ternary value -- the true zero (all-zero trits)
+        # lives at idx_offset = (N-1)//2, not at i=0 (which decodes to the
+        # most negative representable value). self._valuation() must be
+        # called on the DECODED value (i - idx_offset), same bug class
+        # already found and fixed across models/ and
+        # research/scripts/falsify.py. Found 2026-08-13.
+        idx_offset = (self.N - 1) // 2
+        self.valuations = np.array([self._valuation(i - idx_offset) for i in range(self.N)])
 
     def _valuation(self, n: int) -> int:
         """Compute 3-adic valuation."""
