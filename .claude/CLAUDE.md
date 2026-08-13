@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.7 · Updated 2026-08-13 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.8 · Updated 2026-08-13 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -122,7 +122,7 @@ A complete GEMM algorithm discovery framework was built with the wrong assumptio
 | Model | Path | Purpose | Key Properties |
 |-------|------|---------|----------------|
 | **v5_11_3** | `models/company-flagships/ternary-multiVAE/ternary_v5_11_3.pt` | Add/sub arithmetic centering | Hyperbolic embedding, operation-aware |
-| **homeostasis** | `models/company-flagships/v5_11_homeostasis/best.pt` | Radial hierarchy, p-adic valuation | VRC target: -0.83, coverage: 100% |
+| **homeostasis** | `models/company-flagships/v5_11_homeostasis/best.pt` | Radial hierarchy, p-adic valuation | VRC target: -0.83, coverage: 100% — **unverified as of 2026-08-13, see caveat below** |
 | **codon_encoder** | `models/company-flagships/hierarchy-encoder-codon-inference/codon-predictor/codon_encoder_3adic.pt` | Hierarchy neural network | 3-adic valuation structure |
 
 ### Model Capabilities
@@ -141,6 +141,19 @@ A complete GEMM algorithm discovery framework was built with the wrong assumptio
 - 3-adic valuation hierarchy encoder
 - Can be repurposed for arithmetic hierarchy testing
 - Use for: H2 (ultrametric tree), H24 (sui generis) tests
+
+**CAVEAT (added 2026-08-13, see reports/2026-08-13/MODELS_RESEARCH_REVIEW.md):**
+`models/company-flagships/validate_checkpoints.py` — the tool that computes
+`hierarchy_A`/`hierarchy_B` = `Spearman(valuation, radius)`, the exact metric
+behind the homeostasis checkpoint's documented "VRC target: -0.83" — had an
+inverted-3-adic-valuation bug (computed on the raw corpus index instead of the
+decoded balanced-ternary value, same bug class found in `research/scripts/
+falsify.py` and 9 other places across `models/`, all fixed the same day). The
+training script that originally produced `v5_11_homeostasis/best.pt` isn't in this
+repo, so whether the original -0.83 figure was itself affected can't be determined
+retroactively — but re-running `validate_checkpoints.py` against this checkpoint
+before the fix would have reproduced an inverted value, not the correct one.
+Treat -0.83 as unverified until re-run against the now-fixed script.
 
 ### Falsification Test Integration
 
@@ -1068,6 +1081,72 @@ reviewed; nothing remains queued from this review effort. Findings:
   correct.
 - `tests/run_tests.py`: 13/13 still pass after every fix in this session.
 
+### 2026-08-13 models/ and research/ review — the inverted-valuation bug, ten times over
+
+Full report: reports/2026-08-13/MODELS_RESEARCH_REVIEW.md. User-requested
+follow-up ("review research/ and models/ for more bugs") after the above session
+closed out. Covered `models/3-vae-gemm-v1/` (~3,500 lines) and
+`models/company-flagships/` (~4,800 lines) — the two remaining substantial code
+directories (`models/tritnet/` already reviewed 2026-08-12; `models/bitnet/` is an
+empty placeholder; `research/` has no further Python beyond `falsify.py`, already
+covered above).
+
+**Headline finding:** the inverted-3-adic-valuation bug from `falsify.py`'s
+`build_corpus()` (computing `v3(idx)` on the raw corpus encoding index instead of
+`v3(idx - idx_offset)` on the decoded balanced-ternary value) turned up
+**independently reimplemented 9 more times**: 4 in `models/3-vae-gemm-v1/`
+(`data.py`, `model.py`, `hyperbolic_ops.py` ×2 — one of which seeds the initial
+position of all 19,683 learnable attractor parameters) and 5 in
+`models/company-flagships/` (`validate_checkpoints.py`, `create_embedding_lut.py`,
+`explore_gemm_space.py`, `embedding_exactitude_score.py` ×2 sites,
+`explore_gemm_extended.py`). All fixed and verified end-to-end via real object
+instantiation (including geometrically, for `UltrametricAttractorField`: the
+true-zero attractor now correctly sits near the Poincaré ball center instead of
+the boundary). **Most consequential instance:** `validate_checkpoints.py` computes
+`hierarchy_A`/`hierarchy_B` — the exact VRC metric behind the homeostasis
+checkpoint's documented "-0.83" claim (see caveat in "Trained Models" section
+above). A final repo-wide grep for the bug pattern after all fixes confirmed no
+further instances exist.
+
+**Other real bugs found and fixed** (see full report for details): a fully
+missing metric (`AlgebraicMetrics.tadd_associativity`/`tmul_associativity`
+declared but never computed, silently defaulting to 0.0 for every checkpoint ever
+validated); non-reproducible `hash()`-based RNG seeding (3 sites, Python's string
+`hash()` is randomized per-process); a dead metric branch
+(`dendrogram_correlation` gated behind a threshold its only caller never
+satisfies); a silent-wrong-result footgun (`generate_soft_gemm_map` returning
+identity for unrecognized operations instead of raising); an unguarded `KeyError`
+reachable against a real checkpoint architecture in the same directory; dead
+per-operation result computation discarded instead of saved; a "test" with zero
+assertions that always reported success; 3 hardcoded checkpoint paths that don't
+match CLAUDE.md's documented path; a misleading stale comment; an O(n⁴) manual
+cophenetic-distance loop replaced with the vectorized scipy equivalent already
+used correctly in a sibling file; a NaN-risk unguarded division in a training
+loss; stale cached embeddings used as ranking negatives for the entire back half
+of training after an unfreeze boundary with no invalidation; and `models/3-vae-
+gemm-v1/test_hyperbolic.py` rewritten from a zero-assertion always-passes script
+into one with real structural and deterministic assertions (which, when first run,
+caught an off-by-one in the review's own first-draft assertion — corrected in the
+same pass).
+
+**Documented but not fixed** (design/architecture-level, needs a judgment call —
+see full report): `train.py` never calls the model's VAE forward path, so
+`EESLoss`'s reconstruction/KL branches and the `Decoder` are permanently untrained
+despite being fully wired; the package's exported public API
+(`__init__.py` → `VAEGemmV1`) is the discredited plain-Euclidean-midpoint model,
+not the geodesic/hyperbolic one that exists in the same directory; CLAUDE.md
+documents a `train_hyperbolic.py --resume` workflow that doesn't exist in the
+script's argparse, and neither training script has any checkpoint-resume
+capability; a metric/loss mismatch where `predicted_idx` is derived from 3 extra
+geodesic-flow steps beyond `predicted_emb` (what the loss actually optimizes); an
+O(n³) unbatched attractor-ultrametric loss likely responsible for the documented
+~89-min/epoch training cost; three independently-drifting VRC/radial-target
+formulas across `loss.py` and `hyperbolic_ops.py`.
+
+Commits: `e7572e7`, `d2c4396` (company-flagships), `c4426c1` (3-vae-gemm-v1).
+`tests/run_tests.py`: 13/13 still pass (none of these files are wired into that
+suite; verified individually via direct execution/`py_compile`).
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1149,6 +1228,7 @@ reviewed; nothing remains queued from this review effort. Findings:
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-13 | v1.8.0  | Reviewed models/3-vae-gemm-v1/ and models/company-flagships/ (user request): found the inverted-3-adic-valuation bug (raw index vs. decoded value) independently reimplemented 9 more times beyond falsify.py, including in validate_checkpoints.py's hierarchy_A/hierarchy_B -- the exact metric behind the documented homeostasis "VRC -0.83" claim, now flagged unverified pending re-run; fixed all 9, plus a missing associativity metric, non-reproducible hash()-based seeding (3 sites), a dead metric branch, a silent-wrong-result footgun, an unguarded KeyError, discarded computation, a fake test, 3 hardcoded checkpoint-path mismatches, a misleading comment, an O(n⁴) loop replaced with vectorized scipy, a NaN-risk division in a training loss, and stale cached embeddings used as training negatives after an unfreeze boundary -- every fix reproduced and verified via real object instantiation. Full report: reports/2026-08-13/MODELS_RESEARCH_REVIEW.md |
 | 2026-08-13 | v1.7.0  | Closed out the 2026-08-12 session's pending scope (benchmarks/utils/, benchmarks/macro/, research/, opentimestamps/, broader path sweep): fixed a real correctness bug in falsify.py's build_corpus() that silently swapped which corpus index looked "near zero" (raw vs. decoded valuation), plus 3 related falsify.py bugs (H9's zero-check, H1's skewed sample, main()'s missing luts/hyperbolic pre-flight guard) and a dead-code cleanup, all reproduced and verified against the real pipeline; fixed a false-regression bug in benchmark_validator.py (ambiguous 0.0 for "not found" vs. genuine zero) and a false-PASS-on-load-failure bug; fixed two visualization.py crashes (phase4 error-dict, stale phase3 schema) and phase3's total absence from HTML reports; fixed 2 more instances of the path off-by-one bug (tests/python/compile_test.py, run_simd_harness.py) plus a stale subdirectory reference. Full reports: reports/2026-08-12/CODE_REVIEW_SESSION_REPORT.md (original) + reports/2026-08-13/CODE_REVIEW_SESSION_REPORT.md (continuation) |
 | 2026-08-12 | v1.6.0  | Code review session (19 commits, a527da0..32eada2): removed foreign .claude/ config dump; fixed a real correctness bug in the TritNet AVX2 GEMM kernel (was also unreachable from Python); found the TritNet orchestrator never actually ran the pipeline that achieved Phase 2B GO; found a systemic path-resolution bug in 12 files including bench_competitive.py (silent mock-fallback risk, flagged in gap #3); test suite expanded 7→13 wired suites. Full report: reports/2026-08-12/CODE_REVIEW_SESSION_REPORT.md |
 | 2026-07-23 | v1.5.0  | Corrected stale gaps: OpenMP is enabled by default (not disabled), TRITNET_VISION.md/TRITNET_ROADMAP.md exist, TritNet Phase 2A is GO (Phase 2B in progress, 2/4 ops passed), Linux x64 passes all tests locally |
@@ -1174,4 +1254,4 @@ reviewed; nothing remains queued from this review effort. Findings:
 
 ---
 
-**Version:** 1.7.0 · **Updated:** 2026-08-13 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.8.0 · **Updated:** 2026-08-13 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
