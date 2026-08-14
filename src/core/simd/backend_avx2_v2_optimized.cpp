@@ -39,6 +39,7 @@
 #include <omp.h>                               // OpenMP parallelization
 #include <stdbool.h>
 #include <string.h>
+#include <mutex>                               // std::call_once
 
 // ============================================================================
 // Pre-broadcasted LUTs (Canonical Indexing)
@@ -50,24 +51,34 @@ static __m256i g_tmax_canonical_lut_256;
 static __m256i g_tmin_canonical_lut_256;
 static __m256i g_tnot_canonical_lut_256;
 
-static bool g_canonical_luts_initialized = false;
+// Guards one-time init of the __m256i globals above. Was previously a plain
+// `bool` checked-then-set with no synchronization -- a data race (UB under
+// the C++ memory model) if two threads called any avx2_v2_* dispatch
+// function for the first time concurrently. Found 2026-08-14 via code
+// review: confirmed unreachable through any Python entry point that exists
+// today (bindings_backend_api.cpp never releases the GIL around dispatch
+// calls, so concurrent Python threads can't actually race here), but fixed
+// anyway per CLAUDE.md's "no_undefined_behavior - Strict C++17 compliance"
+// -- this would become live UB the moment anyone adds gil_scoped_release
+// for parallelism, or calls this backend directly from multi-threaded C++.
+// std::call_once has negligible overhead relative to the SIMD work each
+// dispatch call does (called once per array-level op, not per-element).
+static std::once_flag g_canonical_luts_once;
 
 static void init_canonical_luts(void) {
-    if (g_canonical_luts_initialized) return;
+    std::call_once(g_canonical_luts_once, []() {
+        // Canonical 16-byte LUTs from ternary_algebra.h (single source of
+        // truth, shared with the tested SIMD path — see file header comment
+        // above). These LUTs are organized for idx=(a*3)+b indexing.
+        g_tadd_canonical_lut_256 = broadcast_lut_16(TADD_LUT_CANONICAL.data());
+        g_tmul_canonical_lut_256 = broadcast_lut_16(TMUL_LUT_CANONICAL.data());
+        g_tmax_canonical_lut_256 = broadcast_lut_16(TMAX_LUT_CANONICAL.data());
+        g_tmin_canonical_lut_256 = broadcast_lut_16(TMIN_LUT_CANONICAL.data());
+        g_tnot_canonical_lut_256 = broadcast_lut_16(TNOT_LUT_CANONICAL.data());
 
-    // Canonical 16-byte LUTs from ternary_algebra.h (single source of truth,
-    // shared with the tested SIMD path — see file header comment above)
-    // These LUTs are organized for idx=(a*3)+b indexing
-    g_tadd_canonical_lut_256 = broadcast_lut_16(TADD_LUT_CANONICAL.data());
-    g_tmul_canonical_lut_256 = broadcast_lut_16(TMUL_LUT_CANONICAL.data());
-    g_tmax_canonical_lut_256 = broadcast_lut_16(TMAX_LUT_CANONICAL.data());
-    g_tmin_canonical_lut_256 = broadcast_lut_16(TMIN_LUT_CANONICAL.data());
-    g_tnot_canonical_lut_256 = broadcast_lut_16(TNOT_LUT_CANONICAL.data());
-
-    // Initialize dual-shuffle LUTs (future enhancement)
-    // init_dual_shuffle_luts();  // TODO: Enable for additional performance
-
-    g_canonical_luts_initialized = true;
+        // Initialize dual-shuffle LUTs (future enhancement)
+        // init_dual_shuffle_luts();  // TODO: Enable for additional performance
+    });
 }
 
 // ============================================================================

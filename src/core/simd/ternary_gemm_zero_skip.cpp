@@ -451,6 +451,13 @@ void ternary_gemm_zero_skip(
     float*        C
 ) {
     TernaryCSC* csc = build_ternary_csc(B, K, N);
+    // build_ternary_csc returns nullptr on malloc failure (see its own body
+    // above) -- every other call site (ZeroSkipWeights's constructor in
+    // bindings_zero_skip_gemm.cpp) checks this before use; this convenience
+    // wrapper (reachable from Python via ternary_zero_skip_gemm.gemm())
+    // didn't, and would null-deref inside ternary_gemm_zero_skip_avx2 on OOM.
+    // Found 2026-08-14 via code review.
+    if (!csc) throw std::bad_alloc();
     ternary_gemm_zero_skip_avx2(M, N, K, A, csc, C);
     free_ternary_csc(csc);
 }
