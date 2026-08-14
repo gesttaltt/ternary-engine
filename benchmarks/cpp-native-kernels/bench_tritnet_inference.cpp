@@ -275,7 +275,90 @@ static void forward_tadd_preconv(const TaddWeightsF32& w, const float x[10], int
     }
 }
 
+// tnot's shapes: IN=5, HID=64, OUT_PADDED=16 -- the one unary op, smaller
+// hidden layer than the binary ops (64 vs 128), so it's worth checking
+// separately rather than assuming tadd's ratio generalizes.
+struct TnotWeightsF32 {
+    float W1[5][64];
+    float W2[64][64];
+    float W3[64][16];
+};
+
+static void prepare_tnot(TnotWeightsF32& w) {
+    using namespace tritnet::weights::tnot_weights;
+    convert_weights<5, 64>(W1, w.W1);
+    convert_weights<64, 64>(W2, w.W2);
+    convert_weights<64, 16>(W3, w.W3);
+}
+
+static void forward_tnot_preconv(const TnotWeightsF32& w, const float x[5], int8_t out_trits[5]) {
+    using namespace tritnet::weights::tnot_weights;
+    float h1[64];
+    layer_preconv<5, 64, true>(x, w.W1, B1, h1);
+    float h2[64];
+    layer_preconv<64, 64, true>(h1, w.W2, B2, h2);
+    float logits[16];
+    layer_preconv<64, 16, false>(h2, w.W3, B3, logits);
+    for (int k = 0; k < 5; ++k) {
+        int best = 0;
+        float best_val = logits[k * 3];
+        for (int c = 1; c < 3; ++c) {
+            if (logits[k * 3 + c] > best_val) { best_val = logits[k * 3 + c]; best = c; }
+        }
+        out_trits[k] = static_cast<int8_t>(best - 1);
+    }
+}
+
 }  // namespace preconv
+
+static void bench_amortized_tnot() {
+    printf("\n-- Amortized-weight-conversion experiment (tnot, the one unary op) --\n");
+
+    SplitMix64 rng(42);
+    std::vector<trit> chunks(static_cast<size_t>(N_CHUNKS) * 5);
+    for (int c = 0; c < N_CHUNKS; ++c) random_chunk(rng, &chunks[c * 5]);
+
+    preconv::TnotWeightsF32 w;
+    preconv::prepare_tnot(w);  // NOT timed -- this is the "convert once" step
+
+    // Correctness spot-check against the verified AVX2 path first.
+    {
+        trit out_ref[5];
+        float x[5];
+        for (int i = 0; i < 5; ++i) x[i] = static_cast<float>(trit_to_int(chunks[i]));
+        tritnet::avx2::tritnet_tnot(&chunks[0], out_ref);
+        int8_t y[5];
+        preconv::forward_tnot_preconv(w, x, y);
+        trit out_pc[5];
+        for (int i = 0; i < 5; ++i) out_pc[i] = int_to_trit(y[i]);
+        bool ok = true;
+        for (int i = 0; i < 5; ++i) if (out_ref[i] != out_pc[i]) ok = false;
+        printf("  correctness vs verified AVX2 path: %s\n", ok ? "MATCH" : "MISMATCH (bug -- do not trust numbers below)");
+        if (!ok) return;
+    }
+
+    volatile int sink = 0;
+    int8_t out[5];
+    std::vector<float> xs(static_cast<size_t>(N_CHUNKS) * 5);
+    for (int c = 0; c < N_CHUNKS; ++c) {
+        for (int i = 0; i < 5; ++i) xs[c * 5 + i] = static_cast<float>(trit_to_int(chunks[c * 5 + i]));
+    }
+
+    double preconv_s = time_best(N_CHUNKS, [&](int c) {
+        preconv::forward_tnot_preconv(w, &xs[c * 5], out);
+        sink += out[0];
+    });
+    (void)sink;
+
+    double preconv_mops = (N_CHUNKS / preconv_s) / 1e6;
+    Result baseline = bench_unary(tnot, tritnet::tritnet_tnot, tritnet::avx2::tritnet_tnot);
+
+    printf("  %-28s %10.4f Mops/s\n", "AVX2 (reconverts weights every call, as measured above)", baseline.avx2_mops);
+    printf("  %-28s %10.4f Mops/s\n", "AVX2 (weights preconverted once)", preconv_mops);
+    printf("  speedup from amortizing conversion: %.2fx\n", preconv_mops / baseline.avx2_mops);
+    printf("  LUT/AVX2-preconverted: %.1fx (was %.1fx against the per-call-reconvert AVX2)\n",
+           baseline.lut_mops / preconv_mops, baseline.lut_mops / baseline.avx2_mops);
+}
 
 static void bench_amortized_tadd() {
     printf("\n-- Amortized-weight-conversion experiment (tadd, representative of the 4 binary ops) --\n");
@@ -370,6 +453,7 @@ int main() {
     printf("scalar over the full input space (tests/cpp/test_tritnet_inference.cpp).\n");
 
 #ifdef __AVX2__
+    bench_amortized_tnot();
     bench_amortized_tadd();
 #endif
 
