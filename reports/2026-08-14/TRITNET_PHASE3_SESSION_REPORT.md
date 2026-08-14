@@ -3,10 +3,10 @@
 **Scope:** Continue the TritNet roadmap from CLAUDE.md's Critical Gaps #2
 ("TritNet Phase 3 pending"). Went from weight-export blocked to Phase 3
 complete: weight export, naive C++ inference engine, AVX2 vectorization, and
-the decisive TritNet-vs-LUT benchmark — plus two rounds of user-requested
-fairness review that caught a real bug in the benchmark itself.
+the decisive TritNet-vs-LUT benchmark — plus three rounds of user-requested
+fairness review, one of which caught a real bug in the benchmark itself.
 
-**Net result:** 7 commits, all on `main`. `tests/run_tests.py` (14/14) still
+**Net result:** 9 commits, all on `main`. `tests/run_tests.py` (14/14) still
 passes throughout — none of the new C++ work is wired into that suite (it's
 dev-utility/benchmark code, matching this project's existing convention for
 `tests/cpp/`). Every numeric claim below was independently re-measured, not
@@ -21,6 +21,8 @@ carried forward from an earlier commit's message.
 | `cee9e8f` | Extended fairness check to tnot |
 | `91f4d20` | Extended fairness check to tmul |
 | `7b56d5c` | **Correction** — the fairness check itself was unfair; fixed and re-measured, conclusion partially reverses for the binary ops |
+| `ed82c94` | This report, first draft (7 commits, tmax not yet independently confirmed) |
+| `0ecbc86` | Completed the set — tmax confirmed under the corrected methodology (§7) |
 
 ---
 
@@ -201,7 +203,7 @@ commits `416f261`/`91f4d20` are wrong and superseded.
 | tadd | ~110–150 | 0.07 | 0.79 | *no benefit* | ~150–190× |
 | tmul | ~115–147 | 0.07 | 0.78 | *no benefit* | ~150–190× |
 | tmin | ~112–153 | 0.07 | 0.78 | *no benefit* | ~150–190× |
-| tmax | ~114–148 | 0.07 | 0.78 | *(not separately re-checked, shares tadd/tmul/tmin's architecture and L1-overflow mechanism)* | ~150–190× |
+| tmax | ~114–153 | 0.07 | 0.78 | *no benefit* (~0.89–0.92×, confirmed 2026-08-14 §7) | ~150–210× |
 
 *Weight-conversion amortization; see §6 for why it only helps tnot.
 LUT and AVX2 absolute throughput vary run-to-run (thermal/turbo state on a
@@ -226,10 +228,20 @@ express) — not on beating a LUT at 5-trit-chunk width on a CPU.
   one place TritNet's structural advantage (a real batched GEMM, amortizing
   weight loads and exploiting parallelism a per-element LUT gather can't)
   could plausibly close the gap this session measured on CPU.
-- **`tmax`** was not separately re-checked with interleaved timing after
-  the §6 correction (tadd/tmul/tmin were; `tmax` shares their exact
-  architecture and the same L1-overflow mechanism, so it's expected to
-  match, but wasn't independently confirmed this session).
+
+---
+
+## 7. Completing the set — tmax (2026-08-14, same-day follow-up)
+
+User asked to check tmax too, the one binary op §6 hadn't independently
+confirmed. Added it to the corrected (interleaved-timing) benchmark,
+correctness-checked against the shipped AVX2 path first (MATCH), then
+re-run twice for stability: **~0.89–0.92×, no benefit** — consistent with
+tadd/tmul/tmin. All 5 ops are now confirmed under the corrected
+methodology: only tnot benefits from amortizing weight conversion; all 4
+binary ops (sharing the same hidden=128 architecture and the same
+L1-cache-overflow mechanism from §6) do not. This closes the "what's left"
+item from the first draft of this report.
 
 ---
 
