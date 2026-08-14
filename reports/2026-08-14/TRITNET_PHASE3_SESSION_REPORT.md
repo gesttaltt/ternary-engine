@@ -6,11 +6,12 @@ complete: weight export, naive C++ inference engine, AVX2 vectorization, and
 the decisive TritNet-vs-LUT benchmark — plus three rounds of user-requested
 fairness review, one of which caught a real bug in the benchmark itself.
 
-**Net result:** 9 commits, all on `main`. `tests/run_tests.py` (14/14) still
-passes throughout — none of the new C++ work is wired into that suite (it's
-dev-utility/benchmark code, matching this project's existing convention for
-`tests/cpp/`). Every numeric claim below was independently re-measured, not
-carried forward from an earlier commit's message.
+**Net result:** 11 commits, all on `main`. `tests/run_tests.py` (15/15) still
+passes throughout — the C++-only work (headers, dev-utility test/benchmark)
+isn't wired into that suite, matching this project's existing convention for
+`tests/cpp/`, but the Python bindings added in §8 are. Every numeric claim
+below was independently re-measured, not carried forward from an earlier
+commit's message.
 
 | Commit | Summary |
 |---|---|
@@ -22,7 +23,8 @@ carried forward from an earlier commit's message.
 | `91f4d20` | Extended fairness check to tmul |
 | `7b56d5c` | **Correction** — the fairness check itself was unfair; fixed and re-measured, conclusion partially reverses for the binary ops |
 | `ed82c94` | This report, first draft (7 commits, tmax not yet independently confirmed) |
-| `0ecbc86` | Completed the set — tmax confirmed under the corrected methodology (§7) |
+| `00fd5e3` | Completed the set — tmax confirmed under the corrected methodology (§7) |
+| `a0a4482` | Python bindings for the inference engine (§8) + this report, updated |
 
 ---
 
@@ -220,14 +222,13 @@ express) — not on beating a LUT at 5-trit-chunk width on a CPU.
 
 ## What's left
 
-- **Python bindings for the inference engine** — not yet written; only
-  standalone C++ headers + dev-utility test/benchmark exist, neither wired
-  into `run_tests.py` or CI, matching this project's existing convention
-  for `tests/cpp/`.
 - **Phase 4 (GPU/TPU batch inference)** — the natural next step, and the
   one place TritNet's structural advantage (a real batched GEMM, amortizing
   weight loads and exploiting parallelism a per-element LUT gather can't)
   could plausibly close the gap this session measured on CPU.
+
+(Python bindings — the other item originally listed here — were wired up
+same-day, §8 below.)
 
 ---
 
@@ -242,6 +243,35 @@ methodology: only tnot benefits from amortizing weight conversion; all 4
 binary ops (sharing the same hidden=128 architecture and the same
 L1-cache-overflow mechanism from §6) do not. This closes the "what's left"
 item from the first draft of this report.
+
+---
+
+## 8. Python bindings (2026-08-14, same-day follow-up)
+
+User asked to wire up Python bindings for the inference engine — the other
+"what's left" item from the first draft of this report. Until now the
+engine existed only as standalone C++ headers plus a dev-utility
+test/benchmark, neither reachable from Python.
+
+- `src/engine/bindings_tritnet_inference.cpp`: exposes `tnot`/`tadd`/`tmul`/
+  `tmin`/`tmax` as `ternary_tritnet_inference`, batched over `[N, 5]` uint8
+  trit-encoded numpy arrays. Runtime `has_avx2()` dispatch between the
+  scalar and AVX2 engines per call — not a compile-time-only choice — so
+  the module degrades gracefully on a CPU without AVX2 at *execution* time
+  even though it's always *built* with AVX2 codegen (matching this
+  project's "AVX2 required" baseline). Input validation reuses the existing
+  `InvalidTritError`/shape-check conventions from the LUT-based bindings.
+- `build/build_tritnet_inference.py`: mirrors `build_tritnet_gemm.py`'s
+  structure and compiler flags.
+- `tests/python/test_tritnet_inference_bindings.py`: verifies all 5 ops
+  against the full input space (243/59,049 samples per op, a third
+  independent cross-check alongside the C++ and pure-NumPy-export
+  verifications from earlier in this report) plus input validation (wrong
+  shape, mismatched batch size, invalid trit value). Wired into
+  `run_tests.py` (14 → 15 suites).
+
+Correctness: all 5 ops PASS, bit-for-bit matching each op's recorded
+checkpoint accuracy, same as every other verification path in this report.
 
 ---
 

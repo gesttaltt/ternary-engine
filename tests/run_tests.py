@@ -267,6 +267,13 @@ def main():
             'required': False,  # Verifies a generated artifact; self-skips if not exported
             'optional': True,
             'requires_capability': None
+        },
+        'tritnet_inference_bindings': {
+            'name': 'TritNet Inference Engine Python Bindings',
+            'script': TESTS_DIR / 'python' / 'test_tritnet_inference_bindings.py',
+            'required': False,  # Optional module; test self-skips if not built
+            'optional': True,
+            'requires_capability': None
         }
     }
 
