@@ -94,6 +94,36 @@ static double time_best(int n_chunks, Fn&& call) {
     return best_seconds_of(times);
 }
 
+// Times two functions INTERLEAVED (A, B, A, B, ... one rep of each at a
+// time) rather than back-to-back-in-two-blocks, and returns each side's best
+// wall time in seconds. Found 2026-08-14: comparing a number measured early
+// in the run (the main table's baseline.avx2_mops) against a number measured
+// much later (after already running a full 5-op x 3-path sweep) is itself an
+// unfair comparison if the CPU's clock state drifts between them -- which it
+// did, reproducibly, on this laptop chip. Interleaving means both sides see
+// the same drift pattern rep-by-rep, so "best of 5" for each is comparing
+// apples to apples regardless of any slow thermal/turbo decay over the run.
+template<typename FnA, typename FnB>
+static void time_best_interleaved(int n_chunks, FnA&& call_a, FnB&& call_b,
+                                   double& seconds_a, double& seconds_b) {
+    std::vector<double> times_a, times_b;
+    times_a.reserve(N_REPEATS);
+    times_b.reserve(N_REPEATS);
+    for (int rep = 0; rep < N_REPEATS; ++rep) {
+        auto t0 = high_resolution_clock::now();
+        for (int c = 0; c < n_chunks; ++c) call_a(c);
+        auto t1 = high_resolution_clock::now();
+        times_a.push_back(duration<double>(t1 - t0).count());
+
+        auto t2 = high_resolution_clock::now();
+        for (int c = 0; c < n_chunks; ++c) call_b(c);
+        auto t3 = high_resolution_clock::now();
+        times_b.push_back(duration<double>(t3 - t2).count());
+    }
+    seconds_a = best_seconds_of(times_a);
+    seconds_b = best_seconds_of(times_b);
+}
+
 static Result bench_unary(trit (*lut_fn)(trit),
                            void (*scalar_fn)(const trit[5], trit[5])
 #ifdef __AVX2__
@@ -305,6 +335,33 @@ static void forward_tmul_preconv(const TaddWeightsF32& w, const float x[10], int
     }
 }
 
+// tmin, same 10/128/16 architecture, checkpoint accuracy 99.9% -- between
+// tadd's 100% and tmul's 99.5%, rounding out the accuracy range checked.
+static void prepare_tmin(TaddWeightsF32& w) {
+    using namespace tritnet::weights::tmin_weights;
+    convert_weights<10, 128>(W1, w.W1);
+    convert_weights<128, 128>(W2, w.W2);
+    convert_weights<128, 16>(W3, w.W3);
+}
+
+static void forward_tmin_preconv(const TaddWeightsF32& w, const float x[10], int8_t out_trits[5]) {
+    using namespace tritnet::weights::tmin_weights;
+    float h1[128];
+    layer_preconv<10, 128, true>(x, w.W1, B1, h1);
+    float h2[128];
+    layer_preconv<128, 128, true>(h1, w.W2, B2, h2);
+    float logits[16];
+    layer_preconv<128, 16, false>(h2, w.W3, B3, logits);
+    for (int k = 0; k < 5; ++k) {
+        int best = 0;
+        float best_val = logits[k * 3];
+        for (int c = 1; c < 3; ++c) {
+            if (logits[k * 3 + c] > best_val) { best_val = logits[k * 3 + c]; best = c; }
+        }
+        out_trits[k] = static_cast<int8_t>(best - 1);
+    }
+}
+
 // tnot's shapes: IN=5, HID=64, OUT_PADDED=16 -- the one unary op, smaller
 // hidden layer than the binary ops (64 vs 128), so it's worth checking
 // separately rather than assuming tadd's ratio generalizes.
@@ -341,7 +398,26 @@ static void forward_tnot_preconv(const TnotWeightsF32& w, const float x[5], int8
 
 }  // namespace preconv
 
-static void bench_amortized_tnot() {
+// `baseline` is passed in (already computed once for the main table) rather
+// than recomputed here -- bench_unary/bench_binary's scalar-path timing
+// alone is ~15-20s per op (naive TritNet is ~0.07-0.27 Mops/s, so 200K
+// chunks x 5 repeats takes a while), and re-running that a second time for
+// every single amortized-check function was needlessly pushing total
+// runtime past two minutes. `baseline` is used only for the (cheap, stable)
+// LUT reference number, `.lut_mops`.
+//
+// The AVX2-reconvert-vs-preconv comparison itself is measured fresh, HERE,
+// interleaved rep-by-rep via time_best_interleaved() -- not by reusing
+// baseline.avx2_mops. Found 2026-08-14: an earlier version of this function
+// reused baseline.avx2_mops (measured early in the run, in the main table)
+// against a preconv_mops measured much later (after the whole table already
+// ran) -- comparing two numbers from different points in a long-running
+// binary is itself unfair if the CPU's clock state drifts between them,
+// which it reproducibly did on this laptop chip (tadd/tmul/tmin's
+// amortization ratio collapsed from ~1.8x to ~0.97x purely from being
+// measured later, while tnot -- measured first -- stayed consistent).
+// Interleaving both sides' timing loops fixes this at the root.
+static void bench_amortized_tnot(const Result& baseline) {
     printf("\n-- Amortized-weight-conversion experiment (tnot, the one unary op) --\n");
 
     SplitMix64 rng(42);
@@ -368,29 +444,33 @@ static void bench_amortized_tnot() {
     }
 
     volatile int sink = 0;
-    int8_t out[5];
+    trit out_reconv[5];
+    int8_t out_preconv[5];
     std::vector<float> xs(static_cast<size_t>(N_CHUNKS) * 5);
     for (int c = 0; c < N_CHUNKS; ++c) {
         for (int i = 0; i < 5; ++i) xs[c * 5 + i] = static_cast<float>(trit_to_int(chunks[c * 5 + i]));
     }
 
-    double preconv_s = time_best(N_CHUNKS, [&](int c) {
-        preconv::forward_tnot_preconv(w, &xs[c * 5], out);
-        sink += out[0];
-    });
+    double reconv_s, preconv_s;
+    time_best_interleaved(
+        N_CHUNKS,
+        [&](int c) { tritnet::avx2::tritnet_tnot(&chunks[c * 5], out_reconv); sink += out_reconv[0]; },
+        [&](int c) { preconv::forward_tnot_preconv(w, &xs[c * 5], out_preconv); sink += out_preconv[0]; },
+        reconv_s, preconv_s);
     (void)sink;
 
-    double preconv_mops = (N_CHUNKS / preconv_s) / 1e6;
-    Result baseline = bench_unary(tnot, tritnet::tritnet_tnot, tritnet::avx2::tritnet_tnot);
+    double reconv_mops = (N_CHUNKS / reconv_s) / 1e6;
 
-    printf("  %-28s %10.4f Mops/s\n", "AVX2 (reconverts weights every call, as measured above)", baseline.avx2_mops);
+    double preconv_mops = (N_CHUNKS / preconv_s) / 1e6;
+
+    printf("  %-28s %10.4f Mops/s\n", "AVX2 (reconverts weights every call, interleaved timing)", reconv_mops);
     printf("  %-28s %10.4f Mops/s\n", "AVX2 (weights preconverted once)", preconv_mops);
-    printf("  speedup from amortizing conversion: %.2fx\n", preconv_mops / baseline.avx2_mops);
+    printf("  speedup from amortizing conversion: %.2fx\n", preconv_mops / reconv_mops);
     printf("  LUT/AVX2-preconverted: %.1fx (was %.1fx against the per-call-reconvert AVX2)\n",
-           baseline.lut_mops / preconv_mops, baseline.lut_mops / baseline.avx2_mops);
+           baseline.lut_mops / preconv_mops, baseline.lut_mops / reconv_mops);
 }
 
-static void bench_amortized_tadd() {
+static void bench_amortized_tadd(const Result& baseline) {
     printf("\n-- Amortized-weight-conversion experiment (tadd, representative of the 4 binary ops) --\n");
 
     SplitMix64 rng(42);
@@ -423,30 +503,33 @@ static void bench_amortized_tadd() {
     }
 
     volatile int sink = 0;
-    int8_t out[5];
+    trit out_reconv[5];
+    int8_t out_preconv[5];
     std::vector<float> xs(static_cast<size_t>(N_CHUNKS) * 10);
     for (int c = 0; c < N_CHUNKS; ++c) {
         for (int i = 0; i < 5; ++i) xs[c * 10 + i] = static_cast<float>(trit_to_int(chunks_a[c * 5 + i]));
         for (int i = 0; i < 5; ++i) xs[c * 10 + 5 + i] = static_cast<float>(trit_to_int(chunks_b[c * 5 + i]));
     }
 
-    double preconv_s = time_best(N_CHUNKS, [&](int c) {
-        preconv::forward_tadd_preconv(w, &xs[c * 10], out);
-        sink += out[0];
-    });
+    double reconv_s, preconv_s;
+    time_best_interleaved(
+        N_CHUNKS,
+        [&](int c) { tritnet::avx2::tritnet_tadd(&chunks_a[c * 5], &chunks_b[c * 5], out_reconv); sink += out_reconv[0]; },
+        [&](int c) { preconv::forward_tadd_preconv(w, &xs[c * 10], out_preconv); sink += out_preconv[0]; },
+        reconv_s, preconv_s);
     (void)sink;
 
+    double reconv_mops = (N_CHUNKS / reconv_s) / 1e6;
     double preconv_mops = (N_CHUNKS / preconv_s) / 1e6;
-    Result baseline = bench_binary(tadd, tritnet::tritnet_tadd, tritnet::avx2::tritnet_tadd);
 
-    printf("  %-28s %10.4f Mops/s\n", "AVX2 (reconverts weights every call, as measured above)", baseline.avx2_mops);
+    printf("  %-28s %10.4f Mops/s\n", "AVX2 (reconverts weights every call, interleaved timing)", reconv_mops);
     printf("  %-28s %10.4f Mops/s\n", "AVX2 (weights preconverted once)", preconv_mops);
-    printf("  speedup from amortizing conversion: %.2fx\n", preconv_mops / baseline.avx2_mops);
+    printf("  speedup from amortizing conversion: %.2fx\n", preconv_mops / reconv_mops);
     printf("  LUT/AVX2-preconverted: %.1fx (was %.1fx against the per-call-reconvert AVX2)\n",
-           baseline.lut_mops / preconv_mops, baseline.lut_mops / baseline.avx2_mops);
+           baseline.lut_mops / preconv_mops, baseline.lut_mops / reconv_mops);
 }
 
-static void bench_amortized_tmul() {
+static void bench_amortized_tmul(const Result& baseline) {
     printf("\n-- Amortized-weight-conversion experiment (tmul, weakest checkpoint at 99.5%%) --\n");
 
     SplitMix64 rng(42);
@@ -479,27 +562,89 @@ static void bench_amortized_tmul() {
     }
 
     volatile int sink = 0;
-    int8_t out[5];
+    trit out_reconv[5];
+    int8_t out_preconv[5];
     std::vector<float> xs(static_cast<size_t>(N_CHUNKS) * 10);
     for (int c = 0; c < N_CHUNKS; ++c) {
         for (int i = 0; i < 5; ++i) xs[c * 10 + i] = static_cast<float>(trit_to_int(chunks_a[c * 5 + i]));
         for (int i = 0; i < 5; ++i) xs[c * 10 + 5 + i] = static_cast<float>(trit_to_int(chunks_b[c * 5 + i]));
     }
 
-    double preconv_s = time_best(N_CHUNKS, [&](int c) {
-        preconv::forward_tmul_preconv(w, &xs[c * 10], out);
-        sink += out[0];
-    });
+    double reconv_s, preconv_s;
+    time_best_interleaved(
+        N_CHUNKS,
+        [&](int c) { tritnet::avx2::tritnet_tmul(&chunks_a[c * 5], &chunks_b[c * 5], out_reconv); sink += out_reconv[0]; },
+        [&](int c) { preconv::forward_tmul_preconv(w, &xs[c * 10], out_preconv); sink += out_preconv[0]; },
+        reconv_s, preconv_s);
     (void)sink;
 
+    double reconv_mops = (N_CHUNKS / reconv_s) / 1e6;
     double preconv_mops = (N_CHUNKS / preconv_s) / 1e6;
-    Result baseline = bench_binary(tmul, tritnet::tritnet_tmul, tritnet::avx2::tritnet_tmul);
 
-    printf("  %-28s %10.4f Mops/s\n", "AVX2 (reconverts weights every call, as measured above)", baseline.avx2_mops);
+    printf("  %-28s %10.4f Mops/s\n", "AVX2 (reconverts weights every call, interleaved timing)", reconv_mops);
     printf("  %-28s %10.4f Mops/s\n", "AVX2 (weights preconverted once)", preconv_mops);
-    printf("  speedup from amortizing conversion: %.2fx\n", preconv_mops / baseline.avx2_mops);
+    printf("  speedup from amortizing conversion: %.2fx\n", preconv_mops / reconv_mops);
     printf("  LUT/AVX2-preconverted: %.1fx (was %.1fx against the per-call-reconvert AVX2)\n",
-           baseline.lut_mops / preconv_mops, baseline.lut_mops / baseline.avx2_mops);
+           baseline.lut_mops / preconv_mops, baseline.lut_mops / reconv_mops);
+}
+
+static void bench_amortized_tmin(const Result& baseline) {
+    printf("\n-- Amortized-weight-conversion experiment (tmin, 99.9%% checkpoint) --\n");
+
+    SplitMix64 rng(42);
+    std::vector<trit> chunks_a(static_cast<size_t>(N_CHUNKS) * 5);
+    std::vector<trit> chunks_b(static_cast<size_t>(N_CHUNKS) * 5);
+    for (int c = 0; c < N_CHUNKS; ++c) {
+        random_chunk(rng, &chunks_a[c * 5]);
+        random_chunk(rng, &chunks_b[c * 5]);
+    }
+
+    preconv::TaddWeightsF32 w;
+    preconv::prepare_tmin(w);  // NOT timed -- this is the "convert once" step
+
+    // Correctness spot-check: preconverted path must match the verified AVX2
+    // path exactly (both compute the same float multiply, just with the
+    // int8->float conversion done at a different time).
+    {
+        trit out_ref[5], out_pc[5];
+        float x[10];
+        for (int i = 0; i < 5; ++i) x[i] = static_cast<float>(trit_to_int(chunks_a[i]));
+        for (int i = 0; i < 5; ++i) x[5 + i] = static_cast<float>(trit_to_int(chunks_b[i]));
+        tritnet::avx2::tritnet_tmin(&chunks_a[0], &chunks_b[0], out_ref);
+        int8_t y[5];
+        preconv::forward_tmin_preconv(w, x, y);
+        for (int i = 0; i < 5; ++i) out_pc[i] = int_to_trit(y[i]);
+        bool ok = true;
+        for (int i = 0; i < 5; ++i) if (out_ref[i] != out_pc[i]) ok = false;
+        printf("  correctness vs verified AVX2 path: %s\n", ok ? "MATCH" : "MISMATCH (bug -- do not trust numbers below)");
+        if (!ok) return;
+    }
+
+    volatile int sink = 0;
+    trit out_reconv[5];
+    int8_t out_preconv[5];
+    std::vector<float> xs(static_cast<size_t>(N_CHUNKS) * 10);
+    for (int c = 0; c < N_CHUNKS; ++c) {
+        for (int i = 0; i < 5; ++i) xs[c * 10 + i] = static_cast<float>(trit_to_int(chunks_a[c * 5 + i]));
+        for (int i = 0; i < 5; ++i) xs[c * 10 + 5 + i] = static_cast<float>(trit_to_int(chunks_b[c * 5 + i]));
+    }
+
+    double reconv_s, preconv_s;
+    time_best_interleaved(
+        N_CHUNKS,
+        [&](int c) { tritnet::avx2::tritnet_tmin(&chunks_a[c * 5], &chunks_b[c * 5], out_reconv); sink += out_reconv[0]; },
+        [&](int c) { preconv::forward_tmin_preconv(w, &xs[c * 10], out_preconv); sink += out_preconv[0]; },
+        reconv_s, preconv_s);
+    (void)sink;
+
+    double reconv_mops = (N_CHUNKS / reconv_s) / 1e6;
+    double preconv_mops = (N_CHUNKS / preconv_s) / 1e6;
+
+    printf("  %-28s %10.4f Mops/s\n", "AVX2 (reconverts weights every call, interleaved timing)", reconv_mops);
+    printf("  %-28s %10.4f Mops/s\n", "AVX2 (weights preconverted once)", preconv_mops);
+    printf("  speedup from amortizing conversion: %.2fx\n", preconv_mops / reconv_mops);
+    printf("  LUT/AVX2-preconverted: %.1fx (was %.1fx against the per-call-reconvert AVX2)\n",
+           baseline.lut_mops / preconv_mops, baseline.lut_mops / reconv_mops);
 }
 #endif  // __AVX2__
 
@@ -521,11 +666,16 @@ int main() {
 #endif
 
 #ifdef __AVX2__
-    print_row("tnot", bench_unary(tnot, tritnet::tritnet_tnot, tritnet::avx2::tritnet_tnot));
-    print_row("tadd", bench_binary(tadd, tritnet::tritnet_tadd, tritnet::avx2::tritnet_tadd));
-    print_row("tmul", bench_binary(tmul, tritnet::tritnet_tmul, tritnet::avx2::tritnet_tmul));
-    print_row("tmin", bench_binary(tmin, tritnet::tritnet_tmin, tritnet::avx2::tritnet_tmin));
-    print_row("tmax", bench_binary(tmax, tritnet::tritnet_tmax, tritnet::avx2::tritnet_tmax));
+    Result r_tnot = bench_unary(tnot, tritnet::tritnet_tnot, tritnet::avx2::tritnet_tnot);
+    Result r_tadd = bench_binary(tadd, tritnet::tritnet_tadd, tritnet::avx2::tritnet_tadd);
+    Result r_tmul = bench_binary(tmul, tritnet::tritnet_tmul, tritnet::avx2::tritnet_tmul);
+    Result r_tmin = bench_binary(tmin, tritnet::tritnet_tmin, tritnet::avx2::tritnet_tmin);
+    Result r_tmax = bench_binary(tmax, tritnet::tritnet_tmax, tritnet::avx2::tritnet_tmax);
+    print_row("tnot", r_tnot);
+    print_row("tadd", r_tadd);
+    print_row("tmul", r_tmul);
+    print_row("tmin", r_tmin);
+    print_row("tmax", r_tmax);
 #else
     print_row("tnot", bench_unary(tnot, tritnet::tritnet_tnot));
     print_row("tadd", bench_binary(tadd, tritnet::tritnet_tadd));
@@ -539,9 +689,13 @@ int main() {
     printf("scalar over the full input space (tests/cpp/test_tritnet_inference.cpp).\n");
 
 #ifdef __AVX2__
-    bench_amortized_tnot();
-    bench_amortized_tadd();
-    bench_amortized_tmul();
+    // Reuse the Results already computed above -- see bench_amortized_tnot's
+    // comment for why recomputing them here would be both wasteful and a
+    // thermal-throttling risk.
+    bench_amortized_tnot(r_tnot);
+    bench_amortized_tadd(r_tadd);
+    bench_amortized_tmul(r_tmul);
+    bench_amortized_tmin(r_tmin);
 #endif
 
     return 0;
