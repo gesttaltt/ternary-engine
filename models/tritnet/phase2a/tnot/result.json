@@ -1,0 +1,13 @@
+{
+  "op": "tnot",
+  "seed": 42,
+  "best_acc": 1.0,
+  "converged": true,
+  "passed": true,
+  "weight_neg_pct": 22.22842261904762,
+  "weight_zero_pct": 42.392113095238095,
+  "weight_pos_pct": 35.379464285714285,
+  "hidden": 64,
+  "in_features": 5,
+  "threshold": 0.3
+}

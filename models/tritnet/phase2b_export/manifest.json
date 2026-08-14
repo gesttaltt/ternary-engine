@@ -1,0 +1,150 @@
+{
+  "threshold": 0.3,
+  "ops": {
+    "tnot": {
+      "shapes": {
+        "W1": [
+          5,
+          64
+        ],
+        "b1": [
+          64
+        ],
+        "W2": [
+          64,
+          64
+        ],
+        "b2": [
+          64
+        ],
+        "W3": [
+          64,
+          15
+        ],
+        "b3": [
+          15
+        ]
+      },
+      "in_features": 5,
+      "hidden": 64,
+      "n_out_trits": 5,
+      "inference": "h1=ReLU(x@W1+b1); h2=ReLU(h1@W2+b2); logits=(h2@W3+b3).reshape(n_out_trits,3); trit[k]=argmax(logits[k])-1"
+    },
+    "tadd": {
+      "shapes": {
+        "W1": [
+          10,
+          128
+        ],
+        "b1": [
+          128
+        ],
+        "W2": [
+          128,
+          128
+        ],
+        "b2": [
+          128
+        ],
+        "W3": [
+          128,
+          15
+        ],
+        "b3": [
+          15
+        ]
+      },
+      "in_features": 10,
+      "hidden": 128,
+      "n_out_trits": 5,
+      "inference": "h1=ReLU(x@W1+b1); h2=ReLU(h1@W2+b2); logits=(h2@W3+b3).reshape(n_out_trits,3); trit[k]=argmax(logits[k])-1"
+    },
+    "tmul": {
+      "shapes": {
+        "W1": [
+          10,
+          128
+        ],
+        "b1": [
+          128
+        ],
+        "W2": [
+          128,
+          128
+        ],
+        "b2": [
+          128
+        ],
+        "W3": [
+          128,
+          15
+        ],
+        "b3": [
+          15
+        ]
+      },
+      "in_features": 10,
+      "hidden": 128,
+      "n_out_trits": 5,
+      "inference": "h1=ReLU(x@W1+b1); h2=ReLU(h1@W2+b2); logits=(h2@W3+b3).reshape(n_out_trits,3); trit[k]=argmax(logits[k])-1"
+    },
+    "tmin": {
+      "shapes": {
+        "W1": [
+          10,
+          128
+        ],
+        "b1": [
+          128
+        ],
+        "W2": [
+          128,
+          128
+        ],
+        "b2": [
+          128
+        ],
+        "W3": [
+          128,
+          15
+        ],
+        "b3": [
+          15
+        ]
+      },
+      "in_features": 10,
+      "hidden": 128,
+      "n_out_trits": 5,
+      "inference": "h1=ReLU(x@W1+b1); h2=ReLU(h1@W2+b2); logits=(h2@W3+b3).reshape(n_out_trits,3); trit[k]=argmax(logits[k])-1"
+    },
+    "tmax": {
+      "shapes": {
+        "W1": [
+          10,
+          128
+        ],
+        "b1": [
+          128
+        ],
+        "W2": [
+          128,
+          128
+        ],
+        "b2": [
+          128
+        ],
+        "W3": [
+          128,
+          15
+        ],
+        "b3": [
+          15
+        ]
+      },
+      "in_features": 10,
+      "hidden": 128,
+      "n_out_trits": 5,
+      "inference": "h1=ReLU(x@W1+b1); h2=ReLU(h1@W2+b2); logits=(h2@W3+b3).reshape(n_out_trits,3); trit[k]=argmax(logits[k])-1"
+    }
+  }
+}

@@ -18,6 +18,7 @@ Copyright 2025 Ternary Engine Contributors
 Licensed under the Apache License, Version 2.0
 """
 
+import json
 import sys
 import time
 from pathlib import Path
@@ -29,6 +30,39 @@ import torch.optim as optim
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "models" / "tritnet" / "src"))
+
+# Checkpoint dir, mirroring train_phase2b.py's phase2b/<op>/{best_qat.pt,result.json}
+# convention. Found 2026-08-14: this script trained tnot to its documented GO
+# decision but never called torch.save anywhere -- the model was discarded after
+# printing the decision, so there was no on-disk artifact for Phase 3 weight
+# export to consume. Added here rather than deduping with phase2b's identical
+# ckpt_path/load_result/save_result helpers -- that duplication is pre-existing
+# and already tracked (CLAUDE.md gap #7); fixing it is a separate refactor.
+CKPT_DIR = Path(__file__).parent / "phase2a"
+CKPT_DIR.mkdir(exist_ok=True)
+
+
+def ckpt_path(op_name: str, kind: str) -> Path:
+    d = CKPT_DIR / op_name
+    d.mkdir(exist_ok=True)
+    return d / f"{kind}.pt"
+
+
+def result_path(op_name: str) -> Path:
+    d = CKPT_DIR / op_name
+    d.mkdir(exist_ok=True)
+    return d / "result.json"
+
+
+def load_result(op_name: str) -> dict | None:
+    p = result_path(op_name)
+    if p.exists():
+        return json.loads(p.read_text())
+    return None
+
+
+def save_result(op_name: str, result: dict):
+    result_path(op_name).write_text(json.dumps(result, indent=2))
 
 
 # ---------------------------------------------------------------------------
@@ -398,6 +432,13 @@ def main():
     print(f"Y range: {Y.min().item():.0f} to {Y.max().item():.0f}")
     print()
 
+    # Resume: skip the sweep entirely if a passing checkpoint is already saved.
+    saved = load_result('tnot')
+    if saved and saved.get('passed'):
+        print(f"[tnot] Already completed (best_acc={saved['best_acc']*100:.1f}%), "
+              f"skipping training. Checkpoint: {ckpt_path('tnot', 'best_qat')}")
+        return 0 if saved['best_acc'] >= 1.0 else 1
+
     seeds = [42, 123, 7]
     results = []
 
@@ -506,6 +547,41 @@ def main():
             pred = logits_to_ternary(logits)[0].tolist()
             ok = pred == expected
             print(f"  {str(inp):<25} {str(expected):<25} {str([int(p) for p in pred]):<25} {'YES' if ok else 'NO'}")
+
+        # Recompute accuracy of THIS rebuilt model directly (don't trust the
+        # sweep's recorded number blindly -- the rebuild is a separate,
+        # deterministic-but-independent training run from the same seed).
+        rebuilt_acc = exact_match_accuracy(model(X), Y)
+
+    neg = zero = pos = total = 0
+    for layer in [model.fc1, model.fc2, model.fc3]:
+        w = layer.get_ternary_weights()
+        neg += (w == -1).sum().item()
+        zero += (w == 0).sum().item()
+        pos += (w == 1).sum().item()
+        total += w.numel()
+
+    # Persist the GO checkpoint. Previously this script trained tnot to its
+    # documented decision and discarded the model -- no torch.save existed
+    # anywhere in the file, so Phase 3 weight export had no tnot artifact to
+    # consume despite CLAUDE.md documenting tnot as GO since Phase 2A.
+    torch.save(model.state_dict(), ckpt_path('tnot', 'best_qat'))
+    result = {
+        'op': 'tnot',
+        'seed': best_seed,
+        'best_acc': rebuilt_acc,
+        'converged': rebuilt_acc >= 0.9999,
+        'passed': rebuilt_acc >= 0.99,
+        'weight_neg_pct': 100 * neg / total if total else 0,
+        'weight_zero_pct': 100 * zero / total if total else 0,
+        'weight_pos_pct': 100 * pos / total if total else 0,
+        'hidden': 64,
+        'in_features': 5,
+        'threshold': 0.3,
+    }
+    save_result('tnot', result)
+    print(f"\n  Saved checkpoint: {ckpt_path('tnot', 'best_qat')}  "
+          f"(rebuilt_acc={rebuilt_acc*100:.1f}%)")
 
     print()
     return 0 if go else 1

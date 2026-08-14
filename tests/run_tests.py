@@ -260,6 +260,13 @@ def main():
             'required': True,
             'optional': False,
             'requires_capability': None
+        },
+        'tritnet_export': {
+            'name': 'TritNet Export Fidelity Test',
+            'script': TESTS_DIR / 'python' / 'test_tritnet_export.py',
+            'required': False,  # Verifies a generated artifact; self-skips if not exported
+            'optional': True,
+            'requires_capability': None
         }
     }
 
