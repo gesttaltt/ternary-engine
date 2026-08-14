@@ -47,10 +47,41 @@ def emit_int8_array(name: str, arr: np.ndarray, indent: str = "    ") -> str:
     return "\n".join(lines)
 
 
+def format_float_literal(v: float) -> str:
+    """Format as a valid C++ float literal. `%.9g` on an exact integer (e.g.
+    the 0.0 bias padding added by pad_to_multiple()) prints "0" with no '.'
+    or 'e' -- `0f` is not a valid C++ literal (the `f` suffix requires a
+    floating-point-literal base, i.e. a decimal point or exponent), so gcc
+    rejects it with "unable to find numeric literal operator". Force one in.
+    """
+    s = f"{v:.9g}"
+    if '.' not in s and 'e' not in s and 'inf' not in s and 'nan' not in s:
+        s += '.0'
+    return f"{s}f"
+
+
 def emit_float_array(name: str, arr: np.ndarray) -> str:
     """Emit a 1D float array as `constexpr float name[n] = {...};`."""
-    vals = ", ".join(f"{float(v):.9g}f" for v in arr)
+    vals = ", ".join(format_float_literal(float(v)) for v in arr)
     return f"constexpr float {name}[{arr.shape[0]}] = {{{vals}}};"
+
+
+def pad_to_multiple(arr: np.ndarray, multiple: int, axis: int) -> np.ndarray:
+    """Zero-pad `arr` along `axis` up to the next multiple of `multiple`.
+
+    Used to widen W3/B3's output dimension (15 = N_OUT_TRITS*3) to a
+    multiple of 8 so the AVX2 forward pass can process it with full-width
+    loads/stores, no scalar tail. Padding columns get weight 0 and bias 0,
+    so the extra logit lanes they produce are always 0 and are never read
+    by the argmax decode loop (which only looks at the first N_OUT_TRITS*3
+    lanes) -- this is purely a memory-layout widening, not a behavior change,
+    and the scalar forward pass uses the same padded arrays.
+    """
+    pad_width = [(0, 0)] * arr.ndim
+    current = arr.shape[axis]
+    target = ((current + multiple - 1) // multiple) * multiple
+    pad_width[axis] = (0, target - current)
+    return np.pad(arr, pad_width, mode='constant', constant_values=0)
 
 
 def generate_op_block(op_name: str) -> str:
@@ -65,11 +96,26 @@ def generate_op_block(op_name: str) -> str:
     in_features, hidden = W1.shape
     n_out_trits = W3.shape[1] // 3
 
+    # The AVX2 forward pass (tritnet_inference_avx2.h) processes HIDDEN in
+    # 8-wide chunks with no scalar tail -- both current architectures (64,
+    # 128) already satisfy this, but fail loudly instead of silently
+    # miscomputing if a future retrain changes it.
+    if hidden % 8 != 0:
+        raise ValueError(f"{op_name}: hidden={hidden} is not a multiple of 8; "
+                          f"tritnet_inference_avx2.h's layer loops assume no scalar tail")
+
+    # Widen the output layer to a multiple of 8 (AVX2 lane width) -- see
+    # pad_to_multiple()'s docstring for why this is safe.
+    W3 = pad_to_multiple(W3, 8, axis=1)
+    b3 = pad_to_multiple(b3, 8, axis=0)
+    out_padded = W3.shape[1]
+
     parts = [
         f"namespace {op_name}_weights {{",
         f"constexpr int IN_FEATURES = {in_features};",
         f"constexpr int HIDDEN = {hidden};",
         f"constexpr int N_OUT_TRITS = {n_out_trits};",
+        f"constexpr int OUT_PADDED = {out_padded};  // N_OUT_TRITS*3 rounded up to a multiple of 8",
         "",
         emit_int8_array("W1", W1),
         emit_float_array("B1", b1),

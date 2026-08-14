@@ -61,14 +61,24 @@ namespace detail {
 // by all 5 ops -- CLAUDE.md's "template_unification" convention: one
 // implementation instead of 5 duplicated by hand. IN/HID/NOUT are compile-time
 // so the compiler sees fixed-trip-count loops per op instantiation.
-template<int IN, int HID, int NOUT>
+//
+// W3/B3 are OUT_PADDED wide (NOUT*3 rounded up to a multiple of 8 by
+// generate_weights_header.py), not NOUT*3 -- the extra lanes carry weight 0
+// and bias 0, so they always compute logit 0 and are simply never read by
+// the decode loop below (which only touches indices 0..NOUT*3-1). This is
+// pure memory-layout widening so tritnet_inference_avx2.h can share the same
+// generated arrays with full 8-wide loads and no scalar tail; behavior here
+// is unchanged from the pre-padding version.
+template<int IN, int HID, int NOUT, int OUT_PADDED>
 inline void forward3(
     const float x[IN],
     const int8_t W1[IN][HID], const float B1[HID],
     const int8_t W2[HID][HID], const float B2[HID],
-    const int8_t W3[HID][NOUT * 3], const float B3[NOUT * 3],
+    const int8_t W3[HID][OUT_PADDED], const float B3[OUT_PADDED],
     int8_t out_trits[NOUT]  // plain {-1,0,+1}, NOT 2-bit `trit` encoding
 ) {
+    static_assert(OUT_PADDED >= NOUT * 3, "OUT_PADDED must cover all real logits");
+
     float h1[HID];
     for (int j = 0; j < HID; ++j) {
         float acc = B1[j];
@@ -83,8 +93,8 @@ inline void forward3(
         h2[j] = acc > 0.0f ? acc : 0.0f;
     }
 
-    float logits[NOUT * 3];
-    for (int j = 0; j < NOUT * 3; ++j) {
+    float logits[OUT_PADDED];
+    for (int j = 0; j < OUT_PADDED; ++j) {
         float acc = B3[j];
         for (int i = 0; i < HID; ++i) acc += h2[i] * static_cast<float>(W3[i][j]);
         logits[j] = acc;
@@ -119,7 +129,7 @@ inline void tritnet_tnot(const trit in[5], trit out[5]) {
     float x[5];
     detail::trits_to_floats(in, x, 5);
     int8_t y[5];
-    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS>(x, W1, B1, W2, B2, W3, B3, y);
+    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS, OUT_PADDED>(x, W1, B1, W2, B2, W3, B3, y);
     detail::ints_to_trits(y, out, 5);
 }
 
@@ -130,7 +140,7 @@ inline void tritnet_tadd(const trit a[5], const trit b[5], trit out[5]) {
     detail::trits_to_floats(a, x, 5);
     detail::trits_to_floats(b, x + 5, 5);
     int8_t y[5];
-    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS>(x, W1, B1, W2, B2, W3, B3, y);
+    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS, OUT_PADDED>(x, W1, B1, W2, B2, W3, B3, y);
     detail::ints_to_trits(y, out, 5);
 }
 
@@ -141,7 +151,7 @@ inline void tritnet_tmul(const trit a[5], const trit b[5], trit out[5]) {
     detail::trits_to_floats(a, x, 5);
     detail::trits_to_floats(b, x + 5, 5);
     int8_t y[5];
-    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS>(x, W1, B1, W2, B2, W3, B3, y);
+    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS, OUT_PADDED>(x, W1, B1, W2, B2, W3, B3, y);
     detail::ints_to_trits(y, out, 5);
 }
 
@@ -152,7 +162,7 @@ inline void tritnet_tmin(const trit a[5], const trit b[5], trit out[5]) {
     detail::trits_to_floats(a, x, 5);
     detail::trits_to_floats(b, x + 5, 5);
     int8_t y[5];
-    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS>(x, W1, B1, W2, B2, W3, B3, y);
+    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS, OUT_PADDED>(x, W1, B1, W2, B2, W3, B3, y);
     detail::ints_to_trits(y, out, 5);
 }
 
@@ -163,7 +173,7 @@ inline void tritnet_tmax(const trit a[5], const trit b[5], trit out[5]) {
     detail::trits_to_floats(a, x, 5);
     detail::trits_to_floats(b, x + 5, 5);
     int8_t y[5];
-    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS>(x, W1, B1, W2, B2, W3, B3, y);
+    detail::forward3<IN_FEATURES, HIDDEN, N_OUT_TRITS, OUT_PADDED>(x, W1, B1, W2, B2, W3, B3, y);
     detail::ints_to_trits(y, out, 5);
 }
 

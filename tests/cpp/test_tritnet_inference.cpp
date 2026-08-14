@@ -20,13 +20,23 @@
 // trit-by-trit, against ternary_algebra.h's scalar LUT ops (5 calls per
 // chunk = the ground truth). Reports per-op exact-match-chunk accuracy,
 // which should match the Python-side result.json numbers as a
-// cross-language sanity check on the export.
+// cross-language sanity check on the export. When compiled with -mavx2,
+// also runs the same full-space check against
+// models/tritnet/inference/tritnet_inference_avx2.h's vectorized path --
+// it must match the recorded accuracy exactly, same as the scalar path
+// (both read the same weights; AVX2 must not silently change results).
 //
-// Compile: g++ -std=c++17 -O2 test_tritnet_inference.cpp -o test_tritnet_inference && ./test_tritnet_inference
+// Compile (scalar only):
+//   g++ -std=c++17 -O2 test_tritnet_inference.cpp -o test_tritnet_inference && ./test_tritnet_inference
+// Compile (scalar + AVX2):
+//   g++ -std=c++17 -O2 -mavx2 -mfma test_tritnet_inference.cpp -o test_tritnet_inference && ./test_tritnet_inference
 
 #include <cstdio>
 #include <cstdint>
 #include "../../models/tritnet/inference/tritnet_inference.h"
+#ifdef __AVX2__
+#include "../../models/tritnet/inference/tritnet_inference_avx2.h"
+#endif
 
 // Recorded accuracy from each op's result.json (models/tritnet/phase2a/tnot/,
 // phase2b/{tadd,tmul,tmin,tmax}/), verified again here independently in C++.
@@ -112,6 +122,50 @@ static bool check_binary(const char* name,
     return ok;
 }
 
+#ifdef __AVX2__
+// Strictest check: scalar and AVX2 must produce BIT-IDENTICAL output over
+// the full input space, not just the same aggregate accuracy (two different
+// bugs coincidentally landing on the same match count is astronomically
+// unlikely across 59,049 samples, but this removes any doubt).
+static bool check_unary_agree(const char* name,
+                               void (*scalar_fn)(const trit[5], trit[5]),
+                               void (*avx2_fn)(const trit[5], trit[5])) {
+    long n_total = 243, n_agree = 0;
+    for (int idx = 0; idx < 243; ++idx) {
+        trit a[5];
+        trit_vec_from_index(idx, a);
+        trit s[5], v[5];
+        scalar_fn(a, s);
+        avx2_fn(a, v);
+        if (trits_equal(s, v)) n_agree++;
+    }
+    bool ok = (n_agree == n_total);
+    printf("  %-6s scalar/avx2 agree: %ld/%ld  %s\n", name, n_agree, n_total, ok ? "PASS" : "FAIL");
+    return ok;
+}
+
+static bool check_binary_agree(const char* name,
+                                void (*scalar_fn)(const trit[5], const trit[5], trit[5]),
+                                void (*avx2_fn)(const trit[5], const trit[5], trit[5])) {
+    long n_total = 243L * 243L, n_agree = 0;
+    for (int ia = 0; ia < 243; ++ia) {
+        trit a[5];
+        trit_vec_from_index(ia, a);
+        for (int ib = 0; ib < 243; ++ib) {
+            trit b[5];
+            trit_vec_from_index(ib, b);
+            trit s[5], v[5];
+            scalar_fn(a, b, s);
+            avx2_fn(a, b, v);
+            if (trits_equal(s, v)) n_agree++;
+        }
+    }
+    bool ok = (n_agree == n_total);
+    printf("  %-6s scalar/avx2 agree: %ld/%ld  %s\n", name, n_agree, n_total, ok ? "PASS" : "FAIL");
+    return ok;
+}
+#endif
+
 int main() {
     printf("======================================================================\n");
     printf("TritNet C++ Inference Engine -- Full Truth Table Verification\n");
@@ -119,11 +173,30 @@ int main() {
 
     bool all_ok = true;
 
+    printf("-- Scalar vs LUT ground truth --\n");
     all_ok &= check_unary("tnot", tritnet::tritnet_tnot, tnot, EXPECTED[0].best_acc);
     all_ok &= check_binary("tadd", tritnet::tritnet_tadd, tadd, EXPECTED[1].best_acc);
     all_ok &= check_binary("tmul", tritnet::tritnet_tmul, tmul, EXPECTED[2].best_acc);
     all_ok &= check_binary("tmin", tritnet::tritnet_tmin, tmin, EXPECTED[3].best_acc);
     all_ok &= check_binary("tmax", tritnet::tritnet_tmax, tmax, EXPECTED[4].best_acc);
+
+#ifdef __AVX2__
+    printf("\n-- AVX2 vs LUT ground truth --\n");
+    all_ok &= check_unary("tnot", tritnet::avx2::tritnet_tnot, tnot, EXPECTED[0].best_acc);
+    all_ok &= check_binary("tadd", tritnet::avx2::tritnet_tadd, tadd, EXPECTED[1].best_acc);
+    all_ok &= check_binary("tmul", tritnet::avx2::tritnet_tmul, tmul, EXPECTED[2].best_acc);
+    all_ok &= check_binary("tmin", tritnet::avx2::tritnet_tmin, tmin, EXPECTED[3].best_acc);
+    all_ok &= check_binary("tmax", tritnet::avx2::tritnet_tmax, tmax, EXPECTED[4].best_acc);
+
+    printf("\n-- Scalar vs AVX2 bit-identical agreement --\n");
+    all_ok &= check_unary_agree("tnot", tritnet::tritnet_tnot, tritnet::avx2::tritnet_tnot);
+    all_ok &= check_binary_agree("tadd", tritnet::tritnet_tadd, tritnet::avx2::tritnet_tadd);
+    all_ok &= check_binary_agree("tmul", tritnet::tritnet_tmul, tritnet::avx2::tritnet_tmul);
+    all_ok &= check_binary_agree("tmin", tritnet::tritnet_tmin, tritnet::avx2::tritnet_tmin);
+    all_ok &= check_binary_agree("tmax", tritnet::tritnet_tmax, tritnet::avx2::tritnet_tmax);
+#else
+    printf("\n[SKIP] AVX2 checks (compiled without -mavx2)\n");
+#endif
 
     printf("\n%s\n", all_ok ? "[SUCCESS] All operations match recorded checkpoint accuracy"
                              : "[FAIL] At least one operation diverged from its recorded accuracy");
