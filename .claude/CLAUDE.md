@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.18 · Updated 2026-08-14 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.19 · Updated 2026-08-14 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1147,6 +1147,66 @@ Commits: `e7572e7`, `d2c4396` (company-flagships), `c4426c1` (3-vae-gemm-v1).
 `tests/run_tests.py`: 13/13 still pass (none of these files are wired into that
 suite; verified individually via direct execution/`py_compile`).
 
+### 2026-08-14 src/core/ + src/engine/ bug hunt — first dedicated pass
+
+User-requested ("check the engine for bug hunting session"). `src/core/` and
+`src/engine/` — the production kernel and Python bindings — had not been the
+subject of a dedicated review pass before; prior sessions covered
+`benchmarks/`, `research/`, `models/`, and `opentimestamps/`. Two rounds:
+first pass (code-review skill, high effort) scoped itself to only the diff in
+the immediately-preceding commit (the new TritNet Python bindings, see gap #2)
+rather than the full directories — found and fixed 4 real issues there
+(commit `14157d1`): an ISA-portability bug (`build_tritnet_inference.py` used
+`-march=native` despite the module's own docstring promising graceful
+degradation via `has_avx2()` on any AVX2-only machine — switched to
+`-march=haswell`, matching `build.py`'s/`build_dense243.py`'s convention, the
+same crash class already fixed once for `bindings_dense243.cpp` 2026-08-12);
+an imprecise blended performance claim (fixed to cite the real, separately-
+labeled scalar/AVX2 figures with date/platform); a misleading comment
+claiming prior art for `InvalidTritError`'s per-value validation that doesn't
+exist elsewhere in the codebase; and redundant `py::array::request()` calls.
+
+A second, explicitly broader pass (background general-purpose subagent,
+verify-by-execution discipline) actually covered the full production kernel:
+`ternary_algebra.h`/`ternary_lut_gen.h`, all of `src/core/simd/` (AVX2
+kernels, backend plugin system, CPU detection), `src/core/packing/`,
+`src/core/common/`, `src/core/config/`, `src/core/profiling/`,
+`src/core/ffi/`, and `src/engine/bindings_core_ops.cpp`/
+`bindings_dense243.cpp`/`bindings_zero_skip_gemm.cpp`/`bindings_backend_api.cpp`.
+Traced the 2-bit trit encoding, canonical `a*3+b` indexing, and the int8↔uint8
+bridge isomorphism end-to-end across every LUT generator and AVX2 kernel and
+confirmed they're mutually consistent — no wrong-numeric-result bugs found in
+any load-bearing path (Dense243/TriadSextet pack/unpack LUTs both have
+exhaustive compile-time round-trip `static_assert`s that hold; OpenMP
+streaming-store fencing in `bindings_core_ops.cpp`/
+`backend_avx2_v2_optimized.cpp` correctly re-checks alignment and fences
+per-thread, matching each file's own prior fix comments). Two real findings,
+both fixed (commit `d5b792c`):
+
+- **`ternary_gemm_zero_skip.cpp`**: `ternary_gemm_zero_skip()` (the
+  convenience wrapper reachable from Python via
+  `ternary_zero_skip_gemm.gemm()`) called `build_ternary_csc()` and passed
+  the result straight into `ternary_gemm_zero_skip_avx2()` without checking
+  for the `nullptr` that function explicitly returns on malloc failure —
+  every other call site in the file, and `ZeroSkipWeights`'s constructor in
+  `bindings_zero_skip_gemm.cpp`, already checked this. Added the same guard.
+- **`backend_avx2_v2_optimized.cpp`**: `init_canonical_luts()` lazily
+  initialized five global `__m256i` LUTs guarded by a plain non-atomic
+  `bool` — a data race (UB under the C++ memory model) if two threads called
+  any `avx2_v2_*` dispatch function for the first time concurrently.
+  Confirmed unreachable through any Python entry point that exists today
+  (`bindings_backend_api.cpp` never releases the GIL around dispatch calls),
+  but fixed anyway per this doc's own "no_undefined_behavior - Strict C++17
+  compliance" principle — it becomes live UB the moment anyone adds
+  `gil_scoped_release` for parallelism. Replaced with `std::call_once`.
+
+Both rebuilt (`ternary_zero_skip_gemm`, `ternary_backend`) and re-verified:
+`tests/run_tests.py` 15/15, plus a direct functional smoke test of each
+module's real output against a NumPy reference. One dead-code finding
+(`opt_dual_shuffle_xor.h`/`opt_lut_256byte_expanded.h`) matched what this
+doc already documents (gap #1's `test_dual_shuffle_validation.py` note) — no
+new action needed.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1228,6 +1288,7 @@ suite; verified individually via direct execution/`py_compile`).
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-14 | v1.19.0 | First dedicated bug hunt of src/core/ and src/engine/ (the production kernel and bindings -- user request, "check the engine"), prior sessions had covered benchmarks/research/models/opentimestamps but not this. Fixed a null-deref-on-OOM in ternary_gemm_zero_skip()'s convenience wrapper (reachable from Python) and an unsynchronized lazy-init data race in backend_avx2_v2_optimized.cpp's canonical LUT init (confirmed unreachable via any current Python entry point, fixed anyway per this doc's own no-UB principle, replaced with std::call_once). Also fixed 4 issues found in the immediately-preceding commit's new TritNet bindings (ISA-portability bug, imprecise perf claim, misleading comment, redundant buffer requests). See "2026-08-14 src/core/ + src/engine/ bug hunt" above for full details. Commits `14157d1`, `d5b792c`. |
 | 2026-08-14 | v1.18.0 | Wired up Python bindings for the TritNet inference engine, closing the last "what's left" item from the Phase 3 session report: `src/engine/bindings_tritnet_inference.cpp` -> `ternary_tritnet_inference` module, batched over [N,5] uint8 trit-encoded numpy arrays, runtime has_avx2() dispatch (graceful degradation, not compile-time-only). `build/build_tritnet_inference.py` mirrors build_tritnet_gemm.py. tests/python/test_tritnet_inference_bindings.py verifies all 5 ops against the full input space plus input validation, wired into run_tests.py (15/15). |
 | 2026-08-14 | v1.17.0 | Completed the amortization check (gap flagged in the session report): tmax, the one binary op not yet independently re-measured under the corrected interleaved-timing methodology, confirmed to match tadd/tmul/tmin -- no benefit from amortizing weight conversion (~0.89-0.92x), reproducible. All 5 ops now confirmed. |
 | 2026-08-14 | v1.16.0 | Session handoff: wrote reports/2026-08-14/TRITNET_PHASE3_SESSION_REPORT.md consolidating the full day's TritNet Phase 3 work (7 commits: weight export unblock, naive C++ engine, AVX2 vectorization, two rounds of fairness review including the self-correction) into one document with a single corrected numbers table, cross-referenced from both the TritNet Development and Critical Gaps sections above. |
@@ -1264,4 +1325,4 @@ suite; verified individually via direct execution/`py_compile`).
 
 ---
 
-**Version:** 1.18.0 · **Updated:** 2026-08-14 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.19.0 · **Updated:** 2026-08-14 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
