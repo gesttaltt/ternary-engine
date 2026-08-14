@@ -44,6 +44,22 @@ def get_compiler_flags():
     --naive-only equivalent here; the module always needs AVX2 codegen
     available. Runtime dispatch (has_avx2()) still degrades gracefully on a
     CPU that lacks it at *execution* time -- see bindings_tritnet_inference.cpp.
+
+    Uses a FIXED baseline (-march=haswell / /arch:AVX2), not -march=native,
+    matching build.py's and build_dense243.py's convention -- found
+    2026-08-14 via code review: this module's docstring specifically
+    promises graceful degradation via has_avx2() on any AVX2-only machine,
+    but -march=native would let the compiler auto-vectorize the "scalar"
+    fallback path (tritnet_inference.h, compiled in the same translation
+    unit as the AVX2 kernel) with whatever ISA extensions happen to be
+    present on the BUILD machine. A binary built on a newer-than-AVX2 host
+    and run/redistributed to an AVX2-only one would then SIGILL on the
+    supposedly-safe fallback path -- the exact crash class already fixed
+    once in this repo for bindings_dense243.cpp (2026-08-12). Other sibling
+    scripts (build_tritnet_gemm.py, build_zero_skip_gemm.py,
+    build_backend.py) still use -march=native; none of them make this
+    module's specific runtime-portability promise, so they're a separate,
+    pre-existing inconsistency not fixed here.
     """
     is_windows = platform.system() == "Windows"
     is_msvc = is_windows and "mingw" not in sys.platform.lower()
@@ -56,7 +72,7 @@ def get_compiler_flags():
         link_args = ["/LTCG"]
     else:
         compile_args = [
-            "-O3", "-march=native", "-mavx2", "-mfma", "-std=c++17",
+            "-O3", "-march=haswell", "-mavx2", "-mfma", "-std=c++17",
             "-flto", "-ffast-math", "-funroll-loops",
         ]
         link_args = ["-flto"]

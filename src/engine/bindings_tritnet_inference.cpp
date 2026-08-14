@@ -19,11 +19,14 @@
  * project's existing convention (e.g. the AVX2-intrinsics-at-import-time
  * crash class of bug fixed in bindings_dense243.cpp, 2026-08-12).
  *
- * Reminder from the decisive benchmark (see CLAUDE.md "TritNet Development"
- * -> Phase 3): the LUT-based ternary_backend/ternary_simd_engine modules are
- * 150-1800x faster than this engine at this operation width. This binding
- * exists to make TritNet reachable and testable from Python -- not because
- * it is competitive with the LUT for this use case.
+ * Reminder from the decisive benchmark (2026-08-14, Linux x64, AMD Ryzen 5
+ * 7520U -- see CLAUDE.md "TritNet Development" -> Phase 3 and
+ * reports/2026-08-14/TRITNET_PHASE3_SESSION_REPORT.md for full figures and
+ * methodology): the LUT-based ternary_backend/ternary_simd_engine modules
+ * win by ~950-1800x at the naive/scalar level and still ~150-210x against
+ * this module's own AVX2 kernel. This binding exists to make TritNet
+ * reachable and testable from Python -- not because it is competitive with
+ * the LUT for this use case.
  *
  * Usage from Python:
  *   import numpy as np
@@ -51,9 +54,11 @@ namespace {
 // Validate an [N, 5] uint8 trit-encoded array: shape, contiguity, and that
 // every value is a valid 2-bit trit encoding (0b00, 0b01, or 0b10 -- 0b11 is
 // unused/invalid). Matches this project's "input_validation - sanitize
-// external inputs" convention (see ternary_errors.h's InvalidTritError,
-// already used by the scalar/SIMD LUT bindings for the same purpose).
-void validate_chunks(const py::array_t<uint8_t>& arr, const char* name) {
+// external inputs" convention (see ternary_errors.h's InvalidTritError) --
+// this is the first binding to validate per-value trit range; the existing
+// LUT bindings (bindings_core_ops.cpp) only validate array-size mismatches.
+// Returns the buffer_info so callers reuse it instead of re-requesting it.
+py::buffer_info validate_chunks(const py::array_t<uint8_t>& arr, const char* name) {
     auto buf = arr.request();
     if (buf.ndim != 2 || buf.shape[1] != 5) {
         throw std::invalid_argument(
@@ -67,6 +72,7 @@ void validate_chunks(const py::array_t<uint8_t>& arr, const char* name) {
     for (ssize_t i = 0; i < total; ++i) {
         if (data[i] > 0b10) throw InvalidTritError(data[i]);
     }
+    return buf;
 }
 
 py::array_t<uint8_t> make_output(ssize_t n) {
@@ -74,11 +80,11 @@ py::array_t<uint8_t> make_output(ssize_t n) {
 }
 
 py::array_t<uint8_t> py_tnot(py::array_t<uint8_t> chunks) {
-    validate_chunks(chunks, "chunks");
-    ssize_t n = chunks.request().shape[0];
+    py::buffer_info buf = validate_chunks(chunks, "chunks");
+    ssize_t n = buf.shape[0];
     auto out = make_output(n);
 
-    const trit* in = static_cast<const trit*>(chunks.request().ptr);
+    const trit* in = static_cast<const trit*>(buf.ptr);
     trit* o = static_cast<trit*>(out.request().ptr);
     bool avx2 = has_avx2();
 
@@ -96,10 +102,10 @@ py::array_t<uint8_t> py_tnot(py::array_t<uint8_t> chunks) {
 template<void (*ScalarFn)(const trit[5], const trit[5], trit[5]),
          void (*Avx2Fn)(const trit[5], const trit[5], trit[5])>
 py::array_t<uint8_t> binary_op(py::array_t<uint8_t> a, py::array_t<uint8_t> b) {
-    validate_chunks(a, "a");
-    validate_chunks(b, "b");
-    ssize_t n_a = a.request().shape[0];
-    ssize_t n_b = b.request().shape[0];
+    py::buffer_info buf_a = validate_chunks(a, "a");
+    py::buffer_info buf_b = validate_chunks(b, "b");
+    ssize_t n_a = buf_a.shape[0];
+    ssize_t n_b = buf_b.shape[0];
     if (n_a != n_b) {
         throw std::invalid_argument(
             "a and b must have the same number of chunks (got " +
@@ -107,8 +113,8 @@ py::array_t<uint8_t> binary_op(py::array_t<uint8_t> a, py::array_t<uint8_t> b) {
     }
 
     auto out = make_output(n_a);
-    const trit* pa = static_cast<const trit*>(a.request().ptr);
-    const trit* pb = static_cast<const trit*>(b.request().ptr);
+    const trit* pa = static_cast<const trit*>(buf_a.ptr);
+    const trit* pb = static_cast<const trit*>(buf_b.ptr);
     trit* po = static_cast<trit*>(out.request().ptr);
     bool avx2 = has_avx2();
 
@@ -128,9 +134,11 @@ PYBIND11_MODULE(ternary_tritnet_inference, m) {
         Neural-network-based ternary arithmetic: replaces LUT lookup with a
         3-layer forward pass over 5-trit chunks. See CLAUDE.md "TritNet
         Development" for the full Phase 3 writeup, including the decisive
-        benchmark result (LUT wins by 150-1800x at this operation width --
-        this module exists for API completeness / Phase 4+ groundwork, not
-        because it's competitive with the LUT-based ternary_backend module).
+        benchmark result (2026-08-14: LUT wins by ~950-1800x at the naive/
+        scalar level, still ~150-210x against this module's own AVX2 kernel
+        -- this module exists for API completeness / Phase 4+ groundwork,
+        not because it's competitive with the LUT-based ternary_backend
+        module).
 
         All functions take/return [N, 5] uint8 arrays of 2-bit trit-encoded
         values (0b00=-1, 0b01=0, 0b10=+1), one row per 5-trit chunk.
