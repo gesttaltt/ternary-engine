@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.19 · Updated 2026-08-14 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.20 · Updated 2026-08-15 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1207,6 +1207,87 @@ module's real output against a NumPy reference. One dead-code finding
 doc already documents (gap #1's `test_dual_shuffle_validation.py` note) — no
 new action needed.
 
+### 2026-08-15 build/ + scripts/ bug hunt — first dedicated pass
+
+User-requested ("review the project and commit it"), scoped to `scripts/`
+and `build/*.py` (`scripts/` turned out to only hold 2 dev-utility files —
+its `build/`, `tritnet/`, `orchestration/` subdirectories referenced
+elsewhere in this doc no longer exist there; the actual build automation
+lives in `build/` at repo root, 12 real scripts / ~3,700 lines). Neither
+directory had a prior dedicated pass (earlier sessions covered
+`benchmarks/`, `research/`, `models/`, `opentimestamps/`, `src/core/`,
+`src/engine/`). Ran via the code-review skill (high effort, 8 finder
+angles, 1-vote verify); the orchestrating fork got tangled tracking which
+of its own 9 async verification sub-agents had reported back and stalled
+mid-run without delivering a final report — findings were pulled directly
+from the verification sub-agents' own completed transcripts (all genuinely
+CONFIRMED) and applied by hand. 14 bugs fixed across 11 files, commit
+`4e72be2`:
+
+- **`build_test_packing.py`**: test file path was stale
+  (`tests/test_packing.cpp` → `tests/cpp/test_packing.cpp`, moved in an
+  earlier reorg) — script always reported "not found"; also quoted every
+  interpolated path in the `shell=True` MSVC command (a space anywhere in
+  the repo path broke it).
+- **`clean_all.py`**: `clean_benchmark_results()` globbed for
+  `bench_results_*`, a prefix no real file in `benchmarks/results/` uses
+  (real files are `fair_baseline_*`, `zero_skip_*`, `canonical_fix_*`,
+  etc.) — cleanup silently did nothing. Matched on extension instead;
+  verified with `--dry-run` (now finds and would clean 14 real files).
+- **`build_pgo_unified.py`**: `--clang` on Windows silently built plain
+  non-instrumented MSVC (`build.py`'s Windows path is hardcoded to
+  `MSVCCompiler`, which never consults `CPPFLAGS`/`LDFLAGS` or any
+  `--compiler` override), then failed at Phase 3 for a confusing reason
+  ("no .profraw files"). Now fails fast with a clear explanation.
+- **`build_reference.py`**: `extra_compile_args` was MSVC-only syntax with
+  zero platform branching (unlike every sibling `build_*.py`) — build
+  failed outright on Linux/macOS; added Unix flags matching `build.py`'s
+  pattern. `copy_to_latest()`/`print_summary()` also only globbed `*.pyd`,
+  never `*.so` — the built module silently wasn't copied to the project
+  root on Linux/macOS.
+- **`build_all.py`**: the "unified" build entry point never called
+  `build_backend.py`, `build_zero_skip_gemm.py`, or
+  `build_tritnet_inference.py` (3 of 8 `build_<target>.py` scripts), unlike
+  CI which builds all of them individually. Added all three with matching
+  `--no-*` skip flags.
+- **`setup_dev_environment.py`**: `main()` discarded
+  `build_modules()`/`run_tests()`'s return values and always printed
+  "Setup Complete!"/exited 0 even on failure; now propagates failure to the
+  exit code. `check_prerequisites()` looked for a `"python"` binary
+  specifically, absent on a typical Linux system without
+  `python-is-python3` — switched to `sys.executable`.
+- **`build_backend.py`**: GCC/Clang flags used `-march=native` (SIGILL risk
+  if built on a newer-ISA machine and redistributed to this project's
+  documented AVX2-only baseline — the crash class already fixed once for
+  `bindings_dense243.cpp`); switched to `-march=haswell`, matching
+  `build.py`/`build_dense243.py`/`build_tritnet_inference.py`. This module
+  is built directly in CI, so the risk was live. Also wrapped the primary
+  `shutil.copy2()` in try/except (the very next block already degraded
+  gracefully; this one didn't). Rebuilt and validated on Linux.
+- **`build_backend.py` + `build_zero_skip_gemm.py`**: `-fopenmp` was added
+  unconditionally with no ARM/Apple-Clang guard, contradicting this doc's
+  own documented rule ("disabled only on ARM and Apple Clang") which
+  `build.py` already implements correctly. Added the same guard to both;
+  rebuilt and validated on Linux (OpenMP still enabled here, as expected on
+  x86_64).
+- **`build.py`**: `copy_to_latest()` printed `"[ERROR] No module files
+  found!"` and returned, but `main()` never checked the return value —
+  `print_summary()` unconditionally printed `"[SUCCESS] BUILD COMPLETE"`
+  and the script exited 0 regardless. Now propagates the failure and exits
+  1.
+- **`.github/workflows/ci.yml`**: `build_tritnet_inference.py` was never
+  run in CI, so `ternary_tritnet_inference` was never built there;
+  `test_tritnet_inference_bindings.py`'s import-guard makes it self-skip on
+  `ImportError` but `run_tests.py`'s bookkeeping counts that as PASSED, not
+  SKIPPED — CI's "15/15" tally silently included a suite that never ran its
+  real assertions. Added the missing build step.
+
+Verified: all edited files `py_compile` clean; `ci.yml` YAML-parses;
+`build_backend.py`/`build_zero_skip_gemm.py` rebuilt clean on Linux with the
+new flags (AVX2 validated, zero-skip GEMM correctness checks pass);
+`build_all.py --help` shows the 3 new skip flags; `tests/run_tests.py` 15/15
+passing throughout.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1288,6 +1369,7 @@ new action needed.
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-15 | v1.20.0 | First dedicated bug hunt of scripts/ and build/*.py (user request, "review the project and commit it"). 14 bugs fixed across 11 files: stale test path + unquoted shell command (build_test_packing.py), a benchmark-cleanup glob that matched zero real files (clean_all.py), a silent MSVC-instead-of-clang-cl fallback on Windows PGO (build_pgo_unified.py), missing Linux/macOS platform branching + a *.pyd-only copy glob (build_reference.py), 3 of 8 build scripts missing from the unified build_all.py entry point, discarded return values + a Linux-incompatible "python" binary check (setup_dev_environment.py), -march=native SIGILL risk + an unguarded shutil.copy2 (build_backend.py), a missing ARM/Apple-Clang OpenMP guard (build_backend.py + build_zero_skip_gemm.py), an unpropagated build failure that always reported SUCCESS (build.py), and a CI gap that let a self-skipping test suite count as passed (ci.yml). The review-orchestrating agent fork itself stalled mid-run confusing which of its own async verification sub-agents had reported back; findings were recovered directly from the sub-agents' completed transcripts (all genuinely CONFIRMED) and applied by hand. All fixes rebuilt/re-verified on Linux, tests/run_tests.py 15/15. Commit `4e72be2`. |
 | 2026-08-14 | v1.19.0 | First dedicated bug hunt of src/core/ and src/engine/ (the production kernel and bindings -- user request, "check the engine"), prior sessions had covered benchmarks/research/models/opentimestamps but not this. Fixed a null-deref-on-OOM in ternary_gemm_zero_skip()'s convenience wrapper (reachable from Python) and an unsynchronized lazy-init data race in backend_avx2_v2_optimized.cpp's canonical LUT init (confirmed unreachable via any current Python entry point, fixed anyway per this doc's own no-UB principle, replaced with std::call_once). Also fixed 4 issues found in the immediately-preceding commit's new TritNet bindings (ISA-portability bug, imprecise perf claim, misleading comment, redundant buffer requests). See "2026-08-14 src/core/ + src/engine/ bug hunt" above for full details. Commits `14157d1`, `d5b792c`. |
 | 2026-08-14 | v1.18.0 | Wired up Python bindings for the TritNet inference engine, closing the last "what's left" item from the Phase 3 session report: `src/engine/bindings_tritnet_inference.cpp` -> `ternary_tritnet_inference` module, batched over [N,5] uint8 trit-encoded numpy arrays, runtime has_avx2() dispatch (graceful degradation, not compile-time-only). `build/build_tritnet_inference.py` mirrors build_tritnet_gemm.py. tests/python/test_tritnet_inference_bindings.py verifies all 5 ops against the full input space plus input validation, wired into run_tests.py (15/15). |
 | 2026-08-14 | v1.17.0 | Completed the amortization check (gap flagged in the session report): tmax, the one binary op not yet independently re-measured under the corrected interleaved-timing methodology, confirmed to match tadd/tmul/tmin -- no benefit from amortizing weight conversion (~0.89-0.92x), reproducible. All 5 ops now confirmed. |
@@ -1325,4 +1407,4 @@ new action needed.
 
 ---
 
-**Version:** 1.19.0 · **Updated:** 2026-08-14 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.20.0 · **Updated:** 2026-08-15 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
