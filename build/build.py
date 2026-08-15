@@ -189,7 +189,7 @@ def copy_to_latest():
 
     if not module_files:
         print("  [ERROR] No module files found!")
-        return
+        return False
 
     # Copy to output directory
     BUILD_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -207,6 +207,8 @@ def copy_to_latest():
         dest = BUILD_LATEST_DIR / module_file.name
         shutil.copy2(module_file, dest)
         print(f"  [OK] {module_file.name} -> latest directory")
+
+    return True
 
 def print_summary():
     """Print build summary"""
@@ -231,7 +233,9 @@ def main():
     print_header()
     setup_directories()
     build_module()
-    copy_to_latest()
+    if not copy_to_latest():
+        print("\n[FAIL] BUILD INCOMPLETE - no module files were produced")
+        sys.exit(1)
     print_summary()
 
 if __name__ == "__main__":

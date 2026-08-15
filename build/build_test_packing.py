@@ -23,7 +23,7 @@ def find_msvc():
 
 def main():
     project_root = Path(__file__).parent.parent
-    test_file = project_root / "tests" / "test_packing.cpp"
+    test_file = project_root / "tests" / "cpp" / "test_packing.cpp"
     output_exe = project_root / "test_packing.exe"
 
     # Check if test file exists
@@ -39,8 +39,11 @@ def main():
 
     print(f"Using MSVC from: {vcvarsall}")
 
-    # Build command
-    cmd = f'"{vcvarsall}" x64 && cl.exe /std:c++17 /O2 /EHsc /Fe:{output_exe} {test_file} /I{project_root}'
+    # Build command (quote every interpolated path — repo paths may contain spaces)
+    cmd = (
+        f'"{vcvarsall}" x64 && cl.exe /std:c++17 /O2 /EHsc '
+        f'"/Fe:{output_exe}" "{test_file}" "/I{project_root}"'
+    )
 
     print(f"Building {test_file}...")
     result = subprocess.run(cmd, shell=True, cwd=project_root)

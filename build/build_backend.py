@@ -65,6 +65,11 @@ PROJECT_ROOT = r"{PROJECT_ROOT}"
 # Platform-specific compiler flags
 system = platform.system()
 is_windows = system == 'Windows'
+is_macos = system == 'Darwin'
+is_arm = platform.machine() in ('arm64', 'aarch64')
+# OpenMP is unavailable on ARM and unsupported by Apple Clang -- matches
+# build.py's guard (CLAUDE.md: "OpenMP ... disabled only on ARM and Apple Clang")
+supports_openmp = not (is_arm or is_macos)
 
 if is_windows:
     # MSVC flags (Windows)
@@ -72,22 +77,27 @@ if is_windows:
         '/O2',           # Maximum optimization
         '/GL',           # Whole program optimization
         '/arch:AVX2',    # Enable AVX2
-        '/openmp',       # OpenMP parallelization (CRITICAL - enables 14× speedup)
         '/std:c++20',    # C++20 standard (required for designated initializers)
         '/EHsc',         # Exception handling
     ]
     link_args = ['/LTCG']  # Link-time code generation
+    if supports_openmp:
+        compile_args.append('/openmp')  # OpenMP parallelization (CRITICAL - enables 14x speedup)
 else:
     # GCC/Clang flags (Linux/macOS)
     compile_args = [
-        '-O3',           # Maximum optimization
-        '-march=native', # Native CPU optimization
-        '-mavx2',        # AVX2 support
-        '-fopenmp',      # OpenMP parallelization (CRITICAL - enables 14× speedup)
-        '-std=c++17',    # C++17 standard
-        '-flto',         # Link-time optimization
+        '-O3',            # Maximum optimization
+        '-march=haswell', # Haswell architecture (AVX2 support, safer than native for CI)
+        '-mavx2',         # AVX2 support
+        '-std=c++17',     # C++17 standard
+        '-flto',          # Link-time optimization
     ]
-    link_args = ['-flto', '-fopenmp']  # Link OpenMP library
+    link_args = ['-flto']
+    if supports_openmp:
+        compile_args.append('-fopenmp')  # OpenMP parallelization (CRITICAL - enables 14x speedup)
+        link_args.append('-fopenmp')     # Link OpenMP library
+    else:
+        print("Note: OpenMP disabled (ARM or Apple Clang does not support -fopenmp)")
 
 # Backend module sources
 sources = [
@@ -160,8 +170,14 @@ def copy_to_project_root():
 
     for built_file in built_files:
         target = PROJECT_ROOT / built_file.name
-        shutil.copy2(built_file, target)
-        print(f"  Copied: {built_file.name} → project root")
+        try:
+            shutil.copy2(built_file, target)
+            print(f"  Copied: {built_file.name} → project root")
+        except OSError as e:
+            # e.g. PermissionError on Windows if the module is currently
+            # loaded by another running Python process
+            print(f"  Warning: Could not copy {built_file.name} to project root: {e}")
+            continue
 
         # Also create/update 'latest' symlink
         try:

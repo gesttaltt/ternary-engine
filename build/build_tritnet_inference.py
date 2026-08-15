@@ -56,10 +56,11 @@ def get_compiler_flags():
     and run/redistributed to an AVX2-only one would then SIGILL on the
     supposedly-safe fallback path -- the exact crash class already fixed
     once in this repo for bindings_dense243.cpp (2026-08-12). Other sibling
-    scripts (build_tritnet_gemm.py, build_zero_skip_gemm.py,
-    build_backend.py) still use -march=native; none of them make this
-    module's specific runtime-portability promise, so they're a separate,
-    pre-existing inconsistency not fixed here.
+    scripts (build_tritnet_gemm.py, build_zero_skip_gemm.py) still use
+    -march=native; neither makes this module's specific runtime-portability
+    promise, so they're a separate, pre-existing inconsistency not fixed
+    here. build_backend.py switched to -march=haswell 2026-08-15 (code
+    review: it's built directly in CI, same SIGILL-on-redistribution risk).
     """
     is_windows = platform.system() == "Windows"
     is_msvc = is_windows and "mingw" not in sys.platform.lower()

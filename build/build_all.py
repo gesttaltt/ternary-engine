@@ -3,7 +3,8 @@ build_all.py - Unified Build Script for Entire Project
 
 Builds all components and runs validation:
 1. Standard engine (ternary_simd_engine)
-2. Dense243 experimental
+2. Dense243 experimental, TritNet GEMM, reference baseline, backend,
+   zero-skip GEMM, TritNet inference (each individually skippable via --no-*)
 3. Runs Phase 0 validation tests
 4. Prepares competitive benchmarks
 5. Generates build report
@@ -103,6 +104,36 @@ def build_reference():
         "Building reference_cpp"
     )
 
+def build_backend():
+    """Build pluggable backend module"""
+    print_header("BUILDING BACKEND")
+
+    build_script = PROJECT_ROOT / "build" / "build_backend.py"
+    return run_command(
+        [sys.executable, str(build_script)],
+        "Building ternary_backend"
+    )
+
+def build_zero_skip_gemm():
+    """Build zero-skip ternary GEMM module"""
+    print_header("BUILDING ZERO-SKIP GEMM")
+
+    build_script = PROJECT_ROOT / "build" / "build_zero_skip_gemm.py"
+    return run_command(
+        [sys.executable, str(build_script)],
+        "Building ternary_zero_skip_gemm"
+    )
+
+def build_tritnet_inference():
+    """Build TritNet inference module"""
+    print_header("BUILDING TRITNET INFERENCE")
+
+    build_script = PROJECT_ROOT / "build" / "build_tritnet_inference.py"
+    return run_command(
+        [sys.executable, str(build_script)],
+        "Building ternary_tritnet_inference"
+    )
+
 def run_phase0_tests():
     """Run Phase 0 validation tests"""
     print_header("RUNNING PHASE 0 VALIDATION")
@@ -195,6 +226,9 @@ def main():
     parser.add_argument('--no-dense243', action='store_true', help='Skip Dense243 build')
     parser.add_argument('--no-tritnet-gemm', action='store_true', help='Skip TritNet GEMM build')
     parser.add_argument('--no-reference', action='store_true', help='Skip reference baseline build')
+    parser.add_argument('--no-backend', action='store_true', help='Skip backend build')
+    parser.add_argument('--no-zero-skip-gemm', action='store_true', help='Skip zero-skip GEMM build')
+    parser.add_argument('--no-tritnet-inference', action='store_true', help='Skip TritNet inference build')
 
     args = parser.parse_args()
 
@@ -226,6 +260,18 @@ def main():
     # Step 5: Build reference baseline (optional)
     if not args.no_reference:
         results['reference_build'] = build_reference()
+
+    # Step 5b: Build backend module (optional)
+    if not args.no_backend:
+        results['backend_build'] = build_backend()
+
+    # Step 5c: Build zero-skip GEMM module (optional)
+    if not args.no_zero_skip_gemm:
+        results['zero_skip_gemm_build'] = build_zero_skip_gemm()
+
+    # Step 5d: Build TritNet inference module (optional)
+    if not args.no_tritnet_inference:
+        results['tritnet_inference_build'] = build_tritnet_inference()
 
     # Step 6: Run Phase 0 tests (optional)
     if not args.quick and results.get('standard_build', False):

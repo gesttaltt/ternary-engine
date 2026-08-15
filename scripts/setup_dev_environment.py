@@ -89,7 +89,11 @@ def check_prerequisites() -> bool:
     checks = [
         (["node", "--version"], "Node.js", "18.0.0"),
         (["npm", "--version"], "npm", "9.0.0"),
-        (["python", "--version"], "Python", "3.7.0"),
+        # Use sys.executable, not "python" -- this script is already running
+        # under Python 3, but a bare "python" binary may not exist on PATH
+        # (e.g. Linux without python-is-python3), which would otherwise
+        # report a false "Not found" despite the script actively running.
+        ([sys.executable, "--version"], "Python", "3.7.0"),
         (["git", "--version"], "Git", "2.30.0"),
     ]
 
@@ -400,8 +404,8 @@ def main() -> int:
         install_mcp_servers()
 
     # Build and test
-    build_modules()
-    run_tests()
+    build_ok = build_modules()
+    tests_ok = run_tests()
 
     # Generate IDE support
     generate_compile_commands()
@@ -410,9 +414,17 @@ def main() -> int:
     if not skip_mcp:
         print_mcp_config()
 
-    print_next_steps()
-
-    return 0
+    if build_ok and tests_ok:
+        print_next_steps()
+        return 0
+    else:
+        if not build_ok:
+            print_status("FAIL", "Module build failed -- see output above")
+        if not tests_ok:
+            print_status("FAIL", "Test suite failed -- see output above")
+        print(f"\n{Colors.RED}Setup finished with errors.{Colors.RESET} "
+              "Resolve the failures above, then re-run this script.")
+        return 1
 
 
 if __name__ == "__main__":

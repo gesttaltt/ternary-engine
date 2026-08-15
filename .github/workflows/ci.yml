@@ -1,10 +1,14 @@
 name: CI
 
 # Linux x64 validation: build the SIMD engine, TritNet GEMM, Dense243,
-# zero-skip GEMM, and backend modules, then run the full test suite
-# (13 suites as of 2026-08-12 — expanded from the original 7-suite/65-test
-# run_tests.py after triaging the previously-unwired test files in
-# tests/python/; see commit history for what was added and why).
+# zero-skip GEMM, backend, and TritNet inference modules, then run the full
+# test suite (15 suites as of 2026-08-14 — expanded from the original
+# 7-suite/65-test run_tests.py after triaging the previously-unwired test
+# files in tests/python/; see commit history for what was added and why).
+# TritNet inference added 2026-08-15 (code review): its own test suite
+# (tests/python/test_tritnet_inference_bindings.py) has an import-guard that
+# self-skips-as-passed when the module isn't built, so CI was silently
+# never running its real assertions.
 # Formalizes the local Linux validation of 2026-07-23 (see CLAUDE.md
 # "Critical Gaps" #1).
 #
@@ -52,6 +56,9 @@ jobs:
 
       - name: Build backend module
         run: python build/build_backend.py
+
+      - name: Build TritNet inference module
+        run: python build/build_tritnet_inference.py
 
       - name: Run test suite
         run: python tests/run_tests.py --no-color

@@ -29,20 +29,31 @@ sys.path.insert(0, str(ROOT_DIR))
 def get_compiler_flags():
     is_windows = platform.system() == "Windows"
     is_msvc = is_windows and "mingw" not in sys.platform.lower()
+    is_macos = platform.system() == "Darwin"
+    is_arm = platform.machine() in ("arm64", "aarch64")
+    # OpenMP is unavailable on ARM and unsupported by Apple Clang -- matches
+    # build.py's guard (CLAUDE.md: "OpenMP ... disabled only on ARM and Apple Clang")
+    supports_openmp = not (is_arm or is_macos)
 
     if is_msvc:
         compile_args = [
             "/O2", "/GL", "/arch:AVX2", "/std:c++17", "/fp:fast",
-            "/GS-", "/Oi", "/Ot", "/openmp",
+            "/GS-", "/Oi", "/Ot",
         ]
         link_args = ["/LTCG"]
+        if supports_openmp:
+            compile_args.append("/openmp")
     else:
         compile_args = [
             "-O3", "-march=native", "-mavx2", "-mfma",
             "-std=c++17", "-flto", "-ffast-math", "-funroll-loops",
-            "-fopenmp",
         ]
-        link_args = ["-flto", "-fopenmp"]
+        link_args = ["-flto"]
+        if supports_openmp:
+            compile_args.append("-fopenmp")
+            link_args.append("-fopenmp")
+        else:
+            print("Note: OpenMP disabled (ARM or Apple Clang does not support -fopenmp)")
 
     return compile_args, link_args
 

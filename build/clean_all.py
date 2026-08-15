@@ -228,15 +228,17 @@ class CleanupManager:
                 print("  No benchmark results found")
             return
 
-        # Get all result files sorted by modification time
+        # Get all result files sorted by modification time. Real result files use
+        # varying prefixes (fair_baseline_*, zero_skip_*, canonical_fix_*, etc.),
+        # not a single "bench_results_*" prefix, so match on extension instead.
         json_files = sorted(
-            results_dir.rglob("bench_results_*.json"),
+            results_dir.rglob("*.json"),
             key=lambda p: p.stat().st_mtime,
             reverse=True
         )
 
         csv_files = sorted(
-            results_dir.rglob("bench_results_*.csv"),
+            results_dir.rglob("*.csv"),
             key=lambda p: p.stat().st_mtime,
             reverse=True
         )

@@ -65,8 +65,27 @@ def build_module():
 from setuptools import setup, Extension
 import pybind11
 import os
+import platform
 
 PROJECT_ROOT = r"{PROJECT_ROOT}"
+
+# Platform-specific compiler flags (mirrors build.py's branching; unlike the
+# optimized build, this one deliberately uses minimal optimization so it's a
+# fair unoptimized baseline).
+if platform.system() == 'Windows':
+    compile_args = [
+        '/O1',           # MSVC: Basic optimization only (NOT /O2)
+        '/std:c++17',    # C++17 standard
+        '/EHsc',         # Exception handling
+        # NO /GL, /arch:AVX2, /openmp - minimal optimizations
+    ]
+else:
+    # GCC/Clang (Linux/macOS)
+    compile_args = [
+        '-O1',            # Basic optimization only (NOT -O3)
+        '-std=c++17',     # C++17 standard
+        # NO -march/-mavx2/-fopenmp/-flto - minimal optimizations
+    ]
 
 ext_modules = [
     Extension(
@@ -78,13 +97,8 @@ ext_modules = [
             PROJECT_ROOT
         ],
         language='c++',
-        extra_compile_args=[
-            '/O1',           # MSVC: Basic optimization only (NOT /O2)
-            '/std:c++17',    # C++17 standard
-            '/EHsc',         # Exception handling
-            # NO /GL, /arch:AVX2, /openmp - minimal optimizations
-        ],
-        # NO /LTCG - no link-time optimization
+        extra_compile_args=compile_args,
+        # NO /LTCG or -flto - no link-time optimization
     ),
 ]
 
@@ -132,11 +146,15 @@ def copy_to_latest():
     # Copy entire timestamp directory
     shutil.copytree(BUILD_TIMESTAMP_DIR, BUILD_LATEST_DIR)
 
-    # Also copy .pyd to project root for convenience
-    for pyd_file in BUILD_OUTPUT_DIR.glob("*.pyd"):
-        dest = PROJECT_ROOT / pyd_file.name
-        shutil.copy2(pyd_file, dest)
-        print(f"  [OK] {pyd_file.name} -> {dest}")
+    # Also copy the compiled module to project root for convenience
+    # (.pyd on Windows, .so on Linux/macOS)
+    module_files = list(BUILD_OUTPUT_DIR.glob("*.pyd")) + list(BUILD_OUTPUT_DIR.glob("*.so"))
+    if not module_files:
+        print("  [WARN] No compiled module found to copy")
+    for module_file in module_files:
+        dest = PROJECT_ROOT / module_file.name
+        shutil.copy2(module_file, dest)
+        print(f"  [OK] {module_file.name} -> {dest}")
 
 def print_summary():
     """Print build summary"""
@@ -147,13 +165,13 @@ def print_summary():
     print(f"  Timestamped: {BUILD_TIMESTAMP_DIR}")
     print(f"  Latest:      {BUILD_LATEST_DIR}")
 
-    # Show file sizes
-    pyd_files = list(BUILD_OUTPUT_DIR.glob("*.pyd"))
-    if pyd_files:
+    # Show file sizes (.pyd on Windows, .so on Linux/macOS)
+    module_files = list(BUILD_OUTPUT_DIR.glob("*.pyd")) + list(BUILD_OUTPUT_DIR.glob("*.so"))
+    if module_files:
         print(f"\nGenerated modules:")
-        for pyd_file in pyd_files:
-            size_kb = pyd_file.stat().st_size / 1024
-            print(f"  - {pyd_file.name} ({size_kb:.1f} KB)")
+        for module_file in module_files:
+            size_kb = module_file.stat().st_size / 1024
+            print(f"  - {module_file.name} ({size_kb:.1f} KB)")
 
 def main():
     print_header()

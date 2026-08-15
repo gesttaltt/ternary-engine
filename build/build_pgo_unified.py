@@ -137,6 +137,22 @@ def build_clang_pgo_phase1(clang_cmd):
     """Phase 1: Build with Clang profile generation"""
     print_header("CLANG PGO - PHASE 1: Instrumentation Build")
 
+    if "clang-cl" in clang_cmd:
+        # build.py's Windows branch is hardcoded to MSVCCompiler (setuptools
+        # never consults CC/CXX/CPPFLAGS/LDFLAGS for compiler_type=='msvc'),
+        # and there is no --compiler override plumbed through. Setting
+        # CPPFLAGS/LDFLAGS below would silently produce a plain, non-
+        # instrumented MSVC build instead of a clang-cl one, and Phase 3
+        # would then fail on "no .profraw files found" for a confusing
+        # reason. Fail clearly now instead.
+        print("\n❌ ERROR: Clang PGO on Windows is not supported by build.py.")
+        print("build.py's Windows path always invokes MSVC and has no")
+        print("--compiler override or CC/CXX/CPPFLAGS/LDFLAGS plumbing, so a")
+        print("clang-cl instrumentation build here would silently fall back")
+        print("to a non-instrumented MSVC build. Use --msvc on Windows, or")
+        print("run this script on Linux/macOS where clang is invoked directly.")
+        return False
+
     # Set environment for Clang PGO
     env = os.environ.copy()
 
