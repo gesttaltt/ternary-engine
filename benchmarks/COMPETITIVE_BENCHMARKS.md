@@ -296,15 +296,17 @@ pip install torch transformers
 
 | Criterion | Target | Status |
 |:----------|:-------|:-------|
-| Memory efficiency at same capacity | 4x vs INT8 | ✓ Proven |
-| Throughput at equivalent bit-width | > INT2 | ⚠ Needs INT2 ref |
-| Inference latency in real models | < 2x FP16 | ⚠ Needs testing |
-| Power consumption on edge | 2-4x better | ⚠ Needs hardware |
-| Accuracy retention after quantization | < 5% loss | ⚠ Needs models |
+| Memory efficiency at same capacity | 4x vs INT8 | ✓ Proven (4x vs INT8, 8x vs FP16) |
+| Throughput at equivalent bit-width | > INT2 | ✓ Proven (Dense243 is 9.6x faster than NumPy INT2 reference) |
+| Neural network workloads | > 0.5x NumPy | ⚠ Measured (0.21x BLAS at batch=1 on CPU; too slow, needs GPU/TPU) |
+| Inference latency in real models | < 2x FP16 | ⚠ Needs implementation (Phase 5 framework only) |
+| Power consumption on edge | 2-4x better | ⚠ Needs hardware validation (Phase 6 framework only) |
+| Accuracy retention after quantization | < 5% loss | ⚠ Needs model testing (Phase 5 framework only) |
 
-**verdict** - 2/5 criteria validated so far
+**verdict** - 2/5 primary commercial value criteria formally proven so far. Neural network workloads measured but below threshold on CPU batch=1. Phase 5 and 6 remain framework-only and require implementation.
 
 ---
+
 
 ## Next Steps
 

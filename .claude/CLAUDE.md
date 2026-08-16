@@ -390,6 +390,8 @@ Example: `process_binary_array<Sanitize>()` replaced 6 separate implementations
 **after_optimization** - Measure actual improvement
 **statistical_rigor** - Multiple runs, variance, confidence intervals
 **regression_detection** - Automated comparison against previous best
+**interleaved_timing** - Use interleaved reps (`time_best_interleaved()`) to avoid thermal/clock drift bias between runs.
+**ffi_isolation** - Absolute performance claims must be measured in native C++ (`benchmarks/cpp-native-kernels/`) to isolate pybind11 overhead.
 
 ### Optimization Hierarchy
 
@@ -399,6 +401,7 @@ Example: `process_binary_array<Sanitize>()` replaced 6 separate implementations
 4. **Operation fusion** - Reduce memory traffic
 5. **OpenMP parallelization** - Multi-threading for large arrays (≥100K elements)
 6. **Profile-Guided Optimization** - Clang PGO for 5-15% additional gain
+7. **Cache boundary verification** - Compute memory footprint against L1d/L2/L3 cache sizes to prevent conversion-widening optimizations from triggering cache thrashing.
 
 ### Critical Performance Paths
 
@@ -412,6 +415,8 @@ Example: `process_binary_array<Sanitize>()` replaced 6 separate implementations
 - Run benchmarks/bench_phase0.py for comprehensive suite
 - Compare against previous reports in reports/YYYY-MM-DD/
 - Document results with validation date and platform
+- Require unified `BenchmarkRunner` in all Python benchmarks (no hand-rolled loops)
+
 
 ---
 
@@ -515,6 +520,7 @@ python benchmarks/bench_phase0.py
 **target_accuracy** - 100% for exact arithmetic (99%+ acceptable)
 **validation** - Hold-out test set from truth tables
 **checkpointing** - Save models to models/tritnet/ with .tritnet extension
+**code_unification** - Avoid duplicating QAT layers and training loops across `train_phase2a.py` and `train_phase2b.py`. Share common modules (like `ternary_layers.py` or training orchestration functions) to ensure bug fixes apply globally.
 
 ### File Organization
 
@@ -523,6 +529,7 @@ python benchmarks/bench_phase0.py
 **models/tritnet/src/tritnet_model.py** - Model architectures
 **models/tritnet/src/train_tritnet.py** - Training orchestration
 **models/tritnet/run_tritnet.py** - Unified workflow
+
 
 ---
 

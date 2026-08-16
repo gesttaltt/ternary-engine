@@ -609,6 +609,31 @@ REGLA: Si un test de falsificacion falla, PUBLICARLO, no ocultarlo.
 
 ---
 
+## Nivel 7: Rigor Físico y Microarquitectura
+
+Para evitar falsos positivos introducidos por las características físicas del hardware y el software de prueba, se definen las siguientes reglas obligatorias de medición:
+
+### 7.1 Medición Entrelazada (Evitar Clock/Thermal Drift)
+No medir primero un bloque de baseline completo y luego el bloque optimizado. Los procesadores modernos reducen su frecuencia por carga térmica (thermal throttling) o aumentan dinámicamente con ráfagas (turbo boost).
+* **Regla:** Alternar ejecuciones repetición por repetición (interleaved timing), usando frameworks equivalentes a `time_best_interleaved()`. Ambos lados deben experimentar el mismo perfil de temperatura y reloj del CPU.
+
+### 7.2 Límites de Caché y Footprint de Memoria
+Toda optimización que modifique el tamaño de representación de datos (por ejemplo, expandir pesos de `int8` a `float32`) para reducir cómputo debe validar su impacto en los cachés.
+* **Regla:** Estimar y reportar el footprint del array/peso en comparación con el tamaño de las cachés de datos del CPU objetivo (L1d, L2, L3). Por ejemplo:
+  * Si los pesos caben en L1d (ej. 32KB), la conversión bajo demanda o la amortización son puramente compute-bound.
+  * Si el formato expandido desborda L1/L2, el costo de transferencia de memoria y el caché thrashing superarán la ganancia de cómputo.
+* **Métrica:** Reportar explicitamente: `data_size_vs_l1_ratio`.
+
+### 7.3 Aislamiento de FFI (Python vs C++ Nativo)
+Las llamadas a través de FFI (`pybind11`) introducen un overhead del 5% al 30% debido a marshalling de tipos, release/acquire del GIL y asignación de objetos Python.
+* **Regla:** Para claims de rendimiento absoluto (ej. GOps/s pico), usar benchmarks en C++ nativo (directamente en `benchmarks/cpp-native-kernels/` usando `std::chrono::steady_clock`). Las pruebas en Python se limitan a validación funcional, regresiones y comparación relativa de algoritmos con el mismo overhead FFI.
+
+### 7.4 Obligatoriedad del Framework Centralizado (`BenchmarkRunner`)
+Para garantizar que todos los benchmarks apliquen las fases de warmup y recolección de estadísticas correctas de forma uniforme:
+* **Regla:** Queda prohibido escribir bucles manuales de medición en nuevos scripts. Se debe importar y derivar del `BenchmarkRunner` definido en `benchmark_framework.py`.
+
+---
+
 ## Conclusion
 
 Este framework existe para responder UNA pregunta:
@@ -619,6 +644,7 @@ Los numeros decidiran. No nosotros.
 
 ---
 
-**Siguiente Accion:** Implementar `benchmarks/test_falsification.py` y ejecutar.
+**Siguiente Accion:** Implementar `benchmarks/test_falsification.py` y ejecutar bajo el estándar de entrelazado.
 
 **Compromiso:** Publicar resultados sean cuales sean, incluyendo fracasos.
+
