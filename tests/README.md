@@ -2,27 +2,75 @@
 
 Comprehensive test suite for the Ternary Engine library, covering correctness, performance, and scaling behavior.
 
+**Note (2026-08-16):** this file predates the test suite's growth from 2
+Python files + 1 C++ file to its current size (19 Python files under
+`tests/python/`, 10 C++ files under `tests/cpp/`, 15 suites wired into
+`tests/run_tests.py` as of 2026-08-14 -- see `.claude/CLAUDE.md`
+"Critical Gaps" #1 for the authoritative, actively-maintained history of
+what's wired and why). Paths and the unified-runner workflow below are
+corrected; the illustrative content (expected output, troubleshooting
+patterns) is otherwise unchanged from the original.
+
 ## Structure
 
 ```
 tests/
-├── test_phase0.py     # Core correctness tests
-├── test_omp.py        # OpenMP scaling tests
-└── test_luts.cpp      # C++ unit tests (standalone)
+├── run_tests.py        # Unified runner -- entry point, runs all wired suites
+├── python/              # Python test suites (19 files; 14 wired into run_tests.py
+│   │                     # as of 2026-08-14, plus dev utilities that aren't suites)
+│   ├── test_phase0.py         # Core correctness tests
+│   ├── test_omp.py            # OpenMP scaling tests
+│   ├── test_errors.py         # Error handling
+│   ├── test_capabilities.py   # Capability/skip-reason detection
+│   ├── test_backend_integration.py  # Pluggable backend system
+│   ├── test_canonical_lut.py
+│   ├── test_dense243.py
+│   ├── test_dual_shuffle_validation.py  # Not wired -- future enhancement, see CLAUDE.md
+│   ├── test_fused_op_bug.py
+│   ├── test_fusion_correctness.py
+│   ├── test_fusion.py
+│   ├── test_simd_validation.py
+│   ├── test_tritnet_export.py
+│   ├── test_tritnet_gemm_integration.py
+│   ├── test_tritnet_inference_bindings.py
+│   ├── test_zero_skip_gemm.py
+│   ├── quality_gates.py       # Pre-release checks
+│   └── compile_test.py, setup_test.py, run_simd_harness.py  # Dev utilities, not suites
+└── cpp/                  # C++ unit tests (standalone, not run by run_tests.py)
+    ├── test_luts.cpp
+    ├── test_backends.cpp
+    ├── test_dense243.cpp
+    ├── test_packing.cpp
+    ├── test_simd_correctness.cpp
+    ├── test_simple.cpp
+    ├── test_triadsextet.cpp
+    ├── test_tritnet_gemm.cpp
+    ├── test_tritnet_inference.cpp
+    └── verify_autolut.cpp
 ```
 
 ## Quick Start
 
-### Python Tests
+### Unified Runner (Recommended)
 
 From the project root:
 
 ```bash
+python tests/run_tests.py              # Run all wired suites
+python tests/run_tests.py --quick      # Skip slow tests
+python tests/run_tests.py --verbose    # Detailed output
+python tests/run_tests.py --suite=<name>  # Run one specific suite
+python tests/run_tests.py --no-color   # Plain output (used in CI)
+```
+
+### Individual Python Tests
+
+```bash
 # Core correctness tests
-python tests/test_phase0.py
+python tests/python/test_phase0.py
 
 # OpenMP scaling tests
-python tests/test_omp.py
+python tests/python/test_omp.py
 ```
 
 ### C++ Unit Tests
@@ -31,11 +79,11 @@ Compile and run standalone:
 
 ```bash
 # Linux/macOS
-g++ -std=c++17 -O0 tests/test_luts.cpp -o test_luts
+g++ -std=c++17 -O0 tests/cpp/test_luts.cpp -o test_luts
 ./test_luts
 
 # Windows (MSVC)
-cl /std:c++17 /EHsc tests/test_luts.cpp
+cl /std:c++17 /EHsc tests/cpp/test_luts.cpp
 test_luts.exe
 ```
 
@@ -98,8 +146,8 @@ All tests passed!
 **Purpose**: Low-level validation of LUT generation and scalar operations without Python overhead.
 
 **Coverage**:
-- ✅ Constexpr LUT generation (`ternary_lut_gen.h`)
-- ✅ Scalar operations (`ternary_algebra.h`)
+- ✅ Constexpr LUT generation (`src/core/algebra/ternary_lut_gen.h`)
+- ✅ Scalar operations (`src/core/algebra/ternary_algebra.h`)
 - ✅ Trit encoding/decoding
 - ✅ Packing and unpacking
 - ✅ Force-inline effectiveness
@@ -117,6 +165,20 @@ All 6 tests passed!
 ```
 
 **Compilation Flags**: Use `-O0` to disable optimizations for testing
+
+### Other wired suites (2026-08-16)
+
+See `.claude/CLAUDE.md` "Critical Gaps" #1 for the full, actively-maintained
+rationale behind each suite (why it was added, and any known limitations).
+Briefly: `test_errors.py` (error handling), `test_capabilities.py`
+(capability/skip-reason detection), `test_backend_integration.py` (the
+pluggable Scalar/AVX2_v1/AVX2_v2 backend system),
+`test_canonical_lut.py`/`test_simd_validation.py`/`test_fusion_correctness.py`/
+`test_fused_op_bug.py` (SIMD/fusion correctness), `quality_gates.py`
+("must pass before any release"), `test_dense243.py`/`test_zero_skip_gemm.py`/
+`test_tritnet_export.py`/`test_tritnet_gemm_integration.py`/
+`test_tritnet_inference_bindings.py` (optional compiled modules -- self-skip
+cleanly if the corresponding `build/build_*.py` hasn't been run).
 
 ## Running Specific Tests
 
@@ -153,11 +215,7 @@ import ternary_simd_engine as tc
 Always run the full test suite:
 
 ```bash
-# Quick validation (< 1 minute)
-python tests/test_phase0.py
-
-# Full suite (< 5 minutes)
-python tests/test_phase0.py && python tests/test_omp.py
+python tests/run_tests.py
 ```
 
 ### After Optimization Changes
@@ -182,7 +240,8 @@ print(f"Expected:   {expected}")
 
 ## CI/CD Integration
 
-### GitHub Actions Example
+The real workflow is `.github/workflows/ci.yml` (Linux x64: builds all
+modules, then runs `python tests/run_tests.py --no-color`). Simplified example:
 
 ```yaml
 name: Test Suite
@@ -193,21 +252,19 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: Install dependencies
         run: pip install pybind11 numpy
       - name: Build library
-        run: python build.py
-      - name: Run correctness tests
-        run: python tests/test_phase0.py
-      - name: Run OpenMP tests
-        run: python tests/test_omp.py
+        run: python build/build.py
+      - name: Run test suite
+        run: python tests/run_tests.py --no-color
       - name: Run C++ unit tests
         run: |
-          g++ -std=c++17 tests/test_luts.cpp -o test_luts
+          g++ -std=c++17 tests/cpp/test_luts.cpp -o test_luts
           ./test_luts
 ```
 
@@ -217,16 +274,16 @@ jobs:
 
 ```bash
 # Build reference implementation
-python build_reference.py
+python build/build_reference.py
 
 # Run benchmarks
-python benchmarks/bench_fair.py > baseline.txt
+python benchmarks/python-with-interpreter-overhead/bench_fair_baseline.py > baseline.txt
 
 # Make changes, rebuild
-python build.py
+python build/build.py
 
 # Compare
-python benchmarks/bench_fair.py > optimized.txt
+python benchmarks/python-with-interpreter-overhead/bench_fair_baseline.py > optimized.txt
 diff baseline.txt optimized.txt
 ```
 
@@ -248,14 +305,14 @@ diff baseline.txt optimized.txt
 
 ### For New Operations
 
-1. Add scalar test to `test_luts.cpp`:
+1. Add scalar test to `tests/cpp/test_luts.cpp`:
 ```cpp
 // Test new operation
 trit result = new_op(0b00, 0b10);
 assert(result == expected_value);
 ```
 
-2. Add Python test to `test_phase0.py`:
+2. Add Python test to `tests/python/test_phase0.py`:
 ```python
 def test_new_op():
     a = np.array([0b00, 0b01, 0b10], dtype=np.uint8)
@@ -292,7 +349,7 @@ def test_edge_cases():
 
 **Solution**: Build the library first:
 ```bash
-python build.py
+python build/build.py
 ```
 
 ### "Illegal instruction" or "SIGILL"
@@ -311,7 +368,7 @@ sysctl machdep.cpu.features | grep AVX2  # macOS
 
 **Solution**: Run full benchmark suite:
 ```bash
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ## Related Documentation
@@ -322,11 +379,16 @@ python benchmarks/bench_phase0.py
 
 ## Test Metrics
 
+For the current, complete suite list and status, run `python tests/run_tests.py`
+(prints a pass/skip/fail summary for all wired suites) or see
+`.claude/CLAUDE.md` "Critical Gaps" #1. The table below covers only the
+original 3 files this document was first written around:
+
 | Test File | LOC | Test Cases | Runtime | Coverage |
 |-----------|-----|------------|---------|----------|
-| test_phase0.py | ~200 | ~50 | ~10s | 95% |
-| test_omp.py | ~150 | ~25 | ~30s | 80% (OpenMP) |
-| test_luts.cpp | ~100 | ~20 | <1s | 90% (scalar) |
+| tests/python/test_phase0.py | ~200 | ~50 | ~10s | 95% |
+| tests/python/test_omp.py | ~150 | ~25 | ~30s | 80% (OpenMP) |
+| tests/cpp/test_luts.cpp | ~100 | ~20 | <1s | 90% (scalar) |
 
 ## Future Testing
 
@@ -345,5 +407,7 @@ python benchmarks/bench_phase0.py
 
 ---
 
-**Last Updated**: 2025-10-13
+**Last Updated**: 2026-08-16 (paths and the unified-runner workflow corrected
+against the tests/python/+tests/cpp/ reorganization; original content from
+2025-10-13)
 **Maintained by**: Jonathan Verdun (Ternary Engine Project)

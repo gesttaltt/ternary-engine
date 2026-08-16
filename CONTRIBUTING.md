@@ -39,13 +39,17 @@ This project follows the principle of **technical accuracy and professional obje
 
 3. **Build the Library**:
    ```bash
-   python build.py
+   python build/build.py
    ```
 
 4. **Run Tests**:
    ```bash
-   python tests/test_phase0.py
-   python tests/test_omp.py
+   # Unified runner (recommended -- runs all wired suites, 15 as of 2026-08)
+   python tests/run_tests.py
+
+   # Or individually
+   python tests/python/test_phase0.py
+   python tests/python/test_omp.py
    ```
 
 ### Repository Structure
@@ -56,10 +60,12 @@ ternary-engine/
 │   ├── core/           # Production kernel (algebra, SIMD, FFI)
 │   └── engine/         # Python bindings and libraries
 ├── docs/               # Documentation (organized by category)
-├── tests/              # Test suite
+├── tests/              # Test suite (python/, cpp/, run_tests.py)
 ├── benchmarks/         # Performance benchmarks
-├── build/              # Build system and artifacts
+├── build/              # Build scripts (flat, no build/scripts/ subdirectory)
 ├── models/             # LLM/Neural Network integration (TritNet, etc.)
+├── research/           # Ternary semantic hypothesis falsification framework
+├── reports/            # Dated session/analysis reports
 └── local-reports/      # Development notes (not in git)
 ```
 
@@ -82,22 +88,22 @@ git checkout -b bugfix/issue-123
 
 ### 3. Make Changes
 
-- **Source code**: Edit `.h` or `.cpp` files at root level
+- **Source code**: Edit files under `src/core/` (production kernel) or `src/engine/` (Python bindings) -- not at repo root
 - **Documentation**: Update files in `docs/` directory
-- **Tests**: Add or modify tests in `tests/`
-- **Build scripts**: Modify files in `build/scripts/`
+- **Tests**: Add or modify tests in `tests/python/` or `tests/cpp/`
+- **Build scripts**: Modify files directly in `build/` (no `scripts/` subdirectory)
 
 ### 4. Test Your Changes
 
 ```bash
 # Build
-python build.py
+python build/build.py
 
-# Test correctness
-python tests/test_phase0.py
+# Test correctness (unified runner, recommended)
+python tests/run_tests.py
 
 # Test performance
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ### 5. Commit
@@ -126,7 +132,7 @@ Then create a Pull Request on GitHub.
 
 #### File Organization
 
-- **Source files**: Keep all `.h` and `.cpp` files at root level (no nesting)
+- **Source files**: Kernel code (`.h`) goes under `src/core/` (`algebra/`, `simd/`, `ffi/`, etc.), organized by subsystem, not at repo root; Python bindings (`.cpp`) go under `src/engine/`
 - **Header guards**: Use `#ifndef HEADER_NAME_H` format
 - **Includes**: Group system headers, then library headers, then local headers
 
@@ -208,7 +214,7 @@ All Python scripts that import project modules should use this standard pattern:
 from pathlib import Path
 import sys
 
-PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()  # adjust .parent count to match depth -- see below
 sys.path.insert(0, str(PROJECT_ROOT))
 ```
 
@@ -232,10 +238,13 @@ sys.path.insert(0, str(ROOT_DIR))
 sys.path.insert(0, str(ROOT_DIR / "models" / "tritnet" / "src"))
 ```
 
-**For files at different depths:**
-- **Depth 2** (e.g., `build/build.py`): `PROJECT_ROOT = Path(__file__).parent.parent.resolve()`
-- **Depth 3** (e.g., `tests/python/test_phase0.py`): `PROJECT_ROOT = Path(__file__).parent.parent.resolve()`
-- **Depth 4** (e.g., `models/tritnet/src/train_tritnet.py`): `PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()`
+**Getting the `.parent` count right (verified 2026-08-16 against the real
+files below; this is the single most common bug found across this whole
+project's docs and scripts -- always count subdirectories between the file
+and the repo root, then use exactly that many `.parent` calls):**
+- `build/build.py` -- 1 subdirectory deep -> `Path(__file__).parent.parent.resolve()` (2 `.parent`s)
+- `tests/python/test_phase0.py` -- 2 subdirectories deep -> `Path(__file__).parent.parent.parent.resolve()` (3 `.parent`s)
+- `models/tritnet/src/train_tritnet.py` -- 3 subdirectories deep -> `Path(__file__).parent.parent.parent.parent.resolve()` (4 `.parent`s)
 
 This ensures all scripts add the project root to `sys.path`, enabling imports like:
 ```python
@@ -247,16 +256,15 @@ from models.tritnet.src.ternary_layers import TernaryLinear
 
 ### Correctness Tests (Required)
 
-All code changes must pass existing tests:
+All code changes must pass the existing test suite:
 
 ```bash
-python tests/test_phase0.py  # Must pass
-python tests/test_omp.py     # Must pass
+python tests/run_tests.py  # Must pass (runs all wired suites)
 ```
 
 ### New Operation Tests
 
-When adding a new operation, add tests to `tests/test_phase0.py`:
+When adding a new operation, add tests to `tests/python/test_phase0.py`:
 
 ```python
 def test_new_operation():
@@ -276,12 +284,12 @@ For optimization changes, provide before/after benchmarks:
 
 ```bash
 # Before optimization
-python benchmarks/bench_phase0.py > before.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > before.txt
 
 # Apply changes and rebuild
 
 # After optimization
-python benchmarks/bench_phase0.py > after.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > after.txt
 
 # Include diff in PR description
 ```
@@ -292,10 +300,10 @@ python benchmarks/bench_phase0.py > after.txt
 
 When modifying source files, update corresponding documentation:
 
-- `ternary_lut_gen.h` → No docs (self-documenting)
-- `ternary_algebra.h` → `docs/api-reference/ternary-core-header.md`
-- `ternary_errors.h` → `docs/api-reference/error-handling.md`
-- `ternary_simd_engine.cpp` → `docs/api-reference/ternary-core-simd.md`
+- `src/core/algebra/ternary_lut_gen.h` → No docs (self-documenting)
+- `src/core/algebra/ternary_algebra.h` → `docs/api-reference/ternary-core-header.md`
+- `src/core/common/ternary_errors.h` → `docs/api-reference/error-handling.md`
+- `src/engine/bindings_core_ops.cpp` → `docs/api-reference/ternary-core-simd.md`
 
 ### Documentation Standards
 
@@ -365,7 +373,7 @@ Speedup: Z%
 
 ### Review Process
 
-1. **Automated checks**: CI runs tests automatically
+1. **Automated checks**: CI runs `tests/run_tests.py` automatically (see `.github/workflows/ci.yml`)
 2. **Code review**: Maintainers review for correctness and style
 3. **Performance review**: Benchmark results reviewed
 4. **Documentation review**: Docs checked for accuracy
@@ -419,7 +427,7 @@ elapsed = time.perf_counter() - start
 
 ### Step-by-Step Guide
 
-#### 1. Define Logic (ternary_lut_gen.h)
+#### 1. Define Logic (src/core/algebra/ternary_lut_gen.h)
 
 ```cpp
 // Add operation logic function
@@ -431,7 +439,7 @@ constexpr trit new_op_logic(trit a, trit b) noexcept {
 }
 ```
 
-#### 2. Generate LUT (ternary_algebra.h)
+#### 2. Generate LUT (src/core/algebra/ternary_algebra.h)
 
 ```cpp
 // Add constexpr LUT generation
@@ -443,7 +451,7 @@ static FORCE_INLINE trit new_op(trit a, trit b) {
 }
 ```
 
-#### 3. Add SIMD Operation (ternary_simd_engine.cpp)
+#### 3. Add SIMD Operation (src/engine/bindings_core_ops.cpp)
 
 ```cpp
 // Add SIMD template specialization
@@ -469,7 +477,7 @@ __m256i new_op_simd(__m256i va, __m256i vb) {
 }
 ```
 
-#### 4. Add Wrapper (ternary_simd_engine.cpp)
+#### 4. Add Wrapper (src/engine/bindings_core_ops.cpp)
 
 ```cpp
 py::array_t<uint8_t> new_op_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
@@ -477,7 +485,7 @@ py::array_t<uint8_t> new_op_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B
 }
 ```
 
-#### 5. Add Python Binding (ternary_simd_engine.cpp)
+#### 5. Add Python Binding (src/engine/bindings_core_ops.cpp)
 
 ```cpp
 PYBIND11_MODULE(ternary_simd_engine, m) {
@@ -487,7 +495,7 @@ PYBIND11_MODULE(ternary_simd_engine, m) {
 }
 ```
 
-#### 6. Add Tests (tests/test_phase0.py)
+#### 6. Add Tests (tests/python/test_phase0.py)
 
 ```python
 def test_new_op():
@@ -517,5 +525,6 @@ By contributing, you agree that your contributions will be licensed under the Ap
 
 ---
 
-**Last Updated**: 2025-10-13
+**Last Updated**: 2026-08-16 (paths/structure corrected against the src/core+src/engine
+reorganization and Nov 2025 script renames; original content from 2025-10-13)
 **Maintained by**: Jonathan Verdun (Ternary Engine Project)
