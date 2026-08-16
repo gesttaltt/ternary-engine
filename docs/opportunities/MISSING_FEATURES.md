@@ -488,7 +488,7 @@ template<> struct Vector<WASM> {
 
 ### Root Cause Analysis
 
-From `reports/reasons.md`:
+From `reports/performance/gemm_gap_root_cause.md`:
 
 1. **No SIMD:** Scalar implementation only (56× gap)
 2. **No Parallelization:** Single-threaded (2-4× gap)

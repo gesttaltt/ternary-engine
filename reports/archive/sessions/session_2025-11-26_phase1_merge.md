@@ -19,7 +19,7 @@
 - `benchmarks/utils/geometric_metrics.py` (Shannon entropy, autocorrelation, fractals)
 - `benchmarks/utils/hardware_metrics.py` (timing, cache analysis)
 - `benchmarks/datasets/synthetic/*.npy` (3 synthetic datasets)
-- `reports/PHASE1_COMPLETION_SUMMARY.md` (Phase 1 findings)
+- `reports/process/phase1_invariant_measurement_complete.md` (Phase 1 findings; originally `reports/PHASE1_COMPLETION_SUMMARY.md`)
 
 **Production Code:** ✅ UNCHANGED (as required for Phase 1)
 
@@ -94,7 +94,7 @@ pattern = np.array([0, 1, 2, 1] * 100, dtype=np.uint8)  # Correct
 **Conclusion:** Repetitive patterns do NOT cause significant slowdown when using correct uint8 dtype.
 
 **Documentation:**
-- Created comprehensive report: `reports/REPETITIVE_PATTERN_INVESTIGATION.md`
+- Created comprehensive report: `reports/investigations/dtype_bug_investigation.md` (originally `reports/REPETITIVE_PATTERN_INVESTIGATION.md`)
 - Documented investigation methodology, findings, and lessons learned
 
 **Commit:** `0fa2661` - FIX: Critical dtype bug in Phase 1 dataset generation + investigation
@@ -202,9 +202,9 @@ pattern = np.array([0, 1, 2, 1] * 100, dtype=np.uint8)  # Correct
 - ✅ `benchmarks/investigate_repetitive_performance.py`
 - ✅ `benchmarks/analyze_phase1_datasets.py`
 - ✅ `benchmarks/test_0121_pattern.py`
-- ✅ `reports/REPETITIVE_PATTERN_INVESTIGATION.md`
+- ✅ `reports/investigations/dtype_bug_investigation.md` (originally `reports/REPETITIVE_PATTERN_INVESTIGATION.md`)
 - ✅ `reports/benchmark_validation/validation_20251126_035654.md`
-- ✅ `reports/SESSION_SUMMARY_20251126.md` (this document)
+- ✅ `reports/archive/sessions/session_2025-11-26_phase1_merge.md` (this document; originally `reports/SESSION_SUMMARY_20251126.md` before a later reorganization)
 
 ### Commits
 - ✅ `0fa2661` - FIX: Critical dtype bug in Phase 1 dataset generation + investigation

@@ -214,7 +214,7 @@ data = np.random.randint(0, 3, size=size, dtype=np.uint8)
 - ✅ `benchmarks/investigate_repetitive_performance.py` (systematic hypothesis testing)
 - ✅ `benchmarks/analyze_phase1_datasets.py` (dataset analysis)
 - ✅ `benchmarks/test_0121_pattern.py` (dtype isolation test)
-- ✅ `reports/REPETITIVE_PATTERN_INVESTIGATION.md` (this document)
+- ✅ `reports/investigations/dtype_bug_investigation.md` (this document; originally `reports/REPETITIVE_PATTERN_INVESTIGATION.md` before a later reorganization)
 
 ### Fixed (Bug)
 - ✅ `benchmarks/utils/geometric_metrics.py:285` (added dtype=np.uint8)

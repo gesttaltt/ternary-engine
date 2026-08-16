@@ -947,7 +947,7 @@ pip install torch transformers
 - ⚠️ **Matrix multiplication** - Implementation exists but needs optimization (GEMM v1.0.0)
 - ⚠️ **Cannot yet claim "AI-ready"** - GEMM performance gap blocks AI/ML viability
 
-**Root Cause Analysis:** Comprehensive statistical analysis complete (see `reports/reasons.md`). GEMM v1.0.0 was built from BitNet b1.58 baseline without applying Ternary Engine optimization techniques (SIMD, AVX2, OpenMP). Optimization roadmap: SIMD → OpenMP → Cache blocking → 20-40 Gops/s target.
+**Root Cause Analysis:** Comprehensive statistical analysis complete (see `reports/performance/gemm_gap_root_cause.md`). GEMM v1.0.0 was built from BitNet b1.58 baseline without applying Ternary Engine optimization techniques (SIMD, AVX2, OpenMP). Optimization roadmap: SIMD → OpenMP → Cache blocking → 20-40 Gops/s target.
 
 **Next Steps:** User creating separate project for detailed GEMM optimization exploration. Do NOT merge to main kernel until performance targets met.
 

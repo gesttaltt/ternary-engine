@@ -175,7 +175,7 @@ Array size: 1,000,000 elements
 - ✅ `benchmarks/utils/hardware_metrics.py` (400+ lines)
 - ✅ `benchmarks/bench_invariants.py` (300+ lines)
 - ✅ `benchmarks/datasets/synthetic/*.npy` (3 datasets)
-- ✅ `reports/PHASE1_COMPLETION_SUMMARY.md` (this document)
+- ✅ `reports/process/phase1_invariant_measurement_complete.md` (this document; originally `reports/PHASE1_COMPLETION_SUMMARY.md` before a later reorganization)
 
 ### Modified
 - ❌ None (production code FROZEN during Phase 1)

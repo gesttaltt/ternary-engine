@@ -310,8 +310,8 @@ Ternary computing demonstrates:
 
 **Reports:**
 - `BENCHMARK_SUMMARY.md` (this file)
-- `reports/2025-11-23/PROJECT_COVERAGE_ANALYSIS.md`
-- `reports/2025-11-23/FINAL_PROJECT_STATUS.md`
+- `reports/archive/baseline_2025-11-23/PROJECT_COVERAGE_ANALYSIS.md`
+- `reports/archive/baseline_2025-11-23/FINAL_PROJECT_STATUS.md`
 
 **Build Artifacts:**
 - `build/artifacts/standard/20251123_042138/`

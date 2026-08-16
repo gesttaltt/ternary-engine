@@ -57,7 +57,7 @@ python benchmarks/utils/benchmark_validator.py --auto
 
 ### 3. Updated Incremental Roadmap ✅
 
-**File:** `reports/INCREMENTAL_ROADMAP_v3.0.md`
+**File:** `reports/roadmaps/INCREMENTAL_ROADMAP_v3.0.md`
 
 **Added Sections:**
 
@@ -391,10 +391,10 @@ cp benchmarks/results/bench_results_20251126_143022.json benchmarks/results/benc
 ### Created
 - ✅ `benchmarks/utils/benchmark_validator.py` (Automated validator)
 - ✅ `benchmarks/results/baseline_v1.3.0.json` (Frozen baseline)
-- ✅ `reports/MANDATORY_BENCHMARKING_SUMMARY.md` (This document)
+- ✅ `reports/process/mandatory_benchmarking_policy.md` (this document; originally `reports/MANDATORY_BENCHMARKING_SUMMARY.md` before a later reorganization)
 
 ### Updated
-- ✅ `reports/INCREMENTAL_ROADMAP_v3.0.md` (Mandatory benchmarking policy)
+- ✅ `reports/roadmaps/INCREMENTAL_ROADMAP_v3.0.md` (Mandatory benchmarking policy)
 
 ### Commits
 - ✅ `bc73355` - Add mandatory benchmarking infrastructure and policy

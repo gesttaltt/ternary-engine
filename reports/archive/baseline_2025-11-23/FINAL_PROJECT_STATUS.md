@@ -47,7 +47,7 @@ Completed comprehensive project analysis and implemented all Priority 1 gaps ide
 - TritNet: 0% coverage (Priority 2)
 
 **Report Generated:**
-- `reports/2025-11-23/PROJECT_COVERAGE_ANALYSIS.md` (595 lines)
+- `reports/archive/baseline_2025-11-23/PROJECT_COVERAGE_ANALYSIS.md` (595 lines)
 
 ---
 
@@ -522,8 +522,8 @@ python bench_dense243.py
 - All 22 layers quantized with 58-60% sparsity
 
 **Analysis Reports:**
-- Coverage: `reports/2025-11-23/PROJECT_COVERAGE_ANALYSIS.md`
-- Status: `reports/2025-11-23/FINAL_PROJECT_STATUS.md` (this file)
+- Coverage: `reports/archive/baseline_2025-11-23/PROJECT_COVERAGE_ANALYSIS.md`
+- Status: `reports/archive/baseline_2025-11-23/FINAL_PROJECT_STATUS.md` (this file)
 
 ### New Build Scripts
 
