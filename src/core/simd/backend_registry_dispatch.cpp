@@ -98,6 +98,13 @@ const TernaryBackend* ternary_backend_select_best(void) {
 
     const TernaryBackend* best = NULL;
     uint32_t best_score = 0;
+    bool have_best = false;  // `score > best_score` alone would silently leave
+                              // `best` as NULL forever if every registered
+                              // backend scores exactly 0 (e.g. a backend with
+                              // none of the scored capability bits set) --
+                              // currently non-triggering only because Scalar
+                              // always carries TERNARY_CAP_FUSION, not by any
+                              // guarantee this function itself makes.
 
     for (size_t i = 0; i < g_backend_count; i++) {
         const TernaryBackend* backend = g_backends[i];
@@ -132,10 +139,12 @@ const TernaryBackend* ternary_backend_select_best(void) {
             score += 25;
         }
 
-        // Update best if this backend scores higher
-        if (score > best_score) {
+        // Update best if this backend scores higher (or is the first
+        // candidate seen, even at score 0 -- see `have_best` note above)
+        if (!have_best || score > best_score) {
             best_score = score;
             best = backend;
+            have_best = true;
         }
     }
 
