@@ -98,6 +98,16 @@ def run_test_suite(script_path, name, verbose=False, can_skip=False, skip_reason
         )
 
         if result.returncode == 0:
+            # Several suites self-skip (exit 0) when an optional compiled
+            # module isn't built, printing a "[SKIP]" marker before exiting
+            # (see e.g. test_dense243.py, test_zero_skip_gemm.py). Detect
+            # that marker so self-skips are reported as Skipped, not Passed.
+            self_skipped = bool(result.stdout) and "[SKIP]" in result.stdout
+            if self_skipped:
+                print_skip(f"{name} self-skipped (optional module not built)")
+                if verbose and result.stdout:
+                    print(result.stdout)
+                return (True, True)  # Skipped, not a real pass
             print_success(f"{name} passed")
             if verbose and result.stdout:
                 print(result.stdout)
@@ -300,8 +310,16 @@ def main():
 
         if suite_info['optional'] and capabilities:
             required_cap = suite_info['requires_capability']
-            if required_cap == 'openmp':
-                skip_reason = capabilities.get_skip_reason('openmp')
+            # get_skip_reason() is a generic lookup (supports 'simd', 'openmp',
+            # 'fusion', ...) -- call it for whatever capability this suite
+            # declares, not just 'openmp'. Previously suites declaring
+            # requires_capability='fusion' (fusion, fusion_correctness,
+            # fused_op_regression) were never capability-skippable through
+            # this path even though get_skip_reason('fusion') already
+            # supports them, so they'd hard-fail instead of skip when
+            # ternary_backend wasn't built.
+            if required_cap:
+                skip_reason = capabilities.get_skip_reason(required_cap)
                 can_skip = skip_reason is not None
 
         passed, skipped = run_test_suite(
@@ -320,11 +338,22 @@ def main():
     passed_suites = sum(1 for passed, skipped in results.values() if passed and not skipped)
     skipped_suites = sum(1 for passed, skipped in results.values() if skipped)
     failed_suites = sum(1 for passed, skipped in results.values() if not passed and not skipped)
+    # Each suite's 'required' flag was previously defined but never read here,
+    # so an optional/experimental suite failing (e.g. 'fusion', marked
+    # required=False) still flipped the overall exit code to 1 exactly like a
+    # required suite failing, contradicting the dict's own documented intent.
+    required_failed_suites = sum(
+        1 for suite_id, (passed, skipped) in results.items()
+        if not passed and not skipped and test_suites[suite_id].get('required', True)
+    )
+    optional_failed_suites = failed_suites - required_failed_suites
 
     print(f"Total test suites: {total_suites}")
     print(f"Passed: {Colors.OKGREEN}{passed_suites}{Colors.ENDC}")
     print(f"Skipped: {Colors.WARNING}{skipped_suites}{Colors.ENDC}")
     print(f"Failed: {Colors.FAIL}{failed_suites}{Colors.ENDC}")
+    if optional_failed_suites > 0:
+        print(f"  (of which required: {required_failed_suites}, optional: {optional_failed_suites})")
 
     if skipped_suites > 0:
         print(f"\n{Colors.WARNING}{Colors.BOLD}SKIPPED TEST SUITES:{Colors.ENDC}")
@@ -336,20 +365,24 @@ def main():
         print(f"\n{Colors.FAIL}{Colors.BOLD}FAILED TEST SUITES:{Colors.ENDC}")
         for suite_id, (passed, skipped) in results.items():
             if not passed and not skipped:
-                print(f"  - {test_suites[suite_id]['name']}")
+                tag = "" if test_suites[suite_id].get('required', True) else " (optional)"
+                print(f"  - {test_suites[suite_id]['name']}{tag}")
 
     print("\n" + "="*70)
 
-    if failed_suites == 0:
-        if skipped_suites > 0:
+    if required_failed_suites == 0:
+        if skipped_suites > 0 or optional_failed_suites > 0:
             print(f"{Colors.OKGREEN}{Colors.BOLD}[SUCCESS] ALL REQUIRED TESTS PASSED!{Colors.ENDC}")
-            print(f"{Colors.WARNING}(Some optional tests were skipped){Colors.ENDC}")
+            if skipped_suites > 0:
+                print(f"{Colors.WARNING}(Some optional tests were skipped){Colors.ENDC}")
+            if optional_failed_suites > 0:
+                print(f"{Colors.WARNING}({optional_failed_suites} optional test suite(s) failed -- not blocking){Colors.ENDC}")
         else:
             print(f"{Colors.OKGREEN}{Colors.BOLD}[SUCCESS] ALL TESTS PASSED!{Colors.ENDC}")
         print("="*70 + "\n")
         return 0
     else:
-        print(f"{Colors.FAIL}{Colors.BOLD}[FAIL] SOME TESTS FAILED{Colors.ENDC}")
+        print(f"{Colors.FAIL}{Colors.BOLD}[FAIL] {required_failed_suites} REQUIRED TEST SUITE(S) FAILED{Colors.ENDC}")
         print("="*70 + "\n")
         return 1
 

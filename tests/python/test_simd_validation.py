@@ -290,8 +290,9 @@ def test_boundaries(results):
                 fuzz_passed += 1
             else:
                 fuzz_failed += 1
-        except:
-            fuzz_passed += 1
+        except Exception as e:
+            print(f"    [FAIL] trial size={size}: unexpected exception {type(e).__name__}: {e}")
+            fuzz_failed += 1
 
     if fuzz_failed == 0:
         results.record_pass(f"Fuzz testing (1000 trials, passed: {fuzz_passed})")

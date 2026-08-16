@@ -151,9 +151,12 @@ def test_dispatch_tadd(tb):
 
         result = tb.tadd(a, b)
 
-        # Basic sanity: result should be in valid range
-        assert_true(np.all(result <= 2) and np.all(result >= 0),
-                   f"Result out of range: {result}")
+        # tadd is saturating addition on {0=-1, 1=0, 2=+1}
+        expected = np.clip(a.astype(np.int16) + b.astype(np.int16) - 2, -1, 1).astype(np.int16) + 1
+        expected = expected.astype(np.uint8)
+
+        assert_true(arrays_equal(result, expected),
+                   f"Result mismatch: {result} != {expected}")
     except Exception as e:
         assert_true(False, f"Exception: {e}")
 
@@ -166,8 +169,11 @@ def test_dispatch_tmul(tb):
 
         result = tb.tmul(a, b)
 
-        assert_true(np.all(result <= 2) and np.all(result >= 0),
-                   f"Result out of range: {result}")
+        # tmul: decode to {-1,0,+1}, multiply, re-encode to {0,1,2}
+        expected = ((a.astype(np.int16) - 1) * (b.astype(np.int16) - 1) + 1).astype(np.uint8)
+
+        assert_true(arrays_equal(result, expected),
+                   f"Result mismatch: {result} != {expected}")
     except Exception as e:
         assert_true(False, f"Exception: {e}")
 

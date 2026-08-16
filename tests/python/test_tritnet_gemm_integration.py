@@ -202,6 +202,18 @@ def main():
     print("║" + " " * 15 + "TritNet GEMM Integration Tests" + " " * 22 + "║")
     print("╚" + "═" * 68 + "╝")
 
+    # This suite is optional (registered with requires_capability=None but
+    # required=False in run_tests.py, "Will check for module in test itself").
+    # Previously, when ternary_tritnet_gemm wasn't built, every test below
+    # returned False and main() exited 1 -- a hard FAIL rather than the
+    # self-skip run_tests.py's own comment says this suite should do.
+    # Follow the same "[SKIP]" + exit(0) convention used by test_dense243.py /
+    # test_zero_skip_gemm.py / test_tritnet_inference_bindings.py.
+    if not GEMM_AVAILABLE:
+        print("[SKIP] ternary_tritnet_gemm module not built (optional).")
+        print("       Build with: python build/build_tritnet_gemm.py")
+        return 0
+
     results = []
 
     # Run tests

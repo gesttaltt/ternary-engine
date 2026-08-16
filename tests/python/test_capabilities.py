@@ -104,7 +104,12 @@ class SystemCapabilities:
         """
         try:
             import ternary_simd_engine as tc
-            import numpy as np
+        except ImportError:
+            # Module not built -- OpenMP support is genuinely unknown/moot.
+            return False
+
+        import numpy as np
+        try:
             # Test with large array (above OMP_THRESHOLD = 100K)
             test_size = 200000
             a = np.zeros(test_size, dtype=np.uint8)
@@ -113,7 +118,15 @@ class SystemCapabilities:
             # If we get here without crashing, OpenMP is working
             return True
         except Exception as e:
-            # Graceful fallback if module missing or OpenMP issues
+            # This is the module misbehaving on a large-array tadd call, NOT
+            # "OpenMP unavailable" -- a real regression here would otherwise
+            # be silently reinterpreted as "no OpenMP" and the whole OpenMP
+            # suite would be skipped via get_skip_reason('openmp') instead of
+            # the crash surfacing as a failure. Log it loudly before
+            # returning the (still capability-detection-appropriate) False.
+            print(f"[WARN] OpenMP capability probe raised {type(e).__name__}: {e} "
+                  f"-- treating as 'no OpenMP', but this may be a real bug, not "
+                  f"just a missing feature")
             return False
 
     def _detect_fusion(self):

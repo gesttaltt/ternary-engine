@@ -155,10 +155,22 @@ def test_invalid_trit_values():
 
     try:
         result = tc.tadd(a, b)
-        # With masking, 0b11 & 0x03 = 0b11, treated as index 3 in LUT
         print(f"  Input with INVALID: {a}")
         print(f"  Result: {result}")
-        print("[OK] Invalid trit handling completed (check for sanitization)")
+        # An implementation is free to either raise or produce *some* defined
+        # output for the invalid trit at index 0, but it must not corrupt the
+        # VALID neighboring elements (index 1: ZERO+ZERO, index 2: PLUS_ONE+ZERO)
+        # -- that would indicate the invalid value leaked past its own lane
+        # (e.g. a bad LUT index computed with the wrong stride/offset).
+        expected_valid_tail = np.array([ZERO, PLUS_ONE], dtype=np.uint8)
+        if len(result) != 3:
+            print(f"[FAIL] Expected 3 output elements, got {len(result)}")
+            return False
+        if not np.array_equal(result[1:], expected_valid_tail):
+            print(f"[FAIL] Invalid trit at index 0 corrupted valid neighbors: "
+                  f"result[1:]={result[1:]}, expected={expected_valid_tail}")
+            return False
+        print("[OK] Invalid trit handling completed; valid neighbors unaffected")
         return True
     except Exception as e:
         print(f"  Exception raised: {e}")

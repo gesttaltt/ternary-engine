@@ -17,6 +17,12 @@ except ImportError as e:
     print("  Run 'python build.py' to build the module first")
     exit(1)
 
+# Fixed seed for reproducibility (CLAUDE.md Testing Requirements: "reproducible
+# - Fixed random seeds for deterministic tests"). Previously unseeded, so a
+# rare data-dependent bug in the OpenMP threshold/tail-handling path could
+# pass or fail nondeterministically across runs with no way to reproduce it.
+np.random.seed(42)
+
 def check_tadd_correct(a, b, result, label):
     """Verify tadd result against scalar reference: saturating addition on {0=−1, 1=0, 2=+1}."""
     expected = np.clip(a.astype(np.int16) + b.astype(np.int16) - 2, -1, 1).astype(np.int16) + 1
