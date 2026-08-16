@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.22 · Updated 2026-08-15 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.23 · Updated 2026-08-15 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1420,6 +1420,70 @@ registered candidate is always selected regardless of score. Rebuilt
 (unchanged real-world outcome, since it always outscores the alternatives
 today), `tests/run_tests.py` 15/15.
 
+### 2026-08-15 — same bug class, checked benchmarks/
+
+Direct follow-up to the two reviews above ("review benchmarks/ for the same
+bug class"). Unlike `src/core/`/`src/engine/`, `benchmarks/` genuinely has
+Python, so both the literal `sys.path` pattern and its silent-degradation
+cousin were worth checking — and both turned up real, live instances.
+Commit `73d0aeb`.
+
+**sys.path off-by-one (5 files, `benchmarks/deprecated/`)**: all computed
+`PROJECT_ROOT` as `Path(__file__).parent.parent`, correct for files
+directly in `benchmarks/` but 1 `.parent` short for this subdirectory (2
+levels deep) — the exact bug already fixed in ~10 other files across this
+repo in the 2026-08-12 session (sibling files in this same directory
+already carry a "# fixed 2026-08-12" comment for the identical bug; these 5
+were missed then). Fixed; verified all 5 now resolve correctly and actually
+import/run.
+
+Fixing these surfaced that `benchmarks/deprecated/README.md`'s core claim —
+"depend on the deprecated `ternary_backend` module, replaced by
+`ternary_simd_engine`" — is now stale: a different, unrelated
+`ternary_backend` module has since been built from scratch (the v1.2.0
+pluggable backend system, in CI since 2026-08-12) and turns out to be
+API-compatible with these old scripts by coincidence, not design. Verified
+all 5 fixed scripts run successfully against it today. Added a correction
+note; the directory remains deprecated (a successful run isn't validation
+of stale methodology).
+
+**Silent mock-fallback (`test_falsification.py`)**: this file's own
+docstring says "Tests que DEBEN pasar o el proyecto no tiene valor" (tests
+that MUST pass or the project has no value) — yet its `ImportError` handler
+silently substituted plain NumPy for `ternary_add`/`ternary_mul` when
+`ternary_simd_engine` isn't importable, then continued to a full "VALIDATED"
+verdict from comparing NumPy against itself. A `ternary_available` flag was
+already computed at import time but never read again — the only trace of
+degraded mode was one `[WARN]` line, easy to miss, with no marker in the
+saved JSON or final verdict. The same shape as the already-fixed
+`bench_competitive.py` bug (gap #3): a resolution failure silently
+substituting fake data that looks real. Fixed by propagating the flag into
+the saved JSON (`using_real_engine` + a WARNING field), the console summary
+(an unmissable banner + a verdict string reading "NOT RUN AGAINST REAL
+ENGINE" instead of "VALIDATED"), and the exit code (`2`, distinct from
+PASS=0/FAIL=1, so a caller checking only the exit code can't mistake a mock
+run for real either). Verified both paths explicitly (real engine, and
+mock via temporarily hiding the `.so`).
+
+**Bonus find while verifying the above**: `save_results()` crashed with
+`TypeError: Object of type bool is not JSON serializable` on every single
+real run — `np.array_equal()` returns `numpy.bool_`, and
+`correctness_passed and matches` (Python `and` returns an operand, not a
+coerced bool) let that leak into a dataclass field needing JSON
+serialization; the same leak class existed at 2 more sites (`cv < 0.3`,
+`overhead < 2.0` — any numpy-scalar-vs-Python-literal comparison yields
+`numpy.bool_`). This file had apparently never been run to a successful,
+complete finish before. Fixed once, defensively, at
+`record_falsification()` (`bool(passed)`) rather than chasing each site.
+
+Running the now-fixed script for real reports **FALSIFIED (2/5 criteria)**
+in this environment — flagged here per this project's own stated rule
+(`SKEPTICAL_METRICS.md`: "Si un test de falsificacion falla, PUBLICARLO, no
+ocultarlo") rather than omitted, though it's a single run in a shared,
+non-isolated dev container (CV 64-76%, well above this project's own rigor
+bar), not a controlled benchmark — a data point that needs a properly
+isolated re-run to mean anything, not a claim.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1501,6 +1565,7 @@ today), `tests/run_tests.py` 15/15.
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-15 | v1.23.0 | Direct follow-up ("review benchmarks/ for the same bug class"). Unlike src/core/+src/engine/, benchmarks/ has real Python, so both the sys.path pattern and its silent-degradation cousin applied. Found: 5 files in benchmarks/deprecated/ with the exact off-by-one PROJECT_ROOT bug already fixed elsewhere in 2026-08-12 (fixed; also surfaced a stale README claiming ternary_backend was deprecated when a different, unrelated ternary_backend module is now live and API-compatible with these old scripts); test_falsification.py silently substituted NumPy for the real engine on ImportError and still produced a "VALIDATED" verdict with no marker anywhere except one easy-to-miss [WARN] line -- fixed to propagate the flag into the saved JSON, an unmissable console banner, and a distinct exit code. Bonus find while verifying: the script crashed on every real run (numpy.bool_ leaking into JSON serialization) -- fixed, and the now-actually-completable run reports FALSIFIED (2/5) in this environment, published per the project's own transparency rule rather than hidden, with the caveat that it's one noisy non-isolated run, not a controlled benchmark. Commit `73d0aeb`. |
 | 2026-08-15 | v1.22.0 | Direct follow-up to the tests/ sys.path finding below (user request: "review src/core/ and src/engine/ for the same sys.path class of bug"). Neither directory has any Python, so searched for the structural analog instead -- a resolution step that silently degrades, masked by an unstated invariant. Found one real match: `backend_registry_dispatch.cpp`'s best-backend scoring loop (`score > best_score` from a `best_score = 0` start) would silently return NULL if the only registered backend scored exactly 0, currently non-triggering only because Scalar's capabilities bitmask happens to always include TERNARY_CAP_FUSION. Fixed with an explicit `have_best` flag. Everything else checked (has_avx2() dispatch, backend availability filtering, duplicate headers, dlopen/file I/O) was already loud or non-applicable. Commit `1d6eefd`. |
 | 2026-08-15 | v1.21.0 | First dedicated review of docs/ and tests/ (user request, "review docs/ and tests/ next"), immediate follow-up to the scripts/+build/ session below. tests/: 10 findings fixed via code-review skill (fake pass/fail accounting, a fuzz loop that counted crashes as passes, run_tests.py counting self-skips as passed and ignoring the `required` field, a hard-fail instead of self-skip, range-only instead of exact-value assertions, a probe that conflated "not built" with "crashed", missing random seed) -- plus a real, non-cosmetic find: re-verifying the run_tests.py fix in a clean environment exposed that 3 test files were missing a `sys.path` entry needed to find their compiled module, meaning they'd been silently self-skipping and *every* prior "15/15" claim (this session's and, per CLAUDE.md's own history, prior sessions') was never a real pass for those 3 suites; fixed, now genuinely 15/15 with 0 skipped. docs/: 16 files fixed for stale paths, broken links, and factually-reversed claims (an "InvalidTritError not thrown in production" claim that's been false since 2026-08-14; an overstated VTune integration claim; a stale "canonical indexing deferred" note for a feature that shipped 2 versions ago), found via a dedicated fact-checking agent rather than the diff-oriented code-review skill. Also: a background code-review agent auto-reverted an in-progress edit to a file outside its own scope, assuming it was stray -- recovered, and noted as a lesson against running two `--fix` agents against the same working tree concurrently. Commits `a291ebb`, `bd3e6f6`, `24104b1`. |
 | 2026-08-15 | v1.20.0 | First dedicated bug hunt of scripts/ and build/*.py (user request, "review the project and commit it"). 14 bugs fixed across 11 files: stale test path + unquoted shell command (build_test_packing.py), a benchmark-cleanup glob that matched zero real files (clean_all.py), a silent MSVC-instead-of-clang-cl fallback on Windows PGO (build_pgo_unified.py), missing Linux/macOS platform branching + a *.pyd-only copy glob (build_reference.py), 3 of 8 build scripts missing from the unified build_all.py entry point, discarded return values + a Linux-incompatible "python" binary check (setup_dev_environment.py), -march=native SIGILL risk + an unguarded shutil.copy2 (build_backend.py), a missing ARM/Apple-Clang OpenMP guard (build_backend.py + build_zero_skip_gemm.py), an unpropagated build failure that always reported SUCCESS (build.py), and a CI gap that let a self-skipping test suite count as passed (ci.yml). The review-orchestrating agent fork itself stalled mid-run confusing which of its own async verification sub-agents had reported back; findings were recovered directly from the sub-agents' completed transcripts (all genuinely CONFIRMED) and applied by hand. All fixes rebuilt/re-verified on Linux, tests/run_tests.py 15/15. Commit `4e72be2`. |
@@ -1541,4 +1606,4 @@ today), `tests/run_tests.py` 15/15.
 
 ---
 
-**Version:** 1.22.0 · **Updated:** 2026-08-15 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.23.0 · **Updated:** 2026-08-15 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
