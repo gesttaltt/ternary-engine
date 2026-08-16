@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.28 · Updated 2026-08-16 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.29 · Updated 2026-08-16 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1671,6 +1671,42 @@ interpreted framing and the current fair-NumPy-baseline alternative.
 Relabeled a CI/CD YAML example as illustrative rather than implying it
 describes the real (different-purpose) `.github/workflows/ci.yml`.
 
+### 2026-08-16 — same bug class, CONTRIBUTING.md + tests/README.md
+
+Direct follow-up ("review CONTRIBUTING.md and tests/README.md for the same
+bug class"). Both dated 2025-10-13 — older even than `benchmarks/README.md`
+— predating not just the Nov 2025 script renames but the
+`src/core/`+`src/engine/` kernel reorganization and the entire
+`tests/python/`+`tests/cpp/` split. Commit `e969a02`.
+
+**The significant finding**: `CONTRIBUTING.md`'s own "Import Path
+Convention" section — written specifically to teach contributors the
+correct `sys.path` depth-math pattern and prevent exactly the bug class
+this whole review chain has been hunting — had wrong depth math in 2 of
+its 3 worked examples. It labeled `tests/python/test_phase0.py` as needing
+"Depth 3" but showed code with only 2 `.parent` calls (that file is 2
+subdirectories deep, genuinely needs 3); labeled
+`models/tritnet/src/train_tritnet.py` as "Depth 4" but showed only 3
+`.parent` calls (needs 4). Only the `build/build.py` example (depth 2) was
+correct. **The project's own guidance was teaching the off-by-one bug it
+exists to prevent.** Fixed both, verified programmatically against each
+file's real directory depth, and added a compact "count subdirectories,
+match `.parent` calls exactly" rule.
+
+Also fixed throughout both files: `python build.py` → `python build/build.py`;
+`tests/test_phase0.py`/`tests/test_omp.py` → `tests/python/...`;
+`benchmarks/bench_phase0.py` → the real current path; a "Build scripts in
+`build/scripts/`" claim (no such subdirectory exists); "keep all .h/.cpp
+files at root level (no nesting)" (actively wrong about where a new
+contributor should put a new file — real convention is `src/core/`/
+`src/engine/`); every `ternary_simd_engine.cpp` source reference → the real
+file, `bindings_core_ops.cpp`; `tests/README.md`'s entire "Structure"
+section (described a 3-file suite that hasn't existed since the
+`tests/python/`+`tests/cpp/` split, and never mentioned
+`tests/run_tests.py` at all despite it being the actual current single
+source of truth — confirmed against the real CI workflow); a nonexistent
+`benchmarks/bench_fair.py` → the real `bench_fair_baseline.py`.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1752,6 +1788,7 @@ describes the real (different-purpose) `.github/workflows/ci.yml`.
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-16 | v1.29.0 | Direct follow-up ("review CONTRIBUTING.md and tests/README.md for the same bug class"). Both dated 2025-10-13, predating the src/core/+src/engine/ reorganization and the tests/python/+tests/cpp/ split entirely. Significant finding: CONTRIBUTING.md's own "Import Path Convention" section -- written to teach contributors the correct sys.path depth-math pattern -- had wrong depth math in 2 of its 3 worked examples (off by exactly one .parent call each, verified programmatically), i.e. the project's own guidance was teaching the bug this whole review chain has been hunting. Fixed both, plus every stale build.py/tests/*.py/benchmarks/*.py path throughout both files, a false "keep .h/.cpp files at root level" claim, and tests/README.md's entire "Structure" section (described a 3-file suite superseded by the tests/python/+tests/cpp/ split, never mentioned tests/run_tests.py despite it being the real current entry point). Commit `e969a02`. |
 | 2026-08-16 | v1.28.0 | Direct follow-up ("review benchmarks/ README.md for the same bug class") -- one of the 30+ files identified but deferred during the docs/-round-2 review. Dated 2025-10-14, predating the Nov 2025 script reorganization entirely (18 bench_phase0.py occurrences alone). Comprehensive rewrite verified against the real current scripts: bench_phase0.py -> bench_simd_core_ops.py, bench_compare.py -> bench_regression_detect.py, correct run_all_benchmarks.py flags, a completely wrong "Structure" diagram replaced with the real directory layout, 2 dead doc links fixed, 2025-era Python-baseline speedup claims softened with a pointer to this project's already-retired compiled-vs-interpreted framing, and a CI/CD YAML example relabeled as illustrative rather than implying it describes the real ci.yml. Commit `6ecc4f0`. |
 | 2026-08-16 | v1.27.0 | Direct follow-up ("review reports/ for the same bug class"). reports/ is a point-in-time record by design (every subdirectory carries an explicit date/status header, even the undated-looking ones), so the historical-narrative carve-out applied far more broadly than in docs/ -- most of the ~140 report paths repo-wide already resolved. Found one well-defined sub-pattern: 4 reports renamed/moved into subdirectories during a later reorganization still had internal self-citations under their old names ("this document" references broken by the move, not a rewrite of what was found) -- fixed those plus their cross-references to each other, keeping old names as "originally X" annotations rather than deleting them. Also fixed 2 archive-internal sibling references and a genuinely broken citation (`reports/reasons.md`, cited from MISSING_FEATURES.md and README.md, doesn't exist under that name -- real file is `reports/performance/gemm_gap_root_cause.md`, confirmed by content match); left CHANGELOG.md's mention of the same old name alone since it's describing what a specific past commit added, not a live pointer. Commit `c8c1095`. |
 | 2026-08-16 | v1.26.0 | Direct follow-up ("review docs/ for the same bug class") -- round 2 of docs/, since docs/ can't have a runtime path bug, so this hunted the structural analog: documented paths/commands presented as current that don't resolve. Fixed a residual bug from this session's own earlier docs/ pass (a path-depth-math snippet left unfixed after its accompanying label was corrected); found the original pass's link-checker only verified markdown `[text](url)` syntax, missing plain backtick prose paths, which let `artifact-organization.md` (never covered at all) and 2 more files slip through; and found `bench_phase0.py` doesn't exist anywhere in the repo (renamed `bench_simd_core_ops.py`, Nov 2025) yet was referenced as current in 9 docs/ files (58 occurrences) plus this file's own "Standard Benchmarks" section. Fixed all of them (docs/ + CLAUDE.md, per user-confirmed scope; the rename is 30+ files project-wide, README.md/CONTRIBUTING.md/benchmarks/README.md left for a separate pass). Also fixed the identical bug in run_all_benchmarks.py's own docstring. Commit `34d3be0`. |
@@ -1798,4 +1835,4 @@ describes the real (different-purpose) `.github/workflows/ci.yml`.
 
 ---
 
-**Version:** 1.28.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.29.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
