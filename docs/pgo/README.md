@@ -128,7 +128,7 @@ CPPFLAGS="-fprofile-generate=pgo_data/profiles" python build/build.py
 ### Phase 2: Profile Collection
 
 ```bash
-python benchmarks/bench_phase0.py --quick
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick
 ```
 
 **output** - `.profraw` files in `pgo_data/profiles/`
@@ -197,11 +197,11 @@ python build/build_pgo_unified.py --clang --clean
 ```bash
 # Build and benchmark standard
 python build/build.py
-python benchmarks/bench_phase0.py > standard.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > standard.txt
 
 # Build and benchmark PGO
 python build/build_pgo_unified.py --clang
-python benchmarks/bench_phase0.py > pgo.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > pgo.txt
 
 # Compare results
 diff standard.txt pgo.txt
@@ -237,7 +237,7 @@ diff standard.txt pgo.txt
 ls pgo_data/profiles/
 
 # Manually run benchmarks
-python benchmarks/bench_phase0.py --quick
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick
 
 # Verify .profraw files
 find pgo_data -name "*.profraw"
@@ -347,7 +347,7 @@ export CPPFLAGS="-fprofile-generate=profiles"
 python build/build.py
 
 # Phase 2
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 
 # Phase 3
 llvm-profdata merge -output=merged.profdata profiles/*.profraw

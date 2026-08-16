@@ -198,7 +198,7 @@ python -c "import ternary_simd_engine as engine; print('Module loaded:', engine.
 python tests/run_tests.py
 
 # Run benchmarks
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ---
@@ -232,7 +232,7 @@ export OMP_STACKSIZE=4M     # Reduce per-thread stack
 **3. Test Array Size Limits:**
 ```python
 # In benchmarks, use smaller arrays for memory-constrained testing
-# Modify bench_phase0.py:
+# Modify bench_simd_core_ops.py:
 SIZES = [1000, 10000, 100000, 500000]  # Instead of 1M+
 ```
 
@@ -285,7 +285,7 @@ python tests/python/test_omp.py
 python tests/run_tests.py
 
 # 6. Performance benchmark
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 **Record baseline results in:** `reports/linux-amd-validation/`
@@ -411,10 +411,10 @@ python -m pytest tests/python/test_phase0.py -v
 
 ```bash
 # Quick performance check
-python benchmarks/bench_phase0.py --quick
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick
 
 # Full benchmark suite
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 
 # Competitive benchmarks
 python benchmarks/bench_competitive.py --phase 1
@@ -495,7 +495,7 @@ git config --global credential.helper 'cache --timeout=3600'
 - [ ] Clone repository
 - [ ] Run `python build/build.py`
 - [ ] Run `python tests/run_tests.py`
-- [ ] Run `python benchmarks/bench_phase0.py`
+- [ ] Run `python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py`
 - [ ] Record baseline performance in `reports/`
 
 ---

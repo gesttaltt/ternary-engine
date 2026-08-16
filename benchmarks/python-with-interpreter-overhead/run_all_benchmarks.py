@@ -13,10 +13,10 @@ Orchestrates complete benchmarking workflow:
 6. Generate comprehensive report
 
 Usage:
-    python benchmarks/run_all_benchmarks.py                      # Standard build only
-    python benchmarks/run_all_benchmarks.py --with-pgo           # Include PGO build
-    python benchmarks/run_all_benchmarks.py --quick              # Quick benchmarks
-    python benchmarks/run_all_benchmarks.py --clean              # Clean before building
+    python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py                # Standard build only
+    python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --with-pgo     # Include PGO build
+    python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --quick        # Quick benchmarks
+    python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --clean        # Clean before building
 """
 
 import sys

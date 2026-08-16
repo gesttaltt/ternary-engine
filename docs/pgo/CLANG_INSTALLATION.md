@@ -179,11 +179,11 @@ python build/build_pgo_unified.py --clang --clean
 
 ### Phase 2: Profile Collection
 
-**automatic** - Script runs `benchmarks/bench_phase0.py --quick`
+**automatic** - Script runs `benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick`
 
 **manual_alternative**:
 ```bash
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 python benchmarks/bench_fusion.py
 ```
 
@@ -212,7 +212,7 @@ llvm-profdata merge -output=pgo_data/merged.profdata pgo_data/profiles/*.profraw
 
 **typical_gains** - 5-15% performance improvement
 **best_case** - 20-30% for branch-heavy code
-**measured** - Test with `python benchmarks/bench_phase0.py`
+**measured** - Test with `python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py`
 
 ### Comparison with MSVC
 
@@ -254,7 +254,7 @@ llvm-profdata merge -output=pgo_data/merged.profdata pgo_data/profiles/*.profraw
 ls pgo_data/profiles/
 
 # Run benchmark manually
-python benchmarks/bench_phase0.py --quick
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick
 
 # Check for .profraw files
 find pgo_data -name "*.profraw"
@@ -312,13 +312,13 @@ cp ternary_simd_engine.cp312-win_amd64.pyd ternary_simd_engine_pgo.pyd
 python build/build.py
 
 # Benchmark standard
-python benchmarks/bench_phase0.py > results_standard.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > results_standard.txt
 
 # Restore PGO build
 cp ternary_simd_engine_pgo.pyd ternary_simd_engine.cp312-win_amd64.pyd
 
 # Benchmark PGO
-python benchmarks/bench_phase0.py > results_pgo.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > results_pgo.txt
 
 # Compare
 diff results_standard.txt results_pgo.txt

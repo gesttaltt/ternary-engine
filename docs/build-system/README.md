@@ -87,7 +87,7 @@ python build/build.py
 python build/build_pgo.py full
 
 # Run benchmarks
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ## Build System Architecture
@@ -134,7 +134,7 @@ ternary-engine/
 │
 ├── benchmarks/
 │   ├── python-with-interpreter-overhead/
-│   │   └── bench_phase0.py    # Main benchmark runner
+│   │   └── bench_simd_core_ops.py  # Main benchmark runner
 │   └── cpp-native-kernels/
 │       └── reference_cpp.cpp  # Reference implementation source
 │
@@ -251,7 +251,7 @@ python build/build_reference.py
 python build/build.py
 
 # Compare
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ### Testing a New Optimization
@@ -259,13 +259,13 @@ python benchmarks/bench_phase0.py
 ```bash
 # Before changes
 python build/build.py
-python benchmarks/bench_phase0.py > before.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > before.txt
 
 # Make changes to ternary_simd_engine.cpp...
 
 # After changes
 python build/build.py
-python benchmarks/bench_phase0.py > after.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > after.txt
 
 # Compare
 diff before.txt after.txt
@@ -408,7 +408,7 @@ lscpu | grep avx2  # Linux
 wmic cpu get caption  # Windows
 
 # Run benchmarks with profiling
-python -m cProfile benchmarks/bench_phase0.py
+python -m cProfile benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ## Advanced Topics
@@ -465,7 +465,7 @@ When contributing changes to the build system:
 
 2. **Verify performance:**
    ```bash
-   python benchmarks/bench_phase0.py
+   python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
    ```
 
 3. **Update documentation:**

@@ -242,8 +242,14 @@ python build/build_reference.py
 python build/build.py
 
 # Run benchmarks (compares all available implementations)
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
+
+**Note (2026-08-16):** `bench_simd_core_ops.py`'s real, current argparse only
+defines `--quick`, `--output`, `--quiet`, and `--no-unicode` — flags used
+in a few examples further below in this document (`--compare-reference`,
+`--baseline`, `--build`) are illustrative/aspirational and not currently
+implemented.
 
 **Output:**
 ```
@@ -302,20 +308,20 @@ Large arrays (1,000,000 elements):
 ```bash
 # Before optimization
 python build/build.py
-python benchmarks/bench_phase0.py > before.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > before.txt
 
 # Apply optimization to code...
 
 # After optimization
 python build/build.py
-python benchmarks/bench_phase0.py > after.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > after.txt
 
 # Compare
 diff before.txt after.txt
 
 # Also compare against reference
 python build/build_reference.py
-python benchmarks/bench_phase0.py > reference.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > reference.txt
 ```
 
 ---
@@ -330,12 +336,12 @@ python build/build_reference.py
 
 # Before changes
 python build/build.py
-python benchmarks/bench_phase0.py --compare-reference > baseline.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --compare-reference > baseline.txt
 
 # After changes
 git pull
 python build/build.py
-python benchmarks/bench_phase0.py --compare-reference > current.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --compare-reference > current.txt
 
 # If current slower than baseline: investigate!
 ```
@@ -526,11 +532,11 @@ jobs:
         run: python build/build.py
 
       - name: Run benchmarks
-        run: python benchmarks/bench_phase0.py
+        run: python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 
       - name: Check for regressions
         run: |
-          python benchmarks/bench_phase0.py --check-regression
+          python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --check-regression
           # Fails if optimized < 5x faster than reference
 ```
 
@@ -551,13 +557,13 @@ python build/build_reference.py
 ```bash
 # Not ideal: Compare two optimized builds
 python build/build.py  # Before
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 # Make changes...
 python build/build.py  # After
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 
 # Better: Compare against stable reference
-python benchmarks/bench_phase0.py --baseline reference_cpp
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --baseline reference_cpp
 ```
 
 ### 3. Document Methodology

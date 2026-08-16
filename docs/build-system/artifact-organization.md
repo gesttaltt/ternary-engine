@@ -16,10 +16,13 @@ build/
 ├── artifacts/
 │   ├── standard/              # Standard optimized builds (AVX2 + OpenMP)
 │   │   ├── YYYYMMDD_HHMMSS/   # Timestamped build directory
-│   │   │   ├── temp/          # Intermediate build files (.obj, .exp, .lib)
-│   │   │   └── output/        # Final compiled modules (.pyd)
-│   │   └── latest/            # Symlink/copy to most recent build
-│   │
+│   │   │   ├── t/             # Intermediate build files (.obj, .exp, .lib)
+│   │   │   └── o/             # Final compiled modules (.pyd/.so)
+│   │   └── latest/            # Copy of the module file(s) from the most
+│   │                          # recent build -- directly here, no subfolder
+│   │                          # (see "Latest Build Access" below)
+│   ├── backend/                # Same t/o layout as standard/
+│   │   └── ...
 │   ├── pgo/                   # Profile-Guided Optimization builds
 │   │   ├── instrumented/      # Phase 1: Instrumented builds
 │   │   │   └── YYYYMMDD_HHMMSS/
@@ -32,16 +35,19 @@ build/
 │   │   ├── pgo_data/          # Profile data (.pgd, .pgc files)
 │   │   └── latest/            # Latest optimized build
 │   │
-│   └── reference/             # Unoptimized reference builds
-│       ├── YYYYMMDD_HHMMSS/
+│   └── reference/             # Unoptimized reference builds -- uses the
+│       ├── YYYYMMDD_HHMMSS/   # longer temp/output names, not t/o
 │       │   ├── temp/
 │       │   └── output/
 │       └── latest/
 │
-└── scripts/                   # Build scripts
-    ├── setup.py               # Standard build
-    ├── setup_pgo.py           # PGO build (3-phase)
-    └── setup_reference.py     # Reference build
+└── build.py, build_backend.py, build_dense243.py, build_pgo.py,
+    build_pgo_unified.py, build_reference.py, build_zero_skip_gemm.py,
+    build_tritnet_gemm.py, build_tritnet_inference.py, build_all.py,
+    build_test_packing.py, clean_all.py   # flat under build/, no scripts/
+    # subdirectory -- verified 2026-08-16, folder-naming (t/o vs temp/output)
+    # genuinely differs by build type, confirmed by inspection of each
+    # script and an actual `python build/build.py` run
 ```
 
 ## Timestamp Format
@@ -146,23 +152,19 @@ Located in `build/artifacts/pgo/pgo_data/`:
 
 Each build type maintains a `latest/` directory containing a complete copy of the most recent build.
 
-**Contents of `latest/`:**
+**Contents of `latest/`** (standard build, verified 2026-08-16 against a
+real `python build/build.py` run — no `temp/`/`output/` subfolders, the
+compiled module is copied directly in):
 ```
 latest/
-├── temp/              # Complete intermediate build artifacts
-│   ├── *.obj
-│   ├── *.lib
-│   ├── *.exp
-│   └── setup_temp.py  (deleted after build)
-└── output/
-    └── *.pyd          # Final compiled module
+└── ternary_simd_engine.cp312-win_amd64.pyd    # or .so on Linux/macOS
 ```
 
 **Access pattern:**
 ```python
 # Always use the latest standard build
 import sys
-sys.path.insert(0, 'build/artifacts/standard/latest/output')
+sys.path.insert(0, 'build/artifacts/standard/latest')
 import ternary_simd_engine
 ```
 
@@ -260,20 +262,21 @@ find build/artifacts/standard -maxdepth 1 -type d -name "202*" |
   with:
     name: ternary-engine-${{ github.sha }}
     path: |
-      build/artifacts/*/latest/output/*.pyd
-      build/artifacts/*/latest/output/*.so
+      build/artifacts/*/latest/*.pyd
+      build/artifacts/*/latest/*.so
 ```
 
 ### Build Comparison
 
 ```bash
-# Compare two builds by size
-ls -lh build/artifacts/standard/20251012_143022/output/*.pyd
-ls -lh build/artifacts/standard/20251012_150000/output/*.pyd
+# Compare two builds by size (standard build's timestamped dir uses o/, not output/)
+ls -lh build/artifacts/standard/20251012_143022/o/*.pyd
+ls -lh build/artifacts/standard/20251012_150000/o/*.pyd
 
-# Compare by performance (requires benchmarks)
-python benchmarks/bench_phase0.py --build build/artifacts/standard/20251012_143022/output
-python benchmarks/bench_phase0.py --build build/artifacts/standard/20251012_150000/output
+# Compare by performance -- illustrative; bench_simd_core_ops.py (renamed
+# from bench_phase0.py Nov 2025) has no --build flag today, so this
+# specific comparison workflow isn't currently automatable this way
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ## Troubleshooting

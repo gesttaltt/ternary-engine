@@ -118,7 +118,7 @@ src/core/ffi/
 **Goal:** Honest GOPS measurements without Python/NumPy overhead
 
 **Current state:**
-- Only Python benchmarks exist (`benchmarks/bench_phase0.py`)
+- Only Python benchmarks exist (`benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py`, renamed from `bench_phase0.py` Nov 2025)
 - Includes NumPy allocation/conversion overhead
 - No direct C++ kernel measurement
 

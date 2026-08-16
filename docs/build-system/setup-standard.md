@@ -135,9 +135,9 @@ The script executes the following workflow:
 ```python
 # build/build.py (simplified)
 
-# 1. Path resolution
-SCRIPT_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = SCRIPT_DIR.parent.parent
+# 1. Path resolution -- build.py lives at build/build.py (1 level deep),
+#    so 2 .parent calls from __file__ reach the repo root
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 ARTIFACTS_DIR = PROJECT_ROOT / "build" / "artifacts"
 
 # 2. Timestamp generation

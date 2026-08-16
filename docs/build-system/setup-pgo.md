@@ -59,7 +59,7 @@ Source Code + Profile Data → Compiler → Optimized Binary
 **Command:** `python build/build_pgo.py profile`
 
 **What it does:**
-1. Runs benchmark suite (`benchmarks/bench_phase0.py`)
+1. Runs benchmark suite (`benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py`)
 2. Instrumented binary collects execution data
 3. Generates `.pgd` (profile database) and `.pgc` (profile counters)
 4. Stores profile data in `build/artifacts/pgo/pgo_data/`
@@ -178,7 +178,7 @@ python build/build_pgo.py clean
 
 #### Profiling Workload
 
-The script runs `benchmarks/bench_phase0.py`, which exercises:
+The script runs `benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py`, which exercises:
 
 1. **Small arrays** (100 elements)
 2. **Medium arrays** (10,000 elements)
@@ -352,11 +352,11 @@ build/artifacts/
 ```bash
 # Benchmark standard build
 python build/build.py
-python benchmarks/bench_phase0.py > results_standard.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > results_standard.txt
 
 # Benchmark PGO build
 python build/build_pgo.py full
-python benchmarks/bench_phase0.py > results_pgo.txt
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py > results_pgo.txt
 
 # Compare
 diff results_standard.txt results_pgo.txt
@@ -372,7 +372,7 @@ Instead of using the default benchmark suite, you can profile with your own work
 # Phase 1: Instrument
 python build/build_pgo.py instrument
 
-# Phase 2: Run YOUR workload (instead of bench_phase0.py)
+# Phase 2: Run YOUR workload (instead of bench_simd_core_ops.py)
 python my_custom_workload.py  # Uses instrumented .pyd
 
 # Phase 3: Optimize with collected data
@@ -410,7 +410,7 @@ Profile data from multiple runs is accumulated:
 python build/build_pgo.py instrument
 
 # Phase 2: Multiple profiling runs
-python benchmarks/bench_phase0.py   # Run 1: benchmarks
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py   # Run 1: benchmarks
 python my_workload.py               # Run 2: custom workload
 python another_test.py              # Run 3: more data
 
@@ -504,7 +504,7 @@ python build/build_pgo.py instrument
 ls -lh ternary_simd_engine*.pyd
 
 # Manually run benchmark with verbose output
-python benchmarks/bench_phase0.py 2>&1 | tee profile.log
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py 2>&1 | tee profile.log
 
 # Check for .pgc files
 find . -name "*.pgc" -ls
@@ -533,7 +533,7 @@ mv *.pgc build/artifacts/pgo/pgo_data/
 python -c "import ternary_simd_engine; print('OK')"
 
 # Run benchmark with error details
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 
 # Check if dependencies installed
 pip install numpy pytest
@@ -649,12 +649,12 @@ jobs:
           path: build/artifacts/pgo/latest/output/*.pyd
 
       - name: Run benchmarks
-        run: python benchmarks/bench_phase0.py
+        run: python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 
       - name: Compare with standard build
         run: |
           python build/build.py
-          python benchmarks/bench_phase0.py --compare
+          python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --compare
 ```
 
 ## Best Practices

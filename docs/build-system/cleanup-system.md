@@ -42,11 +42,11 @@ The cleanup system is integrated into the benchmarking workflow:
 
 ```bash
 # Clean before running benchmarks
-python benchmarks/run_all_benchmarks.py --clean
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --clean
 
 # Equivalent to:
 python build/clean_all.py
-python benchmarks/run_all_benchmarks.py
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py
 ```
 
 ## What Gets Cleaned
@@ -229,7 +229,7 @@ python build/clean_all.py
 python build/build.py
 
 # Run benchmarks
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ### CI/CD Pipeline
@@ -245,7 +245,7 @@ python build/build.py
 python -m pytest tests/
 
 # Benchmark
-python benchmarks/bench_phase0.py --quick
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick
 ```
 
 ### Disk Space Management
@@ -377,21 +377,21 @@ python build/clean_all.py --keep-latest --keep-results 5
 
 ### Benchmark Orchestrator
 
-The cleanup system is integrated into `benchmarks/run_all_benchmarks.py`:
+The cleanup system is integrated into `benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py`:
 
 ```bash
 # Automatic cleanup before benchmarking
-python benchmarks/run_all_benchmarks.py --clean
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --clean
 
 # Equivalent to:
 python build/clean_all.py
-python benchmarks/run_all_benchmarks.py
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py
 ```
 
 **Implementation:**
 ```python
 # In run_all_benchmarks.py
-CLEAN_SCRIPT = PROJECT_ROOT / "scripts" / "build" / "clean_all.py"
+CLEAN_SCRIPT = PROJECT_ROOT / "build" / "clean_all.py"
 
 def clean_builds():
     """Clean all build artifacts using comprehensive cleanup utility"""
@@ -549,7 +549,7 @@ python build/clean_all.py --keep-latest --keep-results 5
 **For benchmarking:**
 ```bash
 # Always use clean flag
-python benchmarks/run_all_benchmarks.py --clean
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --clean
 ```
 
 **For CI/CD:**

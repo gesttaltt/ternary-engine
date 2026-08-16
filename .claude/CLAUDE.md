@@ -420,7 +420,7 @@ Example: `process_binary_array<Sanitize>()` replaced 6 separate implementations
 
 **Benchmark methodology:**
 - Use build/build.py for standard optimized build
-- Run benchmarks/bench_phase0.py for comprehensive suite
+- Run benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py for comprehensive suite
 - Compare against previous reports in reports/YYYY-MM-DD/
 - Document results with validation date and platform
 - Require unified `BenchmarkRunner` in all Python benchmarks (no hand-rolled loops)
@@ -456,7 +456,7 @@ python tests/test_phase0.py
 python tests/test_omp.py
 
 # Performance benchmarks (NOT unit tests)
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ### Test Writing Guidelines
@@ -725,10 +725,14 @@ python benchmarks/utils/visualization.py results/competitive_results_*.json
 
 ### Standard Benchmarks
 
-**bench_phase0.py** - Core performance suite
+All under `benchmarks/python-with-interpreter-overhead/` (corrected 2026-08-16;
+`bench_phase0.py`/`bench_power_consumption.py` were renamed Nov 2025 and this
+section hadn't caught up):
+
+**bench_simd_core_ops.py** - Core performance suite (was bench_phase0.py)
 **bench_competitive.py** - 6-phase competitive analysis
 **bench_model_quantization.py** - Real model testing
-**bench_power_consumption.py** - Energy efficiency
+**bench_power_efficiency.py** - Energy efficiency (was bench_power_consumption.py)
 
 ---
 

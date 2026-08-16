@@ -541,7 +541,7 @@ For even better performance:
 gcc -mavx2 -fopenmp -O3 -fprofile-generate
 
 # Step 2: Run benchmarks (generate profile data)
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 
 # Step 3: Recompile with profile feedback
 gcc -mavx2 -fopenmp -O3 -fprofile-use
@@ -626,7 +626,7 @@ def test_tadd_correctness():
 ### Performance Benchmarks
 
 ```python
-# benchmarks/bench_phase0.py
+# benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 import time
 import numpy as np
 import ternary_simd_engine as tc
@@ -716,11 +716,11 @@ Useful for investigating performance anomalies (though Phase 2 doesn't rely on a
 
 ## Cross-Reference
 
-- **Scalar Operations**: See `docs/ternary-engine-header.md`
+- **Scalar Operations**: See `docs/api-reference/ternary-core-header.md`
 - **Benchmark Results**: See `benchmarks/results/`
-- **Phase Evolution**: See `docs/optimization-complexity-rationale.md`
-- **Build System**: See `build/scripts/setup.py`
-- **Reference Implementations**: See `benchmarks/reference.py` and `benchmarks/reference_cpp.cpp`
+- **Phase Evolution**: See `docs/architecture/optimization-complexity-rationale.md`
+- **Build System**: See `build/build.py`
+- **Reference Implementation**: See `benchmarks/cpp-native-kernels/reference_cpp.cpp`
 
 ---
 

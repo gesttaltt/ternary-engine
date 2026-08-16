@@ -447,7 +447,7 @@ static inline __m256i maybe_mask(__m256i v) {
 
 2. **Optimizing performance**:
    - See [`docs/ternary-core-simd.md`](./ternary-core-simd.md) § "Future Optimizations"
-   - Profile first: `python benchmarks/bench_phase0.py`
+   - Profile first: `python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py`
    - Consider PGO: [`docs/pgo/README.md`](../pgo/README.md)
 
 3. **Porting to new architectures**:
@@ -475,7 +475,7 @@ Validates SIMD operations against scalar reference.
 ### Performance Benchmarks
 
 ```bash
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 Measures throughput across different array sizes.
@@ -549,7 +549,7 @@ When modifying the source code:
 1. **Maintain code simplification**: Only add complexity if it provides >10% performance gain
 2. **Update documentation**: Keep this doc and component docs in sync
 3. **Add tests**: Update `tests/python/test_phase0.py` for new operations
-4. **Benchmark**: Run `benchmarks/bench_phase0.py` before/after changes
+4. **Benchmark**: Run `benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py` before/after changes
 5. **Document optimization IDs**: Use OPT-XXX tags for traceability
 
 ---
