@@ -102,7 +102,15 @@ A complete GEMM algorithm discovery framework was built with the wrong assumptio
 
 **See**: `models/gemm_discovery/ARCHIVE_2024-12-29_binary_assumption_error.md`
 
-**Reusable components**:
+**Note (2026-08-16):** `models/gemm_discovery/` does not exist anywhere in
+this repository (confirmed via `git log --all` — it was never committed,
+not merely deleted), so every path below is currently unreachable. The
+lessons this section documents are still the project's position; found
+while reviewing `research/` for path-resolution bugs (`research/scripts/
+falsify.py` still does a no-op `sys.path.insert()` for this directory,
+harmlessly, since nothing actually imports from it).
+
+**Reusable components** (paths below are dead; kept for historical record):
 - `gauge_canonical.py` - Gauge reduction is still valid math
 - `ultrametric_actions.py` - Hierarchy-altering actions still valid
 - `validate_independent.py` - Bilinear validity checking still correct
@@ -606,7 +614,10 @@ Quick experiments to test ternary GEMM optimization hypotheses:
 | **H3: Valuation Sparsity** | SUPPORTED | 40% of products are zero |
 | **H4: Geodesic Interpolation** | PARTIAL | MIN works (100%), others need training |
 
-**Run experiments:**
+**Run experiments:** not currently possible — `models/gemm_discovery/` does
+not exist in this repository (see note above); these commands are kept as a
+historical record of what was run to produce the table above, not a
+runnable reference.
 ```bash
 python models/gemm_discovery/experiments/ternary_gemm_falsification.py --experiment all
 python models/gemm_discovery/experiments/ternary_gemm_falsification.py --experiment B  # Ultrametric only
@@ -637,8 +648,8 @@ Future work should explore:
 ### Documentation
 
 - **Research notes:** [docs/HYPERBOLIC_GEMM_RESEARCH.md](../docs/HYPERBOLIC_GEMM_RESEARCH.md)
-- **Falsification code:** `models/gemm_discovery/experiments/ternary_gemm_falsification.py`
-- **Ultrametric energy:** `models/gemm_discovery/ebm/ultrametric_energy.py`
+- **Falsification code:** `models/gemm_discovery/experiments/ternary_gemm_falsification.py` (does not exist — see note above)
+- **Ultrametric energy:** `models/gemm_discovery/ebm/ultrametric_energy.py` (does not exist — see note above)
 
 ---
 

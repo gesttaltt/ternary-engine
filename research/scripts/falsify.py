@@ -41,6 +41,10 @@ import yaml
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "models" / "3-vae-gemm-v1"))
+# models/gemm_discovery/ does not exist in this repo (see .claude/CLAUDE.md
+# "Archived Example: GEMM Discovery" note, added 2026-08-16) -- harmless
+# no-op today since nothing below actually imports from it, kept in case
+# the directory is ever restored.
 sys.path.insert(0, str(ROOT / "models" / "gemm_discovery"))
 
 
