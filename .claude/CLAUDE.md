@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.27 · Updated 2026-08-16 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.28 · Updated 2026-08-16 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1643,6 +1643,34 @@ dated planning docs (unclear whether they mean a sibling file, a not-yet-
 written deliverable, or a stale name); an explicit unchecked `- [ ]` TODO
 item; and a literal `YYYY-MM-DD` template placeholder.
 
+### 2026-08-16 — same bug class, checked benchmarks/README.md
+
+Direct follow-up ("review benchmarks/ README.md for the same bug class") —
+this specific file was one of the 30+ identified during the docs/-round-2
+review but explicitly deferred (that fix was scoped to docs/ + CLAUDE.md
+only). Dated "Last Updated: 2025-10-14", predating the Nov 2025
+reorganization entirely — effectively every script path in it was stale
+(18 `bench_phase0.py` occurrences alone). Commit `6ecc4f0`.
+
+Comprehensive rewrite, verified against the real current scripts rather
+than pattern-matched: `bench_phase0.py` → `bench_simd_core_ops.py`,
+`bench_compare.py` → `bench_regression_detect.py` (confirmed identical
+CLI), `run_all_benchmarks.py` path + real flags (`--with-pgo`, `--quick`,
+`--clean`, `--skip-build`), `python build.py` → `python build/build.py`.
+The "Structure" diagram was completely wrong (a flat 3-script layout with
+`results/standard`/`results/pgo`/`results/validation` subdirectories that
+don't exist) — replaced with the real structure, verified by listing the
+actual directory (flat, timestamped-filename `results/`, not build-type
+subfolders). Two dead documentation links (`../build/README.md`,
+`../docs/PGO_README.md`) fixed to their real current locations; added a
+pointer to `python-with-interpreter-overhead/README.md`, this project's
+current and more precise framing of Python-benchmark timing reliability
+that this file predates entirely. Softened 2025-era Python-baseline
+speedup claims with a pointer to the already-retired compiled-vs-
+interpreted framing and the current fair-NumPy-baseline alternative.
+Relabeled a CI/CD YAML example as illustrative rather than implying it
+describes the real (different-purpose) `.github/workflows/ci.yml`.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1724,6 +1752,7 @@ item; and a literal `YYYY-MM-DD` template placeholder.
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-16 | v1.28.0 | Direct follow-up ("review benchmarks/ README.md for the same bug class") -- one of the 30+ files identified but deferred during the docs/-round-2 review. Dated 2025-10-14, predating the Nov 2025 script reorganization entirely (18 bench_phase0.py occurrences alone). Comprehensive rewrite verified against the real current scripts: bench_phase0.py -> bench_simd_core_ops.py, bench_compare.py -> bench_regression_detect.py, correct run_all_benchmarks.py flags, a completely wrong "Structure" diagram replaced with the real directory layout, 2 dead doc links fixed, 2025-era Python-baseline speedup claims softened with a pointer to this project's already-retired compiled-vs-interpreted framing, and a CI/CD YAML example relabeled as illustrative rather than implying it describes the real ci.yml. Commit `6ecc4f0`. |
 | 2026-08-16 | v1.27.0 | Direct follow-up ("review reports/ for the same bug class"). reports/ is a point-in-time record by design (every subdirectory carries an explicit date/status header, even the undated-looking ones), so the historical-narrative carve-out applied far more broadly than in docs/ -- most of the ~140 report paths repo-wide already resolved. Found one well-defined sub-pattern: 4 reports renamed/moved into subdirectories during a later reorganization still had internal self-citations under their old names ("this document" references broken by the move, not a rewrite of what was found) -- fixed those plus their cross-references to each other, keeping old names as "originally X" annotations rather than deleting them. Also fixed 2 archive-internal sibling references and a genuinely broken citation (`reports/reasons.md`, cited from MISSING_FEATURES.md and README.md, doesn't exist under that name -- real file is `reports/performance/gemm_gap_root_cause.md`, confirmed by content match); left CHANGELOG.md's mention of the same old name alone since it's describing what a specific past commit added, not a live pointer. Commit `c8c1095`. |
 | 2026-08-16 | v1.26.0 | Direct follow-up ("review docs/ for the same bug class") -- round 2 of docs/, since docs/ can't have a runtime path bug, so this hunted the structural analog: documented paths/commands presented as current that don't resolve. Fixed a residual bug from this session's own earlier docs/ pass (a path-depth-math snippet left unfixed after its accompanying label was corrected); found the original pass's link-checker only verified markdown `[text](url)` syntax, missing plain backtick prose paths, which let `artifact-organization.md` (never covered at all) and 2 more files slip through; and found `bench_phase0.py` doesn't exist anywhere in the repo (renamed `bench_simd_core_ops.py`, Nov 2025) yet was referenced as current in 9 docs/ files (58 occurrences) plus this file's own "Standard Benchmarks" section. Fixed all of them (docs/ + CLAUDE.md, per user-confirmed scope; the rename is 30+ files project-wide, README.md/CONTRIBUTING.md/benchmarks/README.md left for a separate pass). Also fixed the identical bug in run_all_benchmarks.py's own docstring. Commit `34d3be0`. |
 | 2026-08-16 | v1.25.0 | Direct follow-up ("review models/ for the same bug class"). All 26 Python files across 3-vae-gemm-v1/, tritnet/, company-flagships/ checked. sys.path/PROJECT_ROOT math verified correct everywhere (cross-checked programmatically); every ImportError fallback already loud and functionally-equivalent (not fake data). Found 2 real instances of the deeper silent-fallback pattern in embedding_exactitude_score.py: an `ami = 0.0` default when scikit-learn (not a documented dependency anywhere) is missing, and a bare `except: r2 = 0.0` around a linear-algebra solve -- both defaults are legitimate real values on their own metric's scale, making a silent failure indistinguishable from a genuine null finding, and the AMI one feeds a composite checkpoint-quality score. Both fixed with loud warnings. Commit `723893c`. |
@@ -1769,4 +1798,4 @@ item; and a literal `YYYY-MM-DD` template placeholder.
 
 ---
 
-**Version:** 1.27.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.28.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
