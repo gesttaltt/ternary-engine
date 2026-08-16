@@ -195,7 +195,7 @@ python build/build.py
 python -c "import ternary_simd_engine as engine; print('Module loaded:', engine.__name__)"
 
 # Run test suite
-python run_tests.py
+python tests/run_tests.py
 
 # Run benchmarks
 python benchmarks/bench_phase0.py
@@ -282,7 +282,7 @@ python tests/python/test_simd_validation.py
 python tests/python/test_omp.py
 
 # 5. Full test suite
-python run_tests.py
+python tests/run_tests.py
 
 # 6. Performance benchmark
 python benchmarks/bench_phase0.py
@@ -401,7 +401,7 @@ git pull origin main
 python build/build.py
 
 # 4. Run tests
-python run_tests.py
+python tests/run_tests.py
 
 # 5. Run targeted tests
 python -m pytest tests/python/test_phase0.py -v
@@ -494,7 +494,7 @@ git config --global credential.helper 'cache --timeout=3600'
 - [ ] Install pip dependencies
 - [ ] Clone repository
 - [ ] Run `python build/build.py`
-- [ ] Run `python run_tests.py`
+- [ ] Run `python tests/run_tests.py`
 - [ ] Run `python benchmarks/bench_phase0.py`
 - [ ] Record baseline performance in `reports/`
 
@@ -504,7 +504,7 @@ git config --global credential.helper 'cache --timeout=3600'
 
 **Documentation:**
 - Build system: `docs/build-system/README.md`
-- Testing: `TESTING.md`
+- Testing: `tests/README.md`
 - Architecture: `docs/architecture/`
 
 **Issues:**

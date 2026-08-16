@@ -6,8 +6,18 @@
 
 **Validation Summary:**
 - **Layer 1 (Dense243):** All 243 states validated, production-ready
-- **Layer 2 (2-bit SIMD):** 65/65 tests passing, 7,315× avg speedup
+- **Layer 2 (2-bit SIMD):** 65/65 tests passing (original suite, Windows x64)
 - **Layer 3 (TriadSextet):** All 27 states validated, production-ready
+
+**Note (2026-08-15):** the "7,315× avg speedup" figure previously here (and
+the "100-300× speedup over pure Python" figure further below) compare
+compiled code against interpreted Python overhead — a strawman any compiled
+language wins by 10³-10⁴× regardless of the engine's actual design. This
+class of claim has been retired project-wide (see `.claude/CLAUDE.md`
+`core_innovation` and `benchmarks/SKEPTICAL_METRICS.md`). The engine's real,
+fair-baseline-validated wins are: saturation-for-free (tadd 1.7-3.5× vs
+NumPy), fusion (1.43× geomean, up to 6×), and 4× memory density vs FP16 —
+see `benchmarks/python-with-interpreter-overhead/bench_fair_baseline.py`.
 
 ---
 
@@ -61,7 +71,7 @@ Maximize memory density for storage, serialization, and memory-bandwidth-limited
 | `ternary_dense243.h` | 280 | Core scalar implementation, LUT generation |
 | `ternary_dense243_simd.h` | 420 | AVX2 SIMD kernels (extraction, packing, operations) |
 | `tests/test_dense243.cpp` | 280 | Comprehensive test suite |
-| `docs/t5-dense243-spec.md` | 440 | Complete specification |
+| `docs/specifications/dense243_encoding_spec.md` | 440 | Complete specification |
 
 ### Key Functions
 ```cpp
@@ -158,7 +168,7 @@ Provide clean arithmetic bridge to external systems via 3-trit units.
 |------|-------|---------|
 | `ternary_triadsextet.h` | 464 | Core implementation, operations |
 | `tests/test_triadsextet.cpp` | 430 | Comprehensive test suite |
-| `docs/triadsextet-spec.md` | 540 | Complete specification |
+| `docs/specifications/triadsextet_encoding_spec.md` | 540 | Complete specification |
 
 ### Key Functions
 ```cpp
@@ -389,8 +399,8 @@ All LUTs are compile-time generated (constexpr), zero runtime cost.
 - `ternary_triadsextet.h` - TriadSextet interface layer
 
 ### Documentation
-- `docs/t5-dense243-spec.md` - Dense243 specification
-- `docs/triadsextet-spec.md` - TriadSextet specification
+- `docs/specifications/dense243_encoding_spec.md` - Dense243 specification
+- `docs/specifications/triadsextet_encoding_spec.md` - TriadSextet specification
 - `docs/optimization-roadmap.md` - Future optimization plans
 
 ### Tests

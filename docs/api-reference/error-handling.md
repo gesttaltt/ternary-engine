@@ -4,7 +4,7 @@
 
 Ternary Engine uses domain-specific exception types for clear error semantics and Python-friendly error propagation. All exceptions inherit from `TernaryError`, which extends `std::runtime_error`, ensuring compatibility with pybind11's automatic exception translation.
 
-**File**: `ternary_errors.h`
+**File**: `src/core/common/ternary_errors.h`
 **Design Principle**: YAGNI (You Aren't Gonna Need It) - Only defines actually-needed exceptions, expands only when real use cases emerge.
 
 ---
@@ -112,15 +112,13 @@ Valid trit values are: 0b00 (-1), 0b01 (0), 0b10 (+1).
 ```
 
 **When Thrown**:
-- **Rarely in practice**: Input sanitization (OPT-HASWELL-02) masks invalid values by default
-- Provided for explicit validation scenarios where `Sanitize=false`
-- Currently not thrown in production code (reserved for future use)
+- **Rarely in the core SIMD engine**: Input sanitization (OPT-HASWELL-02) masks invalid values by default there, so `bindings_core_ops.cpp` doesn't throw it in practice
+- **Actively thrown in production since 2026-08-14**: `src/engine/bindings_tritnet_inference.cpp` validates each input trit explicitly and throws `InvalidTritError(data[i])` for any value outside `{0b00, 0b01, 0b10}` — the TritNet inference bindings do not use the sanitize-by-masking convention the core engine uses
 
-**Note**: The default `Sanitize=true` mode automatically masks inputs to valid range using `maybe_mask()`, preventing invalid trit errors at runtime. This exception is available for scenarios requiring strict validation.
+**Note**: The core SIMD engine's default `Sanitize=true` mode automatically masks inputs to valid range using `maybe_mask()`, preventing invalid trit errors at runtime there. The TritNet inference bindings instead validate and raise explicitly — see the file above for that call site.
 
-**C++ Example** (hypothetical strict validation):
+**C++ Example** (real usage pattern, matching `bindings_tritnet_inference.cpp`):
 ```cpp
-// If strict validation were enabled
 try {
     uint8_t invalid_trit = 0b11;  // Invalid!
     if ((invalid_trit & 0b11) == 0b11) {

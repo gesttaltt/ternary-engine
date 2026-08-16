@@ -2,11 +2,11 @@
 
 ## Overview
 
-`build/scripts/setup_reference.py` builds an intentionally unoptimized baseline implementation for performance benchmarking. This "reference" build uses conversion-based operations without SIMD, LUTs, or aggressive compiler optimizations.
+`build/build_reference.py` builds an intentionally unoptimized baseline implementation for performance benchmarking. This "reference" build uses conversion-based operations without SIMD, LUTs, or aggressive compiler optimizations.
 
 **Purpose:** Measure the **actual impact** of optimizations, not Python vs C++ differences
 
-**Location:** `build/scripts/setup_reference.py`
+**Location:** `build/build_reference.py`
 
 **Module produced:** `reference_cpp.cp312-win_amd64.pyd`
 
@@ -66,7 +66,7 @@ The reference build deliberately **disables** all optimizations:
 
 ```bash
 # From project root
-python build/scripts/setup_reference.py
+python build/build_reference.py
 ```
 
 The script follows the same workflow as `setup.py`:
@@ -80,7 +80,7 @@ The script follows the same workflow as `setup.py`:
 ### Basic Build
 
 ```bash
-python build/scripts/setup_reference.py
+python build/build_reference.py
 ```
 
 ### Build Output
@@ -175,7 +175,7 @@ static inline trit tadd(trit a, trit b) {
 
 | File | Description | Implementation |
 |------|-------------|----------------|
-| `benchmarks/reference_cpp.cpp` | Reference implementation | Conversion-based operations |
+| `benchmarks/cpp-native-kernels/reference_cpp.cpp` | Reference implementation | Conversion-based operations |
 | `ternary_algebra.h` | Header (unused) | Contains LUTs (not used by reference) |
 
 **Note:** Reference implementation is self-contained in `reference_cpp.cpp` and does NOT use `ternary_algebra.h` LUTs.
@@ -238,8 +238,8 @@ print(f"Speedup:   {speedup:.1f}x")
 
 ```bash
 # Build both versions
-python build/scripts/setup_reference.py
-python build/scripts/setup.py
+python build/build_reference.py
+python build/build.py
 
 # Run benchmarks (compares all available implementations)
 python benchmarks/bench_phase0.py
@@ -301,20 +301,20 @@ Large arrays (1,000,000 elements):
 
 ```bash
 # Before optimization
-python build/scripts/setup.py
+python build/build.py
 python benchmarks/bench_phase0.py > before.txt
 
 # Apply optimization to code...
 
 # After optimization
-python build/scripts/setup.py
+python build/build.py
 python benchmarks/bench_phase0.py > after.txt
 
 # Compare
 diff before.txt after.txt
 
 # Also compare against reference
-python build/scripts/setup_reference.py
+python build/build_reference.py
 python benchmarks/bench_phase0.py > reference.txt
 ```
 
@@ -326,15 +326,15 @@ python benchmarks/bench_phase0.py > reference.txt
 
 ```bash
 # Build reference once
-python build/scripts/setup_reference.py
+python build/build_reference.py
 
 # Before changes
-python build/scripts/setup.py
+python build/build.py
 python benchmarks/bench_phase0.py --compare-reference > baseline.txt
 
 # After changes
 git pull
-python build/scripts/setup.py
+python build/build.py
 python benchmarks/bench_phase0.py --compare-reference > current.txt
 
 # If current slower than baseline: investigate!
@@ -414,16 +414,16 @@ print(f"speedup over baseline C++ implementation.")
 fatal error C1083: Cannot open source file: 'reference_cpp.cpp'
 ```
 
-**Cause:** Script cannot find `benchmarks/reference_cpp.cpp`
+**Cause:** Script cannot find `benchmarks/cpp-native-kernels/reference_cpp.cpp`
 
 **Solution:**
 ```bash
 # Check file exists
-ls benchmarks/reference_cpp.cpp
+ls benchmarks/cpp-native-kernels/reference_cpp.cpp
 
 # Run from project root
 cd /path/to/ternary-engine
-python build/scripts/setup_reference.py
+python build/build_reference.py
 ```
 
 ---
@@ -444,7 +444,7 @@ AttributeError: module 'reference_cpp' has no attribute 'tadd'
 **Solution:**
 ```bash
 # Rebuild
-python build/scripts/setup_reference.py
+python build/build_reference.py
 
 # Verify
 python -c "import reference_cpp; print(dir(reference_cpp))"
@@ -520,10 +520,10 @@ jobs:
         run: pip install setuptools pybind11 numpy
 
       - name: Build reference
-        run: python build/scripts/setup_reference.py
+        run: python build/build_reference.py
 
       - name: Build optimized
-        run: python build/scripts/setup.py
+        run: python build/build.py
 
       - name: Run benchmarks
         run: python benchmarks/bench_phase0.py
@@ -540,7 +540,7 @@ jobs:
 
 ```bash
 # Build reference at start of development
-python build/scripts/setup_reference.py
+python build/build_reference.py
 
 # Keep using same reference for all comparisons
 # Don't rebuild unless reference code changes
@@ -550,10 +550,10 @@ python build/scripts/setup_reference.py
 
 ```bash
 # Not ideal: Compare two optimized builds
-python build/scripts/setup.py  # Before
+python build/build.py  # Before
 python benchmarks/bench_phase0.py
 # Make changes...
-python build/scripts/setup.py  # After
+python build/build.py  # After
 python benchmarks/bench_phase0.py
 
 # Better: Compare against stable reference

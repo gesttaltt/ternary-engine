@@ -55,7 +55,7 @@ pip install numpy pybind11
 python build/build.py
 
 # 6. Test
-python run_tests.py
+python tests/run_tests.py
 ```
 
 ---
@@ -80,5 +80,5 @@ Submit results via GitHub issues or pull requests.
 
 - Main README: `../README.md`
 - Build system: `../build-system/README.md`
-- Testing guide: `../../TESTING.md`
+- Testing guide: `../../tests/README.md`
 - Architecture: `../architecture/`

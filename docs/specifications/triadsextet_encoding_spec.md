@@ -529,7 +529,7 @@ Storage (Disk/Network)
 
 - `ternary_algebra.h` - 2-bit trit encoding (baseline)
 - `ternary_dense243.h` - Dense storage layer
-- `docs/t5-dense243-spec.md` - Dense243 specification
+- `docs/specifications/dense243_encoding_spec.md` - Dense243 specification
 - `ternary_c_api.h` - Existing C FFI layer (broader scope)
 
 ---

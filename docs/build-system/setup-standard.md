@@ -4,7 +4,7 @@
 
 `build.py` is the primary build script for creating production-ready, fully optimized builds of the `ternary_simd_engine` module. It produces AVX2-accelerated binaries with OpenMP multi-threading support.
 
-**Location:** `build.py` (project root)
+**Location:** `build/build.py`
 
 **Module produced:** `ternary_simd_engine.cp312-win_amd64.pyd`
 
@@ -14,7 +14,7 @@
 
 ```bash
 # From project root
-python build.py
+python build/build.py
 ```
 
 That's it! The script handles everything automatically:
@@ -29,7 +29,7 @@ That's it! The script handles everything automatically:
 
 ```bash
 # Standard usage (recommended)
-python build/scripts/setup.py
+python build/build.py
 ```
 
 ### Build Output
@@ -127,13 +127,13 @@ The script executes the following workflow:
 
 | File | Description | Lines | Purpose |
 |------|-------------|-------|---------|
-| `ternary_simd_engine.cpp` | Main SIMD implementation | ~297 | AVX2 vectorized operations |
-| `ternary_algebra.h` | Core header | ~111 | Scalar operations, LUTs |
+| `src/engine/bindings_core_ops.cpp` | Main SIMD implementation + Python bindings | ~600 | AVX2 vectorized operations |
+| `src/core/algebra/ternary_algebra.h` | Core header | ~200 | Scalar operations, LUTs |
 
 ### Build Script Structure
 
 ```python
-# build/scripts/setup.py (simplified)
+# build/build.py (simplified)
 
 # 1. Path resolution
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -220,7 +220,7 @@ To see detailed compiler output:
 
 ```bash
 # Redirect stderr to see all compiler messages
-python build/scripts/setup.py 2>&1 | tee build.log
+python build/build.py 2>&1 | tee build.log
 ```
 
 ### Build Without Copying to Root
@@ -412,7 +412,7 @@ ImportError: DLL load failed while importing ternary_simd_engine
 python --version  # Must match .pyd suffix (e.g., cp312 = Python 3.12)
 
 # 3. Rebuild
-python build/scripts/setup.py
+python build/build.py
 ```
 
 ---
@@ -487,7 +487,7 @@ COPY . /app
 WORKDIR /app
 
 # Build
-RUN python build/scripts/setup.py
+RUN python build/build.py
 
 # Test
 RUN python -c "import ternary_simd_engine; print('Build OK')"

@@ -2,6 +2,13 @@
 
 **Doc-Type:** Summary Document · Version 1.0 · Created 2025-11-23
 
+**Note (2026-08-15):** this is a historical, point-in-time document.
+`COMPETITIVE_ANALYSIS.md`, referenced throughout below as newly created, no
+longer exists in the repo (superseded by later competitive-benchmark work —
+see `benchmarks/COMPETITIVE_BENCHMARKS.md` and `.claude/CLAUDE.md` "Critical
+Gaps" #3 for current status). Links to it below are dead; left unedited as
+an accurate record of what this document originally reported.
+
 This document summarizes the competitive analysis findings and how they've been integrated into project documentation.
 
 ---

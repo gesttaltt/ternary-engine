@@ -4,6 +4,17 @@
 **Phase:** BitNet Integration - Week 1-2
 **Status:** 🟢 On Track
 
+**⚠️ STALE — superseded, see `.claude/CLAUDE.md` for current status (added
+2026-08-15):** this document's "Week 3 of 6, Active Development, High
+Confidence" framing predates real findings that materially change the
+picture: a row-stride correctness bug was found and fixed in the AVX2 tiled
+GEMM kernel 2026-08-12 (it was also unreachable from the Python `gemm()` API
+at the time), and `tritnet_gemm_f32_avx2_tiled` has the same class of bug
+still unfixed with no test coverage to verify a fix against (see CLAUDE.md
+"Critical Gaps" #2). The module does build and is used in CI/competitive
+benchmarks today, but treat the specific week-by-week timeline and
+performance targets below as historical planning, not current status.
+
 ---
 
 ## Overview

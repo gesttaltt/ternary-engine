@@ -2,9 +2,9 @@
 
 ## Overview
 
-`build/scripts/setup_pgo.py` implements a sophisticated 3-phase Profile-Guided Optimization (PGO) build system. PGO uses runtime profiling data to guide compiler optimizations, resulting in 5-15% performance improvements in hot code paths.
+`build/build_pgo.py` implements a sophisticated 3-phase Profile-Guided Optimization (PGO) build system. PGO uses runtime profiling data to guide compiler optimizations, resulting in 5-15% performance improvements in hot code paths.
 
-**Location:** `build/scripts/setup_pgo.py`
+**Location:** `build/build_pgo.py`
 
 **Module produced:** `ternary_simd_engine.cp312-win_amd64.pyd` (PGO-optimized)
 
@@ -41,7 +41,7 @@ Source Code + Profile Data → Compiler → Optimized Binary
 
 ### Phase 1: Instrumentation
 
-**Command:** `python build/scripts/setup_pgo.py instrument`
+**Command:** `python build/build_pgo.py instrument`
 
 **What it does:**
 1. Compiles module with profiling instrumentation (`/LTCG:PGI`)
@@ -56,7 +56,7 @@ Source Code + Profile Data → Compiler → Optimized Binary
 
 ### Phase 2: Profiling
 
-**Command:** `python build/scripts/setup_pgo.py profile`
+**Command:** `python build/build_pgo.py profile`
 
 **What it does:**
 1. Runs benchmark suite (`benchmarks/bench_phase0.py`)
@@ -72,7 +72,7 @@ Source Code + Profile Data → Compiler → Optimized Binary
 
 ### Phase 3: Optimization
 
-**Command:** `python build/scripts/setup_pgo.py optimize`
+**Command:** `python build/build_pgo.py optimize`
 
 **What it does:**
 1. Compiles module with profile data (`/LTCG:PGO`)
@@ -90,7 +90,7 @@ Source Code + Profile Data → Compiler → Optimized Binary
 
 ```bash
 # Run all 3 phases automatically
-python build/scripts/setup_pgo.py full
+python build/build_pgo.py full
 ```
 
 This runs: `instrument` → `profile` → `optimize` in sequence.
@@ -99,20 +99,20 @@ This runs: `instrument` → `profile` → `optimize` in sequence.
 
 ```bash
 # Phase 1: Build with instrumentation
-python build/scripts/setup_pgo.py instrument
+python build/build_pgo.py instrument
 
 # Phase 2: Collect profile data (takes ~8 minutes)
-python build/scripts/setup_pgo.py profile
+python build/build_pgo.py profile
 
 # Phase 3: Build optimized version
-python build/scripts/setup_pgo.py optimize
+python build/build_pgo.py optimize
 ```
 
 ### Check PGO Status
 
 ```bash
 # View current PGO state
-python build/scripts/setup_pgo.py help
+python build/build_pgo.py help
 ```
 
 Output:
@@ -130,7 +130,7 @@ Current PGO Status:
 
 ```bash
 # Remove all PGO data and builds
-python build/scripts/setup_pgo.py clean
+python build/build_pgo.py clean
 ```
 
 ## Technical Details
@@ -351,11 +351,11 @@ build/artifacts/
 
 ```bash
 # Benchmark standard build
-python build/scripts/setup.py
+python build/build.py
 python benchmarks/bench_phase0.py > results_standard.txt
 
 # Benchmark PGO build
-python build/scripts/setup_pgo.py full
+python build/build_pgo.py full
 python benchmarks/bench_phase0.py > results_pgo.txt
 
 # Compare
@@ -370,13 +370,13 @@ Instead of using the default benchmark suite, you can profile with your own work
 
 ```bash
 # Phase 1: Instrument
-python build/scripts/setup_pgo.py instrument
+python build/build_pgo.py instrument
 
 # Phase 2: Run YOUR workload (instead of bench_phase0.py)
 python my_custom_workload.py  # Uses instrumented .pyd
 
 # Phase 3: Optimize with collected data
-python build/scripts/setup_pgo.py optimize
+python build/build_pgo.py optimize
 ```
 
 **Example custom workload:**
@@ -407,7 +407,7 @@ Profile data from multiple runs is accumulated:
 
 ```bash
 # Phase 1: Instrument
-python build/scripts/setup_pgo.py instrument
+python build/build_pgo.py instrument
 
 # Phase 2: Multiple profiling runs
 python benchmarks/bench_phase0.py   # Run 1: benchmarks
@@ -417,7 +417,7 @@ python another_test.py              # Run 3: more data
 # Profile data is merged automatically
 
 # Phase 3: Optimize with all collected data
-python build/scripts/setup_pgo.py optimize
+python build/build_pgo.py optimize
 ```
 
 **Use cases:**
@@ -431,12 +431,12 @@ You can add more profile data without rebuilding:
 
 ```bash
 # Existing PGO build
-python build/scripts/setup_pgo.py full
+python build/build_pgo.py full
 
 # Later: Add more profile data
-python build/scripts/setup_pgo.py instrument  # Rebuild instrumented
+python build/build_pgo.py instrument  # Rebuild instrumented
 python new_workload.py                        # Add new profile data
-python build/scripts/setup_pgo.py optimize    # Rebuild with merged data
+python build/build_pgo.py optimize    # Rebuild with merged data
 ```
 
 ## Troubleshooting
@@ -460,10 +460,10 @@ python build/scripts/setup_pgo.py optimize    # Rebuild with merged data
 df -h build/artifacts/
 
 # Clear old PGO data
-python build/scripts/setup_pgo.py clean
+python build/build_pgo.py clean
 
 # Retry
-python build/scripts/setup_pgo.py instrument
+python build/build_pgo.py instrument
 ```
 
 ---
@@ -474,13 +474,13 @@ python build/scripts/setup_pgo.py instrument
 
 **Symptom:**
 ```
-❌ No instrumented module found. Run 'python build/scripts/setup_pgo.py instrument' first.
+❌ No instrumented module found. Run 'python build/build_pgo.py instrument' first.
 ```
 
 **Solution:**
 ```bash
 # Run Phase 1 first
-python build/scripts/setup_pgo.py instrument
+python build/build_pgo.py instrument
 ```
 
 ---
@@ -548,7 +548,7 @@ pip install numpy pytest
 **Symptom:**
 ```
 ⚠️  Warning: No profile data found
-   Run 'python build/scripts/setup_pgo.py profile' first for best results
+   Run 'python build/build_pgo.py profile' first for best results
    Continuing with optimization anyway...
 ```
 
@@ -557,10 +557,10 @@ pip install numpy pytest
 **Solution:**
 ```bash
 # Run Phase 2 first
-python build/scripts/setup_pgo.py profile
+python build/build_pgo.py profile
 
 # Then retry Phase 3
-python build/scripts/setup_pgo.py optimize
+python build/build_pgo.py optimize
 ```
 
 ---
@@ -579,11 +579,11 @@ python build/scripts/setup_pgo.py optimize
 **Solution:**
 ```bash
 # Clean and rebuild
-python build/scripts/setup_pgo.py clean
-python build/scripts/setup_pgo.py full
+python build/build_pgo.py clean
+python build/build_pgo.py full
 
 # If still fails, try without PGO
-python build/scripts/setup.py
+python build/build.py
 ```
 
 ## Comparison: Standard vs PGO
@@ -639,7 +639,7 @@ jobs:
         run: pip install setuptools pybind11 numpy pytest
 
       - name: PGO Build
-        run: python build/scripts/setup_pgo.py full
+        run: python build/build_pgo.py full
         timeout-minutes: 15
 
       - name: Archive PGO binary
@@ -653,7 +653,7 @@ jobs:
 
       - name: Compare with standard build
         run: |
-          python build/scripts/setup.py
+          python build/build.py
           python benchmarks/bench_phase0.py --compare
 ```
 
@@ -693,8 +693,8 @@ python workload_large.py   # 1M elements
 git diff --stat ternary_simd_engine.cpp
 
 # If changes are major:
-python build/scripts/setup_pgo.py clean
-python build/scripts/setup_pgo.py full
+python build/build_pgo.py clean
+python build/build_pgo.py full
 ```
 
 ### 4. Version Control

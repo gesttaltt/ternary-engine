@@ -33,12 +33,15 @@ The v1.2.0 backend system provides a unified interface for accessing multiple im
 **Availability**: Requires AVX2 support (Intel Haswell 2013+, AMD Excavator 2015+)
 **Use Case**: Proven production baseline for AVX2-capable systems
 
-### AVX2_v2 (v1.2.0)
-**Description**: AVX2 with v1.2.0 optimizations (traditional indexing)
+### AVX2_v2 (v1.3.0)
+**Description**: AVX2 with v1.3.0 optimizations (canonical indexing)
 **Performance**: ~9,000-45,000 Mops/s (5-17× faster than Scalar)
 **Availability**: Requires AVX2 support
 **Use Case**: Latest optimizations with ongoing development
-**Note**: Currently using traditional indexing; canonical indexing optimization deferred until proper LUT reorganization
+**Note**: Canonical indexing (`idx = (a*3)+b` via dual-shuffle) shipped in
+v1.3.0 (`backend_avx2_v2_optimized.cpp`), superseding the traditional-indexing
+note this section previously carried — see item 1 under "Planned Features"
+below, which is complete, not pending.
 
 ---
 
@@ -541,8 +544,8 @@ for b in backends:
 
 ### Planned Features (v1.3.0+)
 
-1. **Canonical Indexing**: Properly reorganized LUTs for `(a*3)+b` indexing
-2. **Dual-Shuffle XOR**: Parallel shuffle + XOR combining
+1. ~~**Canonical Indexing**: Properly reorganized LUTs for `(a*3)+b` indexing~~ — **Complete**, shipped in v1.3.0 (`backend_avx2_v2_optimized.cpp`)
+2. **Dual-Shuffle XOR**: Parallel shuffle + XOR combining — LUTs generated (`opt_dual_shuffle_xor.h`), integration into the active dispatch path still pending
 3. **LUT-256B**: 256-byte LUTs for improved cache utilization
 4. **Operation Fusion**: `tadd_tmul`, `tmul_tadd` fused operations
 5. **AVX-512 Backend**: 64-wide SIMD for latest Intel/AMD CPUs

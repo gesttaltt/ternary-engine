@@ -6,9 +6,9 @@
 
 ## Overview
 
-Ternary Engine includes integrated profiler support for performance analysis using industry-standard profiling tools. The profiler framework is **cross-platform compatible** and works with GCC, Clang, and MSVC compilers with **zero overhead when disabled**.
+Ternary Engine includes integrated profiler call sites for performance analysis using industry-standard profiling tools. The profiler framework is **cross-platform compatible** and works with GCC, Clang, and MSVC compilers with **zero overhead when disabled**.
 
-**profiler_status** - INTEGRATED (production-ready)
+**profiler_status** - Call sites integrated (`TERNARY_PROFILE_TASK_BEGIN`/`END` genuinely exist in `bindings_core_ops.cpp`'s hot paths); backends themselves (VTune/NVTX/Perfetto) are **unbuilt and unverified** — no build script in `build/` currently defines `TERNARY_ENABLE_VTUNE`/`_NVTX`/`_PERFETTO`, so every current build exercises the no-op stub only. Corrected 2026-08-12 (see `.claude/CLAUDE.md` "Critical Gaps" #10); the "VTune Build"/"NVTX Build" instructions below describe the intended workflow but are unverified end-to-end.
 **overhead** - Zero when disabled (compile-time no-ops)
 **platforms** - Linux, macOS, Windows
 
@@ -18,7 +18,7 @@ Ternary Engine includes integrated profiler support for performance analysis usi
 
 ### 1. Intel VTune Profiler (ITT API)
 
-**status** - Fully integrated and tested
+**status** - Call sites integrated; backend itself unbuilt/unverified (no build script defines `TERNARY_ENABLE_VTUNE` — see note above). A prior claim of "tested with Intel VTune Profiler" in `ternary_profiler.h` was corrected 2026-08-12 to reflect this.
 **platform** - Linux, Windows
 **use_case** - CPU profiling, hotspot analysis, threading visualization
 
@@ -61,6 +61,12 @@ python build/build.py
 **overhead** - None (macros expand to no-ops)
 
 ### VTune Build
+
+**Caveat:** `build/build.py` hardcodes its compiler flags per-platform and does
+not read `CPPFLAGS`/`LDFLAGS`/`CL` from the environment (confirmed by
+inspection, 2026-08-15) — the commands below describe the intended workflow
+but will not actually enable `TERNARY_ENABLE_VTUNE` against the current build
+script without first adding that plumbing to `build.py`.
 
 Enable Intel VTune annotations:
 
@@ -187,7 +193,7 @@ Look for:
 
 Profiler macros are integrated into the main engine:
 
-**Location:** `src/engine/ternary_simd_engine.cpp`
+**Location:** `src/engine/bindings_core_ops.cpp`
 
 **Global Declarations:**
 ```cpp
@@ -331,4 +337,4 @@ void my_function() {
 
 ---
 
-**Version:** 1.0 · **Date:** 2025-11-23 · **Status:** Production-Ready · **Overhead:** Zero (when disabled)
+**Version:** 1.1 · **Date:** 2026-08-15 · **Status:** Call sites integrated, backends unbuilt/unverified · **Overhead:** Zero (when disabled)

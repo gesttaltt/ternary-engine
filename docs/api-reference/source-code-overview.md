@@ -4,6 +4,15 @@
 
 This document provides a high-level overview of the pure source code files in the ternary-engine library and guides you through understanding the implementation.
 
+**Note (2026-08-15):** this document predates a source reorganization — the
+Python bindings source is now `src/engine/bindings_core_ops.cpp` (not
+`ternary_simd_engine.cpp` as referenced below), and fusion lives in
+`src/core/simd/fused_binary_unary_ops.h`/`fused_bridge_ops.h`. The concepts,
+architecture layers, and code walkthroughs below are still substantively
+accurate; file names and line numbers in the walkthrough are pre-reorg and
+illustrative rather than literal. See [FEATURES.md](../FEATURES.md#quick-reference-file-locations)
+for the current, verified file map.
+
 ---
 
 ## Core Source Files
@@ -34,7 +43,7 @@ The library consists of **five primary components** that implement the complete 
 - Force-inlined scalar operation implementations
 - Conversion and packing utilities
 
-**Documentation**: [`docs/ternary-engine-header.md`](./ternary-engine-header.md)
+**Documentation**: [`docs/ternary-core-header.md`](./ternary-core-header.md)
 
 **Size**: 108 lines
 **Dependencies**: `stdint.h`, `ternary_lut_gen.h`
@@ -51,7 +60,7 @@ The library consists of **five primary components** that implement the complete 
 - Pybind11 Python integration
 - Centralized error handling via `ternary_errors.h`
 
-**Documentation**: [`docs/ternary-engine-simd.md`](./ternary-engine-simd.md)
+**Documentation**: [`docs/ternary-core-simd.md`](./ternary-core-simd.md)
 
 **Size**: 331 lines
 **Dependencies**: `immintrin.h`, `pybind11`, `omp.h`, `ternary_algebra.h`, `ternary_errors.h`
@@ -415,15 +424,15 @@ static inline __m256i maybe_mask(__m256i v) {
 ### For Understanding the Implementation
 
 1. **Start here**: Current document (overview)
-2. **Core concepts**: [`docs/ternary-engine-header.md`](./ternary-engine-header.md)
+2. **Core concepts**: [`docs/ternary-core-header.md`](./ternary-core-header.md)
    - Trit encoding
    - LUT design
    - Scalar operations
-3. **Acceleration**: [`docs/ternary-engine-simd.md`](./ternary-engine-simd.md)
+3. **Acceleration**: [`docs/ternary-core-simd.md`](./ternary-core-simd.md)
    - SIMD techniques
    - Template design
    - Execution paths
-4. **Context**: [`docs/optimization-complexity-rationale.md`](./optimization-complexity-rationale.md)
+4. **Context**: [`docs/optimization-complexity-rationale.md`](../architecture/optimization-complexity-rationale.md)
    - Why certain optimizations were removed
    - Code simplification philosophy
 
@@ -437,9 +446,9 @@ static inline __m256i maybe_mask(__m256i v) {
    - Add Python binding to `PYBIND11_MODULE` in `ternary_simd_engine.cpp`
 
 2. **Optimizing performance**:
-   - See [`docs/ternary-engine-simd.md`](./ternary-engine-simd.md) § "Future Optimizations"
+   - See [`docs/ternary-core-simd.md`](./ternary-core-simd.md) § "Future Optimizations"
    - Profile first: `python benchmarks/bench_phase0.py`
-   - Consider PGO: [`docs/PGO_README.md`](./PGO_README.md)
+   - Consider PGO: [`docs/pgo/README.md`](../pgo/README.md)
 
 3. **Porting to new architectures**:
    - ARM/NEON: Replace AVX2 intrinsics in `ternary_simd_engine.cpp`
@@ -447,9 +456,9 @@ static inline __m256i maybe_mask(__m256i v) {
 
 ### For Understanding the Evolution
 
-1. **Design rationale**: [`docs/optimization-complexity-rationale.md`](./optimization-complexity-rationale.md)
-2. **Architecture overview**: [`docs/architecture.md`](./architecture.md)
-3. **Historical context**: [`docs/optimization-roadmap.md`](./optimization-roadmap.md)
+1. **Design rationale**: [`docs/optimization-complexity-rationale.md`](../architecture/optimization-complexity-rationale.md)
+2. **Architecture overview**: [`docs/architecture.md`](../architecture/architecture.md)
+3. **Historical context**: [`docs/optimization-roadmap.md`](../architecture/optimization-roadmap.md)
 
 ---
 
@@ -458,7 +467,7 @@ static inline __m256i maybe_mask(__m256i v) {
 ### Correctness Tests
 
 ```bash
-python tests/test_phase0.py
+python tests/python/test_phase0.py
 ```
 
 Validates SIMD operations against scalar reference.
@@ -474,7 +483,7 @@ Measures throughput across different array sizes.
 ### OpenMP Scaling Test
 
 ```bash
-python tests/test_omp.py
+python tests/python/test_omp.py
 ```
 
 Verifies parallel scaling on multi-core systems.
@@ -497,7 +506,7 @@ Produces `ternary_simd_engine.cp312-win_amd64.pyd` (or `.so` on Linux) with fusi
 python build/build_pgo.py full
 ```
 
-See [`docs/PGO_README.md`](../PGO_README.md) for details.
+See [`docs/pgo/README.md`](../pgo/README.md) for details.
 
 ---
 
@@ -539,7 +548,7 @@ When modifying the source code:
 
 1. **Maintain code simplification**: Only add complexity if it provides >10% performance gain
 2. **Update documentation**: Keep this doc and component docs in sync
-3. **Add tests**: Update `tests/test_phase0.py` for new operations
+3. **Add tests**: Update `tests/python/test_phase0.py` for new operations
 4. **Benchmark**: Run `benchmarks/bench_phase0.py` before/after changes
 5. **Document optimization IDs**: Use OPT-XXX tags for traceability
 

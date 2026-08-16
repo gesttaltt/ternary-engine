@@ -454,7 +454,7 @@ __m256i out = _mm256_xor_si256(lo, hi);
 
 ## Contributing
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for development guidelines.
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for development guidelines.
 
 **Roadmap discussions:** [GitHub Discussions](https://github.com/gesttaltt/ternary-engine/discussions)
 
@@ -465,10 +465,10 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for development guidelines.
 ## References
 
 ### **Internal Documentation**
-- [TRITNET_ROADMAP.md](./TRITNET_ROADMAP.md) - TritNet neural network learning
-- [architecture/optimization-roadmap.md](./architecture/optimization-roadmap.md) - SIMD optimizations
-- [TECHNICAL_DEBT_CATALOG.md](./TECHNICAL_DEBT_CATALOG.md) - Known issues
-- [BITNET_INTEGRATION_STRATEGY.md](./BITNET_INTEGRATION_STRATEGY.md) - BitNet hybrid approach
+- [TRITNET_ROADMAP.md](../research/tritnet/TRITNET_ROADMAP.md) - TritNet neural network learning
+- [architecture/optimization-roadmap.md](../architecture/optimization-roadmap.md) - SIMD optimizations
+- [TECHNICAL_DEBT_CATALOG.md](../historical/audits/TECHNICAL_DEBT_CATALOG.md) - Known issues
+- [BITNET_INTEGRATION_STRATEGY.md](../research/bitnet/BITNET_INTEGRATION_STRATEGY.md) - BitNet hybrid approach
 
 ### **Local Reports** (not in git)
 - `local-reports/opt.md` - Comprehensive SIMD optimization guide v2.0

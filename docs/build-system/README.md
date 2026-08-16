@@ -112,11 +112,14 @@ ternary-engine/
 │           ├── YYYYMMDD_HHMMSS/
 │           └── latest/
 │
-├── scripts/
-│   └── build/                  # Build scripts
-│       ├── build.py            # Standard build
-│       ├── build_pgo.py        # PGO build (3-phase)
-│       └── build_reference.py  # Reference build
+├── build/                       # Build scripts (at repo root, not scripts/)
+│   ├── build.py                 # Standard build
+│   ├── build_pgo.py             # PGO build (MSVC, 3-phase)
+│   ├── build_pgo_unified.py     # PGO build (Clang-first, MSVC fallback)
+│   ├── build_reference.py       # Reference build
+│   ├── build_dense243.py, build_backend.py, build_zero_skip_gemm.py,
+│   │   build_tritnet_gemm.py, build_tritnet_inference.py, build_all.py
+│   └── clean_all.py
 │
 ├── tests/                      # Test suite
 │   └── run_tests.py            # Test runner
@@ -129,12 +132,15 @@ ternary-engine/
 │       ├── setup-pgo.md
 │       └── setup-reference.md
 │
-├── benchmarks/                 # Benchmarking suite
-│   ├── bench_phase0.py        # Main benchmark runner
-│   └── reference_cpp.cpp      # Reference implementation source
+├── benchmarks/
+│   ├── python-with-interpreter-overhead/
+│   │   └── bench_phase0.py    # Main benchmark runner
+│   └── cpp-native-kernels/
+│       └── reference_cpp.cpp  # Reference implementation source
 │
-├── ternary_simd_engine.cpp # Optimized implementation source
-└── ternary_algebra.h              # Core header with LUTs
+└── src/
+    ├── engine/bindings_core_ops.cpp  # Optimized implementation source (Python bindings)
+    └── core/algebra/ternary_algebra.h # Core header with LUTs
 ```
 
 ### Build Workflow
@@ -560,8 +566,8 @@ See [Cleanup System Documentation](./cleanup-system.md) for full details.
 
 ### Project Documentation
 
-- [Architecture Overview](../architecture.md)
-- [Optimization Rationale](../optimization-complexity-rationale.md)
+- [Architecture Overview](../architecture/architecture.md)
+- [Optimization Rationale](../architecture/optimization-complexity-rationale.md)
 - [PGO Technical Details](../pgo/README.md)
 
 ### Performance Analysis Tools

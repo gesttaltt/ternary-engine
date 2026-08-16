@@ -617,5 +617,9 @@ The key insight is that the +1/-1 conversions, while trivial in isolation, becom
 
 ---
 
-**Status:** DESIGN COMPLETE
-**Next:** Implementation of Phase 1 (Core Bridge)
+**Status:** DESIGN COMPLETE — Phase 1 (Core Bridge) also implemented and shipped
+(verified 2026-08-15: `tadd_int8`-family int8 bridge operations exist in
+`src/engine/bindings_core_ops.cpp`, backed by `src/core/simd/fused_bridge_ops.h`).
+This document's design content is still accurate background reading; the
+"Next" step below is stale.
+**Next:** ~~Implementation of Phase 1 (Core Bridge)~~ — complete
