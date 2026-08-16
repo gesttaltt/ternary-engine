@@ -2,36 +2,51 @@
 
 Production-grade Python benchmark suite for the Ternary Engine library, measuring performance of ternary logic operations with AVX2 SIMD acceleration and OpenMP parallelization.
 
+**Note (2026-08-16):** the scripts below (`bench_phase0.py`, `bench_compare.py`)
+were renamed in a Nov 2025 reorganization and moved under
+`python-with-interpreter-overhead/`; this file hadn't caught up. See
+[`python-with-interpreter-overhead/README.md`](python-with-interpreter-overhead/README.md)
+for this project's current, more precise framing of what these Python-level
+timings can and can't be trusted for (FFI/interpreter overhead — absolute
+throughput numbers here are approximate; see also `SKEPTICAL_METRICS.md`).
+
 ## Quick Start
 
 ```bash
 # Run full benchmark suite
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 
 # Quick test (fewer array sizes)
-python benchmarks/bench_phase0.py --quick
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick
 
 # Master orchestrator (build + benchmark + compare)
-python benchmarks/run_all_benchmarks.py
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py
 
 # With PGO build comparison
-python benchmarks/run_all_benchmarks.py --with-pgo
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --with-pgo
 ```
 
 ## Structure
 
 ```
 benchmarks/
-├── bench_phase0.py         # Main benchmark suite
-├── bench_compare.py        # Regression detection tool
-├── run_all_benchmarks.py   # Master orchestrator
-└── results/                # Output directory (JSON + CSV)
-    ├── standard/           # Standard build results
-    ├── pgo/               # PGO build results
-    └── validation/        # Test run results
+├── python-with-interpreter-overhead/  # Core Python benchmark suite
+│   ├── bench_simd_core_ops.py         # Main benchmark suite (was bench_phase0.py)
+│   ├── bench_regression_detect.py     # Regression detection tool (was bench_compare.py)
+│   ├── run_all_benchmarks.py          # Master orchestrator
+│   └── ... (bench_competitive.py, bench_dense243.py, bench_fair_baseline.py, etc.)
+├── cpp-native-kernels/    # Native C++ benchmarks (FFI-overhead-free, for absolute claims)
+├── macro/                 # Macro workload benchmarks (layer forward, image pipeline)
+├── utils/                 # Shared metrics/validation helpers
+├── deprecated/            # Scripts using the pre-v1.2.0 backend architecture
+├── investigation/         # One-time analysis scripts
+├── prototype/             # Scripts awaiting further module support
+└── results/               # Output directory (flat, timestamped filenames per
+                            # script -- see "Output Format" below, not
+                            # standard/pgo/validation subdirectories)
 ```
 
-## Benchmark Suite (bench_phase0.py)
+## Benchmark Suite (bench_simd_core_ops.py)
 
 ### Features
 
@@ -46,16 +61,16 @@ benchmarks/
 
 ```bash
 # Full suite (7 array sizes: 32, 100, 1K, 10K, 100K, 1M, 10M)
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 
 # Quick test (4 sizes: 32, 1K, 100K, 1M)
-python benchmarks/bench_phase0.py --quick
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick
 
 # Custom output directory
-python benchmarks/bench_phase0.py --output=benchmarks/results/my_test
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --output=benchmarks/results/my_test
 
 # Minimal output
-python benchmarks/bench_phase0.py --quiet
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quiet
 ```
 
 ### Output Format
@@ -97,6 +112,12 @@ python benchmarks/bench_phase0.py --quiet
 }
 ```
 
+**Caveat (see the note at the top of this file):** treat the pure-Python
+`results_baseline` comparison as illustrative, not a headline claim — this
+project has since retired compiled-vs-interpreted speedup framing project-wide
+(see `.claude/CLAUDE.md` `core_innovation`) in favor of fair NumPy-baseline
+comparisons (`bench_fair_baseline.py` in the same directory).
+
 #### CSV Output
 
 ```csv
@@ -116,25 +137,19 @@ The benchmark measures:
 3. **Speedup**: Compared to pure Python baseline
 4. **Scaling**: Performance across array sizes
 
-### Expected Results
+### Example Results
 
-**Small arrays (32 elements)**:
-- Throughput: 20-30 Mops/s
-- Speedup vs Python: ~137x
+The numbers below are illustrative sample output from when this file was
+first written, not a current validated baseline — see
+`benchmarks/results/*.json` and `.claude/CLAUDE.md`'s TritNet/performance
+sections for actual dated, platform-labeled measurements.
 
-**Medium arrays (1,000 elements)**:
-- Throughput: 640-920 Mops/s
-- Speedup vs Python: ~3,800x
+**Small arrays (32 elements)**: ~20-30 Mops/s, dominated by call overhead
+**Medium arrays (1,000 elements)**: ~640-920 Mops/s, cache-resident + SIMD
+**Large arrays (100,000 elements)**: ~13,000-17,000 Mops/s, OpenMP active
+**Very large arrays (1,000,000 elements)**: ~3,400-8,400 Mops/s, memory-bandwidth limited
 
-**Large arrays (100,000 elements)**:
-- Throughput: 13,000-17,000 Mops/s
-- OpenMP parallelization active
-
-**Very large arrays (1,000,000 elements)**:
-- Throughput: 3,400-8,400 Mops/s
-- Memory bandwidth limited
-
-## Comparison Tool (bench_compare.py)
+## Comparison Tool (bench_regression_detect.py)
 
 Compares benchmark results to detect performance regressions or improvements.
 
@@ -142,15 +157,15 @@ Compares benchmark results to detect performance regressions or improvements.
 
 ```bash
 # Compare two benchmark results
-python benchmarks/bench_compare.py \
+python benchmarks/python-with-interpreter-overhead/bench_regression_detect.py \
     benchmarks/results/before/bench_results_20251014_013601.json \
     benchmarks/results/after/bench_results_20251014_020000.json
 
 # Custom output
-python benchmarks/bench_compare.py before.json after.json --output=comparison.json
+python benchmarks/python-with-interpreter-overhead/bench_regression_detect.py before.json after.json --output=comparison.json
 
 # Custom regression threshold (default: 5%)
-python benchmarks/bench_compare.py before.json after.json --threshold=10.0
+python benchmarks/python-with-interpreter-overhead/bench_regression_detect.py before.json after.json --threshold=10.0
 ```
 
 ### Output
@@ -199,42 +214,35 @@ Automates the complete benchmarking workflow: build → benchmark → compare.
 
 ```bash
 # Standard build only
-python benchmarks/run_all_benchmarks.py
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py
 
 # Include PGO build and comparison
-python benchmarks/run_all_benchmarks.py --with-pgo
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --with-pgo
 
 # Quick mode (fewer test sizes)
-python benchmarks/run_all_benchmarks.py --quick
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --quick
 
 # Clean build artifacts first
-python benchmarks/run_all_benchmarks.py --clean
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --clean
 
 # Skip builds (only run benchmarks)
-python benchmarks/run_all_benchmarks.py --skip-build
+python benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py --skip-build
 ```
 
 ### Workflow
 
 1. **Clean** (optional): Remove old build artifacts
-2. **Build standard**: Run `build.py` for optimized build
-3. **Benchmark standard**: Run `bench_phase0.py` on standard build
-4. **Build PGO** (optional): Run `build_pgo.py` for profile-guided optimization
-5. **Benchmark PGO** (optional): Run `bench_phase0.py` on PGO build
+2. **Build standard**: Run `build/build.py` for optimized build
+3. **Benchmark standard**: Run `bench_simd_core_ops.py` on standard build
+4. **Build PGO** (optional): Run `build/build_pgo_unified.py` for profile-guided optimization
+5. **Benchmark PGO** (optional): Run `bench_simd_core_ops.py` on PGO build
 6. **Compare** (optional): Compare standard vs PGO results
 
 ### Output
 
-Results are organized in `benchmarks/results/`:
-
-```
-results/
-├── standard/
-│   └── bench_results_20251014_013601.json
-├── pgo/
-│   └── bench_results_20251014_020000.json
-└── comparison_standard_vs_pgo.json
-```
+Results are written to `benchmarks/results/` as flat, timestamped JSON files
+(e.g. `fair_baseline_20260812_125250.json`), not organized into
+`standard/`/`pgo/`/`comparison_*.json` subpaths.
 
 ## Operations Tested
 
@@ -268,6 +276,12 @@ All 5 ternary operations are benchmarked:
 
 ### GitHub Actions Example
 
+This project's actual CI workflow is `.github/workflows/ci.yml` (build +
+correctness tests, not performance benchmarks — see `.claude/CLAUDE.md`
+"Critical Gaps" #1/#3 for current benchmark-validation status). The example
+below is illustrative of how a performance job could be wired up, not a
+description of an existing one:
+
 ```yaml
 name: Performance Benchmarks
 
@@ -277,21 +291,21 @@ jobs:
   benchmark:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: pip install pybind11 numpy
 
       - name: Run benchmarks
         run: |
-          python build.py
-          python benchmarks/bench_phase0.py --quick --output=results
+          python build/build.py
+          python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick --output=results
 
       - name: Upload results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
           path: results/
@@ -301,11 +315,11 @@ jobs:
 
 ```bash
 # Store baseline results
-python benchmarks/bench_phase0.py --output=benchmarks/results/baseline
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --output=benchmarks/results/baseline
 
 # After changes, run comparison
-python benchmarks/bench_phase0.py --output=benchmarks/results/current
-python benchmarks/bench_compare.py \
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --output=benchmarks/results/current
+python benchmarks/python-with-interpreter-overhead/bench_regression_detect.py \
     benchmarks/results/baseline/bench_results_*.json \
     benchmarks/results/current/bench_results_*.json
 ```
@@ -318,15 +332,16 @@ Control OpenMP threads:
 
 ```bash
 export OMP_NUM_THREADS=8
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
 ### Array Size Threshold
 
-The OpenMP threshold is adaptive (32K elements per thread):
+The OpenMP threshold is adaptive (32K elements per thread), defined in
+`src/core/config/optimization_config.h` (`OMP_THRESHOLD`), consumed by
+`src/engine/bindings_core_ops.cpp`:
 
-```python
-# In ternary_simd_engine.cpp
+```cpp
 OMP_THRESHOLD = 32768 * std::thread::hardware_concurrency()
 ```
 
@@ -334,10 +349,10 @@ For 8 cores: threshold = 262,144 elements
 
 ### Streaming Stores
 
-Non-temporal stores activate at 1M elements to reduce cache pollution:
+Non-temporal stores activate at 1M elements to reduce cache pollution
+(`STREAM_THRESHOLD` in the same header):
 
 ```cpp
-// In ternary_simd_engine.cpp
 STREAM_THRESHOLD = 1000000
 ```
 
@@ -353,10 +368,10 @@ STREAM_THRESHOLD = 1000000
 
 ### Speedup vs Python
 
-**Typical speedups**:
-- Small arrays (32): 100-200x
-- Medium arrays (1K): 2,000-4,000x
-- Large arrays (100K+): 10,000-20,000x
+Treat pure-Python-baseline speedup figures as illustrative only — see the
+caveat at the top of this file and `.claude/CLAUDE.md`'s `core_innovation`
+note. For a fair, currently-maintained comparison, use
+`bench_fair_baseline.py` (NumPy baseline) in the same directory instead.
 
 ### OpenMP Scaling
 
@@ -364,17 +379,20 @@ Test OpenMP effectiveness:
 
 ```bash
 export OMP_NUM_THREADS=1
-python benchmarks/bench_phase0.py --quick --output=results/threads_1
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick --output=results/threads_1
 
 export OMP_NUM_THREADS=8
-python benchmarks/bench_phase0.py --quick --output=results/threads_8
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quick --output=results/threads_8
 
-python benchmarks/bench_compare.py \
+python benchmarks/python-with-interpreter-overhead/bench_regression_detect.py \
     results/threads_1/bench_results_*.json \
     results/threads_8/bench_results_*.json
 ```
 
-Expected: 5-8x speedup for 8 threads on large arrays (100K+ elements)
+Expected: some speedup for multiple threads on large arrays (100K+ elements) —
+validate against an actual run rather than assuming a specific factor; this
+project's own rigor rules (`SKEPTICAL_METRICS.md`) call for measured, not
+assumed, scaling numbers.
 
 ## Troubleshooting
 
@@ -383,7 +401,7 @@ Expected: 5-8x speedup for 8 threads on large arrays (100K+ elements)
 Build the module first:
 
 ```bash
-python build.py
+python build/build.py
 ```
 
 ### Segmentation Fault
@@ -391,7 +409,7 @@ python build.py
 Known issue with verbose output. Use `--quiet` flag:
 
 ```bash
-python benchmarks/bench_phase0.py --quiet
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py --quiet
 ```
 
 ### Inconsistent Results
@@ -405,7 +423,7 @@ Ensure system is idle during benchmarking:
    ```
 3. Pin to specific CPU cores (advanced):
    ```bash
-   taskset -c 0-7 python benchmarks/bench_phase0.py
+   taskset -c 0-7 python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
    ```
 
 ### Very Low Throughput
@@ -425,12 +443,14 @@ Get-WmiObject -Class Win32_Processor | Select-Object -Property Name
 
 ## Related Documentation
 
-- **[../build/README.md](../build/README.md)** - Build system documentation
+- **[python-with-interpreter-overhead/README.md](python-with-interpreter-overhead/README.md)** - This project's current framing of Python-level timing reliability (FFI/interpreter overhead caveats)
+- **[../docs/build-system/README.md](../docs/build-system/README.md)** - Build system documentation
 - **[../tests/README.md](../tests/README.md)** - Test suite
-- **[../docs/PGO_README.md](../docs/PGO_README.md)** - Profile-Guided Optimization
+- **[../docs/pgo/README.md](../docs/pgo/README.md)** - Profile-Guided Optimization
 - **[../README.md](../README.md)** - Project overview
 
 ---
 
-**Last Updated**: 2025-10-14
+**Last Updated**: 2026-08-16 (paths/names corrected against the Nov 2025
+reorganization; original content from 2025-10-14)
 **Maintained by**: Jonathan Verdun (Ternary Engine Project)
