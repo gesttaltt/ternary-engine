@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.26 · Updated 2026-08-16 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.27 · Updated 2026-08-16 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1608,6 +1608,41 @@ Bonus: `benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py`'s
 own docstring had the identical missing-subdirectory bug in its own Usage
 examples — fixed directly in the script, not just the docs describing it.
 
+### 2026-08-16 — same bug class, checked reports/
+
+Direct follow-up ("review reports/ for the same bug class"). No Python
+there either (36 markdown files + data), so again the structural analog:
+documented paths presented as current that don't resolve. Unlike docs/,
+`reports/` is fundamentally a point-in-time record by design — every
+subdirectory checked (including the undated-looking `architecture/`,
+`roadmaps/`, `process/`, `research/`) turned out to carry an explicit
+date/status header, so the historical-narrative carve-out applies far more
+broadly here. Most of the ~140 backtick-quoted report paths repo-wide
+already resolved correctly. Commit `c8c1095`.
+
+Found one well-defined sub-pattern: several reports were renamed/moved into
+subdirectories during a later reorganization, but their own internal self-
+citations (typically "`reports/OLD_NAME.md` (this document)") were never
+updated — mechanical citation breaks, not a rewrite of what the report
+found, so fixing them doesn't touch the historical narrative. Fixed 4 such
+self-citations (`phase1_invariant_measurement_complete.md`,
+`dtype_bug_investigation.md`, `session_2025-11-26_phase1_merge.md`,
+`mandatory_benchmarking_policy.md`) plus every place they cross-reference
+each other under the old names, keeping the old name as an "originally X"
+annotation rather than deleting it. Also fixed 2 archive-internal sibling
+references still pointing at the pre-archival flat path, and a genuinely
+broken (non-self-referential) citation — both `MISSING_FEATURES.md` and
+`README.md` cited a `reports/reasons.md` that doesn't exist under that name
+anywhere; the real file, verified by content match, is
+`reports/performance/gemm_gap_root_cause.md`. `CHANGELOG.md`'s own mention
+of the same old name was deliberately left alone — a changelog "Added:"
+line describing what a specific past commit added, not a live pointer.
+
+Investigated and deliberately left alone: 2 ambiguous self-references in
+dated planning docs (unclear whether they mean a sibling file, a not-yet-
+written deliverable, or a stale name); an explicit unchecked `- [ ]` TODO
+item; and a literal `YYYY-MM-DD` template placeholder.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1689,6 +1724,7 @@ examples — fixed directly in the script, not just the docs describing it.
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-16 | v1.27.0 | Direct follow-up ("review reports/ for the same bug class"). reports/ is a point-in-time record by design (every subdirectory carries an explicit date/status header, even the undated-looking ones), so the historical-narrative carve-out applied far more broadly than in docs/ -- most of the ~140 report paths repo-wide already resolved. Found one well-defined sub-pattern: 4 reports renamed/moved into subdirectories during a later reorganization still had internal self-citations under their old names ("this document" references broken by the move, not a rewrite of what was found) -- fixed those plus their cross-references to each other, keeping old names as "originally X" annotations rather than deleting them. Also fixed 2 archive-internal sibling references and a genuinely broken citation (`reports/reasons.md`, cited from MISSING_FEATURES.md and README.md, doesn't exist under that name -- real file is `reports/performance/gemm_gap_root_cause.md`, confirmed by content match); left CHANGELOG.md's mention of the same old name alone since it's describing what a specific past commit added, not a live pointer. Commit `c8c1095`. |
 | 2026-08-16 | v1.26.0 | Direct follow-up ("review docs/ for the same bug class") -- round 2 of docs/, since docs/ can't have a runtime path bug, so this hunted the structural analog: documented paths/commands presented as current that don't resolve. Fixed a residual bug from this session's own earlier docs/ pass (a path-depth-math snippet left unfixed after its accompanying label was corrected); found the original pass's link-checker only verified markdown `[text](url)` syntax, missing plain backtick prose paths, which let `artifact-organization.md` (never covered at all) and 2 more files slip through; and found `bench_phase0.py` doesn't exist anywhere in the repo (renamed `bench_simd_core_ops.py`, Nov 2025) yet was referenced as current in 9 docs/ files (58 occurrences) plus this file's own "Standard Benchmarks" section. Fixed all of them (docs/ + CLAUDE.md, per user-confirmed scope; the rename is 30+ files project-wide, README.md/CONTRIBUTING.md/benchmarks/README.md left for a separate pass). Also fixed the identical bug in run_all_benchmarks.py's own docstring. Commit `34d3be0`. |
 | 2026-08-16 | v1.25.0 | Direct follow-up ("review models/ for the same bug class"). All 26 Python files across 3-vae-gemm-v1/, tritnet/, company-flagships/ checked. sys.path/PROJECT_ROOT math verified correct everywhere (cross-checked programmatically); every ImportError fallback already loud and functionally-equivalent (not fake data). Found 2 real instances of the deeper silent-fallback pattern in embedding_exactitude_score.py: an `ami = 0.0` default when scikit-learn (not a documented dependency anywhere) is missing, and a bare `except: r2 = 0.0` around a linear-algebra solve -- both defaults are legitimate real values on their own metric's scale, making a silent failure indistinguishable from a genuine null finding, and the AMI one feeds a composite checkpoint-quality score. Both fixed with loud warnings. Commit `723893c`. |
 | 2026-08-16 | v1.24.0 | Direct follow-up ("review research/ for the same bug class"). research/scripts/falsify.py already had a thorough 2026-08-12/13 pass; re-checked specifically and came back clean -- ROOT computation correct, every component-load failure path already loud, verified by actually running --hypothesis H6 end-to-end. Found one adjacent issue while checking the sys.path.insert lines: models/gemm_discovery/ doesn't exist anywhere in the repo (git log --all confirms it was never committed), yet CLAUDE.md's own "Archived Example: GEMM Discovery" section presented 5 references to it as if current -- annotated all 5 as unreachable rather than deleting the section's still-valid lessons. **Also corrects a date error this session introduced**: the v1.21.0/v1.22.0/v1.23.0 rows below were labeled 2026-08-15, but git log shows their actual commits landed 2026-08-16 (the working session crossed midnight after the v1.20.0 build/scripts commits, which genuinely are 2026-08-15) -- the 3 section headers and changelog dates were corrected to match. Commit `9acefb4`. |
@@ -1733,4 +1769,4 @@ examples — fixed directly in the script, not just the docs describing it.
 
 ---
 
-**Version:** 1.26.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.27.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
