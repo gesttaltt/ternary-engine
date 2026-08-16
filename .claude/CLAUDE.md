@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.23 · Updated 2026-08-15 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.24 · Updated 2026-08-16 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1306,7 +1306,7 @@ new flags (AVX2 validated, zero-skip GEMM correctness checks pass);
 `build_all.py --help` shows the 3 new skip flags; `tests/run_tests.py` 15/15
 passing throughout.
 
-### 2026-08-15 docs/ + tests/ review — and a real "15/15 was never real" finding
+### 2026-08-16 docs/ + tests/ review — and a real "15/15 was never real" finding
 
 User-requested ("review docs/ and tests/ next"), immediate follow-up to the
 scripts/+build/ session above. Two parallel passes: `tests/` (~7,800 lines)
@@ -1394,7 +1394,7 @@ concurrently. Lesson: don't run two `--fix`-capable background agents
 against the same working tree at once, or expect one might "clean up" the
 other's uncommitted changes.
 
-### 2026-08-15 — same bug class, checked src/core/ and src/engine/
+### 2026-08-16 — same bug class, checked src/core/ and src/engine/
 
 User-requested direct follow-up to the tests/ sys.path finding above:
 "review src/core/ and src/engine/ for the same sys.path class of bug."
@@ -1431,7 +1431,7 @@ registered candidate is always selected regardless of score. Rebuilt
 (unchanged real-world outcome, since it always outscores the alternatives
 today), `tests/run_tests.py` 15/15.
 
-### 2026-08-15 — same bug class, checked benchmarks/
+### 2026-08-16 — same bug class, checked benchmarks/
 
 Direct follow-up to the two reviews above ("review benchmarks/ for the same
 bug class"). Unlike `src/core/`/`src/engine/`, `benchmarks/` genuinely has
@@ -1494,6 +1494,37 @@ ocultarlo") rather than omitted, though it's a single run in a shared,
 non-isolated dev container (CV 64-76%, well above this project's own rigor
 bar), not a controlled benchmark — a data point that needs a properly
 isolated re-run to mean anything, not a claim.
+
+### 2026-08-16 — same bug class, checked research/ — clean bill of health
+
+Direct follow-up ("review research/ for the same bug class"). `research/`
+is small (just `research/scripts/falsify.py`, 2,815 lines) and had already
+had a thorough dedicated pass in the 2026-08-12/13 sessions (the inverted-
+3adic-valuation bug, H9's zero-check, H1's skewed sample, missing pre-flight
+guards). Re-checked specifically for the sys.path class and its
+silent-degradation cousin. Commit `9acefb4`.
+
+Genuinely clean this time: `ROOT` computation (3 `.parent` calls for a file
+2 levels deep) is correct, verified both by inspection and by actually
+running `--hypothesis H6` end-to-end (exit 0). Every component-load failure
+path (data, hyperbolic, ultrametric, LUTs, trained model, corpus) already
+prints an explicit status marker and propagates a real failure signal — no
+silent mock-fallback anywhere, unlike the `benchmarks/` findings above.
+Documented-not-fixed: `self._load_status` and `FalsificationRunner.config`
+are both write-only (set, never read) — harmless, since the real control
+flow uses each load method's return value / a local `status` dict instead,
+not these fields.
+
+**Found while checking the `sys.path.insert` lines**: `models/gemm_discovery/`
+does not exist anywhere in this repo — confirmed via `git log --all` it was
+never actually committed, not deleted later. `falsify.py`'s
+`sys.path.insert()` for it is a genuine no-op (nothing imports from it).
+More significantly, CLAUDE.md's own "Archived Example: GEMM Discovery"
+section above (§ Ternary vs Binary Assumptions) presented 2 runnable
+`python models/gemm_discovery/...` commands and 3 more file-path references
+as if they work today. Added notes marking all 5 as currently unreachable
+— kept as historical record, not deleted, since the section's actual
+lessons about ternary-native metrics are still the project's position.
 
 ### Nice to Have
 
@@ -1576,9 +1607,10 @@ isolated re-run to mean anything, not a claim.
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
-| 2026-08-15 | v1.23.0 | Direct follow-up ("review benchmarks/ for the same bug class"). Unlike src/core/+src/engine/, benchmarks/ has real Python, so both the sys.path pattern and its silent-degradation cousin applied. Found: 5 files in benchmarks/deprecated/ with the exact off-by-one PROJECT_ROOT bug already fixed elsewhere in 2026-08-12 (fixed; also surfaced a stale README claiming ternary_backend was deprecated when a different, unrelated ternary_backend module is now live and API-compatible with these old scripts); test_falsification.py silently substituted NumPy for the real engine on ImportError and still produced a "VALIDATED" verdict with no marker anywhere except one easy-to-miss [WARN] line -- fixed to propagate the flag into the saved JSON, an unmissable console banner, and a distinct exit code. Bonus find while verifying: the script crashed on every real run (numpy.bool_ leaking into JSON serialization) -- fixed, and the now-actually-completable run reports FALSIFIED (2/5) in this environment, published per the project's own transparency rule rather than hidden, with the caveat that it's one noisy non-isolated run, not a controlled benchmark. Commit `73d0aeb`. |
-| 2026-08-15 | v1.22.0 | Direct follow-up to the tests/ sys.path finding below (user request: "review src/core/ and src/engine/ for the same sys.path class of bug"). Neither directory has any Python, so searched for the structural analog instead -- a resolution step that silently degrades, masked by an unstated invariant. Found one real match: `backend_registry_dispatch.cpp`'s best-backend scoring loop (`score > best_score` from a `best_score = 0` start) would silently return NULL if the only registered backend scored exactly 0, currently non-triggering only because Scalar's capabilities bitmask happens to always include TERNARY_CAP_FUSION. Fixed with an explicit `have_best` flag. Everything else checked (has_avx2() dispatch, backend availability filtering, duplicate headers, dlopen/file I/O) was already loud or non-applicable. Commit `1d6eefd`. |
-| 2026-08-15 | v1.21.0 | First dedicated review of docs/ and tests/ (user request, "review docs/ and tests/ next"), immediate follow-up to the scripts/+build/ session below. tests/: 10 findings fixed via code-review skill (fake pass/fail accounting, a fuzz loop that counted crashes as passes, run_tests.py counting self-skips as passed and ignoring the `required` field, a hard-fail instead of self-skip, range-only instead of exact-value assertions, a probe that conflated "not built" with "crashed", missing random seed) -- plus a real, non-cosmetic find: re-verifying the run_tests.py fix in a clean environment exposed that 3 test files were missing a `sys.path` entry needed to find their compiled module, meaning they'd been silently self-skipping and *every* prior "15/15" claim (this session's and, per CLAUDE.md's own history, prior sessions') was never a real pass for those 3 suites; fixed, now genuinely 15/15 with 0 skipped. docs/: 16 files fixed for stale paths, broken links, and factually-reversed claims (an "InvalidTritError not thrown in production" claim that's been false since 2026-08-14; an overstated VTune integration claim; a stale "canonical indexing deferred" note for a feature that shipped 2 versions ago), found via a dedicated fact-checking agent rather than the diff-oriented code-review skill. Also: a background code-review agent auto-reverted an in-progress edit to a file outside its own scope, assuming it was stray -- recovered, and noted as a lesson against running two `--fix` agents against the same working tree concurrently. Commits `a291ebb`, `bd3e6f6`, `24104b1`. |
+| 2026-08-16 | v1.24.0 | Direct follow-up ("review research/ for the same bug class"). research/scripts/falsify.py already had a thorough 2026-08-12/13 pass; re-checked specifically and came back clean -- ROOT computation correct, every component-load failure path already loud, verified by actually running --hypothesis H6 end-to-end. Found one adjacent issue while checking the sys.path.insert lines: models/gemm_discovery/ doesn't exist anywhere in the repo (git log --all confirms it was never committed), yet CLAUDE.md's own "Archived Example: GEMM Discovery" section presented 5 references to it as if current -- annotated all 5 as unreachable rather than deleting the section's still-valid lessons. **Also corrects a date error this session introduced**: the v1.21.0/v1.22.0/v1.23.0 rows below were labeled 2026-08-15, but git log shows their actual commits landed 2026-08-16 (the working session crossed midnight after the v1.20.0 build/scripts commits, which genuinely are 2026-08-15) -- the 3 section headers and changelog dates were corrected to match. Commit `9acefb4`. |
+| 2026-08-16 | v1.23.0 | Direct follow-up ("review benchmarks/ for the same bug class"). Unlike src/core/+src/engine/, benchmarks/ has real Python, so both the sys.path pattern and its silent-degradation cousin applied. Found: 5 files in benchmarks/deprecated/ with the exact off-by-one PROJECT_ROOT bug already fixed elsewhere in 2026-08-12 (fixed; also surfaced a stale README claiming ternary_backend was deprecated when a different, unrelated ternary_backend module is now live and API-compatible with these old scripts); test_falsification.py silently substituted NumPy for the real engine on ImportError and still produced a "VALIDATED" verdict with no marker anywhere except one easy-to-miss [WARN] line -- fixed to propagate the flag into the saved JSON, an unmissable console banner, and a distinct exit code. Bonus find while verifying: the script crashed on every real run (numpy.bool_ leaking into JSON serialization) -- fixed, and the now-actually-completable run reports FALSIFIED (2/5) in this environment, published per the project's own transparency rule rather than hidden, with the caveat that it's one noisy non-isolated run, not a controlled benchmark. Commit `73d0aeb`. |
+| 2026-08-16 | v1.22.0 | Direct follow-up to the tests/ sys.path finding below (user request: "review src/core/ and src/engine/ for the same sys.path class of bug"). Neither directory has any Python, so searched for the structural analog instead -- a resolution step that silently degrades, masked by an unstated invariant. Found one real match: `backend_registry_dispatch.cpp`'s best-backend scoring loop (`score > best_score` from a `best_score = 0` start) would silently return NULL if the only registered backend scored exactly 0, currently non-triggering only because Scalar's capabilities bitmask happens to always include TERNARY_CAP_FUSION. Fixed with an explicit `have_best` flag. Everything else checked (has_avx2() dispatch, backend availability filtering, duplicate headers, dlopen/file I/O) was already loud or non-applicable. Commit `1d6eefd`. |
+| 2026-08-16 | v1.21.0 | First dedicated review of docs/ and tests/ (user request, "review docs/ and tests/ next"), immediate follow-up to the scripts/+build/ session below. tests/: 10 findings fixed via code-review skill (fake pass/fail accounting, a fuzz loop that counted crashes as passes, run_tests.py counting self-skips as passed and ignoring the `required` field, a hard-fail instead of self-skip, range-only instead of exact-value assertions, a probe that conflated "not built" with "crashed", missing random seed) -- plus a real, non-cosmetic find: re-verifying the run_tests.py fix in a clean environment exposed that 3 test files were missing a `sys.path` entry needed to find their compiled module, meaning they'd been silently self-skipping and *every* prior "15/15" claim (this session's and, per CLAUDE.md's own history, prior sessions') was never a real pass for those 3 suites; fixed, now genuinely 15/15 with 0 skipped. docs/: 16 files fixed for stale paths, broken links, and factually-reversed claims (an "InvalidTritError not thrown in production" claim that's been false since 2026-08-14; an overstated VTune integration claim; a stale "canonical indexing deferred" note for a feature that shipped 2 versions ago), found via a dedicated fact-checking agent rather than the diff-oriented code-review skill. Also: a background code-review agent auto-reverted an in-progress edit to a file outside its own scope, assuming it was stray -- recovered, and noted as a lesson against running two `--fix` agents against the same working tree concurrently. Commits `a291ebb`, `bd3e6f6`, `24104b1`. |
 | 2026-08-15 | v1.20.0 | First dedicated bug hunt of scripts/ and build/*.py (user request, "review the project and commit it"). 14 bugs fixed across 11 files: stale test path + unquoted shell command (build_test_packing.py), a benchmark-cleanup glob that matched zero real files (clean_all.py), a silent MSVC-instead-of-clang-cl fallback on Windows PGO (build_pgo_unified.py), missing Linux/macOS platform branching + a *.pyd-only copy glob (build_reference.py), 3 of 8 build scripts missing from the unified build_all.py entry point, discarded return values + a Linux-incompatible "python" binary check (setup_dev_environment.py), -march=native SIGILL risk + an unguarded shutil.copy2 (build_backend.py), a missing ARM/Apple-Clang OpenMP guard (build_backend.py + build_zero_skip_gemm.py), an unpropagated build failure that always reported SUCCESS (build.py), and a CI gap that let a self-skipping test suite count as passed (ci.yml). The review-orchestrating agent fork itself stalled mid-run confusing which of its own async verification sub-agents had reported back; findings were recovered directly from the sub-agents' completed transcripts (all genuinely CONFIRMED) and applied by hand. All fixes rebuilt/re-verified on Linux, tests/run_tests.py 15/15. Commit `4e72be2`. |
 | 2026-08-14 | v1.19.0 | First dedicated bug hunt of src/core/ and src/engine/ (the production kernel and bindings -- user request, "check the engine"), prior sessions had covered benchmarks/research/models/opentimestamps but not this. Fixed a null-deref-on-OOM in ternary_gemm_zero_skip()'s convenience wrapper (reachable from Python) and an unsynchronized lazy-init data race in backend_avx2_v2_optimized.cpp's canonical LUT init (confirmed unreachable via any current Python entry point, fixed anyway per this doc's own no-UB principle, replaced with std::call_once). Also fixed 4 issues found in the immediately-preceding commit's new TritNet bindings (ISA-portability bug, imprecise perf claim, misleading comment, redundant buffer requests). See "2026-08-14 src/core/ + src/engine/ bug hunt" above for full details. Commits `14157d1`, `d5b792c`. |
 | 2026-08-14 | v1.18.0 | Wired up Python bindings for the TritNet inference engine, closing the last "what's left" item from the Phase 3 session report: `src/engine/bindings_tritnet_inference.cpp` -> `ternary_tritnet_inference` module, batched over [N,5] uint8 trit-encoded numpy arrays, runtime has_avx2() dispatch (graceful degradation, not compile-time-only). `build/build_tritnet_inference.py` mirrors build_tritnet_gemm.py. tests/python/test_tritnet_inference_bindings.py verifies all 5 ops against the full input space plus input validation, wired into run_tests.py (15/15). |
@@ -1617,4 +1649,4 @@ isolated re-run to mean anything, not a claim.
 
 ---
 
-**Version:** 1.23.0 · **Updated:** 2026-08-15 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.24.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
