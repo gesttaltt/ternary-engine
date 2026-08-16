@@ -535,12 +535,23 @@ def compute_hierarchy_metrics(
     dendrogram_corr, _ = spearmanr(pairwise_dists, val_diff_matrix)
     dendrogram_corr = float(dendrogram_corr) if not np.isnan(dendrogram_corr) else 0.0
 
-    # AMI between clusters and valuation (using k=10 clusters)
+    # AMI between clusters and valuation (using k=10 clusters).
+    # scikit-learn is not a documented dependency of this project (absent
+    # from CLAUDE.md's Dependencies section and every requirements list) --
+    # silently defaulting to 0.0 here would be indistinguishable from a
+    # genuine "no mutual information" finding (0.0 is a real point on AMI's
+    # own scale), and this value feeds directly into hc_score below. Warn
+    # loudly instead so a missing-dependency run can't be mistaken for a
+    # real low-AMI result. Found 2026-08-16 reviewing for silent-fallback
+    # bugs of the same class already found/fixed in benchmarks/ and tests/.
     try:
         from sklearn.metrics import adjusted_mutual_info_score
         labels_10 = fcluster(Z, 10, criterion='maxclust')
         ami = adjusted_mutual_info_score(sample_vals, labels_10)
     except ImportError:
+        print("WARNING: scikit-learn not installed -- cluster_valuation_ami "
+              "defaulting to 0.0, NOT a real measurement. Install with: "
+              "pip install scikit-learn")
         ami = 0.0
 
     return HierarchyMetrics(
@@ -587,7 +598,15 @@ def compute_linearity_metrics(
             ss_tot = np.sum((Y - np.mean(Y, axis=0)) ** 2)
             r2 = 1 - (ss_res / (ss_tot + 1e-8))
             r2 = max(0.0, min(1.0, r2))
-        except:
+        except Exception as e:
+            # r2=0.0 is also a legitimate real value on this scale ("no
+            # linear relationship") -- a bare `except: r2 = 0.0` made a
+            # genuine lstsq failure indistinguishable from that finding.
+            # Warn so it can't be silently read as a real result. Same bug
+            # class already found/fixed in benchmarks/, tests/, and just
+            # above in this file (the sklearn AMI fallback).
+            print(f"WARNING: linearity fit failed for '{op_name}': {e} -- "
+                  f"defaulting to r2=0.0, NOT a real measurement.")
             r2 = 0.0
 
         results[op_name] = r2
