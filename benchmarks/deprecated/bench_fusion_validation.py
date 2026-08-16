@@ -28,7 +28,7 @@ import time
 import numpy as np
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent  # benchmarks/deprecated/ is 2 levels deep
 sys.path.insert(0, str(PROJECT_ROOT))
 
 try:

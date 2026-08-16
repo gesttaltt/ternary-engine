@@ -69,6 +69,14 @@ class SkepticalBenchmark:
     def __init__(self):
         self.results: List[FalsificationResult] = []
         self.timestamp = datetime.now().isoformat()
+        # Set by run_falsification_tests() right after the ternary_simd_engine
+        # import attempt. None until then; must be explicitly set to False when
+        # the real engine isn't available and NumPy is substituted as a stand-in
+        # -- every PASS/FAIL/VALIDATED verdict derived from that mock data is
+        # not a real finding about the engine and must be marked as such
+        # everywhere it's surfaced (console summary, saved JSON), not just in
+        # the one [WARN] line printed at import time.
+        self.using_real_engine: Optional[bool] = None
 
     def benchmark(
         self,
@@ -151,9 +159,15 @@ class SkepticalBenchmark:
         details: Dict = None
     ):
         """Registra resultado de test de falsificacion."""
+        # Coerce to native bool: callers routinely compute `passed` from a
+        # numpy-scalar comparison (e.g. `cv < 0.3` where cv comes from
+        # np.std()/np.mean()), which yields numpy.bool_, not bool -- that
+        # type isn't JSON-serializable and crashes save_results() below on
+        # every real (non-mock) run. Fix here once rather than at each of
+        # the 6+ call sites.
         result = FalsificationResult(
             test_name=test_name,
-            passed=passed,
+            passed=bool(passed),
             expected=expected,
             actual=actual,
             details=details or {},
@@ -175,7 +189,15 @@ class SkepticalBenchmark:
             "python_version": platform.python_version(),
             "numpy_version": np.__version__,
             "timestamp": self.timestamp,
+            "using_real_engine": self.using_real_engine,
         }
+        if self.using_real_engine is False:
+            system_info["WARNING"] = (
+                "ternary_simd_engine was not importable when these results were "
+                "produced -- 'ternary_add'/'ternary_mul' were silently substituted "
+                "with plain NumPy, so every PASS/FAIL/speedup value below compares "
+                "NumPy against itself and says NOTHING about the real engine."
+            )
 
         # Resultados
         results_data = {
@@ -265,6 +287,8 @@ def run_falsification_tests():
 
         def ternary_mul(a, b):
             return numpy_int8_mul(a, b)
+
+    bench.using_real_engine = ternary_available
 
     # =========================================================================
     # TEST 1: Crossover Point
@@ -373,7 +397,7 @@ def run_falsification_tests():
         result_ternary = ternary_add(a, b)
         result_baseline = numpy_int8_add_saturated(a, b)
 
-        matches = np.array_equal(result_ternary, result_baseline)
+        matches = bool(np.array_equal(result_ternary, result_baseline))
         correctness_passed = correctness_passed and matches
 
         print(f"  Size {size}: {'MATCH' if matches else 'MISMATCH'}")
@@ -486,13 +510,29 @@ def run_falsification_tests():
     else:
         verdict = f"FALSIFIED: Solo {passed_count}/{total_count} - reconsiderar premisas"
 
+    if not ternary_available:
+        # This is the only thing that must survive a skim of the output --
+        # every PASS/FAIL above compared NumPy against itself, not the real
+        # engine. Don't let anyone read "VALIDATED" off this run.
+        print("\n" + "!" * 70)
+        print("  INVALIDO: ternary_simd_engine no estaba disponible.")
+        print("  Los resultados de arriba comparan NumPy contra si mismo, NO")
+        print("  el motor ternario real. Este veredicto NO cuenta:")
+        print("!" * 70)
+        verdict = f"NOT RUN AGAINST REAL ENGINE (mock NumPy substitute) -- would-be verdict: {verdict}"
+
     print(f"\n  VEREDICTO: {verdict}")
     print("=" * 70)
 
     # Guardar resultados
     output_file = bench.save_results()
 
-    # Retornar codigo de salida
+    # Retornar codigo de salida. A mock-engine run never counts as a pass,
+    # regardless of how many of its (meaningless) comparisons happened to
+    # come out favorably -- a caller checking only the exit code must not be
+    # able to mistake this for a real validation either.
+    if not ternary_available:
+        return 2
     return 0 if passed_count == total_count else 1
 
 

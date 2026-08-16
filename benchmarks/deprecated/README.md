@@ -2,7 +2,24 @@
 
 **Status:** Deprecated - Do not use for new development
 
-These scripts depend on the deprecated `ternary_backend` module which has been replaced by `ternary_simd_engine`.
+These scripts were written against an earlier, since-removed `ternary_backend`
+module and originally deprecated when the project consolidated to
+`ternary_simd_engine` (see "Why Deprecated" below).
+
+**Correction (2026-08-15):** a *different*, unrelated `ternary_backend`
+module has since been built from scratch (the v1.2.0 pluggable
+Scalar/AVX2_v1/AVX2_v2 backend system — `src/engine/bindings_backend_api.cpp`,
+`build/build_backend.py`, in CI since 2026-08-12; see `.claude/CLAUDE.md`).
+Its API (`init()`, `list_backends()`, `set_backend()`, `tadd()`/`tnot()`/etc.)
+turns out to be compatible with these old scripts by coincidence of naming,
+not by design — all 9 were verified to import and run successfully against
+the current `ternary_backend` today, once a separate `sys.path` bug (each
+script was 1 `.parent` short of the true repo root, since this directory is
+2 levels deep) was fixed. That does **not** mean their benchmark
+methodology, API assumptions, or results are current or trustworthy — this
+directory remains deprecated. Do not treat a successful run as validation;
+follow the migration path below or use the active benchmarks under
+`benchmarks/python-with-interpreter-overhead/` instead.
 
 ## Files
 

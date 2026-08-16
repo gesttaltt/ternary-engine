@@ -28,7 +28,7 @@ from typing import Dict, List, Callable
 import numpy as np
 
 # Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent  # benchmarks/deprecated/ is 2 levels deep
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from benchmarks.utils.system_load_monitor import (
