@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.20 · Updated 2026-08-15 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.21 · Updated 2026-08-15 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1295,6 +1295,94 @@ new flags (AVX2 validated, zero-skip GEMM correctness checks pass);
 `build_all.py --help` shows the 3 new skip flags; `tests/run_tests.py` 15/15
 passing throughout.
 
+### 2026-08-15 docs/ + tests/ review — and a real "15/15 was never real" finding
+
+User-requested ("review docs/ and tests/ next"), immediate follow-up to the
+scripts/+build/ session above. Two parallel passes: `tests/` (~7,800 lines)
+via the code-review skill (high effort, --fix); `docs/` (90 markdown files)
+via a general-purpose fact-checking agent, since a link/claim audit isn't
+the diff-oriented code-review skill's job. Commits `a291ebb`, `bd3e6f6`,
+`24104b1`.
+
+**tests/ findings** (10, one documented skip): `test_errors.py`'s
+`test_invalid_trit_values()` unconditionally returned `True` regardless of
+outcome; `test_simd_validation.py`'s 1000-trial fuzz loop's bare `except:`
+counted a crash as a pass; `run_tests.py`'s capability-skip branch only
+matched `'openmp'` (not the already-supported `'fusion'`), and
+`run_test_suite()` counted any exit-code-0 subprocess as "Passed" even
+suites that self-skip via `sys.exit(0)` after printing `"[SKIP]"`; every
+suite's `required` field was defined but never read, so an optional suite's
+failure flipped the overall exit code like a required one;
+`test_tritnet_gemm_integration.py` hard-failed instead of self-skipping when
+its optional module wasn't built; `test_backend_integration.py`'s
+tadd/tmul dispatch tests only range-checked output instead of checking
+exact values (unlike their tnot/tmax/tmin siblings in the same file);
+`test_capabilities.py`'s `_detect_openmp()` conflated "module not built"
+with "probe call crashed" under one blanket `except`; `test_omp.py` had no
+`np.random.seed()` despite this project's own documented convention.
+Skipped: `test_canonical_lut.py`'s fake pass/fail accounting (the file's own
+comment says it deliberately doesn't test the real C++ engine yet) —
+documented, not fixed, as a scope expansion beyond a contained bug.
+
+**The real find**: re-verifying the `run_tests.py` skip-detection fix in a
+clean environment (`env -u PYTHONPATH`) surfaced that `test_dense243.py`,
+`test_zero_skip_gemm.py`, and `test_tritnet_inference_bindings.py` were
+missing the `sys.path.insert(0, str(PROJECT_ROOT))` that
+`test_backend_integration.py` already has — without it, `import
+ternary_dense243_module` (etc.) can't find the compiled module in the
+project root when the script runs from `tests/python/`, so all three
+self-skip via their own `"[SKIP] ... not built"` branch **even when the
+module is genuinely built**. The now-fixed counting bug had been silently
+counting that self-skip as "Passed" — meaning this session's own earlier
+"15/15" claims (both today's build/scripts session and, per grep, every
+prior session's CI badge) were never a real pass for these 3 suites. Fixed
+by adding the same `sys.path` setup used elsewhere; re-verified genuinely
+PASSED (not skipped) with all 6 optional modules built, in a clean
+environment. `tests/run_tests.py`: 15/15, 0 skipped.
+
+**docs/ findings** (16 files fixed): systemic stale file-name references in
+`FEATURES.md` (SIMD/backend/canonical-index/dual-shuffle/fusion files all
+renamed in earlier reorgs this doc never caught up on) — rewritten
+wholesale; 8 broken links in `api-reference/source-code-overview.md` (the
+doc `docs/README.md` itself labels "START HERE"); 58 occurrences of a
+nonexistent `build/scripts/setup*.py` path across `build-system/{README,
+setup-standard,setup-pgo,setup-reference}.md` (real scripts are
+`build/build*.py`, no `scripts/` subdirectory — `setup-standard.md` even
+contradicted itself, one line saying `build.py` is at the project root, the
+rest of the file saying `build/scripts/setup.py`); a nonexistent
+`TESTING.md` referenced from 2 environment docs; broken cross-references
+between the two encoding spec docs; 5 broken links in `planning/ROADMAP.md`;
+a factually-reversed `InvalidTritError` claim in `error-handling.md`
+("not thrown in production" — it has been, since 2026-08-14); an overstated
+VTune "fully integrated and tested" claim in `profiling/README.md` (the
+call sites are real, the backend itself is unbuilt, matching CLAUDE.md's
+own already-corrected framing — also flagged that the documented
+CPPFLAGS/LDFLAGS VTune-build workflow doesn't work against the current
+`build.py`, which hardcodes flags and never reads those env vars); a stale
+"canonical indexing deferred" note in `planning/backend_api_design.md`
+(shipped in v1.3.0); a stale "DESIGN COMPLETE, Next: Implementation of
+Phase 1" status in `architecture/BRIDGE_LAYER_ARCHITECTURE.md` (Phase 1 is
+implemented and shipped); a retired-style "7,315× avg speedup" claim in
+`encoding_ecosystem_overview.md` (same compiled-vs-Python strawman class
+already retired project-wide). Two of the fact-checking agent's findings
+were mis-attributed to the wrong file (broken links actually in
+`FEATURES.md` were reported against `README.md`) — caught and corrected
+during application rather than applied blindly. Historical/point-in-time
+docs (`historical/`, `audits/`, dated analyses) were left alone per their
+own carve-out except where they had an active broken link presented as
+current, in which case a staleness note was added rather than editing the
+historical narrative.
+
+**Process note**: mid-session, the `tests/` code-review agent (sharing the
+same working tree as the concurrent `docs/` fact-checking agent) saw an
+in-progress `docs/FEATURES.md` diff, assumed it was stray/unrelated to its
+own scope, and ran `git checkout -- docs/FEATURES.md` — silently reverting
+most of an in-progress edit sequence. Recovered by rewriting the file once
+both background agents had finished, with no other agent running
+concurrently. Lesson: don't run two `--fix`-capable background agents
+against the same working tree at once, or expect one might "clean up" the
+other's uncommitted changes.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1376,6 +1464,7 @@ passing throughout.
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-15 | v1.21.0 | First dedicated review of docs/ and tests/ (user request, "review docs/ and tests/ next"), immediate follow-up to the scripts/+build/ session below. tests/: 10 findings fixed via code-review skill (fake pass/fail accounting, a fuzz loop that counted crashes as passes, run_tests.py counting self-skips as passed and ignoring the `required` field, a hard-fail instead of self-skip, range-only instead of exact-value assertions, a probe that conflated "not built" with "crashed", missing random seed) -- plus a real, non-cosmetic find: re-verifying the run_tests.py fix in a clean environment exposed that 3 test files were missing a `sys.path` entry needed to find their compiled module, meaning they'd been silently self-skipping and *every* prior "15/15" claim (this session's and, per CLAUDE.md's own history, prior sessions') was never a real pass for those 3 suites; fixed, now genuinely 15/15 with 0 skipped. docs/: 16 files fixed for stale paths, broken links, and factually-reversed claims (an "InvalidTritError not thrown in production" claim that's been false since 2026-08-14; an overstated VTune integration claim; a stale "canonical indexing deferred" note for a feature that shipped 2 versions ago), found via a dedicated fact-checking agent rather than the diff-oriented code-review skill. Also: a background code-review agent auto-reverted an in-progress edit to a file outside its own scope, assuming it was stray -- recovered, and noted as a lesson against running two `--fix` agents against the same working tree concurrently. Commits `a291ebb`, `bd3e6f6`, `24104b1`. |
 | 2026-08-15 | v1.20.0 | First dedicated bug hunt of scripts/ and build/*.py (user request, "review the project and commit it"). 14 bugs fixed across 11 files: stale test path + unquoted shell command (build_test_packing.py), a benchmark-cleanup glob that matched zero real files (clean_all.py), a silent MSVC-instead-of-clang-cl fallback on Windows PGO (build_pgo_unified.py), missing Linux/macOS platform branching + a *.pyd-only copy glob (build_reference.py), 3 of 8 build scripts missing from the unified build_all.py entry point, discarded return values + a Linux-incompatible "python" binary check (setup_dev_environment.py), -march=native SIGILL risk + an unguarded shutil.copy2 (build_backend.py), a missing ARM/Apple-Clang OpenMP guard (build_backend.py + build_zero_skip_gemm.py), an unpropagated build failure that always reported SUCCESS (build.py), and a CI gap that let a self-skipping test suite count as passed (ci.yml). The review-orchestrating agent fork itself stalled mid-run confusing which of its own async verification sub-agents had reported back; findings were recovered directly from the sub-agents' completed transcripts (all genuinely CONFIRMED) and applied by hand. All fixes rebuilt/re-verified on Linux, tests/run_tests.py 15/15. Commit `4e72be2`. |
 | 2026-08-14 | v1.19.0 | First dedicated bug hunt of src/core/ and src/engine/ (the production kernel and bindings -- user request, "check the engine"), prior sessions had covered benchmarks/research/models/opentimestamps but not this. Fixed a null-deref-on-OOM in ternary_gemm_zero_skip()'s convenience wrapper (reachable from Python) and an unsynchronized lazy-init data race in backend_avx2_v2_optimized.cpp's canonical LUT init (confirmed unreachable via any current Python entry point, fixed anyway per this doc's own no-UB principle, replaced with std::call_once). Also fixed 4 issues found in the immediately-preceding commit's new TritNet bindings (ISA-portability bug, imprecise perf claim, misleading comment, redundant buffer requests). See "2026-08-14 src/core/ + src/engine/ bug hunt" above for full details. Commits `14157d1`, `d5b792c`. |
 | 2026-08-14 | v1.18.0 | Wired up Python bindings for the TritNet inference engine, closing the last "what's left" item from the Phase 3 session report: `src/engine/bindings_tritnet_inference.cpp` -> `ternary_tritnet_inference` module, batched over [N,5] uint8 trit-encoded numpy arrays, runtime has_avx2() dispatch (graceful degradation, not compile-time-only). `build/build_tritnet_inference.py` mirrors build_tritnet_gemm.py. tests/python/test_tritnet_inference_bindings.py verifies all 5 ops against the full input space plus input validation, wired into run_tests.py (15/15). |
@@ -1414,4 +1503,4 @@ passing throughout.
 
 ---
 
-**Version:** 1.20.0 · **Updated:** 2026-08-15 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.21.0 · **Updated:** 2026-08-15 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
