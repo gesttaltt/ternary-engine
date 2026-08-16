@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.24 · Updated 2026-08-16 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.25 · Updated 2026-08-16 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1526,6 +1526,44 @@ as if they work today. Added notes marking all 5 as currently unreachable
 — kept as historical record, not deleted, since the section's actual
 lessons about ternary-native metrics are still the project's position.
 
+### 2026-08-16 — same bug class, checked models/
+
+Direct follow-up ("review models/ for the same bug class"). `models/` had
+a thorough dedicated pass in the 2026-08-13 session (`3-vae-gemm-v1/` +
+`company-flagships/`: the inverted-valuation bug found 9 more times,
+missing metrics, non-reproducible seeding, NaN risk, stale training
+embeddings, fake tests); `tritnet/` reviewed 2026-08-12; `bitnet/` is an
+empty placeholder. Checked all 26 Python files for both halves of the bug
+class. Commit `723893c`.
+
+`sys.path`/`PROJECT_ROOT` depth math: verified correct at all 7 sites that
+compute one, cross-checked programmatically against each file's real
+directory depth. `export_weights.py`/`generate_weights_header.py`
+intentionally use a local `models/tritnet/` root rather than the repo
+root, correctly (they only need sibling modules / the `phase2b_export/`
+output dir). No bug found. Every `except ImportError` site (7 total) was
+already loud and correct: pre-flight checkers, hard `sys.exit(1)`, or an
+explicit `warnings.warn()` + a genuinely equivalent fallback (not fake
+data — `data.py`'s Python fallback computes the same ternary ops, just
+slower; `ternary_layers.py`'s GEMM fallback is PyTorch's own real
+`F.linear`).
+
+**Found 2 real instances of the deeper pattern** — a fallback producing a
+fake-but-plausible value with zero indication anything went wrong, same
+shape as the mock-fallback bugs found in `benchmarks/` — both in
+`models/company-flagships/embedding_exactitude_score.py`:
+- `compute_hierarchy_metrics()`: `except ImportError: ami = 0.0` when
+  scikit-learn isn't installed — not a documented project dependency
+  anywhere, so a live risk, not hypothetical. `0.0` is also a real,
+  legitimate point on AMI's own scale ("no mutual information"), making a
+  missing-dependency run indistinguishable from a genuine null finding,
+  and it feeds directly into `hc_score`, a composite checkpoint-quality
+  score. Added a loud warning.
+- `compute_linearity_metrics()`'s inner loop: a bare `except: r2 = 0.0`
+  around `np.linalg.lstsq` — same ambiguity (`r2=0.0` is a real "no linear
+  relationship" value), and a bare except also swallows genuine bugs.
+  Narrowed to `except Exception as e` with the same style of loud warning.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1607,6 +1645,7 @@ lessons about ternary-native metrics are still the project's position.
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-16 | v1.25.0 | Direct follow-up ("review models/ for the same bug class"). All 26 Python files across 3-vae-gemm-v1/, tritnet/, company-flagships/ checked. sys.path/PROJECT_ROOT math verified correct everywhere (cross-checked programmatically); every ImportError fallback already loud and functionally-equivalent (not fake data). Found 2 real instances of the deeper silent-fallback pattern in embedding_exactitude_score.py: an `ami = 0.0` default when scikit-learn (not a documented dependency anywhere) is missing, and a bare `except: r2 = 0.0` around a linear-algebra solve -- both defaults are legitimate real values on their own metric's scale, making a silent failure indistinguishable from a genuine null finding, and the AMI one feeds a composite checkpoint-quality score. Both fixed with loud warnings. Commit `723893c`. |
 | 2026-08-16 | v1.24.0 | Direct follow-up ("review research/ for the same bug class"). research/scripts/falsify.py already had a thorough 2026-08-12/13 pass; re-checked specifically and came back clean -- ROOT computation correct, every component-load failure path already loud, verified by actually running --hypothesis H6 end-to-end. Found one adjacent issue while checking the sys.path.insert lines: models/gemm_discovery/ doesn't exist anywhere in the repo (git log --all confirms it was never committed), yet CLAUDE.md's own "Archived Example: GEMM Discovery" section presented 5 references to it as if current -- annotated all 5 as unreachable rather than deleting the section's still-valid lessons. **Also corrects a date error this session introduced**: the v1.21.0/v1.22.0/v1.23.0 rows below were labeled 2026-08-15, but git log shows their actual commits landed 2026-08-16 (the working session crossed midnight after the v1.20.0 build/scripts commits, which genuinely are 2026-08-15) -- the 3 section headers and changelog dates were corrected to match. Commit `9acefb4`. |
 | 2026-08-16 | v1.23.0 | Direct follow-up ("review benchmarks/ for the same bug class"). Unlike src/core/+src/engine/, benchmarks/ has real Python, so both the sys.path pattern and its silent-degradation cousin applied. Found: 5 files in benchmarks/deprecated/ with the exact off-by-one PROJECT_ROOT bug already fixed elsewhere in 2026-08-12 (fixed; also surfaced a stale README claiming ternary_backend was deprecated when a different, unrelated ternary_backend module is now live and API-compatible with these old scripts); test_falsification.py silently substituted NumPy for the real engine on ImportError and still produced a "VALIDATED" verdict with no marker anywhere except one easy-to-miss [WARN] line -- fixed to propagate the flag into the saved JSON, an unmissable console banner, and a distinct exit code. Bonus find while verifying: the script crashed on every real run (numpy.bool_ leaking into JSON serialization) -- fixed, and the now-actually-completable run reports FALSIFIED (2/5) in this environment, published per the project's own transparency rule rather than hidden, with the caveat that it's one noisy non-isolated run, not a controlled benchmark. Commit `73d0aeb`. |
 | 2026-08-16 | v1.22.0 | Direct follow-up to the tests/ sys.path finding below (user request: "review src/core/ and src/engine/ for the same sys.path class of bug"). Neither directory has any Python, so searched for the structural analog instead -- a resolution step that silently degrades, masked by an unstated invariant. Found one real match: `backend_registry_dispatch.cpp`'s best-backend scoring loop (`score > best_score` from a `best_score = 0` start) would silently return NULL if the only registered backend scored exactly 0, currently non-triggering only because Scalar's capabilities bitmask happens to always include TERNARY_CAP_FUSION. Fixed with an explicit `have_best` flag. Everything else checked (has_avx2() dispatch, backend availability filtering, duplicate headers, dlopen/file I/O) was already loud or non-applicable. Commit `1d6eefd`. |
@@ -1649,4 +1688,4 @@ lessons about ternary-native metrics are still the project's position.
 
 ---
 
-**Version:** 1.24.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.25.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
