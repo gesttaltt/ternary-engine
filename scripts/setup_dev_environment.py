@@ -247,42 +247,34 @@ def run_tests() -> bool:
 
 
 def generate_compile_commands() -> bool:
-    """Generate compile_commands.json for IDE support."""
+    """Generate compile_commands.json for IDE support.
+
+    Delegates to scripts/generate_compile_commands.py rather than
+    duplicating its logic here. Found 2026-08-16 reviewing scripts/ for the
+    same silent-wrong-result bug class hunted project-wide this session:
+    this function used to maintain its own separate, drifted copy of the
+    same generator -- hardcoded to MSVC-only flags/include syntax with no
+    platform branching at all (unlike the real standalone script, which
+    correctly branches Windows/Darwin/Linux). On Linux/macOS it silently
+    wrote a compile_commands.json full of `cl /O2 ... /I...` commands (a
+    Windows-only compiler invoked with Windows-only flag syntax) while
+    printing "[OK] Generated ... N entries" -- a real file, a real success
+    message, content that doesn't work on the platform it just ran on.
+    """
     print_header("Generating IDE Support Files")
 
     project_root = Path(__file__).parent.parent
-    src_core = project_root / "src" / "core"
-    src_engine = project_root / "src" / "engine"
+    script = project_root / "scripts" / "generate_compile_commands.py"
 
-    # Collect all C++ files
-    cpp_files = list(project_root.glob("src/**/*.cpp"))
-    header_files = list(project_root.glob("src/**/*.h"))
+    success, _ = run_command(
+        [sys.executable, str(script)],
+        "Generating compile_commands.json..."
+    )
+    if not success:
+        print_status("FAIL", "compile_commands.json generation failed")
+        return False
 
-    # MSVC compile command template
-    msvc_flags = "/O2 /std:c++17 /arch:AVX2 /EHsc /W4"
-    includes = f"/I{src_core} /I{src_engine} /I{src_engine}/dense243"
-
-    commands = []
-
-    for cpp_file in cpp_files:
-        commands.append({
-            "directory": str(project_root),
-            "file": str(cpp_file),
-            "command": f"cl {msvc_flags} {includes} /c {cpp_file}"
-        })
-
-    for header_file in header_files:
-        commands.append({
-            "directory": str(project_root),
-            "file": str(header_file),
-            "command": f"cl {msvc_flags} {includes} /c {header_file}"
-        })
-
-    output_path = project_root / "compile_commands.json"
-    with open(output_path, "w") as f:
-        json.dump(commands, f, indent=2)
-
-    print_status("OK", f"Generated compile_commands.json with {len(commands)} entries")
+    print_status("OK", "Generated compile_commands.json")
     return True
 
 
@@ -407,14 +399,18 @@ def main() -> int:
     build_ok = build_modules()
     tests_ok = run_tests()
 
-    # Generate IDE support
-    generate_compile_commands()
+    # Generate IDE support (non-fatal if it fails -- IDE convenience, not a
+    # build/test correctness gate, but the failure must still be visible
+    # rather than silently discarded)
+    compile_commands_ok = generate_compile_commands()
 
     # Print configuration and next steps
     if not skip_mcp:
         print_mcp_config()
 
     if build_ok and tests_ok:
+        if not compile_commands_ok:
+            print_status("WARN", "compile_commands.json generation failed -- IDE IntelliSense may not work; see output above")
         print_next_steps()
         return 0
     else:
@@ -422,6 +418,8 @@ def main() -> int:
             print_status("FAIL", "Module build failed -- see output above")
         if not tests_ok:
             print_status("FAIL", "Test suite failed -- see output above")
+        if not compile_commands_ok:
+            print_status("WARN", "compile_commands.json generation also failed -- see output above")
         print(f"\n{Colors.RED}Setup finished with errors.{Colors.RESET} "
               "Resolve the failures above, then re-run this script.")
         return 1
