@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.25 · Updated 2026-08-16 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.26 · Updated 2026-08-16 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1568,6 +1568,46 @@ shape as the mock-fallback bugs found in `benchmarks/` — both in
   relationship" value), and a bare except also swallows genuine bugs.
   Narrowed to `except Exception as e` with the same style of loud warning.
 
+### 2026-08-16 — same bug class, checked docs/ (round 2)
+
+Direct follow-up ("review docs/ for the same bug class"). `docs/` can't
+have a runtime `sys.path` bug (it's markdown), so this searched for the
+structural analog: documented paths/commands presented as current that
+don't actually resolve — the same failure-to-verify shape as every other
+fix in this chain, manifesting as prose instead of code. Commit `34d3be0`.
+
+Found two categories. **A residual bug from this session's own earlier
+docs/ pass**: `setup-standard.md`'s "Build Script Structure" snippet had
+its header comment corrected from `build/scripts/setup.py` to
+`build/build.py` earlier this session, but the accompanying path-depth
+math was left as-is — correct for the old assumed location, now one level
+too many for the corrected one. A reminder that "fix the label, not the
+logic" is exactly how this bug class recurs.
+
+**A genuine gap in the original docs/ pass**: its automated link-checker
+only verified `[text](url)` markdown syntax, never plain backtick-quoted
+prose paths — how most script paths in these docs are actually written. A
+broader regex sweep found `artifact-organization.md` was never covered by
+the original pass at all (wrong `build/scripts/` layout, a nonexistent
+`latest/output/` subfolder — verified against a real `python build/build.py`
+run that `latest/` holds the module directly, no subfolder, and standard
+builds use `t`/`o` not `temp`/`output` — that naming genuinely differs by
+build type), plus 2 more files the link-checker's syntax gap let slip
+through. Most significantly: **`bench_phase0.py` doesn't exist anywhere in
+the repo** — renamed to `bench_simd_core_ops.py` in a Nov 2025 refactor
+(confirmed via `git log`) — yet was still referenced as current in 9 active
+docs/ files (58 occurrences) plus this very file's own "Standard
+Benchmarks" section (which also had `bench_power_consumption.py`, renamed
+the same commit to `bench_power_efficiency.py`). The rename touches 30+
+files project-wide; scoped this pass to docs/ + CLAUDE.md per explicit user
+confirmation — README.md, CONTRIBUTING.md, `benchmarks/README.md`,
+`tests/README.md`, and historical/archived docs (which accurately describe
+what was true when written) are still untouched.
+
+Bonus: `benchmarks/python-with-interpreter-overhead/run_all_benchmarks.py`'s
+own docstring had the identical missing-subdirectory bug in its own Usage
+examples — fixed directly in the script, not just the docs describing it.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1649,6 +1689,7 @@ shape as the mock-fallback bugs found in `benchmarks/` — both in
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-16 | v1.26.0 | Direct follow-up ("review docs/ for the same bug class") -- round 2 of docs/, since docs/ can't have a runtime path bug, so this hunted the structural analog: documented paths/commands presented as current that don't resolve. Fixed a residual bug from this session's own earlier docs/ pass (a path-depth-math snippet left unfixed after its accompanying label was corrected); found the original pass's link-checker only verified markdown `[text](url)` syntax, missing plain backtick prose paths, which let `artifact-organization.md` (never covered at all) and 2 more files slip through; and found `bench_phase0.py` doesn't exist anywhere in the repo (renamed `bench_simd_core_ops.py`, Nov 2025) yet was referenced as current in 9 docs/ files (58 occurrences) plus this file's own "Standard Benchmarks" section. Fixed all of them (docs/ + CLAUDE.md, per user-confirmed scope; the rename is 30+ files project-wide, README.md/CONTRIBUTING.md/benchmarks/README.md left for a separate pass). Also fixed the identical bug in run_all_benchmarks.py's own docstring. Commit `34d3be0`. |
 | 2026-08-16 | v1.25.0 | Direct follow-up ("review models/ for the same bug class"). All 26 Python files across 3-vae-gemm-v1/, tritnet/, company-flagships/ checked. sys.path/PROJECT_ROOT math verified correct everywhere (cross-checked programmatically); every ImportError fallback already loud and functionally-equivalent (not fake data). Found 2 real instances of the deeper silent-fallback pattern in embedding_exactitude_score.py: an `ami = 0.0` default when scikit-learn (not a documented dependency anywhere) is missing, and a bare `except: r2 = 0.0` around a linear-algebra solve -- both defaults are legitimate real values on their own metric's scale, making a silent failure indistinguishable from a genuine null finding, and the AMI one feeds a composite checkpoint-quality score. Both fixed with loud warnings. Commit `723893c`. |
 | 2026-08-16 | v1.24.0 | Direct follow-up ("review research/ for the same bug class"). research/scripts/falsify.py already had a thorough 2026-08-12/13 pass; re-checked specifically and came back clean -- ROOT computation correct, every component-load failure path already loud, verified by actually running --hypothesis H6 end-to-end. Found one adjacent issue while checking the sys.path.insert lines: models/gemm_discovery/ doesn't exist anywhere in the repo (git log --all confirms it was never committed), yet CLAUDE.md's own "Archived Example: GEMM Discovery" section presented 5 references to it as if current -- annotated all 5 as unreachable rather than deleting the section's still-valid lessons. **Also corrects a date error this session introduced**: the v1.21.0/v1.22.0/v1.23.0 rows below were labeled 2026-08-15, but git log shows their actual commits landed 2026-08-16 (the working session crossed midnight after the v1.20.0 build/scripts commits, which genuinely are 2026-08-15) -- the 3 section headers and changelog dates were corrected to match. Commit `9acefb4`. |
 | 2026-08-16 | v1.23.0 | Direct follow-up ("review benchmarks/ for the same bug class"). Unlike src/core/+src/engine/, benchmarks/ has real Python, so both the sys.path pattern and its silent-degradation cousin applied. Found: 5 files in benchmarks/deprecated/ with the exact off-by-one PROJECT_ROOT bug already fixed elsewhere in 2026-08-12 (fixed; also surfaced a stale README claiming ternary_backend was deprecated when a different, unrelated ternary_backend module is now live and API-compatible with these old scripts); test_falsification.py silently substituted NumPy for the real engine on ImportError and still produced a "VALIDATED" verdict with no marker anywhere except one easy-to-miss [WARN] line -- fixed to propagate the flag into the saved JSON, an unmissable console banner, and a distinct exit code. Bonus find while verifying: the script crashed on every real run (numpy.bool_ leaking into JSON serialization) -- fixed, and the now-actually-completable run reports FALSIFIED (2/5) in this environment, published per the project's own transparency rule rather than hidden, with the caveat that it's one noisy non-isolated run, not a controlled benchmark. Commit `73d0aeb`. |
@@ -1692,4 +1733,4 @@ shape as the mock-fallback bugs found in `benchmarks/` — both in
 
 ---
 
-**Version:** 1.25.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.26.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
