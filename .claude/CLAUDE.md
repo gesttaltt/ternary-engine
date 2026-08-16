@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.29 · Updated 2026-08-16 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.30 · Updated 2026-08-16 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -1707,6 +1707,42 @@ section (described a 3-file suite that hasn't existed since the
 source of truth — confirmed against the real CI workflow); a nonexistent
 `benchmarks/bench_fair.py` → the real `bench_fair_baseline.py`.
 
+### 2026-08-16 — same bug class, checked scripts/ (round 2)
+
+Direct follow-up ("review scripts/ for the same bug class"). `scripts/`
+only has 2 files; both already had a pass in this session's very first
+review (2026-08-15, commit `4e72be2`), but that pass only touched
+`setup_dev_environment.py`'s `build_modules()`/`run_tests()` return-value
+tracking and its `"python"` binary check —
+`scripts/generate_compile_commands.py` was never reviewed, and
+`setup_dev_environment.py`'s *own separate* `generate_compile_commands()`
+function was missed entirely. Commit `5fe5d17`.
+
+`scripts/generate_compile_commands.py` itself: reviewed fresh, genuinely
+clean (correct depth math, correct platform branching, globs verified
+against every real file under `src/`, runs successfully).
+
+**`setup_dev_environment.py`'s `generate_compile_commands()`**: a real,
+live instance of the silent-wrong-result pattern — a *second*,
+independently-maintained, drifted copy of the same generator, hardcoded to
+MSVC-only flags and `/I`-style includes with zero platform branching
+(unlike the real standalone script). On Linux/macOS this silently wrote a
+`compile_commands.json` full of `cl /O2 ... /c file.cpp` commands — a
+Windows-only compiler invoked with Windows-only syntax — while printing
+`"[OK] Generated ... N entries"`, a genuine success message for content
+that can't work on the platform it just ran on. Verified concretely by
+running the buggy flag-construction logic directly on this Linux machine.
+Fixed by deleting the duplicate and delegating to the real script via
+subprocess, per this project's own documented single-source-of-truth
+principle (the same lesson gap #7 already names for
+`train_phase2a.py`/`train_phase2b.py`'s duplicated QAT code).
+
+Also found the identical "discarded return value" bug this exact file's
+first pass already fixed for `build_modules()`/`run_tests()`, but missed
+for `generate_compile_commands()` — wired into the same gating pattern,
+non-fatal but now visibly warning instead of silently discarding a
+failure.
+
 ### Nice to Have
 
 7. **Multi-dimensional arrays** - Currently 1D only
@@ -1788,6 +1824,7 @@ source of truth — confirmed against the real CI workflow); a nonexistent
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-16 | v1.30.0 | Direct follow-up ("review scripts/ for the same bug class") -- round 2 of scripts/, since round 1 (2026-08-15) missed generate_compile_commands.py entirely and setup_dev_environment.py's own separate, same-named function. Found a real live bug: setup_dev_environment.py maintained a second, drifted copy of the compile_commands.json generator, hardcoded to MSVC-only flags with zero platform branching -- on Linux/macOS it silently wrote a compile_commands.json full of broken `cl` commands while printing a success message. Fixed by deleting the duplicate and delegating to the real standalone script (single-source-of-truth). Also fixed the identical "discarded return value" bug this file's first pass already fixed for 2 other functions, but missed for this one. Commit `5fe5d17`. |
 | 2026-08-16 | v1.29.0 | Direct follow-up ("review CONTRIBUTING.md and tests/README.md for the same bug class"). Both dated 2025-10-13, predating the src/core/+src/engine/ reorganization and the tests/python/+tests/cpp/ split entirely. Significant finding: CONTRIBUTING.md's own "Import Path Convention" section -- written to teach contributors the correct sys.path depth-math pattern -- had wrong depth math in 2 of its 3 worked examples (off by exactly one .parent call each, verified programmatically), i.e. the project's own guidance was teaching the bug this whole review chain has been hunting. Fixed both, plus every stale build.py/tests/*.py/benchmarks/*.py path throughout both files, a false "keep .h/.cpp files at root level" claim, and tests/README.md's entire "Structure" section (described a 3-file suite superseded by the tests/python/+tests/cpp/ split, never mentioned tests/run_tests.py despite it being the real current entry point). Commit `e969a02`. |
 | 2026-08-16 | v1.28.0 | Direct follow-up ("review benchmarks/ README.md for the same bug class") -- one of the 30+ files identified but deferred during the docs/-round-2 review. Dated 2025-10-14, predating the Nov 2025 script reorganization entirely (18 bench_phase0.py occurrences alone). Comprehensive rewrite verified against the real current scripts: bench_phase0.py -> bench_simd_core_ops.py, bench_compare.py -> bench_regression_detect.py, correct run_all_benchmarks.py flags, a completely wrong "Structure" diagram replaced with the real directory layout, 2 dead doc links fixed, 2025-era Python-baseline speedup claims softened with a pointer to this project's already-retired compiled-vs-interpreted framing, and a CI/CD YAML example relabeled as illustrative rather than implying it describes the real ci.yml. Commit `6ecc4f0`. |
 | 2026-08-16 | v1.27.0 | Direct follow-up ("review reports/ for the same bug class"). reports/ is a point-in-time record by design (every subdirectory carries an explicit date/status header, even the undated-looking ones), so the historical-narrative carve-out applied far more broadly than in docs/ -- most of the ~140 report paths repo-wide already resolved. Found one well-defined sub-pattern: 4 reports renamed/moved into subdirectories during a later reorganization still had internal self-citations under their old names ("this document" references broken by the move, not a rewrite of what was found) -- fixed those plus their cross-references to each other, keeping old names as "originally X" annotations rather than deleting them. Also fixed 2 archive-internal sibling references and a genuinely broken citation (`reports/reasons.md`, cited from MISSING_FEATURES.md and README.md, doesn't exist under that name -- real file is `reports/performance/gemm_gap_root_cause.md`, confirmed by content match); left CHANGELOG.md's mention of the same old name alone since it's describing what a specific past commit added, not a live pointer. Commit `c8c1095`. |
@@ -1835,4 +1872,4 @@ source of truth — confirmed against the real CI workflow); a nonexistent
 
 ---
 
-**Version:** 1.29.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.30.0 · **Updated:** 2026-08-16 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
