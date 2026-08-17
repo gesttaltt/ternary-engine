@@ -1,8 +1,63 @@
 # Ternary Engine Roadmap
 
-**Last Updated:** 2025-11-24
-**Current Version:** v1.1.0 "ktr"
+**Last Updated:** 2026-08-17
+**Current Version:** v1.1.0 "ktr" (doc below still describes the v1.2.0 plan as upcoming; see the reality-check section immediately below — most of it has since shipped)
 **Target Version:** v1.2.0 → v2.0 → v3.0+
+
+---
+
+## Status Reality Check (2026-08-17)
+
+This document's body (dated 2025-11-24) was written before most of the
+v1.2.0 plan below was implemented, and has not been kept in sync. **CLAUDE.md
+is the authoritative, actively-maintained source of truth for current status**
+(see its "Critical Gaps & Known Issues" and "TritNet Development" sections);
+this box summarizes where the plan below actually stands as of this date so
+the rest of the document can be read as history rather than a live plan.
+
+**v1.2.0 plan — mostly shipped, unevenly:**
+| Planned item | Actual status |
+|---|---|
+| Encoding layer (Dense243, TriadSextet) | ✅ Done, validated |
+| Backend interface (TCBI) | ✅ Done — `ternary_backend` (Scalar/AVX2_v1/AVX2_v2), in CI since 2026-08-12 |
+| Canonical index LUT | ✅ Done |
+| LUT-256B expansion | Dead/unreachable code — never wired into a live dispatch path |
+| Dual-shuffle XOR | **Not implemented** — explicitly labeled a "future enhancement" in `backend_avx2_v2_optimized.cpp`; its test (`test_dual_shuffle_validation.py`) correctly reports failure rather than being faked or skipped |
+| Multi-platform CI | Linux x64 CI builds + runs the full test suite (15/15); no formal benchmark/performance validation on Linux yet, and macOS is untested |
+
+**TritNet — the plan below undercounts what's real:** Phase 2A (tnot) was
+listed above as "Pending Validation" in this doc's original body; in reality
+Phases 1–3 are all complete (truth tables → QAT training → C++ inference,
+scalar and AVX2 → Python bindings), a scope well beyond this document's
+tracking. The load-bearing open item is **Phase 4 (GPU acceleration)**,
+which has not been started — no CUDA/ROCm code exists in the tree despite
+the v3.0 target below. This matters because Phase 3's own benchmark found
+LUT beats AVX2-TritNet by 169×–195× on CPU; TritNet's practical case now
+rests entirely on the unstarted Phase 4/5 work, not on anything shipped so
+far. See CLAUDE.md → "TritNet Development" for the authoritative phase
+table.
+
+**v2.0 → v4.0 (index-arithmetic elimination, AVX-512, ARM NEON/SVE, RISC-V
+Vector, GPU/CUDA, FPGA/ASIC):** none of this has been started. No code
+exists for any backend beyond the current AVX2 (Scalar/AVX2_v1/AVX2_v2)
+system.
+
+**Success criteria below:** note that the "✅" marks in the "v1.2.0/v2.0/v3.0
+Success Criteria" sections further down are the *original authors' target
+list*, not a record of achievement — several of those criteria (e.g. "Builds
+on Windows/Linux/macOS", GPU backend, TritNet 100% *and* GPU-competitive)
+are still open per the table above. Read them as goals, not checkmarks.
+
+**Other open production gaps** (full detail in CLAUDE.md → "Critical Gaps &
+Known Issues"): competitive-benchmark results need a clean-environment
+re-run before being cited further; Dense243's Windows `/arch:AVX2` flag is
+unvalidated on actual Windows hardware; `train_phase2a.py`/`train_phase2b.py`
+still duplicate their QAT training code instead of sharing a module;
+`BenchmarkRunner` remains built but unused by the 3 active benchmark
+scripts; VTune/NVTX/Perfetto profiler backends have call sites but no build
+ever defines the macros to activate them; `test_falsification.py`'s one
+completed run reported FALSIFIED (2/5 criteria) in a noisy shared container
+and needs an isolated re-run before that number means anything either way.
 
 ---
 
@@ -483,6 +538,6 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for development guidelines.
 
 ---
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2026-08-17 (reality-check box added at top; body below is historical, dated 2025-11-24)
 **Maintainers:** Jonathan Verdun, Ternary Engine Contributors
 **License:** Apache 2.0
