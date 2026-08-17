@@ -1,27 +1,37 @@
 # TritNet Phase 5 — 2026-08-17
 
-**Scope:** First Phase 5 ("Learned Generalization") experiment from
+**Scope:** First two Phase 5 ("Learned Generalization") experiments from
 `.claude/CLAUDE.md`'s TritNet roadmap, picked up immediately after Phase 4
 closed with "TritNet's remaining practical case rests on Phase 5 —
-capabilities a LUT structurally cannot offer — not on throughput." Phase 5
-lists "explore approximate arithmetic" as its first bullet; this asks that
-question in a falsifiable form: **are the three imperfect checkpoints'
-errors (tmul 99.49%, tmin 99.89%, tmax 99.85%) structured, or statistically
-indistinguishable from noise scattered uniformly across the input space?**
+capabilities a LUT structurally cannot offer — not on throughput." Two of
+Phase 5's three roadmap bullets are addressed below: "explore approximate
+arithmetic" (§1-4) and "research applications" (§5).
 
-**Net result:** Structured, not noise — but not "graceful" either. Errors
-cluster extremely strongly by input **sparsity** (chi-square p < 1e-100 for
-all three imperfect ops, aggregate effect driven by well-populated bins, not
-small-n artifacts), with the sparsity extremes (near-all-zero or
-near-no-zero inputs) 2-40x more error-prone than the well-populated middle
-of the distribution. Valuation depth clustering is present for tmin/tmax
-(p < 1e-90) but not tmul (p = 0.31) — a real, reported split, not rounded
-away. Margin analysis shows the model is usually **confidently** wrong when
-it errs (mean margin -15 to -23 logits), not hovering near a decision
-boundary — only 1-6% of wrong positions are near-misses (margin > -0.5).
+**Net result, §1-4 (approximate arithmetic):** Structured, not noise — but
+not "graceful" either. Errors cluster extremely strongly by input
+**sparsity** (chi-square p < 1e-100 for all three imperfect ops, aggregate
+effect driven by well-populated bins, not small-n artifacts), with the
+sparsity extremes (near-all-zero or near-no-zero inputs) 2-40x more
+error-prone than the well-populated middle of the distribution. Valuation
+depth clustering is present for tmin/tmax (p < 1e-90) but not tmul
+(p = 0.31) — a real, reported split, not rounded away. Margin analysis
+shows the model is usually **confidently** wrong when it errs (mean margin
+-15 to -23 logits), not hovering near a decision boundary — only 1-6% of
+wrong positions are near-misses (margin > -0.5).
 
-New file: `models/tritnet/phase5_error_characterization.py`. Results:
-`models/tritnet/phase5_error_characterization_results.json`.
+**Net result, §5 (research applications):** Decisive negative. A trivial
+GPU-native direct-arithmetic kernel (no weights, no training, no LUT — just
+`tadd = clamp(a+b,-1,1)`, `tmul = a*b`, etc.) beats TritNet-GPU's
+compute-only throughput by **46-57x** and is 100% exact on all 5 ops (vs
+TritNet's 99.5-99.9% on 3 of them). There is no real GPU pipeline where
+TritNet's learned forward pass is preferable to just computing these five
+specific operations directly — the finding holds on CPU (Phase 3) and GPU
+(Phase 4/5) alike.
+
+New files: `models/tritnet/phase5_error_characterization.py`,
+`models/tritnet/phase5_gpu_application_context.py`. Results:
+`models/tritnet/phase5_error_characterization_results.json`,
+`models/tritnet/phase5_gpu_application_context_results.json`.
 
 ---
 
@@ -148,11 +158,61 @@ accuracy reach 100% the same way tadd/tnot already did? That would confirm
 the density-effect explanation rather than a representational limit of the
 architecture itself.
 
-"Discover novel ternary operations" and "research applications" (Phase 5's
-other two roadmap bullets) remain unstarted.
+## 5. Research applications: does TritNet-on-GPU ever beat the obvious alternative?
+
+Phase 4 compared TritNet-GPU against **CPU LUT** and found it short by
+4-10x even in the best case. That's the wrong comparison for a "real GPU
+pipeline" question, though: if an application already has its ternary data
+resident on GPU — the only scenario where TritNet-GPU's 15-47x edge over
+AVX2-CPU (Phase 4) would actually matter, since there'd be no CPU round
+trip either way — the real competing implementation isn't a CPU LUT. It's
+whatever a GPU-native version of the same operation looks like.
+
+And tadd/tmul/tmin/tmax/tnot all have trivial closed forms: `tnot(a)=-a`,
+`tadd(a,b)=clamp(a+b,-1,1)`, `tmul(a,b)=a*b`, `tmin/tmax` are literally
+`min`/`max`. No lookup, no learned weights, no training step, and (unlike
+3 of TritNet's 5 checkpoints) no accuracy loss at all — these are exact by
+construction.
+
+`models/tritnet/phase5_gpu_application_context.py` benchmarks that
+direct-arithmetic GPU kernel against TritNet-GPU (Phase 4), same hardware,
+same methodology:
+
+| Op | TritNet-GPU compute-only (best) | Direct-arithmetic-GPU compute-only (best) | Ratio |
+|---|---|---|---|
+| tnot | 82.19 Mops/s | 3,809.08 Mops/s | **46.3x** |
+| tadd | 44.58 Mops/s | 1,533.81-1,457.38 Mops/s (batch-dependent) | **~33-46x** |
+| tmul | 44.58 Mops/s | 2,566.27 Mops/s | **57.6x** |
+| tmin | 44.54 Mops/s | 2,564.56 Mops/s | **57.6x** |
+| tmax | 44.58 Mops/s | 2,568.49 Mops/s | **57.6x** |
+
+Correctness: 100.0000% exact for all 5 ops (n=243/59,049 each) — including
+tmul, tmin, tmax, where TritNet tops out at 99.49-99.89%.
+
+End-to-end (including H2D/D2H), direct arithmetic even closes most of the
+gap to CPU LUT that TritNet-GPU couldn't: best case reaches 0.65-0.76x of
+LUT throughput for the binary ops (vs TritNet-GPU's 0.25-0.27x) and 0.29x
+for tnot (vs TritNet-GPU's 0.13x) — still short of beating the LUT outright
+on this hardware, but a fundamentally different, much smaller gap, closed
+by removing the neural network rather than by optimizing it.
+
+**Answer to "research applications":** none exists, for these five specific
+operations, on any hardware tested in Phases 3-5. The reason is structural,
+not an implementation gap to optimize away: `tadd`/`tmul`/`tmin`/`tmax`/`tnot`
+cost O(1) FLOPs per element in closed form, while TritNet's forward pass
+spends ~240-5,376 ternary MACs computing the same answer (less accurately,
+for 3 of the 5). No amount of batching, precision reduction, or kernel
+fusion changes that ratio, because it isn't a throughput-tuning problem —
+it's spending a neural network on a problem that never needed one. If
+TritNet has a genuine niche, it is not as a replacement for exact
+per-trit-chunk arithmetic; it would have to be for operations that lack a
+cheap closed form in the first place — which is exactly Phase 5's other
+still-unstarted bullet, "discover novel ternary operations."
 
 ---
 
 **Reproduce:** `python models/tritnet/phase5_error_characterization.py`
 (pure NumPy + SciPy, no GPU or PyTorch required; reuses
 `models/tritnet/phase2b_export/` from Phase 3).
+`python models/tritnet/phase5_gpu_application_context.py` (requires PyTorch
+with CUDA; skips gracefully with exit 0 if unavailable).
