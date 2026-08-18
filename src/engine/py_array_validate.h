@@ -37,6 +37,27 @@
 // values) -- that difference is real, not duplicated, so it stays at each
 // call site rather than being forced into one over-general helper.
 //
+// PERFORMANCE NOTE (2026-08-18): the contiguity check originally used
+// `arr.attr("flags").attr("c_contiguous").cast<bool>()` -- a Python-level
+// attribute lookup round-trip on every call. Harmless for the GEMM
+// bindings this header serves (called once per matrix multiply, dominated
+// by the GEMM itself), but a real cost was found while adding multi-
+// dimensional array support to bindings_core_ops.cpp's
+// process_binary_array/process_unary_array (a genuine hot path, called
+// per element-wise op, not per matrix multiply) -- this project's own
+// "Modifying Hot Paths" before/after benchmark discipline caught a real
+// slowdown before this fix. Switched to `arr.flags() & py::array::c_style`,
+// the native pybind11 API already used correctly in
+// bindings_tritnet_inference.cpp -- no Python round-trip, pure C++ bitmask
+// check. (bindings_core_ops.cpp ended up not using this header at all --
+// see its own file for why: even buffer_info's request()-based shape
+// access, with this fix applied, still allocates two std::vectors per
+// call, which mattered enough at that call frequency to warrant
+// array_t's raw .ndim()/.shape(d) accessors instead. That tighter
+// approach isn't needed here since a GEMM binding's buffer_info cost is
+// negligible next to the GEMM itself.) See
+// reports/2026-08-18/MULTIDIM_ARRAY_SUPPORT.md for the full story.
+//
 // =============================================================================
 
 #ifndef TERNARY_PY_ARRAY_VALIDATE_H
@@ -70,7 +91,7 @@ inline py::buffer_info validate_2d_contiguous(const py::array_t<T>& arr,
     if (buf.ndim != 2) {
         throw std::invalid_argument(std::string(name) + " must be " + shape_desc);
     }
-    if (!arr.attr("flags").attr("c_contiguous").template cast<bool>()) {
+    if (!(arr.flags() & py::array::c_style)) {
         throw std::invalid_argument(std::string(name) + " must be C-contiguous (row-major)");
     }
     return buf;
@@ -85,7 +106,7 @@ inline py::buffer_info validate_1d_contiguous(const py::array_t<T>& arr,
     if (buf.ndim != 1) {
         throw std::invalid_argument(std::string(name) + " must be " + shape_desc);
     }
-    if (!arr.attr("flags").attr("c_contiguous").template cast<bool>()) {
+    if (!(arr.flags() & py::array::c_style)) {
         throw std::invalid_argument(std::string(name) + " must be C-contiguous (row-major)");
     }
     return buf;

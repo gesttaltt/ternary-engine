@@ -284,6 +284,13 @@ def main():
             'required': False,  # Optional module; test self-skips if not built
             'optional': True,
             'requires_capability': None
+        },
+        'multidim_arrays': {
+            'name': 'Multi-Dimensional Array Support Tests',
+            'script': TESTS_DIR / 'python' / 'test_multidim_arrays.py',
+            'required': True,  # Core engine feature, same module as phase0
+            'optional': False,
+            'requires_capability': None
         }
     }
 

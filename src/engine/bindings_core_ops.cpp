@@ -92,6 +92,7 @@
 #include "core/simd/fused_bridge_ops.h"
 #include "core/config/optimization_config.h"
 #include "core/profiling/ternary_profiler.h"
+#include <vector>
 
 namespace py = pybind11;
 
@@ -149,6 +150,30 @@ TERNARY_PROFILE_TASK_NAME(g_task_tail, "Scalar_Tail");
 // lines this replaces, and reports/2026-08-18/CLUSTER_A_TEMPLATE_UNIFICATION.md
 // for the before/after benchmark this doc's "Modifying Hot Paths" rule
 // requires before touching this file.
+//
+// Multi-dimensional arrays (2026-08-18): the SIMD/OMP paths below have
+// always operated on a flat pointer + element count -- shape was never
+// actually load-bearing to the computation, only to the old
+// A.unchecked<1>() validation call, which rejected anything but exactly
+// 1-D. Generalized to accept any shape, as long as A and B match exactly
+// (no broadcasting -- see ArrayShapeMismatchError's own doc comment) and
+// both are C-contiguous (required for flat indexing to be correct; same
+// convention as py_array_validate.h's GEMM-binding checks, gap #6 Cluster
+// C). The output array is constructed with the same shape as the input,
+// not flattened.
+//
+// PERFORMANCE NOTE: the first version of this used py::buffer_info
+// (A.request()/B.request()) for shape/contiguity access. buffer_info
+// allocates two std::vectors (shape + strides) per call -- 4 heap
+// allocations per binary op -- which this doc's own before/after benchmark
+// (required before touching this file, see
+// reports/2026-08-18/MULTIDIM_ARRAY_SUPPORT.md) caught as a real ~2x
+// slowdown at small array sizes and ~6-7% even at 100K elements. Rewritten
+// to use array_t's lightweight direct accessors (.flags(), .ndim(),
+// .shape(d), .data()) instead, which dereference the numpy array's
+// internal C struct directly with zero allocation -- the same fix already
+// applied to py_array_validate.h for the same reason. std::vector is only
+// constructed in the (rare, already-slow-path) shape-mismatch error case.
 template <typename T, bool Sanitize = true, typename SimdOp, typename ScalarOp>
 py::array_t<T> process_binary_array(
     py::array_t<T> A,
@@ -156,17 +181,49 @@ py::array_t<T> process_binary_array(
     SimdOp simd_op,
     ScalarOp scalar_op
 ) {
-    auto a = A.template unchecked<1>();
-    auto b = B.template unchecked<1>();
+    if (!(A.flags() & py::array::c_style)) throw std::invalid_argument("A must be C-contiguous (row-major)");
+    if (!(B.flags() & py::array::c_style)) throw std::invalid_argument("B must be C-contiguous (row-major)");
+
     ssize_t n = A.size();
+    ssize_t ndim_a = A.ndim();
+    ssize_t ndim_b = B.ndim();
 
-    // ENTRY-POINT VALIDATION: Ensure arrays match in size
-    // Validation happens here (not centralized) for simplicity and early failure
-    // Uses typed exception from ternary_errors.h for clear error semantics
-    if (n != B.size()) throw ArraySizeMismatchError(n, B.size());
+    // ENTRY-POINT VALIDATION: Ensure arrays match in shape. 1-D is the
+    // overwhelmingly common case (every pre-2026-08-18 caller), so it gets
+    // its own branch using exactly the single-comparison check this file
+    // always used -- not just for the (already fast) comparison itself,
+    // but to avoid perturbing the compiler's view of the hot loop below
+    // with the more general shape-array walk multi-dimensional inputs
+    // need. For 1-D arrays "different shape" and "different total size"
+    // are the same condition, so this also preserves
+    // ArraySizeMismatchError's exact behavior/wording for every existing
+    // 1-D caller unconditionally, not just as a side effect of the
+    // general path below.
+    if (ndim_a == 1 && ndim_b == 1) {
+        if (n != B.size()) throw ArraySizeMismatchError(n, B.size());
+    } else {
+        bool same_shape = (ndim_a == ndim_b);
+        const ssize_t* shape_a = A.shape();
+        const ssize_t* shape_b = B.shape();
+        for (ssize_t d = 0; same_shape && d < ndim_a; ++d) {
+            same_shape = (shape_a[d] == shape_b[d]);
+        }
+        if (!same_shape) {
+            if (n != B.size()) throw ArraySizeMismatchError(n, B.size());
+            // Multi-dimensional arrays with the same element count but
+            // incompatible shapes (e.g. (3,4) vs (4,3)) get the more
+            // specific ArrayShapeMismatchError instead of a confusing
+            // "sizes match" non-error.
+            throw ArrayShapeMismatchError(
+                std::vector<size_t>(shape_a, shape_a + ndim_a),
+                std::vector<size_t>(shape_b, shape_b + ndim_b)
+            );
+        }
+    }
 
-    py::array_t<T> out(n);
-    auto r = out.template mutable_unchecked<1>();
+    py::array_t<T> out = (ndim_a == 1)
+        ? py::array_t<T>(n)
+        : py::array_t<T>(std::vector<ssize_t>(A.shape(), A.shape() + ndim_a));
     const T* a_ptr = static_cast<const T*>(A.data());
     const T* b_ptr = static_cast<const T*>(B.data());
     T* r_ptr = static_cast<T*>(out.mutable_data());
@@ -237,7 +294,7 @@ py::array_t<T> process_binary_array(
     if (i < n) {
         TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_tail);
         for (; i < n; ++i) {
-            r[i] = scalar_op(a[i], b[i]);
+            r_ptr[i] = scalar_op(a_ptr[i], b_ptr[i]);
         }
         TERNARY_PROFILE_TASK_END(g_ternary_domain);
     }
@@ -247,17 +304,21 @@ py::array_t<T> process_binary_array(
 
 // --- Unified Unary Operation Template ---
 // Templated on T for the same reason as process_binary_array above.
+// Multi-dimensional arrays: same approach as process_binary_array (no
+// shape-match needed here, just contiguity -- there's only one operand).
 template <typename T, bool Sanitize = true, typename SimdOp, typename ScalarOp>
 py::array_t<T> process_unary_array(
     py::array_t<T> A,
     SimdOp simd_op,
     ScalarOp scalar_op
 ) {
-    auto a = A.template unchecked<1>();
-    ssize_t n = A.size();
+    if (!(A.flags() & py::array::c_style)) throw std::invalid_argument("A must be C-contiguous (row-major)");
 
-    py::array_t<T> out(n);
-    auto r = out.template mutable_unchecked<1>();
+    ssize_t n = A.size();
+    ssize_t ndim_a = A.ndim();
+    py::array_t<T> out = (ndim_a == 1)
+        ? py::array_t<T>(n)
+        : py::array_t<T>(std::vector<ssize_t>(A.shape(), A.shape() + ndim_a));
     const T* a_ptr = static_cast<const T*>(A.data());
     T* r_ptr = static_cast<T*>(out.mutable_data());
 
@@ -324,7 +385,7 @@ py::array_t<T> process_unary_array(
     if (i < n) {
         TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_tail);
         for (; i < n; ++i) {
-            r[i] = scalar_op(a[i]);
+            r_ptr[i] = scalar_op(a_ptr[i]);
         }
         TERNARY_PROFILE_TASK_END(g_ternary_domain);
     }

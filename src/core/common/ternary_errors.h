@@ -35,6 +35,7 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include <vector>
 
 // --- Base exception for all ternary operations ---
 class TernaryError : public std::runtime_error {
@@ -64,6 +65,50 @@ private:
         oss << "Array size mismatch: array A has " << size_a
             << " elements, array B has " << size_b << " elements. "
             << "Binary operations require equal-sized arrays.";
+        return oss.str();
+    }
+};
+
+// --- Array shape mismatch in binary operations (multi-dimensional arrays) ---
+// Thrown when binary operation inputs have the same total element count but
+// different shapes (e.g. a (3,4) array and a (4,3) array both have 12
+// elements). Distinct from ArraySizeMismatchError, which covers the more
+// common case of different element counts -- for 1-D arrays the two
+// conditions coincide, so this class only ever fires for multi-dimensional
+// inputs. Added 2026-08-18 alongside multi-dimensional array support.
+class ArrayShapeMismatchError : public TernaryError {
+public:
+    ArrayShapeMismatchError(const std::vector<size_t>& shape_a,
+                             const std::vector<size_t>& shape_b)
+        : TernaryError(format_message(shape_a, shape_b)),
+          shape_a_(shape_a),
+          shape_b_(shape_b) {}
+
+    const std::vector<size_t>& shape_a() const { return shape_a_; }
+    const std::vector<size_t>& shape_b() const { return shape_b_; }
+
+private:
+    std::vector<size_t> shape_a_;
+    std::vector<size_t> shape_b_;
+
+    static std::string format_shape(const std::vector<size_t>& shape) {
+        std::ostringstream oss;
+        oss << "(";
+        for (size_t i = 0; i < shape.size(); ++i) {
+            if (i) oss << ", ";
+            oss << shape[i];
+        }
+        oss << ")";
+        return oss.str();
+    }
+
+    static std::string format_message(const std::vector<size_t>& shape_a,
+                                       const std::vector<size_t>& shape_b) {
+        std::ostringstream oss;
+        oss << "Array shape mismatch: array A has shape " << format_shape(shape_a)
+            << ", array B has shape " << format_shape(shape_b) << ". "
+            << "Binary operations require identically-shaped arrays "
+            << "(broadcasting is not supported).";
         return oss.str();
     }
 };
