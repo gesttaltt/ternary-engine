@@ -1,0 +1,441 @@
+{
+  "n_equivalence_classes": 1444,
+  "n_candidates": 1365,
+  "n_fully_associative": 28,
+  "n_fully_associative_nondegenerate": 17,
+  "top_candidates": [
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        -1,
+        1,
+        1
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.2222222222222222,
+      "associativity": 1.0,
+      "commutativity": 0.7777777777777778,
+      "distributes_over_tadd": 0.7777777777777778,
+      "n_output_values": 3,
+      "balance": 0.4
+    },
+    {
+      "truth_table": [
+        -1,
+        0,
+        -1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.5555555555555556,
+      "associativity": 1.0,
+      "commutativity": 0.7777777777777778,
+      "distributes_over_tadd": 0.8518518518518519,
+      "n_output_values": 3,
+      "balance": 0.4
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        -1,
+        0,
+        1
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.4444444444444444,
+      "associativity": 1.0,
+      "commutativity": 0.7777777777777778,
+      "distributes_over_tadd": 1.0,
+      "n_output_values": 3,
+      "balance": 0.25
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        1,
+        -1,
+        0,
+        1,
+        1,
+        1,
+        -1
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.1111111111111111,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.7037037037037037,
+      "n_output_values": 3,
+      "balance": 0.25
+    },
+    {
+      "truth_table": [
+        -1,
+        0,
+        -1,
+        0,
+        -1,
+        0,
+        -1,
+        0,
+        1
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.4444444444444444,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.7037037037037037,
+      "n_output_values": 3,
+      "balance": 0.25
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        -1,
+        1,
+        1,
+        1
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.1111111111111111,
+      "associativity": 1.0,
+      "commutativity": 0.5555555555555556,
+      "distributes_over_tadd": 0.9259259259259259,
+      "n_output_values": 3,
+      "balance": 0.2
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        1,
+        -1,
+        1,
+        1
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.1111111111111111,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.8518518518518519,
+      "n_output_values": 3,
+      "balance": 0.2
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        1
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.3333333333333333,
+      "associativity": 1.0,
+      "commutativity": 0.5555555555555556,
+      "distributes_over_tadd": 0.8518518518518519,
+      "n_output_values": 3,
+      "balance": 0.2
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.5555555555555556,
+      "associativity": 1.0,
+      "commutativity": 0.5555555555555556,
+      "distributes_over_tadd": 0.9259259259259259,
+      "n_output_values": 3,
+      "balance": 0.2
+    },
+    {
+      "truth_table": [
+        -1,
+        0,
+        -1,
+        0,
+        0,
+        0,
+        -1,
+        0,
+        1
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.5555555555555556,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.9259259259259259,
+      "n_output_values": 3,
+      "balance": 0.2
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        -1,
+        0,
+        1
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.2222222222222222,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.9259259259259259,
+      "n_output_values": 3,
+      "balance": 0.16666666666666666
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        1,
+        -1,
+        1,
+        -1
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.1111111111111111,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.7777777777777778,
+      "n_output_values": 3,
+      "balance": 0.16666666666666666
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        1
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.1111111111111111,
+      "associativity": 1.0,
+      "commutativity": 0.7777777777777778,
+      "distributes_over_tadd": 1.0,
+      "n_output_values": 3,
+      "balance": 0.14285714285714285
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        -1,
+        -1,
+        -1,
+        1
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.1111111111111111,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.7777777777777778,
+      "n_output_values": 3,
+      "balance": 0.14285714285714285
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        -1,
+        -1,
+        1,
+        -1
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.1111111111111111,
+      "associativity": 1.0,
+      "commutativity": 0.7777777777777778,
+      "distributes_over_tadd": 0.7037037037037037,
+      "n_output_values": 3,
+      "balance": 0.14285714285714285
+    },
+    {
+      "truth_table": [
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.7777777777777778,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.8518518518518519,
+      "n_output_values": 3,
+      "balance": 0.14285714285714285
+    },
+    {
+      "truth_table": [
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "gf3_degree": 3,
+      "sparsity": 0.7777777777777778,
+      "associativity": 1.0,
+      "commutativity": 0.7777777777777778,
+      "distributes_over_tadd": 0.8518518518518519,
+      "n_output_values": 3,
+      "balance": 0.14285714285714285
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        -1,
+        0,
+        0
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.4444444444444444,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.8518518518518519,
+      "n_output_values": 2,
+      "balance": 0.8
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        -1,
+        -1,
+        1,
+        1,
+        -1,
+        1,
+        1
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.0,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.7037037037037037,
+      "n_output_values": 2,
+      "balance": 0.8
+    },
+    {
+      "truth_table": [
+        -1,
+        -1,
+        1,
+        -1,
+        -1,
+        1,
+        1,
+        1,
+        -1
+      ],
+      "gf3_degree": 4,
+      "sparsity": 0.0,
+      "associativity": 1.0,
+      "commutativity": 1.0,
+      "distributes_over_tadd": 0.5555555555555556,
+      "n_output_values": 2,
+      "balance": 0.8
+    }
+  ],
+  "trained_candidate": {
+    "truth_table": [
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      0,
+      -1,
+      1,
+      1
+    ],
+    "gf3_degree": 3,
+    "sparsity": 0.2222222222222222,
+    "associativity": 1.0,
+    "commutativity": 0.7777777777777778,
+    "distributes_over_tadd": 0.7777777777777778,
+    "n_output_values": 3,
+    "balance": 0.4
+  },
+  "training_result": {
+    "p1_acc": 1.0,
+    "p1_epochs": 212,
+    "acc_after_rescale": 0.6857355833053589,
+    "best_acc": 0.9951565861701965,
+    "best_epoch": 7258,
+    "converged": false,
+    "passed": true,
+    "weight_neg_pct": 20.22058823529412,
+    "weight_zero_pct": 41.35518790849673,
+    "weight_pos_pct": 38.42422385620915,
+    "elapsed_s": 2956.2059276103973
+  }
+}
