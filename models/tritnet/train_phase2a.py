@@ -14,13 +14,18 @@ Architecture decisions vs prior attempt (which peaked at 21.8%):
 GO criterion: 100% exact-match accuracy with standard weights,
               ≥95% with ternary-quantized weights.
 
+The QAT model classes, metrics, and checkpoint I/O below are shared with
+train_phase2b.py via qat_common.py (extracted 2026-08-18, CLAUDE.md gap #7)
+-- only this file's own dataset generation and seed-sweep training loop are
+specific to Phase 2A.
+
 Copyright 2025 Ternary Engine Contributors
 Licensed under the Apache License, Version 2.0
 """
 
-import json
 import sys
 import time
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -30,39 +35,33 @@ import torch.optim as optim
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "models" / "tritnet" / "src"))
+sys.path.insert(0, str(Path(__file__).parent))
+
+from qat_common import (  # noqa: E402
+    TritClassifier,
+    TritClassifierFloat,
+    exact_match_accuracy,
+    logits_to_ternary,
+    rescale_weights_for_qat,
+    targets_to_class_idx,
+    weight_distribution,
+)
+from qat_common import ckpt_path as _ckpt_path  # noqa: E402
+from qat_common import load_result as _load_result  # noqa: E402
+from qat_common import save_result as _save_result  # noqa: E402
 
 # Checkpoint dir, mirroring train_phase2b.py's phase2b/<op>/{best_qat.pt,result.json}
 # convention. Found 2026-08-14: this script trained tnot to its documented GO
 # decision but never called torch.save anywhere -- the model was discarded after
 # printing the decision, so there was no on-disk artifact for Phase 3 weight
-# export to consume. Added here rather than deduping with phase2b's identical
-# ckpt_path/load_result/save_result helpers -- that duplication is pre-existing
-# and already tracked (CLAUDE.md gap #7); fixing it is a separate refactor.
+# export to consume. Added save/resume here; the checkpoint I/O itself now lives
+# in qat_common.py, shared with train_phase2b.py (CLAUDE.md gap #7).
 CKPT_DIR = Path(__file__).parent / "phase2a"
 CKPT_DIR.mkdir(exist_ok=True)
 
-
-def ckpt_path(op_name: str, kind: str) -> Path:
-    d = CKPT_DIR / op_name
-    d.mkdir(exist_ok=True)
-    return d / f"{kind}.pt"
-
-
-def result_path(op_name: str) -> Path:
-    d = CKPT_DIR / op_name
-    d.mkdir(exist_ok=True)
-    return d / "result.json"
-
-
-def load_result(op_name: str) -> dict | None:
-    p = result_path(op_name)
-    if p.exists():
-        return json.loads(p.read_text())
-    return None
-
-
-def save_result(op_name: str, result: dict):
-    result_path(op_name).write_text(json.dumps(result, indent=2))
+ckpt_path = partial(_ckpt_path, CKPT_DIR)
+load_result = partial(_load_result, CKPT_DIR)
+save_result = partial(_save_result, CKPT_DIR)
 
 
 # ---------------------------------------------------------------------------
@@ -131,159 +130,8 @@ def make_tadd_dataset() -> tuple[torch.Tensor, torch.Tensor]:
 
 
 # ---------------------------------------------------------------------------
-# Model
-# ---------------------------------------------------------------------------
-
-class STE(torch.autograd.Function):
-    """Straight-through estimator for ternary weight quantization."""
-
-    @staticmethod
-    def forward(ctx, w: torch.Tensor, threshold: float) -> torch.Tensor:
-        sign = torch.sign(w)
-        mask = (w.abs() > threshold).float()
-        return sign * mask
-
-    @staticmethod
-    def backward(ctx, grad: torch.Tensor):
-        return grad, None
-
-
-class TernaryLinearQAT(nn.Module):
-    """Linear layer with ternary weights quantized during the forward pass (QAT)."""
-
-    def __init__(self, in_f: int, out_f: int, threshold: float = 0.3, bias: bool = True):
-        super().__init__()
-        self.threshold = threshold
-        self.weight = nn.Parameter(torch.empty(out_f, in_f))
-        self.bias_p = nn.Parameter(torch.zeros(out_f)) if bias else None
-        nn.init.normal_(self.weight, std=1.0)  # start wide so most weights quantize to ±1
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        w_q = STE.apply(self.weight, self.threshold)
-        return nn.functional.linear(x, w_q, self.bias_p)
-
-    def get_ternary_weights(self) -> torch.Tensor:
-        with torch.no_grad():
-            return quantize_ternary(self.weight, self.threshold)
-
-
-class TritClassifier(nn.Module):
-    """
-    Classify each output trit position into {-1, 0, +1}.
-
-    Output shape: [batch, 5, 3] logits (3 classes per trit position).
-    Loss: CrossEntropyLoss summed over 5 positions.
-    Accuracy: fraction of samples where all 5 argmax predictions match target.
-
-    Uses QAT (quantization-aware training): weights are ternary {-1,0,+1} during
-    the forward pass, STE allows gradients to update the underlying float weights.
-    """
-
-    def __init__(
-        self,
-        in_features: int = 5,
-        hidden: int = 64,
-        n_out_trits: int = 5,
-        threshold: float = 0.3,
-    ):
-        super().__init__()
-        self.n_out_trits = n_out_trits
-        self.threshold = threshold
-        self.fc1 = TernaryLinearQAT(in_features, hidden, threshold=threshold)
-        self.fc2 = TernaryLinearQAT(hidden, hidden, threshold=threshold)
-        self.fc3 = TernaryLinearQAT(hidden, n_out_trits * 3, threshold=threshold)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x.view(-1, self.n_out_trits, 3)
-
-
-# ---------------------------------------------------------------------------
-# Training helpers
-# ---------------------------------------------------------------------------
-
-TRIT_TO_IDX = {-1: 0, 0: 1, 1: 2}
-
-
-def targets_to_class_idx(Y: torch.Tensor) -> torch.Tensor:
-    """Convert ternary targets [batch, 5] ∈ {-1,0,+1} → class indices [batch, 5] ∈ {0,1,2}."""
-    return (Y + 1).long()
-
-
-def logits_to_ternary(logits: torch.Tensor) -> torch.Tensor:
-    """Convert [batch, 5, 3] logits → [batch, 5] ternary values ∈ {-1,0,+1}."""
-    return logits.argmax(dim=2).float() - 1
-
-
-def exact_match_accuracy(logits: torch.Tensor, Y: torch.Tensor) -> float:
-    """Fraction of samples where ALL 5 output trits are correct."""
-    pred = logits_to_ternary(logits)
-    return (pred == Y).all(dim=1).float().mean().item()
-
-
-def quantize_ternary(w: torch.Tensor, threshold: float = 0.5) -> torch.Tensor:
-    """Quantize weight tensor to {-1, 0, +1} using magnitude threshold."""
-    sign = torch.sign(w)
-    mask = (w.abs() > threshold).float()
-    return sign * mask
-
-
-def dead_zone_penalty(model: nn.Module) -> torch.Tensor:
-    """Penalize float weights that sit inside the dead zone [−thr, +thr]."""
-    total = torch.tensor(0.0)
-    for layer in [model.fc1, model.fc2, model.fc3]:
-        w = layer.weight
-        thr = layer.threshold
-        in_dead = (w.abs() < thr)
-        total = total + (in_dead.float() * (thr - w.abs())).sum()
-    return total
-
-
-# ---------------------------------------------------------------------------
-# Float-weight (no quantization) classifier for Phase 1
-# ---------------------------------------------------------------------------
-
-class TritClassifierFloat(nn.Module):
-    """Same architecture as TritClassifier but with full-precision weights."""
-
-    def __init__(self, in_features: int = 5, hidden: int = 64, n_out_trits: int = 5):
-        super().__init__()
-        self.n_out_trits = n_out_trits
-        self.fc1 = nn.Linear(in_features, hidden)
-        self.fc2 = nn.Linear(hidden, hidden)
-        self.fc3 = nn.Linear(hidden, n_out_trits * 3)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x.view(-1, self.n_out_trits, 3)
-
-
-# ---------------------------------------------------------------------------
 # Training loop
 # ---------------------------------------------------------------------------
-
-def rescale_weights_for_qat(float_model: nn.Module, qat_model: nn.Module, threshold: float):
-    """Copy float weights into QAT model, rescaled so most exceed the quantization threshold.
-
-    Scaling by a positive constant preserves logit ordering (CE loss), so the
-    rescaled model has the same 100% accuracy but weights that are mostly > threshold.
-    """
-    float_layers = [float_model.fc1, float_model.fc2, float_model.fc3]
-    qat_layers = [qat_model.fc1, qat_model.fc2, qat_model.fc3]
-    with torch.no_grad():
-        for fl, ql in zip(float_layers, qat_layers):
-            w = fl.weight.data
-            b = fl.bias.data
-            # Scale so that the 75th-percentile absolute weight = 2*threshold
-            p75 = w.abs().quantile(0.75).clamp(min=1e-8)
-            scale = (2.0 * threshold) / p75
-            ql.weight.data.copy_(w * scale)
-            ql.bias_p.data.copy_(b * scale)
-
 
 def train_one_seed(
     X: torch.Tensor,
@@ -383,14 +231,7 @@ def train_one_seed(
     elapsed = time.time() - t0
 
     # Weight distribution
-    total_w = ternary_neg = ternary_zero = ternary_pos = 0
-    with torch.no_grad():
-        for layer in [qat_model.fc1, qat_model.fc2, qat_model.fc3]:
-            w_q = layer.get_ternary_weights()
-            ternary_neg += (w_q == -1).sum().item()
-            ternary_zero += (w_q == 0).sum().item()
-            ternary_pos += (w_q == 1).sum().item()
-            total_w += w_q.numel()
+    neg_frac, zero_frac, pos_frac = weight_distribution(qat_model)
 
     return {
         'seed': seed,
@@ -405,9 +246,9 @@ def train_one_seed(
         'elapsed_s': elapsed,
         'converged': best_acc >= 1.0,
         'ternary_ok': best_acc >= 0.95,
-        'weight_neg_pct': 100 * ternary_neg / total_w if total_w else 0,
-        'weight_zero_pct': 100 * ternary_zero / total_w if total_w else 0,
-        'weight_pos_pct': 100 * ternary_pos / total_w if total_w else 0,
+        'weight_neg_pct': 100 * neg_frac,
+        'weight_zero_pct': 100 * zero_frac,
+        'weight_pos_pct': 100 * pos_frac,
     }
 
 
@@ -474,13 +315,13 @@ def main():
 
     # GO/NO-GO decision
     go = n_converged >= 2 and n_ternary_ok >= 2
-    partial = n_converged >= 1
+    partial_go = n_converged >= 1
 
     if go:
         print("DECISION: GO")
         print("  tnot is reliably learnable to 100% AND survives ternary quantization.")
         print("  Proceed to Phase 2B: scale to tadd, tmul, tmin, tmax.")
-    elif partial:
+    elif partial_go:
         print("DECISION: CONDITIONAL GO")
         print("  tnot converges to 100% on some seeds but ternary quantization degrades it.")
         print("  Next step: tune quantization threshold or use larger hidden size.")
@@ -553,13 +394,7 @@ def main():
         # deterministic-but-independent training run from the same seed).
         rebuilt_acc = exact_match_accuracy(model(X), Y)
 
-    neg = zero = pos = total = 0
-    for layer in [model.fc1, model.fc2, model.fc3]:
-        w = layer.get_ternary_weights()
-        neg += (w == -1).sum().item()
-        zero += (w == 0).sum().item()
-        pos += (w == 1).sum().item()
-        total += w.numel()
+    neg_frac, zero_frac, pos_frac = weight_distribution(model)
 
     # Persist the GO checkpoint. Previously this script trained tnot to its
     # documented decision and discarded the model -- no torch.save existed
@@ -572,9 +407,9 @@ def main():
         'best_acc': rebuilt_acc,
         'converged': rebuilt_acc >= 0.9999,
         'passed': rebuilt_acc >= 0.99,
-        'weight_neg_pct': 100 * neg / total if total else 0,
-        'weight_zero_pct': 100 * zero / total if total else 0,
-        'weight_pos_pct': 100 * pos / total if total else 0,
+        'weight_neg_pct': 100 * neg_frac,
+        'weight_zero_pct': 100 * zero_frac,
+        'weight_pos_pct': 100 * pos_frac,
         'hidden': 64,
         'in_features': 5,
         'threshold': 0.3,

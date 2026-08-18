@@ -37,7 +37,6 @@ OUTPUT: benchmarks/results/fair_baseline_<timestamp>.json + stdout table
 import argparse
 import json
 import platform
-import statistics
 import sys
 import time
 from datetime import datetime
@@ -50,14 +49,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 import ternary_simd_engine as eng  # noqa: E402
 
-
-def safe_stdev(data) -> float:
-    """statistics.stdev() requires >= 2 samples; --repeats 1 (a legitimate
-    quick smoke-test value — argparse has no minimum on it) crashed every
-    cell with StatisticsError before this. A single sample has no variance
-    to report, so 0.0 is the honest answer, not an error.
-    Found 2026-08-12."""
-    return statistics.stdev(data) if len(data) >= 2 else 0.0
+# Shared statistics engine (median/mean/stdev/CV/CI), single-sourced with
+# BenchmarkRunner and bench_simd_fusion_ops.py. Extracted 2026-08-18,
+# CLAUDE.md gap #8. compute_timing_statistics() already guards the
+# len==1 statistics.stdev() ValueError this file's own safe_stdev() used to
+# handle locally (--repeats 1 is a legitimate quick smoke-test value --
+# argparse has no minimum on it -- found 2026-08-12).
+sys.path.insert(0, str(Path(__file__).parent))
+from benchmark_framework import compute_timing_statistics  # noqa: E402
 
 SEED = 42
 DEFAULT_SIZES = [1_000, 10_000, 100_000, 1_000_000, 10_000_000]
@@ -166,17 +165,23 @@ def bench_cell(op_name, engine_fn, numpy_fn, is_binary, size, repeats, rng):
     t_e = time_call(run_e, repeats)
     t_n = time_call(run_n, repeats)
 
-    med_e = statistics.median(t_e)
-    med_n = statistics.median(t_n)
+    stats_e = compute_timing_statistics(t_e)
+    stats_n = compute_timing_statistics(t_n)
+    med_e = stats_e['median']
+    med_n = stats_n['median']
     return {
         'op': op_name,
         'size': size,
         'engine_median_us': med_e * 1e6,
-        'engine_std_us': safe_stdev(t_e) * 1e6,
-        'engine_cv': safe_stdev(t_e) / statistics.mean(t_e),
+        'engine_std_us': stats_e['stdev'] * 1e6,
+        # compute_timing_statistics() reports 'cv' as a percentage (0-100);
+        # this script's own convention (and the 0.15 threshold below) is a
+        # 0-1 fraction, so convert here rather than changing either
+        # convention's meaning.
+        'engine_cv': stats_e['cv'] / 100,
         'numpy_median_us': med_n * 1e6,
-        'numpy_std_us': safe_stdev(t_n) * 1e6,
-        'numpy_cv': safe_stdev(t_n) / statistics.mean(t_n),
+        'numpy_std_us': stats_n['stdev'] * 1e6,
+        'numpy_cv': stats_n['cv'] / 100,
         'engine_mops_s': size / med_e / 1e6,
         'numpy_mops_s': size / med_n / 1e6,
         'speedup': med_n / med_e,

@@ -45,7 +45,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).parent))
-from train_phase2b import TritClassifier  # noqa: E402 -- shape-identical to phase2a's own copy
+from qat_common import TritClassifier  # noqa: E402 -- shared by train_phase2a.py/train_phase2b.py
 
 ROOT = Path(__file__).parent
 EXPORT_DIR = ROOT / "phase2b_export"

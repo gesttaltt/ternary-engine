@@ -25,6 +25,46 @@ from typing import Callable, List, Dict, Any
 import numpy as np
 
 
+def compute_timing_statistics(times: List[float]) -> Dict[str, float]:
+    """Compute median/mean/stdev/CV/95%-CI from a list of per-call timing samples.
+
+    Unit-agnostic (works on seconds or nanoseconds; 'cv' is a PERCENTAGE
+    regardless of input unit -- callers wanting a 0-1 fraction must divide
+    by 100 themselves).
+
+    Shared statistics engine for the Python benchmark scripts in this
+    directory (extracted 2026-08-18, CLAUDE.md gap #8: bench_fair_baseline.py
+    and bench_simd_fusion_ops.py each hand-rolled their own version of this
+    with drifting rigor -- e.g. bench_fair_baseline.py's local safe_stdev()
+    guarded the len==1 statistics.stdev() ValueError, this implementation
+    didn't, until now). Single source of truth; BenchmarkRunner.benchmark()
+    calls this too.
+    """
+    median = statistics.median(times)
+    mean = statistics.mean(times)
+    stdev = statistics.stdev(times) if len(times) > 1 else 0.0
+    cv = (stdev / mean * 100) if mean > 0 else 0.0
+
+    # 95% confidence interval for the mean
+    n = len(times)
+    ci_margin = 1.96 * (stdev / math.sqrt(n)) if n > 1 else 0.0
+    # Timing data is strictly non-negative, but a naive symmetric Gaussian CI
+    # doesn't know that -- a single severe outlier among otherwise-tight
+    # samples can push ci_margin past mean, giving a negative ci_lower that
+    # reads as nonsense for a "time" quantity. Found 2026-08-12.
+    ci_lower = max(0.0, mean - ci_margin)
+    ci_upper = mean + ci_margin
+
+    return {
+        'median': median,
+        'mean': mean,
+        'stdev': stdev,
+        'cv': cv,
+        'ci_lower': ci_lower,
+        'ci_upper': ci_upper,
+    }
+
+
 @dataclass
 class BenchmarkConfig:
     """Configuration for benchmark runs"""
@@ -113,32 +153,13 @@ class BenchmarkRunner:
         self.config = config
 
     def _compute_statistics(self, times_ns: List[float]) -> Dict[str, float]:
-        """Compute comprehensive statistics from timing samples"""
-        median = statistics.median(times_ns)
-        mean = statistics.mean(times_ns)
-        stdev = statistics.stdev(times_ns) if len(times_ns) > 1 else 0.0
-        cv = (stdev / mean * 100) if mean > 0 else 0.0
+        """Compute comprehensive statistics from timing samples.
 
-        # 95% confidence interval for the mean
-        n = len(times_ns)
-        ci_margin = 1.96 * (stdev / math.sqrt(n)) if n > 1 else 0.0
-        # Timing data is strictly non-negative, but a naive symmetric
-        # Gaussian CI doesn't know that — a single severe outlier among
-        # otherwise-tight samples can push ci_margin past mean, giving a
-        # negative ci_lower that reads as nonsense for a "time" quantity
-        # and (worse) propagates into speedup_upper below as a
-        # division by a negative or zero number. Found 2026-08-12.
-        ci_lower = max(0.0, mean - ci_margin)
-        ci_upper = mean + ci_margin
-
-        return {
-            'median': median,
-            'mean': mean,
-            'stdev': stdev,
-            'cv': cv,
-            'ci_lower': ci_lower,
-            'ci_upper': ci_upper
-        }
+        Delegates to the module-level compute_timing_statistics() (single
+        source of truth, shared with the other benchmark scripts in this
+        directory -- see that function's docstring).
+        """
+        return compute_timing_statistics(times_ns)
 
     def benchmark(
         self,

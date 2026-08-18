@@ -10,7 +10,6 @@ Validates the claimed 1.5-11× speedup range from ternary_fusion.h documentation
 """
 
 import sys
-import time
 import numpy as np
 from pathlib import Path
 import argparse
@@ -19,8 +18,10 @@ import json
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()  # fixed 2026-08-12: was 1 .parent short of repo root
 sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(Path(__file__).parent))
 
 import ternary_simd_engine as base
+from benchmark_framework import BenchmarkConfig, BenchmarkRunner  # noqa: E402
 
 # Fusion operations are integrated into main engine (ternary_simd_engine)
 # Aliasing for compatibility with benchmark structure
@@ -33,30 +34,20 @@ QUICK_SIZES = [32, 1_000, 100_000, 1_000_000]
 WARMUP_ITERS = 50
 MEASURE_ITERS = 200
 
-def benchmark_operation(op_func, a, b, warmup=WARMUP_ITERS, measure=MEASURE_ITERS):
-    """Benchmark a single operation"""
-    # Warmup
-    for _ in range(warmup):
-        _ = op_func(a, b)
-
-    # Measure
-    times = []
-    for _ in range(measure):
-        start = time.perf_counter()
-        result = op_func(a, b)
-        end = time.perf_counter()
-        times.append(end - start)
-
-    return {
-        'mean': np.mean(times),
-        'std': np.std(times),
-        'min': np.min(times),
-        'max': np.max(times),
-        'median': np.median(times),
-    }
 
 def benchmark_fused_vs_separate(operation, size, warmup, measure):
-    """Compare fused vs separate operations for a given operation"""
+    """Compare fused vs separate operations for a given operation.
+
+    Measurement + statistics (median/mean/stdev/CV/95%-CI) delegated to
+    BenchmarkRunner (extracted 2026-08-18, CLAUDE.md gap #8: this function
+    used to hand-roll its own mean/std/min/max/median via raw
+    time.perf_counter() + np.mean/np.std, with no CV threshold or CI --
+    less rigorous than bench_fair_baseline.py's independently-hand-rolled
+    version of the same idea). BenchmarkRunner's baseline_fn/optimized_fn
+    shape is an exact fit here: 'separate' is the baseline, 'fused' is the
+    optimized path, over `measure` repeated whole-array calls -- the same
+    paradigm this function already used, just no longer reimplemented.
+    """
     # Create test arrays
     np.random.seed(42)
     a = np.random.randint(0, 3, size, dtype=np.uint8)
@@ -91,14 +82,29 @@ def benchmark_fused_vs_separate(operation, size, warmup, measure):
 
     op_funcs = operations[operation]
 
-    # Benchmark separate operations
-    separate_stats = benchmark_operation(op_funcs['separate'], a, b, warmup, measure)
+    config = BenchmarkConfig(sizes=[size], warmup_runs=warmup, measurement_runs=measure)
+    runner = BenchmarkRunner(config)
+    result = runner.benchmark(
+        name=f"{operation} @ {size:,}",
+        baseline_fn=lambda: op_funcs['separate'](a, b),
+        optimized_fn=lambda: op_funcs['fused'](a, b),
+        size=size,
+    )
 
-    # Benchmark fused operation
-    fused_stats = benchmark_operation(op_funcs['fused'], a, b, warmup, measure)
-
-    # Calculate speedup
-    speedup = separate_stats['mean'] / fused_stats['mean']
+    # ns -> seconds, to keep this file's own downstream formatting
+    # (format_time expects seconds, matching its pre-refactor units).
+    separate_stats = {
+        'mean': result.baseline_mean_ns / 1e9,
+        'std': result.baseline_stdev_ns / 1e9,
+        'median': result.baseline_median_ns / 1e9,
+        'cv_percent': result.baseline_cv_percent,
+    }
+    fused_stats = {
+        'mean': result.optimized_mean_ns / 1e9,
+        'std': result.optimized_stdev_ns / 1e9,
+        'median': result.optimized_median_ns / 1e9,
+        'cv_percent': result.optimized_cv_percent,
+    }
 
     return {
         'operation': operation,
@@ -106,7 +112,9 @@ def benchmark_fused_vs_separate(operation, size, warmup, measure):
         'size': size,
         'separate': separate_stats,
         'fused': fused_stats,
-        'speedup': speedup,
+        'speedup': result.speedup,
+        'ci_95': [result.ci_95_lower, result.ci_95_upper],
+        'is_stable': result.is_stable,
     }
 
 def format_time(seconds):
@@ -133,14 +141,12 @@ def print_benchmark_results(results):
     print(f"  Time: {format_time(results['fused']['mean'])} ± {format_time(results['fused']['std'])}")
 
     print(f"\nSpeedup: {results['speedup']:.2f}×")
-
-    # Calculate coefficient of variation
-    separate_cv = (results['separate']['std'] / results['separate']['mean']) * 100
-    fused_cv = (results['fused']['std'] / results['fused']['mean']) * 100
+    print(f"95% CI:  [{results['ci_95'][0]:.2f}×, {results['ci_95'][1]:.2f}×]")
 
     print(f"\nStability:")
-    print(f"  Separate CV: {separate_cv:.1f}%")
-    print(f"  Fused CV: {fused_cv:.1f}%")
+    print(f"  Separate CV: {results['separate']['cv_percent']:.1f}%")
+    print(f"  Fused CV: {results['fused']['cv_percent']:.1f}%")
+    print(f"  {'✓ Stable' if results['is_stable'] else '⚠ Unstable (CV >= 20%)'}")
 
 def main():
     parser = argparse.ArgumentParser(

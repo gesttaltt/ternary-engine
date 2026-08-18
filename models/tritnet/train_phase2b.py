@@ -20,13 +20,18 @@ Training (same two-phase as Phase 2A):
 Checkpoints saved to models/tritnet/phase2b/<op>/best_float.pt and best_qat.pt
 Resume supported: completed operations are skipped on re-run.
 
+The QAT model classes, metrics, and checkpoint I/O below are shared with
+train_phase2a.py via qat_common.py (extracted 2026-08-18, CLAUDE.md gap #7)
+-- only this file's own dataset generation and single-seed-with-resume
+training loop are specific to Phase 2B.
+
 Copyright 2025 Ternary Engine Contributors
 Licensed under the Apache License, Version 2.0
 """
 
-import json
 import sys
 import time
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -34,9 +39,29 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+sys.path.insert(0, str(Path(__file__).parent))
+
+from qat_common import (  # noqa: E402
+    TritClassifier,
+    TritClassifierFloat,
+    exact_match_accuracy,
+    logits_to_ternary,
+    rescale_weights_for_qat,
+    targets_to_class_idx,
+    trit_accuracy,
+    weight_distribution,
+)
+from qat_common import ckpt_path as _ckpt_path  # noqa: E402
+from qat_common import load_result as _load_result  # noqa: E402
+from qat_common import save_result as _save_result  # noqa: E402
+
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 CKPT_DIR = Path(__file__).parent / "phase2b"
 CKPT_DIR.mkdir(exist_ok=True)
+
+ckpt_path = partial(_ckpt_path, CKPT_DIR)
+load_result = partial(_load_result, CKPT_DIR)
+save_result = partial(_save_result, CKPT_DIR)
 
 
 def log(*args, **kwargs):
@@ -95,138 +120,6 @@ def make_binary_dataset(op_name: str) -> tuple[torch.Tensor, torch.Tensor]:
     X = torch.tensor(rows_x, dtype=torch.float32)
     Y = torch.tensor(rows_y, dtype=torch.float32)
     return X, Y
-
-
-# ---------------------------------------------------------------------------
-# Model
-# ---------------------------------------------------------------------------
-
-class STE(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, w, threshold):
-        sign = torch.sign(w)
-        mask = (w.abs() > threshold).float()
-        return sign * mask
-
-    @staticmethod
-    def backward(ctx, grad):
-        return grad, None
-
-
-class TernaryLinearQAT(nn.Module):
-    def __init__(self, in_f, out_f, threshold=0.3, bias=True):
-        super().__init__()
-        self.threshold = threshold
-        self.weight = nn.Parameter(torch.empty(out_f, in_f))
-        self.bias_p = nn.Parameter(torch.zeros(out_f)) if bias else None
-        nn.init.normal_(self.weight, std=1.0)
-
-    def forward(self, x):
-        w_q = STE.apply(self.weight, self.threshold)
-        return nn.functional.linear(x, w_q, self.bias_p)
-
-    def get_ternary_weights(self):
-        with torch.no_grad():
-            sign = torch.sign(self.weight)
-            mask = (self.weight.abs() > self.threshold).float()
-            return sign * mask
-
-
-class TritClassifier(nn.Module):
-    def __init__(self, in_features=10, hidden=128, n_out_trits=5, threshold=0.3):
-        super().__init__()
-        self.n_out_trits = n_out_trits
-        self.threshold = threshold
-        self.fc1 = TernaryLinearQAT(in_features, hidden, threshold=threshold)
-        self.fc2 = TernaryLinearQAT(hidden, hidden, threshold=threshold)
-        self.fc3 = TernaryLinearQAT(hidden, n_out_trits * 3, threshold=threshold)
-
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x.view(-1, self.n_out_trits, 3)
-
-    @property
-    def qat_layers(self):
-        return [self.fc1, self.fc2, self.fc3]
-
-
-class TritClassifierFloat(nn.Module):
-    def __init__(self, in_features=10, hidden=128, n_out_trits=5):
-        super().__init__()
-        self.n_out_trits = n_out_trits
-        self.fc1 = nn.Linear(in_features, hidden)
-        self.fc2 = nn.Linear(hidden, hidden)
-        self.fc3 = nn.Linear(hidden, n_out_trits * 3)
-
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x.view(-1, self.n_out_trits, 3)
-
-    @property
-    def float_layers(self):
-        return [self.fc1, self.fc2, self.fc3]
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def targets_to_class_idx(Y):
-    return (Y + 1).long()
-
-def logits_to_ternary(logits):
-    return logits.argmax(dim=2).float() - 1
-
-def exact_match_accuracy(logits, Y):
-    pred = logits_to_ternary(logits)
-    return (pred == Y).all(dim=1).float().mean().item()
-
-def trit_accuracy(logits, Y):
-    pred = logits_to_ternary(logits)
-    return (pred == Y).float().mean().item()
-
-def rescale_weights_for_qat(float_model, qat_model, threshold):
-    for fl, ql in zip(float_model.float_layers, qat_model.qat_layers):
-        with torch.no_grad():
-            w = fl.weight.data
-            b = fl.bias.data
-            p75 = w.abs().quantile(0.75).clamp(min=1e-8)
-            scale = (2.0 * threshold) / p75
-            ql.weight.data.copy_(w * scale)
-            ql.bias_p.data.copy_(b * scale)
-
-def weight_distribution(model):
-    neg = zero = pos = total = 0
-    for layer in model.qat_layers:
-        w = layer.get_ternary_weights()
-        neg += (w == -1).sum().item()
-        zero += (w == 0).sum().item()
-        pos += (w == 1).sum().item()
-        total += w.numel()
-    return neg / total, zero / total, pos / total
-
-def ckpt_path(op_name: str, kind: str) -> Path:
-    d = CKPT_DIR / op_name
-    d.mkdir(exist_ok=True)
-    return d / f"{kind}.pt"
-
-def result_path(op_name: str) -> Path:
-    d = CKPT_DIR / op_name
-    d.mkdir(exist_ok=True)
-    return d / "result.json"
-
-def load_result(op_name: str) -> dict | None:
-    p = result_path(op_name)
-    if p.exists():
-        return json.loads(p.read_text())
-    return None
-
-def save_result(op_name: str, result: dict):
-    result_path(op_name).write_text(json.dumps(result, indent=2))
 
 
 # ---------------------------------------------------------------------------
@@ -370,11 +263,11 @@ def train_operation(
             break
 
     elapsed = time.time() - t0
-    neg, zero, pos = weight_distribution(qat_model)
+    neg_frac, zero_frac, pos_frac = weight_distribution(qat_model)
 
     log(f"  [{op_name}] Phase2 done: best={best_acc*100:.1f}% at epoch {best_epoch}  "
         f"({elapsed:.1f}s)")
-    log(f"  [{op_name}] Weights: -{neg*100:.1f}%  0={zero*100:.1f}%  +{pos*100:.1f}%")
+    log(f"  [{op_name}] Weights: -{neg_frac*100:.1f}%  0={zero_frac*100:.1f}%  +{pos_frac*100:.1f}%")
 
     result = {
         'op': op_name,
@@ -388,9 +281,9 @@ def train_operation(
         'elapsed_s': elapsed,
         'converged': best_acc >= 0.9999,
         'passed': best_acc >= 0.99,
-        'weight_neg_pct': neg * 100,
-        'weight_zero_pct': zero * 100,
-        'weight_pos_pct': pos * 100,
+        'weight_neg_pct': neg_frac * 100,
+        'weight_zero_pct': zero_frac * 100,
+        'weight_pos_pct': pos_frac * 100,
     }
     save_result(op_name, result)
     return result
@@ -499,14 +392,14 @@ def main():
     log(f"Operations at >=99%: {n_passed}/{len(ops)}")
 
     go      = n_passed >= 3 and n_converged >= 1
-    partial = n_passed >= 2
+    partial_go = n_passed >= 2
 
     log()
     if go:
         log("DECISION: GO")
         log("  >=3 operations reached >=99% with ternary weights.")
         log("  Proceed to Phase 3: C++ inference engine with ternary weights.")
-    elif partial:
+    elif partial_go:
         log("DECISION: CONDITIONAL GO")
         log("  Some operations learned but not all. Try larger hidden size or more epochs.")
     else:
