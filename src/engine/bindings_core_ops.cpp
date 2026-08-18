@@ -137,15 +137,27 @@ TERNARY_PROFILE_TASK_NAME(g_task_tail, "Scalar_Tail");
 // =============================================================================
 
 // --- Unified Binary Operation Template ---
-template <bool Sanitize = true, typename SimdOp, typename ScalarOp>
-py::array_t<uint8_t> process_binary_array(
-    py::array_t<uint8_t> A,
-    py::array_t<uint8_t> B,
+//
+// Templated on element type T (2026-08-18, CLAUDE.md gap #6 Cluster A): this
+// function used to be duplicated near-byte-for-byte as process_binary_array
+// (uint8_t) and process_binary_array_int8 (int8_t) -- same OMP/streaming-
+// store/prefetch/sfence logic, differing only in element type. T is a pure
+// mechanical parameterization; no logic inside this function depends on
+// which of the two types it is (the intrinsics operate on raw 256-bit
+// register contents regardless of signedness). See
+// reports/2026-08-18/GAP6_DUPLICATION_SCOPE.md for the ~150 duplicated
+// lines this replaces, and reports/2026-08-18/CLUSTER_A_TEMPLATE_UNIFICATION.md
+// for the before/after benchmark this doc's "Modifying Hot Paths" rule
+// requires before touching this file.
+template <typename T, bool Sanitize = true, typename SimdOp, typename ScalarOp>
+py::array_t<T> process_binary_array(
+    py::array_t<T> A,
+    py::array_t<T> B,
     SimdOp simd_op,
     ScalarOp scalar_op
 ) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
+    auto a = A.template unchecked<1>();
+    auto b = B.template unchecked<1>();
     ssize_t n = A.size();
 
     // ENTRY-POINT VALIDATION: Ensure arrays match in size
@@ -153,11 +165,11 @@ py::array_t<uint8_t> process_binary_array(
     // Uses typed exception from ternary_errors.h for clear error semantics
     if (n != B.size()) throw ArraySizeMismatchError(n, B.size());
 
-    py::array_t<uint8_t> out(n);
-    auto r = out.mutable_unchecked<1>();
-    const uint8_t* a_ptr = static_cast<const uint8_t*>(A.data());
-    const uint8_t* b_ptr = static_cast<const uint8_t*>(B.data());
-    uint8_t* r_ptr = static_cast<uint8_t*>(out.mutable_data());
+    py::array_t<T> out(n);
+    auto r = out.template mutable_unchecked<1>();
+    const T* a_ptr = static_cast<const T*>(A.data());
+    const T* b_ptr = static_cast<const T*>(B.data());
+    T* r_ptr = static_cast<T*>(out.mutable_data());
 
     ssize_t i = 0;
 
@@ -234,19 +246,20 @@ py::array_t<uint8_t> process_binary_array(
 }
 
 // --- Unified Unary Operation Template ---
-template <bool Sanitize = true, typename SimdOp, typename ScalarOp>
-py::array_t<uint8_t> process_unary_array(
-    py::array_t<uint8_t> A,
+// Templated on T for the same reason as process_binary_array above.
+template <typename T, bool Sanitize = true, typename SimdOp, typename ScalarOp>
+py::array_t<T> process_unary_array(
+    py::array_t<T> A,
     SimdOp simd_op,
     ScalarOp scalar_op
 ) {
-    auto a = A.unchecked<1>();
+    auto a = A.template unchecked<1>();
     ssize_t n = A.size();
 
-    py::array_t<uint8_t> out(n);
-    auto r = out.mutable_unchecked<1>();
-    const uint8_t* a_ptr = static_cast<const uint8_t*>(A.data());
-    uint8_t* r_ptr = static_cast<uint8_t*>(out.mutable_data());
+    py::array_t<T> out(n);
+    auto r = out.template mutable_unchecked<1>();
+    const T* a_ptr = static_cast<const T*>(A.data());
+    T* r_ptr = static_cast<T*>(out.mutable_data());
 
     ssize_t i = 0;
 
@@ -325,24 +338,24 @@ py::array_t<uint8_t> process_unary_array(
 
 // --- Binary Operations ---
 py::array_t<uint8_t> tadd_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, tadd_simd<SANITIZE>, tadd);
+    return process_binary_array<uint8_t, SANITIZE>(A, B, tadd_simd<SANITIZE>, tadd);
 }
 
 py::array_t<uint8_t> tmul_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, tmul_simd<SANITIZE>, tmul);
+    return process_binary_array<uint8_t, SANITIZE>(A, B, tmul_simd<SANITIZE>, tmul);
 }
 
 py::array_t<uint8_t> tmin_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, tmin_simd<SANITIZE>, tmin);
+    return process_binary_array<uint8_t, SANITIZE>(A, B, tmin_simd<SANITIZE>, tmin);
 }
 
 py::array_t<uint8_t> tmax_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, tmax_simd<SANITIZE>, tmax);
+    return process_binary_array<uint8_t, SANITIZE>(A, B, tmax_simd<SANITIZE>, tmax);
 }
 
 // --- Unary Operation ---
 py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
-    return process_unary_array<SANITIZE>(A, tnot_simd<SANITIZE>, tnot);
+    return process_unary_array<uint8_t, SANITIZE>(A, tnot_simd<SANITIZE>, tnot);
 }
 
 // =============================================================================
@@ -350,19 +363,19 @@ py::array_t<uint8_t> tnot_array(py::array_t<uint8_t> A) {
 // =============================================================================
 
 py::array_t<uint8_t> fused_tnot_tadd_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, fused_tnot_tadd_simd<SANITIZE>, fused_tnot_tadd_scalar);
+    return process_binary_array<uint8_t, SANITIZE>(A, B, fused_tnot_tadd_simd<SANITIZE>, fused_tnot_tadd_scalar);
 }
 
 py::array_t<uint8_t> fused_tnot_tmul_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, fused_tnot_tmul_simd<SANITIZE>, fused_tnot_tmul_scalar);
+    return process_binary_array<uint8_t, SANITIZE>(A, B, fused_tnot_tmul_simd<SANITIZE>, fused_tnot_tmul_scalar);
 }
 
 py::array_t<uint8_t> fused_tnot_tmin_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, fused_tnot_tmin_simd<SANITIZE>, fused_tnot_tmin_scalar);
+    return process_binary_array<uint8_t, SANITIZE>(A, B, fused_tnot_tmin_simd<SANITIZE>, fused_tnot_tmin_scalar);
 }
 
 py::array_t<uint8_t> fused_tnot_tmax_array(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    return process_binary_array<SANITIZE>(A, B, fused_tnot_tmax_simd<SANITIZE>, fused_tnot_tmax_scalar);
+    return process_binary_array<uint8_t, SANITIZE>(A, B, fused_tnot_tmax_simd<SANITIZE>, fused_tnot_tmax_scalar);
 }
 
 // =============================================================================
@@ -380,205 +393,52 @@ py::array_t<uint8_t> fused_tnot_tmax_array(py::array_t<uint8_t> A, py::array_t<u
 //
 // =============================================================================
 
-// --- Unified Int8 Binary Operation Template ---
-template <bool Sanitize = true, typename SimdOp, typename ScalarOp>
-py::array_t<int8_t> process_binary_array_int8(
-    py::array_t<int8_t> A,
-    py::array_t<int8_t> B,
-    SimdOp simd_op,
-    ScalarOp scalar_op
-) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
-    ssize_t n = A.size();
-
-    // ENTRY-POINT VALIDATION
-    if (n != B.size()) throw ArraySizeMismatchError(n, B.size());
-
-    py::array_t<int8_t> out(n);
-    auto r = out.mutable_unchecked<1>();
-    const int8_t* a_ptr = static_cast<const int8_t*>(A.data());
-    const int8_t* b_ptr = static_cast<const int8_t*>(B.data());
-    int8_t* r_ptr = static_cast<int8_t*>(out.mutable_data());
-
-    ssize_t i = 0;
-
-    // PATH 1: Large arrays → OpenMP parallel
-    if (n >= OMP_THRESHOLD) {
-        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_omp);
-        ssize_t n_simd_blocks = (n / 32) * 32;
-        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(r_ptr);
-
-        // FENCE FIX: split into parallel + for so each thread can sfence its own
-        // NT stores exactly once, after its share of the loop but before the
-        // region's implicit join barrier — see process_binary_array.
-        #pragma omp parallel
-        {
-            #pragma omp for schedule(guided, 4)
-            for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
-                if (idx + PREFETCH_DIST < n_simd_blocks) {
-                    _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
-                    _mm_prefetch((const char*)(b_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
-                }
-
-                __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
-                __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + idx));
-                __m256i vr = simd_op(va, vb);
-
-                if (use_streaming) {
-                    _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
-                } else {
-                    _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
-                }
-            }
-
-            if (use_streaming) {
-                _mm_sfence();
-            }
-        }
-
-        i = n_simd_blocks;
-        TERNARY_PROFILE_TASK_END(g_ternary_domain);
-    }
-    // PATH 2: Small arrays → Serial SIMD
-    else {
-        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_simd);
-        for (; i + 32 <= n; i += 32) {
-            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
-            __m256i vb = _mm256_loadu_si256((__m256i const*)(b_ptr + i));
-            __m256i vr = simd_op(va, vb);
-            _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
-        }
-        TERNARY_PROFILE_TASK_END(g_ternary_domain);
-    }
-
-    // PATH 3: Scalar tail
-    if (i < n) {
-        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_tail);
-        for (; i < n; ++i) {
-            r[i] = scalar_op(a[i], b[i]);
-        }
-        TERNARY_PROFILE_TASK_END(g_ternary_domain);
-    }
-
-    return out;
-}
-
-// --- Unified Int8 Unary Operation Template ---
-template <bool Sanitize = true, typename SimdOp, typename ScalarOp>
-py::array_t<int8_t> process_unary_array_int8(
-    py::array_t<int8_t> A,
-    SimdOp simd_op,
-    ScalarOp scalar_op
-) {
-    auto a = A.unchecked<1>();
-    ssize_t n = A.size();
-
-    py::array_t<int8_t> out(n);
-    auto r = out.mutable_unchecked<1>();
-    const int8_t* a_ptr = static_cast<const int8_t*>(A.data());
-    int8_t* r_ptr = static_cast<int8_t*>(out.mutable_data());
-
-    ssize_t i = 0;
-
-    // PATH 1: Large arrays → OpenMP parallel
-    if (n >= OMP_THRESHOLD) {
-        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_omp);
-        ssize_t n_simd_blocks = (n / 32) * 32;
-        bool use_streaming = (n >= STREAM_THRESHOLD) && is_aligned_32(r_ptr);
-
-        // FENCE FIX: split into parallel + for so each thread can sfence its own
-        // NT stores exactly once, after its share of the loop but before the
-        // region's implicit join barrier — see process_binary_array.
-        #pragma omp parallel
-        {
-            #pragma omp for schedule(guided, 4)
-            for (ssize_t idx = 0; idx < n_simd_blocks; idx += 32) {
-                if (idx + PREFETCH_DIST < n_simd_blocks) {
-                    _mm_prefetch((const char*)(a_ptr + idx + PREFETCH_DIST), _MM_HINT_T0);
-                }
-
-                __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + idx));
-                __m256i vr = simd_op(va);
-
-                if (use_streaming) {
-                    _mm256_stream_si256((__m256i*)(r_ptr + idx), vr);
-                } else {
-                    _mm256_storeu_si256((__m256i*)(r_ptr + idx), vr);
-                }
-            }
-
-            if (use_streaming) {
-                _mm_sfence();
-            }
-        }
-
-        i = n_simd_blocks;
-        TERNARY_PROFILE_TASK_END(g_ternary_domain);
-    }
-    // PATH 2: Small arrays → Serial SIMD
-    else {
-        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_simd);
-        for (; i + 32 <= n; i += 32) {
-            __m256i va = _mm256_loadu_si256((__m256i const*)(a_ptr + i));
-            __m256i vr = simd_op(va);
-            _mm256_storeu_si256((__m256i*)(r_ptr + i), vr);
-        }
-        TERNARY_PROFILE_TASK_END(g_ternary_domain);
-    }
-
-    // PATH 3: Scalar tail
-    if (i < n) {
-        TERNARY_PROFILE_TASK_BEGIN(g_ternary_domain, g_task_tail);
-        for (; i < n; ++i) {
-            r[i] = scalar_op(a[i]);
-        }
-        TERNARY_PROFILE_TASK_END(g_ternary_domain);
-    }
-
-    return out;
-}
+// process_binary_array_int8 / process_unary_array_int8 removed 2026-08-18
+// (CLAUDE.md gap #6, Cluster A): they were near-byte-identical to
+// process_binary_array<T>/process_unary_array<T> above, differing only by
+// element type. The wrappers below now instantiate the unified template
+// with T=int8_t instead.
 
 // --- Int8 Binary Operation Wrappers ---
 py::array_t<int8_t> tadd_int8_array(py::array_t<int8_t> A, py::array_t<int8_t> B) {
-    return process_binary_array_int8<SANITIZE>(A, B, tadd_int8_simd<SANITIZE>, tadd_int8_scalar);
+    return process_binary_array<int8_t, SANITIZE>(A, B, tadd_int8_simd<SANITIZE>, tadd_int8_scalar);
 }
 
 py::array_t<int8_t> tmul_int8_array(py::array_t<int8_t> A, py::array_t<int8_t> B) {
-    return process_binary_array_int8<SANITIZE>(A, B, tmul_int8_simd<SANITIZE>, tmul_int8_scalar);
+    return process_binary_array<int8_t, SANITIZE>(A, B, tmul_int8_simd<SANITIZE>, tmul_int8_scalar);
 }
 
 py::array_t<int8_t> tmin_int8_array(py::array_t<int8_t> A, py::array_t<int8_t> B) {
-    return process_binary_array_int8<SANITIZE>(A, B, tmin_int8_simd<SANITIZE>, tmin_int8_scalar);
+    return process_binary_array<int8_t, SANITIZE>(A, B, tmin_int8_simd<SANITIZE>, tmin_int8_scalar);
 }
 
 py::array_t<int8_t> tmax_int8_array(py::array_t<int8_t> A, py::array_t<int8_t> B) {
-    return process_binary_array_int8<SANITIZE>(A, B, tmax_int8_simd<SANITIZE>, tmax_int8_scalar);
+    return process_binary_array<int8_t, SANITIZE>(A, B, tmax_int8_simd<SANITIZE>, tmax_int8_scalar);
 }
 
 // --- Int8 Unary Operation Wrapper ---
 py::array_t<int8_t> tnot_int8_array(py::array_t<int8_t> A) {
-    return process_unary_array_int8<SANITIZE>(A, tnot_int8_simd<SANITIZE>, tnot_int8_scalar);
+    return process_unary_array<int8_t, SANITIZE>(A, tnot_int8_simd<SANITIZE>, tnot_int8_scalar);
 }
 
 // --- Int8 Fused Operations (Level 3: Bridge + Fusion) ---
 py::array_t<int8_t> fused_tnot_tadd_int8_array(py::array_t<int8_t> A, py::array_t<int8_t> B) {
-    return process_binary_array_int8<SANITIZE>(A, B, fused_tnot_tadd_int8_simd<SANITIZE>,
+    return process_binary_array<int8_t, SANITIZE>(A, B, fused_tnot_tadd_int8_simd<SANITIZE>,
         [](int8_t a, int8_t b) { return tnot_int8_scalar(tadd_int8_scalar(a, b)); });
 }
 
 py::array_t<int8_t> fused_tnot_tmul_int8_array(py::array_t<int8_t> A, py::array_t<int8_t> B) {
-    return process_binary_array_int8<SANITIZE>(A, B, fused_tnot_tmul_int8_simd<SANITIZE>,
+    return process_binary_array<int8_t, SANITIZE>(A, B, fused_tnot_tmul_int8_simd<SANITIZE>,
         [](int8_t a, int8_t b) { return tnot_int8_scalar(tmul_int8_scalar(a, b)); });
 }
 
 py::array_t<int8_t> fused_tnot_tmin_int8_array(py::array_t<int8_t> A, py::array_t<int8_t> B) {
-    return process_binary_array_int8<SANITIZE>(A, B, fused_tnot_tmin_int8_simd<SANITIZE>,
+    return process_binary_array<int8_t, SANITIZE>(A, B, fused_tnot_tmin_int8_simd<SANITIZE>,
         [](int8_t a, int8_t b) { return tnot_int8_scalar(tmin_int8_scalar(a, b)); });
 }
 
 py::array_t<int8_t> fused_tnot_tmax_int8_array(py::array_t<int8_t> A, py::array_t<int8_t> B) {
-    return process_binary_array_int8<SANITIZE>(A, B, fused_tnot_tmax_int8_simd<SANITIZE>,
+    return process_binary_array<int8_t, SANITIZE>(A, B, fused_tnot_tmax_int8_simd<SANITIZE>,
         [](int8_t a, int8_t b) { return tnot_int8_scalar(tmax_int8_scalar(a, b)); });
 }
 
