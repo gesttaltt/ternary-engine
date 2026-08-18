@@ -135,198 +135,98 @@ std::string get_capabilities_string(uint32_t capabilities) {
 // ============================================================================
 // Dispatch Operations (NumPy Interface)
 // ============================================================================
+//
+// The 9 dispatch_* functions below (5 core ops + 4 fused ops) used to each
+// hand-copy the same validate/allocate/call-function-pointer/throw skeleton,
+// differing only in which ternary_dispatch_* function to call, the op name
+// embedded in the error strings, and (fused ops only) a different failure
+// message. Factored into dispatch_unary()/dispatch_binary() below --
+// CLAUDE.md gap #6, Cluster B (see reports/2026-08-18/GAP6_DUPLICATION_SCOPE.md
+// for the ~140 duplicated lines this replaces). Error text is preserved
+// exactly, including the fused-ops' distinct failure message.
 
-/**
- * Dispatch ternary NOT through backend system
- */
+using UnaryDispatchFn  = bool (*)(uint8_t*, const uint8_t*, size_t);
+using BinaryDispatchFn = bool (*)(uint8_t*, const uint8_t*, const uint8_t*, size_t);
+
+static const char* const NO_ACTIVE_BACKEND_MSG =
+    "no active backend (call init()/set_backend() first)";
+static const char* const NO_FUSED_BACKEND_MSG =
+    "no active backend, or active backend does not implement this fused op";
+
+static py::array_t<uint8_t> dispatch_unary(
+    const char* op_name, UnaryDispatchFn fn, const char* fail_msg,
+    py::array_t<uint8_t> A
+) {
+    auto a = A.unchecked<1>();
+    py::ssize_t n = A.size();
+
+    py::array_t<uint8_t> result(n);
+    auto r = result.mutable_unchecked<1>();
+
+    if (!fn(r.mutable_data(0), a.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error(std::string(op_name) + ": " + fail_msg);
+
+    return result;
+}
+
+static py::array_t<uint8_t> dispatch_binary(
+    const char* op_name, BinaryDispatchFn fn, const char* fail_msg,
+    py::array_t<uint8_t> A, py::array_t<uint8_t> B
+) {
+    auto a = A.unchecked<1>();
+    auto b = B.unchecked<1>();
+    py::ssize_t n = A.size();
+
+    if (A.size() != B.size())
+        throw std::invalid_argument(std::string(op_name) + ": array size mismatch");
+
+    py::array_t<uint8_t> result(n);
+    auto r = result.mutable_unchecked<1>();
+
+    if (!fn(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
+        throw std::runtime_error(std::string(op_name) + ": " + fail_msg);
+
+    return result;
+}
+
 py::array_t<uint8_t> dispatch_tnot(py::array_t<uint8_t> A) {
-    auto a = A.unchecked<1>();
-    py::ssize_t n = A.size();
-
-    // Allocate result array
-    py::array_t<uint8_t> result(n);
-    auto r = result.mutable_unchecked<1>();
-
-    // Dispatch through backend
-    if (!ternary_dispatch_tnot(r.mutable_data(0), a.data(0), static_cast<size_t>(n)))
-        throw std::runtime_error("tnot: no active backend (call init()/set_backend() first)");
-
-    return result;
+    return dispatch_unary("tnot", ternary_dispatch_tnot, NO_ACTIVE_BACKEND_MSG, A);
 }
 
-/**
- * Dispatch ternary ADD through backend system
- */
 py::array_t<uint8_t> dispatch_tadd(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
-    py::ssize_t n = A.size();
-
-    // Validate input sizes
-    if (A.size() != B.size()) {
-        throw std::invalid_argument("tadd: array size mismatch");
-    }
-
-    // Allocate result array
-    py::array_t<uint8_t> result(n);
-    auto r = result.mutable_unchecked<1>();
-
-    // Dispatch through backend
-    if (!ternary_dispatch_tadd(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
-        throw std::runtime_error("tadd: no active backend (call init()/set_backend() first)");
-
-    return result;
+    return dispatch_binary("tadd", ternary_dispatch_tadd, NO_ACTIVE_BACKEND_MSG, A, B);
 }
 
-/**
- * Dispatch ternary MUL through backend system
- */
 py::array_t<uint8_t> dispatch_tmul(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
-    py::ssize_t n = A.size();
-
-    if (A.size() != B.size()) {
-        throw std::invalid_argument("tmul: array size mismatch");
-    }
-
-    py::array_t<uint8_t> result(n);
-    auto r = result.mutable_unchecked<1>();
-
-    if (!ternary_dispatch_tmul(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
-        throw std::runtime_error("tmul: no active backend (call init()/set_backend() first)");
-
-    return result;
+    return dispatch_binary("tmul", ternary_dispatch_tmul, NO_ACTIVE_BACKEND_MSG, A, B);
 }
 
-/**
- * Dispatch ternary MAX through backend system
- */
 py::array_t<uint8_t> dispatch_tmax(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
-    py::ssize_t n = A.size();
-
-    if (A.size() != B.size()) {
-        throw std::invalid_argument("tmax: array size mismatch");
-    }
-
-    py::array_t<uint8_t> result(n);
-    auto r = result.mutable_unchecked<1>();
-
-    if (!ternary_dispatch_tmax(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
-        throw std::runtime_error("tmax: no active backend (call init()/set_backend() first)");
-
-    return result;
+    return dispatch_binary("tmax", ternary_dispatch_tmax, NO_ACTIVE_BACKEND_MSG, A, B);
 }
 
-/**
- * Dispatch ternary MIN through backend system
- */
 py::array_t<uint8_t> dispatch_tmin(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
-    py::ssize_t n = A.size();
-
-    if (A.size() != B.size()) {
-        throw std::invalid_argument("tmin: array size mismatch");
-    }
-
-    py::array_t<uint8_t> result(n);
-    auto r = result.mutable_unchecked<1>();
-
-    if (!ternary_dispatch_tmin(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
-        throw std::runtime_error("tmin: no active backend (call init()/set_backend() first)");
-
-    return result;
+    return dispatch_binary("tmin", ternary_dispatch_tmin, NO_ACTIVE_BACKEND_MSG, A, B);
 }
 
 // ============================================================================
 // Fusion Operations Dispatch (Phase 4.1)
 // ============================================================================
 
-/**
- * Dispatch fused tnot(tadd(a, b)) through backend system
- */
 py::array_t<uint8_t> dispatch_fused_tnot_tadd(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
-    py::ssize_t n = A.size();
-
-    if (A.size() != B.size()) {
-        throw std::invalid_argument("fused_tnot_tadd: array size mismatch");
-    }
-
-    py::array_t<uint8_t> result(n);
-    auto r = result.mutable_unchecked<1>();
-
-    if (!ternary_dispatch_fused_tnot_tadd(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
-        throw std::runtime_error("fused_tnot_tadd: no active backend, or active backend does not implement this fused op");
-
-    return result;
+    return dispatch_binary("fused_tnot_tadd", ternary_dispatch_fused_tnot_tadd, NO_FUSED_BACKEND_MSG, A, B);
 }
 
-/**
- * Dispatch fused tnot(tmul(a, b)) through backend system
- */
 py::array_t<uint8_t> dispatch_fused_tnot_tmul(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
-    py::ssize_t n = A.size();
-
-    if (A.size() != B.size()) {
-        throw std::invalid_argument("fused_tnot_tmul: array size mismatch");
-    }
-
-    py::array_t<uint8_t> result(n);
-    auto r = result.mutable_unchecked<1>();
-
-    if (!ternary_dispatch_fused_tnot_tmul(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
-        throw std::runtime_error("fused_tnot_tmul: no active backend, or active backend does not implement this fused op");
-
-    return result;
+    return dispatch_binary("fused_tnot_tmul", ternary_dispatch_fused_tnot_tmul, NO_FUSED_BACKEND_MSG, A, B);
 }
 
-/**
- * Dispatch fused tnot(tmin(a, b)) through backend system
- */
 py::array_t<uint8_t> dispatch_fused_tnot_tmin(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
-    py::ssize_t n = A.size();
-
-    if (A.size() != B.size()) {
-        throw std::invalid_argument("fused_tnot_tmin: array size mismatch");
-    }
-
-    py::array_t<uint8_t> result(n);
-    auto r = result.mutable_unchecked<1>();
-
-    if (!ternary_dispatch_fused_tnot_tmin(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
-        throw std::runtime_error("fused_tnot_tmin: no active backend, or active backend does not implement this fused op");
-
-    return result;
+    return dispatch_binary("fused_tnot_tmin", ternary_dispatch_fused_tnot_tmin, NO_FUSED_BACKEND_MSG, A, B);
 }
 
-/**
- * Dispatch fused tnot(tmax(a, b)) through backend system
- */
 py::array_t<uint8_t> dispatch_fused_tnot_tmax(py::array_t<uint8_t> A, py::array_t<uint8_t> B) {
-    auto a = A.unchecked<1>();
-    auto b = B.unchecked<1>();
-    py::ssize_t n = A.size();
-
-    if (A.size() != B.size()) {
-        throw std::invalid_argument("fused_tnot_tmax: array size mismatch");
-    }
-
-    py::array_t<uint8_t> result(n);
-    auto r = result.mutable_unchecked<1>();
-
-    if (!ternary_dispatch_fused_tnot_tmax(r.mutable_data(0), a.data(0), b.data(0), static_cast<size_t>(n)))
-        throw std::runtime_error("fused_tnot_tmax: no active backend, or active backend does not implement this fused op");
-
-    return result;
+    return dispatch_binary("fused_tnot_tmax", ternary_dispatch_fused_tnot_tmax, NO_FUSED_BACKEND_MSG, A, B);
 }
 
 // ============================================================================

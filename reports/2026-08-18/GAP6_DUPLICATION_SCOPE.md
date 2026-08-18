@@ -122,3 +122,38 @@ consolidation and worth doing only if it doesn't blur the two engines' otherwise
 
 None of these three clusters were fixed in this session -- this was a scoping pass only, per the
 request.
+
+## Update (same day): Cluster B fixed
+
+Per a same-day follow-up request ("go ahead with cluster B"), Cluster B was implemented.
+
+`bindings_backend_api.cpp`'s 9 `dispatch_*` functions were replaced with two shared helpers,
+`dispatch_unary(op_name, fn, fail_msg, A)` and `dispatch_binary(op_name, fn, fail_msg, A, B)`,
+taking the `ternary_dispatch_*` function pointer and the failure message as parameters. The fused
+ops' distinct failure message ("no active backend, or active backend does not implement this
+fused op", vs. the core ops' "no active backend (call init()/set_backend() first)") is preserved
+exactly via two separate `static const char*` constants passed in at each call site, rather than
+being merged into one generic message -- the whole point of this fix is removing accidental
+duplication, not removing an intentional distinction.
+
+**Result:** `bindings_backend_api.cpp` dropped from 428 to 328 lines (net -100; the dispatch
+section itself: -146 duplicated lines replaced by +46 shared-helper lines, matching this report's
+original ~140-line estimate almost exactly).
+
+**Verification performed:**
+- Rebuilt via `build/build_backend.py` -- succeeds, no new compiler warnings introduced by this
+  change (the build's existing warnings are pre-existing, in unrelated files).
+- Ran all 9 dispatch functions against known trit-encoding semantics, cross-checked against NumPy
+  (`tadd`/`tmul`/`tmax`/`tmin`/`tnot` + all 4 fused ops).
+- Verified `fused_tnot_X(a,b) == tnot(X(a,b))` for all 4 fused ops (the ops must still compose the
+  same way after the refactor, not just individually match some expected value).
+- Verified both error paths byte-for-byte: `ValueError` size-mismatch messages (e.g. `"tadd: array
+  size mismatch"`, `"fused_tnot_tmax: array size mismatch"`) and `RuntimeError` no-active-backend
+  messages for both a core op and a fused op, confirming the two different failure-message strings
+  are each still attached to the right op family.
+- `tests/run_tests.py`: 15/15 (includes `test_backend_integration.py`, this module's dedicated
+  suite).
+
+Clusters A and C remain open. Cluster A needs a real before/after benchmark before landing, per
+this doc's own "Modifying Hot Paths" rule (it's a hot SIMD path); Cluster C is lower-value
+(validation code only, not hot-path) and was deferred, not attempted.
