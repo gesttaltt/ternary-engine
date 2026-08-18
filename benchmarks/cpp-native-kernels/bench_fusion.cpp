@@ -22,12 +22,18 @@
 // separate operations. Fusion reduces memory bandwidth by combining operations
 // that share intermediate results.
 //
-// Validated performance (2025-10-29):
+// Validated performance (2025-10-29, platform not recorded):
 //   - fused_tnot_tadd: 1.62-1.95× speedup
 //   - fused_tnot_tmul: 1.53-1.86× speedup
 //   - fused_tnot_tmin: 1.61-11.26× speedup
 //   - fused_tnot_tmax: 1.65-9.50× speedup
 //   - Average: 2.80× speedup
+//
+// Re-validated 2026-08-18, Linux x64 (AMD Ryzen 5 7520U): 1.00-2.89× speedup range,
+// ~1.6× average across all 4 ops, every cell across 3 runs beat 1.0x. Full data
+// and discussion: reports/2026-08-18/FUSION_NATIVE_CPP_REVALIDATION.md and
+// src/core/simd/docs/FUSION.md. This binary itself is unmodified -- only the
+// header comment was updated with the new data point.
 //
 // COMPILATION (from benchmarks/cpp-native-kernels/ directory):
 //   g++ -O3 -march=native -mavx2 -std=c++17 -I../../src bench_fusion.cpp -o bench_fusion

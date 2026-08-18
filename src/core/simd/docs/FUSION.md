@@ -26,6 +26,36 @@ Fusion eliminates intermediate arrays by combining sequential operations into a 
 **Conservative claim:** 1.53× minimum speedup (any operation, any size)
 **Typical speedup:** 2.80× average across all scenarios
 
+**Platform note (added 2026-08-18):** the table above never recorded which platform produced it
+-- a gap, not an error, but worth flagging per this project's own validation_dates convention. See
+the second data point immediately below for a platform-labeled re-run.
+
+### Linux x64 re-validation (2026-08-18)
+
+`benchmarks/cpp-native-kernels/bench_fusion.cpp`, unmodified, AMD Ryzen 5 7520U, g++ 13.3.0,
+`-O3 -march=native -mavx2`, 3 runs (this project's own convention after finding this specific
+machine's `powersave` cpufreq governor causes real block-to-block variance for large/parallel
+workloads -- see `reports/2026-08-18/CV_SPIKE_ROOT_CAUSE.md`). Full data, methodology, and
+discussion: `reports/2026-08-18/FUSION_NATIVE_CPP_REVALIDATION.md`.
+
+| Operation | Min Speedup | Max Speedup | Approx. Average |
+|-----------|-------------|-------------|------------------|
+| `fused_tnot_tadd` | 1.00×* | 2.89× | ~1.64× |
+| `fused_tnot_tmul` | 1.14× | 2.35× | ~1.57× |
+| `fused_tnot_tmin` | 1.11×* | 2.34× | ~1.60× |
+| `fused_tnot_tmax` | 1.28× | 2.16× | ~1.60× |
+
+\* Both flagged min values come from single-cell CV outliers (128.6% and 113.7% respectively) in
+one run each, consistent with the documented governor noise, not a distinct new finding.
+
+**Every cell across all 3 runs beat 1.0×** (fusion was never slower than separate ops on this
+machine) and the speedup consistently grows with array size, matching the documented
+memory-traffic argument. The 2025-10-29 table's 1.53× conservative floor and 9-11× max speedups
+for tmin/tmax were **not reproduced** on this machine -- attributed to unknown/different original
+hardware plus this machine's own confirmed measurement noise, not asserted as a regression (no
+controlled baseline exists to compare against). Both data points are kept; neither replaces the
+other.
+
 ---
 
 ## Memory Traffic Analysis
