@@ -105,6 +105,56 @@ the bounds-checked `.shape(dim)`) for genuine multi-dimensional inputs.
 All within this doc's 5% regression threshold, most within outright measurement noise. Correctness
 digest re-verified identical after every iteration, not just the final one.
 
+## Follow-up ("examine it further"): a real pre-existing bug found, plus a test-coverage gap
+
+A user-requested deeper look after the initial ship turned up two real things, not just
+reassurance:
+
+**1. A genuine, real, pre-existing latent bug the C-contiguity check silently fixed as a side
+effect.** The commit message already noted the check "rejects transposed/Fortran-order views that
+would otherwise silently read wrong data through the flat-pointer path" as a property of the new
+N-D code path -- but the pre-multi-dim 1-D-only code had *never* validated contiguity for 1-D
+arrays either (only the entry-point ndim check existed). Verified directly, not assumed: checked
+out the actual pre-multi-dim commit's `bindings_core_ops.cpp` (temporarily, then restored),
+rebuilt it, and ran `tc.tadd(a[::2], b)` (a step-sliced, genuinely non-contiguous 1-D array)
+against it:
+
+```
+a_strided contiguous? False size: 50
+OLD CODE: NO exception -- computed a result: [2, 2, 0, 1, 2, 0, 2, 1, 1, 2]
+Matches correct strided computation? False
+CONFIRMED: old code silently computed WRONG results for non-contiguous 1-D input
+```
+
+This is a real bug that shipped in production before today (not introduced by this session's
+work) -- every prior release's `tadd`/`tmul`/`tmin`/`tmax`/`tnot`/fused/int8-bridge function would
+silently return wrong values for any 1-D input that wasn't C-contiguous (a strided slice like
+`a[::2]`, a reversed view `a[::-1]`, or any other non-owning strided numpy view), with no error, no
+warning -- exactly the "silent wrong result" failure class this project's review culture has spent
+this entire session (and many prior ones) hunting in other files. It happened not to be caught
+until now because nothing had previously exercised a non-contiguous 1-D array against this specific
+file. Fixed as an incidental consequence of the multi-dimensional-array C-contiguity check, which
+applies unconditionally (both the 1-D fast path and the general N-D path check `.flags() &
+py::array::c_style` before doing anything else) -- confirmed the current (already-shipped) code
+correctly rejects it: `ValueError: A must be C-contiguous (row-major)`.
+
+Added `test_noncontiguous_1d_regression()` to lock this in (step-sliced, reversed, and unary
+variants), since without an explicit regression test this exact bug class could silently return in
+some future refactor that special-cases the 1-D path again for performance (as this file's own
+history shows is a real, recurring temptation for this exact code).
+
+**2. A test-coverage gap in the original 8-group test file**: `fused_tnot_tadd_int8`/
+`fused_tnot_tmul_int8`/`fused_tnot_tmin_int8`/`fused_tnot_tmax_int8` -- the intersection of "int8
+bridge" and "fused" -- were covered by neither `test_fused_ops()` (uint8 only) nor
+`test_int8_bridge()` (core ops only). All 4 were re-verified correct once actually tested
+(`test_fused_int8_ops()`, added). Also added `test_shape_edge_cases()` covering boundary shapes
+explored but not previously locked into the suite: 0-d arrays (numpy scalars, correctly preserve
+`shape=()`), empty N-D arrays (`(0,5)`), singleton dimensions (`(1,5,1)`), and 6-D arrays -- all
+already correct, now regression-tested rather than just spot-checked once.
+
+`tests/python/test_multidim_arrays.py`: 8 groups -> 11 groups. `tests/run_tests.py`: still 16/16
+(same suite, more assertions inside it).
+
 ## Lesson
 
 "Modifying Hot Paths" isn't a one-time gate -- it caught two consecutive real mistakes on the way
@@ -113,3 +163,12 @@ today (Cluster A's uint8/int8 unification, which needed zero iteration because i
 about the entry/exit machinery, only a type parameter). The difference here: this change touched
 per-call validation and allocation, exactly the class of thing that's cheap to get wrong and easy
 to not notice without measuring, since correctness was never in doubt at any point.
+
+Second lesson, from the follow-up: "ship it, it works" and "examine it further" found different
+things because they were looking for different failure modes. Shipping verified the feature does
+what it's supposed to (N-D input, right output, right shape) and doesn't regress what already
+worked (1-D digest, benchmark). Examining further went looking for what the feature's own
+boundaries implied but the initial pass didn't check -- the full function list (18, not just a
+representative sample), and the specific claim already written into the commit message
+("rejects... that would otherwise silently read wrong data") that had never actually been checked
+against the *old* code to see if it was already true. It was, and had been for a long time.

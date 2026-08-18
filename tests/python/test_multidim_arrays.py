@@ -132,6 +132,66 @@ def test_int8_bridge() -> bool:
     return ok
 
 
+def test_fused_int8_ops() -> bool:
+    """The int8 bridge's fused ops (fused_tnot_tadd_int8 etc.) support N-D
+    too, and still equal tnot_int8(op_int8(a,b)) -- found missing from this
+    file's own initial coverage on a follow-up pass (all 4 uint8 fused ops
+    were covered, all 4 int8 core ops were covered, but the 4 ops at the
+    intersection -- int8 AND fused -- were not)."""
+    rng = np.random.default_rng(SEED)
+    shape = (5, 6)
+    a = rng.integers(-1, 2, shape, dtype=np.int8)
+    b = rng.integers(-1, 2, shape, dtype=np.int8)
+    ok = True
+    for op, fused in (('tadd_int8', 'fused_tnot_tadd_int8'), ('tmul_int8', 'fused_tnot_tmul_int8'),
+                      ('tmin_int8', 'fused_tnot_tmin_int8'), ('tmax_int8', 'fused_tnot_tmax_int8')):
+        got = getattr(tc, fused)(a, b)
+        expected = tc.tnot_int8(getattr(tc, op)(a, b))
+        if got.shape != shape or not np.array_equal(got, expected):
+            print(f"  [FAIL] {fused}{shape}: doesn't equal tnot_int8({op}(a,b))")
+            ok = False
+    if ok:
+        print(f"  [OK] int8 fused ops match tnot_int8(op_int8(a,b)) for shape {shape}")
+    return ok
+
+
+def test_noncontiguous_1d_regression() -> bool:
+    """Regression test for a real latent bug found while examining this
+    feature further (2026-08-18, same day): the pre-multi-dimensional-
+    array-support code never validated C-contiguity for 1-D input at all
+    (only N-D inputs got a check, since that was new code written for this
+    feature). Confirmed by testing the actual prior commit's binding file:
+    tc.tadd(a[::2], b) computed a WRONG result silently (no exception) --
+    the flat-pointer SIMD path indexed the strided view as if it were
+    densely packed. This test locks in the fix (now: rejected with a clear
+    ValueError) so it can't regress back to the old silent-wrong-answer
+    behavior. See reports/2026-08-18/MULTIDIM_ARRAY_SUPPORT.md."""
+    rng = np.random.default_rng(SEED)
+    a = rng.integers(0, 3, 100, dtype=np.uint8)
+    b = rng.integers(0, 3, 50, dtype=np.uint8)
+    ok = True
+
+    def expect_value_error(label, fn):
+        nonlocal ok
+        try:
+            fn()
+            print(f"  [FAIL] {label}: no exception raised (would silently compute wrong results)")
+            ok = False
+        except ValueError:
+            pass
+        except Exception as e:
+            print(f"  [FAIL] {label}: wrong exception type {type(e).__name__}: {e}")
+            ok = False
+
+    expect_value_error("step-sliced 1-D (a[::2])", lambda: tc.tadd(a[::2], b))
+    expect_value_error("reversed 1-D (a[::-1])", lambda: tc.tadd(a[::-1], a[::-1]))
+    expect_value_error("unary step-sliced 1-D", lambda: tc.tnot(a[::2]))
+
+    if ok:
+        print("  [OK] non-contiguous 1-D input rejected (regression-tests the latent bug fix)")
+    return ok
+
+
 def test_omp_path_multidim() -> bool:
     """A 2-D array large enough to cross OMP_THRESHOLD (262,144 on 8 cores)
     exercises the parallel path with a genuinely multi-dimensional shape,
@@ -176,6 +236,46 @@ def test_1d_unchanged() -> bool:
 
     if ok:
         print("  [OK] 1-D behavior and error message unchanged")
+    return ok
+
+
+def test_shape_edge_cases() -> bool:
+    """0-d arrays (numpy scalars), empty N-D arrays, singleton dimensions,
+    and higher-dimensional (6-D) arrays -- boundary shapes worth checking
+    explicitly rather than assuming the general N-D path handles them."""
+    rng = np.random.default_rng(SEED)
+    ok = True
+
+    a0 = np.array(1, dtype=np.uint8)  # ndim=0
+    b0 = np.array(2, dtype=np.uint8)
+    r0 = tc.tadd(a0, b0)
+    if r0.shape != () or int(r0) != 2:
+        print(f"  [FAIL] 0-d scalar: shape={r0.shape} value={r0}")
+        ok = False
+
+    ae = np.zeros((0, 5), dtype=np.uint8)
+    be = np.zeros((0, 5), dtype=np.uint8)
+    re = tc.tadd(ae, be)
+    if re.shape != (0, 5):
+        print(f"  [FAIL] empty N-D (0,5): shape={re.shape}")
+        ok = False
+
+    a1 = rng.integers(0, 3, (1, 5, 1), dtype=np.uint8)
+    b1 = rng.integers(0, 3, (1, 5, 1), dtype=np.uint8)
+    r1 = tc.tadd(a1, b1)
+    if r1.shape != (1, 5, 1) or not np.array_equal(r1, _ref(tc.tadd, a1, b1)):
+        print(f"  [FAIL] singleton dims (1,5,1): mismatch")
+        ok = False
+
+    a6 = rng.integers(0, 3, (2, 2, 2, 2, 2, 2), dtype=np.uint8)  # 64 elements, 6-D
+    b6 = rng.integers(0, 3, (2, 2, 2, 2, 2, 2), dtype=np.uint8)
+    r6 = tc.tadd(a6, b6)
+    if r6.shape != (2, 2, 2, 2, 2, 2) or not np.array_equal(r6, _ref(tc.tadd, a6, b6)):
+        print(f"  [FAIL] 6-D array: mismatch")
+        ok = False
+
+    if ok:
+        print("  [OK] 0-d, empty, singleton-dim, and 6-D shapes all correct")
     return ok
 
 
@@ -260,10 +360,13 @@ def main() -> int:
         ("3-D and higher", test_3d_and_higher()),
         ("Fused ops", test_fused_ops()),
         ("Int8 bridge", test_int8_bridge()),
+        ("Int8 fused ops", test_fused_int8_ops()),
+        ("Shape edge cases (0-d, empty, singleton, 6-D)", test_shape_edge_cases()),
         ("OMP-parallel path (multi-dim)", test_omp_path_multidim()),
         ("1-D behavior unchanged", test_1d_unchanged()),
         ("Shape/size mismatch errors", test_shape_mismatch_errors()),
         ("Non-contiguous inputs rejected", test_noncontiguous_rejected()),
+        ("Non-contiguous 1-D regression (latent bug fix)", test_noncontiguous_1d_regression()),
     ]
 
     failed = [name for name, passed in results if not passed]
