@@ -12,9 +12,29 @@
 #include <pybind11/numpy.h>
 #include "tritnet_gemm.h"  // Resolved via include_dirs in build script
 #include "core/simd/cpu_simd_capability.h"  // has_avx2() runtime check
+#include "py_array_validate.h"
 #include <stdexcept>
+#include <string>
 
 namespace py = pybind11;
+using ternary_engine::validate_1d_contiguous;
+using ternary_engine::validate_2d_contiguous;
+
+// Shared exact-shape check (CLAUDE.md gap #6, Cluster C): this file's own
+// validation additionally needs the array shape to match caller-supplied
+// M/N/K exactly, not just "2-D" -- validate_2d_contiguous() only covers the
+// part genuinely shared with bindings_zero_skip_gemm.cpp (dimensionality +
+// contiguity). This helper covers the part specific to this file.
+static void check_exact_shape(const py::buffer_info& buf, const char* name,
+                               py::ssize_t expect_dim0, py::ssize_t expect_dim1) {
+    if (buf.shape[0] != expect_dim0 || buf.shape[1] != expect_dim1) {
+        throw std::invalid_argument(
+            std::string(name) + " shape (" + std::to_string(buf.shape[0]) + ", " +
+            std::to_string(buf.shape[1]) + ") does not match expected (" +
+            std::to_string(expect_dim0) + ", " + std::to_string(expect_dim1) + ")"
+        );
+    }
+}
 
 /**
  * @brief Python wrapper for tritnet_gemm_f32
@@ -39,26 +59,13 @@ py::array_t<float> py_gemm(
         throw std::invalid_argument("K must be multiple of 5 for Dense243 packing");
     }
 
-    // Check array dimensions
-    auto A_buf = A.request();
-    auto B_buf = B_packed.request();
-
-    if (A_buf.ndim != 2 || A_buf.shape[0] != M || A_buf.shape[1] != K) {
-        throw std::invalid_argument("A must be [M, K] float32 array");
-    }
+    // Check array dimensions (2-D + contiguous, then exact shape vs. M/N/K)
+    auto A_buf = validate_2d_contiguous(A, "A", "[M, K] float32");
+    check_exact_shape(A_buf, "A", M, K);
 
     int K_packed = K / 5;
-    if (B_buf.ndim != 2 || B_buf.shape[0] != K_packed || B_buf.shape[1] != N) {
-        throw std::invalid_argument("B_packed must be [K/5, N] uint8 array");
-    }
-
-    // Check contiguity (C-order/row-major)
-    if (!A.attr("flags").attr("c_contiguous").cast<bool>()) {
-        throw std::invalid_argument("A must be C-contiguous (row-major)");
-    }
-    if (!B_packed.attr("flags").attr("c_contiguous").cast<bool>()) {
-        throw std::invalid_argument("B_packed must be C-contiguous (row-major)");
-    }
+    auto B_buf = validate_2d_contiguous(B_packed, "B_packed", "[K/5, N] uint8");
+    check_exact_shape(B_buf, "B_packed", K_packed, N);
 
     // Allocate output array
     py::array_t<float> C({M, N});
@@ -116,33 +123,20 @@ py::array_t<float> py_gemm_scaled(
         throw std::invalid_argument("K must be multiple of 5 for Dense243 packing");
     }
 
-    // Check array dimensions
-    auto A_buf = A.request();
-    auto B_buf = B_packed.request();
-    auto scales_buf = scales.request();
-
-    if (A_buf.ndim != 2 || A_buf.shape[0] != M || A_buf.shape[1] != K) {
-        throw std::invalid_argument("A must be [M, K] float32 array");
-    }
+    // Check array dimensions (2-D/1-D + contiguous, then exact shape)
+    auto A_buf = validate_2d_contiguous(A, "A", "[M, K] float32");
+    check_exact_shape(A_buf, "A", M, K);
 
     int K_packed = K / 5;
-    if (B_buf.ndim != 2 || B_buf.shape[0] != K_packed || B_buf.shape[1] != N) {
-        throw std::invalid_argument("B_packed must be [K/5, N] uint8 array");
-    }
+    auto B_buf = validate_2d_contiguous(B_packed, "B_packed", "[K/5, N] uint8");
+    check_exact_shape(B_buf, "B_packed", K_packed, N);
 
-    if (scales_buf.ndim != 1 || scales_buf.shape[0] != N) {
-        throw std::invalid_argument("scales must be [N] float32 array");
-    }
-
-    // Check contiguity
-    if (!A.attr("flags").attr("c_contiguous").cast<bool>()) {
-        throw std::invalid_argument("A must be C-contiguous");
-    }
-    if (!B_packed.attr("flags").attr("c_contiguous").cast<bool>()) {
-        throw std::invalid_argument("B_packed must be C-contiguous");
-    }
-    if (!scales.attr("flags").attr("c_contiguous").cast<bool>()) {
-        throw std::invalid_argument("scales must be C-contiguous");
+    auto scales_buf = validate_1d_contiguous(scales, "scales", "[N] float32");
+    if (scales_buf.shape[0] != N) {
+        throw std::invalid_argument(
+            "scales shape (" + std::to_string(scales_buf.shape[0]) +
+            ",) does not match expected (" + std::to_string(N) + ",)"
+        );
     }
 
     // Allocate output array
@@ -186,16 +180,9 @@ py::array_t<uint8_t> py_convert_from_bitnet(
     }
 
     // Check array dimensions
-    auto bitnet_buf = bitnet_weights.request();
     int K_bitnet = (K + 3) / 4;  // Round up
-
-    if (bitnet_buf.ndim != 2 || bitnet_buf.shape[0] != K_bitnet || bitnet_buf.shape[1] != N) {
-        throw std::invalid_argument("bitnet_weights must be [K/4, N] uint8 array");
-    }
-
-    if (!bitnet_weights.attr("flags").attr("c_contiguous").cast<bool>()) {
-        throw std::invalid_argument("bitnet_weights must be C-contiguous");
-    }
+    auto bitnet_buf = validate_2d_contiguous(bitnet_weights, "bitnet_weights", "[K/4, N] uint8");
+    check_exact_shape(bitnet_buf, "bitnet_weights", K_bitnet, N);
 
     // Allocate output array
     int K_dense243 = (K + 4) / 5;  // Round up

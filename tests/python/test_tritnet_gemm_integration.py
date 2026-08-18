@@ -195,6 +195,70 @@ def test_performance_comparison():
     return True
 
 
+def test_input_validation():
+    """Test 5: Malformed inputs to the raw module functions raise ValueError.
+
+    Added 2026-08-18 alongside the CLAUDE.md gap #6 Cluster C fix
+    (src/engine/py_array_validate.h): py_gemm/py_gemm_scaled/
+    py_convert_from_bitnet had zero direct test coverage of their
+    validation paths before (this file only exercises them indirectly,
+    through TernaryLinear's happy path). Goes straight at the module
+    functions rather than through TernaryLinear.
+    """
+    print("\n" + "=" * 70)
+    print("TEST 5: Input Validation")
+    print("=" * 70)
+
+    if not GEMM_AVAILABLE:
+        print("⚠️  Skipping (module not available)")
+        return False
+
+    import ternary_tritnet_gemm as gemm
+
+    M, K, N = 4, 20, 8  # K multiple of 5, as gemm()/gemm_scaled() require
+    K_packed = K // 5
+    rng = np.random.default_rng(42)
+    A = rng.standard_normal((M, K)).astype(np.float32)
+    B_packed = rng.integers(0, 243, size=(K_packed, N), dtype=np.uint8)
+    scales = rng.standard_normal(N).astype(np.float32)
+
+    def expect_value_error(label, fn):
+        try:
+            fn()
+            print(f"  ❌ {label}: expected ValueError, none raised")
+            return False
+        except ValueError:
+            return True
+        except Exception as e:
+            print(f"  ❌ {label}: expected ValueError, got {type(e).__name__}: {e}")
+            return False
+
+    # A sliced-with-step view is the simplest way to get a genuinely
+    # non-contiguous 1-D array for the scales-non-contiguous case.
+    scales_padded = rng.standard_normal(2 * N).astype(np.float32)
+
+    checks = [
+        ("gemm: A wrong shape", lambda: gemm.gemm(A[:, :K - 5], B_packed, M, N, K)),
+        ("gemm: A non-contiguous", lambda: gemm.gemm(np.asfortranarray(A), B_packed, M, N, K)),
+        ("gemm: B_packed wrong shape", lambda: gemm.gemm(A, B_packed[:-1], M, N, K)),
+        ("gemm: B_packed non-contiguous",
+         lambda: gemm.gemm(A, np.asfortranarray(B_packed), M, N, K)),
+        ("gemm_scaled: scales wrong shape",
+         lambda: gemm.gemm_scaled(A, B_packed, scales[:-1], M, N, K)),
+        ("gemm_scaled: scales non-contiguous",
+         lambda: gemm.gemm_scaled(A, B_packed, scales_padded[::2], M, N, K)),
+        ("convert_from_bitnet: wrong shape",
+         lambda: gemm.convert_from_bitnet(rng.integers(0, 4, size=(1, N), dtype=np.uint8), K, N)),
+    ]
+
+    results = [expect_value_error(label, fn) for label, fn in checks]
+    ok = all(results)
+
+    if ok:
+        print(f"  ✅ all {len(checks)} malformed-input cases correctly rejected")
+    return ok
+
+
 def main():
     """Run all tests."""
     print("\n")
@@ -221,6 +285,7 @@ def main():
     results.append(("Forward Pass Correctness", test_forward_pass_correctness()))
     results.append(("Gradient Flow", test_gradient_flow()))
     results.append(("Performance Comparison", test_performance_comparison()))
+    results.append(("Input Validation", test_input_validation()))
 
     # Summary
     print("\n" + "=" * 70)

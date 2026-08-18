@@ -164,6 +164,68 @@ def test_sparsity_info() -> bool:
     return ok
 
 
+def test_input_validation() -> bool:
+    """Malformed inputs raise ValueError instead of crashing or reading garbage.
+
+    Added 2026-08-18 alongside the CLAUDE.md gap #6 Cluster C fix
+    (src/engine/py_array_validate.h): these validation paths previously had
+    zero test coverage in this file, and the fix itself changed real
+    behavior in one case (sparsity_info() gained a C-contiguity check it
+    was missing -- see the comment at that call site in
+    bindings_zero_skip_gemm.cpp for why the old code was a latent bug, not
+    just "less validated").
+    """
+    rng = np.random.default_rng(SEED)
+    ok = True
+
+    def expect_value_error(label, fn):
+        nonlocal ok
+        try:
+            fn()
+            print(f"  [FAIL] {label}: expected ValueError, none raised")
+            ok = False
+        except ValueError:
+            pass
+        except Exception as e:
+            print(f"  [FAIL] {label}: expected ValueError, got {type(e).__name__}: {e}")
+            ok = False
+
+    A, B = make_inputs(rng, 8, 32, 16, 0.33)
+    B_noncontig = np.asfortranarray(B)          # valid values, wrong layout
+    A_noncontig = np.asfortranarray(A)
+    B_1d = B.ravel()
+    A_1d = A.ravel()
+
+    # ZeroSkipWeights constructor: B must be 2-D and C-contiguous
+    expect_value_error("ZeroSkipWeights(1-D B)", lambda: zs.ZeroSkipWeights(B_1d))
+    expect_value_error("ZeroSkipWeights(non-contiguous B)",
+                        lambda: zs.ZeroSkipWeights(B_noncontig))
+
+    # gemm()/gemm_tiled(): A must be 2-D, C-contiguous, and K-compatible
+    w = zs.ZeroSkipWeights(B)
+    expect_value_error("gemm(1-D A)", lambda: w.gemm(A_1d))
+    expect_value_error("gemm(non-contiguous A)", lambda: w.gemm(A_noncontig))
+    expect_value_error("gemm(wrong K)", lambda: w.gemm(A[:, :16]))  # K=16 != weight K=32
+    expect_value_error("gemm_tiled(non-contiguous A)", lambda: w.gemm_tiled(A_noncontig))
+
+    # Module-level gemm(): both A and B validated
+    expect_value_error("gemm(1-D A, B)", lambda: zs.gemm(A_1d, B))
+    expect_value_error("gemm(A, non-contiguous B)", lambda: zs.gemm(A, B_noncontig))
+    expect_value_error("gemm(A, 1-D B)", lambda: zs.gemm(A, B_1d))
+
+    # sparsity_info(): the fix itself -- previously accepted non-contiguous B
+    # silently (and would have read wrong values off a transposed/strided
+    # view, since the loop indexes linearly assuming row-major layout).
+    expect_value_error("sparsity_info(1-D B)", lambda: zs.sparsity_info(B_1d))
+    expect_value_error("sparsity_info(non-contiguous B)",
+                        lambda: zs.sparsity_info(B_noncontig))
+
+    if ok:
+        print("  [OK] malformed inputs correctly rejected (2-D, contiguous, "
+              "shape-compatible checks)")
+    return ok
+
+
 def main() -> int:
     print("=" * 70)
     print("Zero-Skip Ternary GEMM Correctness Tests")
@@ -176,6 +238,7 @@ def main() -> int:
         ("Tiled and scalar paths", test_tiled_and_scalar_paths()),
         ("Module-level gemm", test_module_level_gemm()),
         ("Sparsity reporting", test_sparsity_info()),
+        ("Input validation", test_input_validation()),
     ]
 
     failed = [name for name, passed in results if not passed]

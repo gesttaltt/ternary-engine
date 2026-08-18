@@ -154,6 +154,52 @@ original ~140-line estimate almost exactly).
 - `tests/run_tests.py`: 15/15 (includes `test_backend_integration.py`, this module's dedicated
   suite).
 
-Clusters A and C remain open. Cluster A needs a real before/after benchmark before landing, per
-this doc's own "Modifying Hot Paths" rule (it's a hot SIMD path); Cluster C is lower-value
-(validation code only, not hot-path) and was deferred, not attempted.
+Cluster A remains open, and needs a real before/after benchmark before landing, per this doc's own
+"Modifying Hot Paths" rule (it's a hot SIMD path).
+
+## Update (same day): Cluster C fixed
+
+Per a further same-day follow-up ("go ahead with cluster C"), Cluster C was implemented.
+
+New shared header `src/engine/py_array_validate.h` factors out `validate_2d_contiguous<T>()` and
+`validate_1d_contiguous<T>()` -- the part genuinely identical across both GEMM engines
+(dimensionality + C-contiguity checks). Each call site keeps its own domain-specific piece that
+was never actually duplicated: `bindings_tritnet_gemm.cpp`'s exact-shape check against
+caller-supplied M/N/K (factored into a local `check_exact_shape()` helper within that file, since
+`bindings_zero_skip_gemm.cpp` has no equivalent -- it derives M/N/K from the array shape instead).
+
+**Wording harmonized, not just deduplicated**: the drifted "float32 array" vs. "float32" wording
+noted in the original scoping is now one consistent style project-wide ("`<name>` must be
+`<shape>`", no redundant trailing "array"/"uint8" word repetition). `bindings_tritnet_gemm.cpp`'s
+combined ndim+exact-shape checks (previously one generic message covering both failure modes) now
+report specific, more actionable messages for each failure independently.
+
+**A real latent bug found and fixed along the way**: `bindings_zero_skip_gemm.cpp`'s
+`py_sparsity_info()` was the one call site of the 5 in that file that never checked C-contiguity,
+despite indexing its buffer with flat linear arithmetic (`data[i]` for `i` in `[0, K*N)`) that
+silently assumes row-major layout. A non-contiguous input (e.g. a transposed view) would have
+silently produced wrong sparsity statistics instead of raising a clear error -- not merely "less
+validated than its siblings," a genuine correctness gap the consolidation surfaced by making every
+site go through the same helper.
+
+**Test coverage added**: neither `test_zero_skip_gemm.py` nor `test_tritnet_gemm_integration.py`
+exercised any validation-failure path before this change -- both files' only coverage was the
+happy path. Added `test_input_validation()` to each (6 and 7 malformed-input cases respectively:
+wrong ndim/shape, non-contiguous via `np.asfortranarray`/strided slicing, and for zero-skip-gemm
+specifically the `sparsity_info()` fix itself), wired into each file's existing test list.
+
+**Result:** `bindings_zero_skip_gemm.cpp` + `bindings_tritnet_gemm.cpp` combined: -82/+53 lines
+(net -29), plus the new 96-line shared header (mostly documentation -- the two template functions
+themselves are ~20 lines of actual logic).
+
+**Verification performed:**
+- Rebuilt both modules (`build/build_zero_skip_gemm.py`, `build/build_tritnet_gemm.py`) -- both
+  succeed, no new compiler warnings; each build script's own built-in correctness check
+  (AVX2/scalar/tiled vs. reference for zero-skip-gemm; max-error-vs-naive for tritnet-gemm) still
+  passes with the same near-zero error as before.
+- `test_zero_skip_gemm.py` and `test_tritnet_gemm_integration.py` run directly: all pre-existing
+  correctness tests still pass (unaffected -- happy-path behavior unchanged), plus the new
+  validation tests (6/6 and 7/7 malformed-input cases correctly rejected).
+- `tests/run_tests.py`: 15/15.
+
+Cluster A remains the only open item -- see above for why it's intentionally deferred.

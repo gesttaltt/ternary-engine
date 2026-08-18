@@ -19,10 +19,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include "ternary_gemm_zero_skip.h"
+#include "py_array_validate.h"
 #include <stdexcept>
 #include <string>
 
 namespace py = pybind11;
+using ternary_engine::validate_2d_contiguous;
 
 /* -------------------------------------------------------------------------
  * ZeroSkipWeights class: holds precomputed CSC for one weight matrix
@@ -31,11 +33,7 @@ namespace py = pybind11;
 class ZeroSkipWeights {
 public:
     ZeroSkipWeights(py::array_t<int8_t> B) {
-        auto buf = B.request();
-        if (buf.ndim != 2)
-            throw std::invalid_argument("B must be 2-D [K, N] int8 array");
-        if (!B.attr("flags").attr("c_contiguous").cast<bool>())
-            throw std::invalid_argument("B must be C-contiguous (row-major)");
+        auto buf = validate_2d_contiguous(B, "B", "2-D [K, N] int8");
 
         K_   = (int)buf.shape[0];
         N_   = (int)buf.shape[1];
@@ -55,9 +53,7 @@ public:
     ZeroSkipWeights& operator=(const ZeroSkipWeights&) = delete;
 
     py::array_t<float> gemm(py::array_t<float> A, bool use_avx2 = true) {
-        auto buf = A.request();
-        if (buf.ndim != 2)
-            throw std::invalid_argument("A must be 2-D [M, K] float32 array");
+        auto buf = validate_2d_contiguous(A, "A", "2-D [M, K] float32");
         int M = (int)buf.shape[0];
         int K = (int)buf.shape[1];
         if (K != K_)
@@ -65,8 +61,6 @@ public:
                 "A columns (" + std::to_string(K) +
                 ") must match weight rows (" + std::to_string(K_) + ")"
             );
-        if (!A.attr("flags").attr("c_contiguous").cast<bool>())
-            throw std::invalid_argument("A must be C-contiguous");
 
         py::array_t<float> C({M, N_});
         auto c_buf = C.request();
@@ -83,9 +77,7 @@ public:
 
     /* k-parallel tiled kernel: each thread owns a k-stripe → AT fits in L2. */
     py::array_t<float> gemm_tiled(py::array_t<float> A) {
-        auto buf = A.request();
-        if (buf.ndim != 2)
-            throw std::invalid_argument("A must be 2-D [M, K] float32 array");
+        auto buf = validate_2d_contiguous(A, "A", "2-D [M, K] float32");
         int M = (int)buf.shape[0];
         int K = (int)buf.shape[1];
         if (K != K_)
@@ -93,8 +85,6 @@ public:
                 "A columns (" + std::to_string(K) +
                 ") must match weight rows (" + std::to_string(K_) + ")"
             );
-        if (!A.attr("flags").attr("c_contiguous").cast<bool>())
-            throw std::invalid_argument("A must be C-contiguous");
 
         py::array_t<float> C({M, N_});
         auto c_buf = C.request();
@@ -134,13 +124,8 @@ py::array_t<float> py_gemm(
     py::array_t<float>  A,
     py::array_t<int8_t> B
 ) {
-    auto a_buf = A.request();
-    auto b_buf = B.request();
-
-    if (a_buf.ndim != 2)
-        throw std::invalid_argument("A must be 2-D [M, K] float32");
-    if (b_buf.ndim != 2)
-        throw std::invalid_argument("B must be 2-D [K, N] int8");
+    auto a_buf = validate_2d_contiguous(A, "A", "2-D [M, K] float32");
+    auto b_buf = validate_2d_contiguous(B, "B", "2-D [K, N] int8");
 
     int M = (int)a_buf.shape[0];
     int K = (int)a_buf.shape[1];
@@ -149,11 +134,6 @@ py::array_t<float> py_gemm(
 
     if (K != K2)
         throw std::invalid_argument("A columns must match B rows");
-
-    if (!A.attr("flags").attr("c_contiguous").cast<bool>())
-        throw std::invalid_argument("A must be C-contiguous");
-    if (!B.attr("flags").attr("c_contiguous").cast<bool>())
-        throw std::invalid_argument("B must be C-contiguous");
 
     py::array_t<float> C({M, N});
     auto c_buf = C.request();
@@ -169,9 +149,13 @@ py::array_t<float> py_gemm(
 }
 
 py::dict py_sparsity_info(py::array_t<int8_t> B) {
-    auto buf = B.request();
-    if (buf.ndim != 2)
-        throw std::invalid_argument("B must be 2-D [K, N] int8");
+    // Cluster C fix also caught a real latent bug here (2026-08-18): this
+    // function indexes `data[i]` for i in [0, K*N) assuming row-major
+    // C-contiguous layout, but never actually checked it -- the other 4
+    // validation sites in this file all did. A non-contiguous B (e.g. a
+    // transposed view) would have silently read wrong values instead of
+    // raising a clear error. validate_2d_contiguous() closes that gap.
+    auto buf = validate_2d_contiguous(B, "B", "2-D [K, N] int8");
 
     int K   = (int)buf.shape[0];
     int N   = (int)buf.shape[1];
