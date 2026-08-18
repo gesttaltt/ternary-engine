@@ -30,6 +30,7 @@ import numpy as np
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent  # fixed 2026-08-12: was 1 .parent short of repo root
 sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     import ternary_simd_engine as tc
@@ -40,12 +41,41 @@ except ImportError:
     print("  python build.py")
     sys.exit(1)
 
+from benchmark_framework import compute_timing_statistics  # noqa: E402
+
 # Benchmark configuration
 TEST_SIZES = [32, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000]
 TEST_SIZES_QUICK = [32, 1_000, 100_000, 1_000_000]
 OPERATIONS = ['tadd', 'tmul', 'tmin', 'tmax', 'tnot']
 WARMUP_ITERATIONS = 100
-MEASURED_ITERATIONS = 1000
+
+# Statistical-rigor upgrade (2026-08-18, CLAUDE.md gap #8 follow-up): this
+# script used to bracket ONE block of 1,000 back-to-back calls with a single
+# perf_counter_ns() pair and divide -- a single sample, so no variance/CV/CI
+# was ever computable, unlike bench_fair_baseline.py and (as of the same
+# session) bench_simd_fusion_ops.py, which both take repeated independent
+# timing samples via BenchmarkRunner's statistics engine. Replaced with the
+# same idea: BATCH_ITERATIONS calls form one timed block (amortizing
+# per-call/dispatch overhead, same purpose the old MEASURED_ITERATIONS=1000
+# single block served), and MEASUREMENT_RUNS independent blocks are each
+# timed separately so a median/stdev/CV/95%-CI can be computed across them --
+# this is what actually protects against the thermal/clock-drift bias this
+# project's own "interleaved_timing" convention warns about, which a single
+# block can never reveal regardless of how large it is.
+#
+# Deliberately NOT reported as a re-validation of the "35,042 Mops/s peak
+# throughput" headline figure this script is the source of: that number was
+# measured on Windows x64 (the only platform this project formally validates
+# production claims on, per CLAUDE.md), while this session's numbers are
+# Linux-local (see run_benchmark_suite()'s printed platform info and the
+# JSON metadata). This is a methodology upgrade to the script itself,
+# runnable and meaningful on any platform, not a new headline claim.
+BATCH_ITERATIONS = 200
+MEASUREMENT_RUNS = 10
+# Kept for informational continuity with prior runs' metadata (same order of
+# magnitude as the old single-block MEASURED_ITERATIONS=1000: BATCH_ITERATIONS
+# * MEASUREMENT_RUNS = 2,000 total calls per cell, vs. 1,000 before).
+MEASURED_ITERATIONS = BATCH_ITERATIONS * MEASUREMENT_RUNS
 
 # Trit encoding
 MINUS_ONE = 0b00
@@ -130,9 +160,22 @@ def get_cpu_info() -> Dict:
     return info
 
 
-class BenchmarkResult:
-    """Container for a single benchmark result"""
-    def __init__(self, operation: str, size: int, time_ns: float, iterations: int):
+class OpBenchmarkResult:
+    """Container for a single benchmark result.
+
+    Named distinctly from benchmark_framework.BenchmarkResult (a different,
+    baseline-vs-optimized-pair shape) to avoid confusion now that this file
+    imports from that module too.
+
+    time_ns/iterations represent the MEDIAN block (one of MEASUREMENT_RUNS
+    independent BATCH_ITERATIONS-call blocks) -- median-of-blocks, not
+    mean-of-all-calls, per this project's own median-based statistical
+    convention (see bench_fair_baseline.py). stats, if provided, carries the
+    full compute_timing_statistics() output across all blocks' per-call
+    times, for the CV/stdev/CI fields to_dict() adds.
+    """
+    def __init__(self, operation: str, size: int, time_ns: float, iterations: int,
+                 stats: Dict[str, float] = None, measurement_runs: int = 1):
         self.operation = operation
         self.size = size
         self.time_ns = time_ns
@@ -140,9 +183,11 @@ class BenchmarkResult:
         self.time_per_op = time_ns / iterations
         self.time_per_elem = self.time_per_op / size
         self.throughput_mops = (size * iterations) / (time_ns / 1e9) / 1e6
+        self.stats = stats
+        self.measurement_runs = measurement_runs
 
     def to_dict(self) -> Dict:
-        return {
+        d = {
             'operation': self.operation,
             'size': self.size,
             'time_ns_total': self.time_ns,
@@ -151,6 +196,23 @@ class BenchmarkResult:
             'time_ns_per_elem': self.time_per_elem,
             'throughput_mops': self.throughput_mops,
         }
+        if self.stats is not None:
+            # Additive fields only -- the 7 keys above are unchanged so
+            # benchmark_validator.py, bench_regression_detect.py, and
+            # run_all_benchmarks.py (all of which read this schema) keep
+            # working without modification.
+            d['measurement_runs'] = self.measurement_runs
+            d['cv_percent'] = self.stats['cv']
+            d['stdev_ns_per_op'] = self.stats['stdev']
+            # 95% CI on time -> Mops/s is inversely proportional to time, so
+            # the CI bounds flip: the time upper bound gives the Mops/s
+            # lower bound and vice versa.
+            ci_lo_ns, ci_hi_ns = self.stats['ci_lower'], self.stats['ci_upper']
+            if ci_hi_ns > 0:
+                d['throughput_mops_ci_lower'] = (self.size / (ci_hi_ns / 1e9)) / 1e6
+            if ci_lo_ns > 0:
+                d['throughput_mops_ci_upper'] = (self.size / (ci_lo_ns / 1e9)) / 1e6
+        return d
 
 
 class PythonBaseline:
@@ -243,25 +305,39 @@ def generate_test_data(size: int, seed: int = 42) -> Tuple[np.ndarray, np.ndarra
 
 def benchmark_operation(func, a: np.ndarray, b: np.ndarray = None,
                         warmup: int = WARMUP_ITERATIONS,
-                        iterations: int = MEASURED_ITERATIONS) -> float:
-    """Benchmark a single operation with warmup"""
-    # Warmup
+                        batch: int = BATCH_ITERATIONS,
+                        runs: int = MEASUREMENT_RUNS) -> Dict[str, float]:
+    """Benchmark a single operation across `runs` independent timed blocks
+    of `batch` back-to-back calls each, returning per-call-time statistics
+    (compute_timing_statistics()'s dict, units: ns per call).
+
+    Replaces the old single-block design (module docstring above has the
+    full rationale): a lone block, however large, can never distinguish
+    "consistently fast" from "fast on average but drifted mid-run" --
+    independent blocks can, since a later block affected by thermal
+    throttling or scheduler noise shows up as a high-CV outlier in the
+    returned stats instead of silently blending into one undifferentiated
+    total.
+    """
+    # Warmup (once, before the first timed block)
     for _ in range(warmup):
         if b is not None:
             _ = func(a, b)
         else:
             _ = func(a)
 
-    # Measured run
-    start = time.perf_counter_ns()
-    for _ in range(iterations):
-        if b is not None:
-            _ = func(a, b)
-        else:
-            _ = func(a)
-    end = time.perf_counter_ns()
+    per_call_times_ns = []
+    for _ in range(runs):
+        start = time.perf_counter_ns()
+        for _ in range(batch):
+            if b is not None:
+                _ = func(a, b)
+            else:
+                _ = func(a)
+        end = time.perf_counter_ns()
+        per_call_times_ns.append((end - start) / batch)
 
-    return end - start
+    return compute_timing_statistics(per_call_times_ns)
 
 
 def run_benchmark_suite(sizes: List[int], verbose: bool = True) -> Dict:
@@ -276,7 +352,9 @@ def run_benchmark_suite(sizes: List[int], verbose: bool = True) -> Dict:
             'numpy_version': np.__version__,
             'test_sizes': sizes,
             'warmup_iterations': WARMUP_ITERATIONS,
-            'measured_iterations': MEASURED_ITERATIONS,
+            'measured_iterations': MEASURED_ITERATIONS,  # BATCH_ITERATIONS * MEASUREMENT_RUNS, kept for continuity
+            'batch_iterations': BATCH_ITERATIONS,
+            'measurement_runs': MEASUREMENT_RUNS,
             'hardware': hw_info,
         },
         'results_optimized': [],
@@ -304,7 +382,8 @@ def run_benchmark_suite(sizes: List[int], verbose: bool = True) -> Dict:
         print(f"\nBenchmark Configuration:")
         print(f"  Test sizes: {sizes}")
         print(f"  Warmup iterations: {WARMUP_ITERATIONS}")
-        print(f"  Measured iterations: {MEASURED_ITERATIONS}")
+        print(f"  Measurement: {MEASUREMENT_RUNS} independent blocks x {BATCH_ITERATIONS} calls/block "
+              f"({MEASURED_ITERATIONS} total) -- reports median + CV across blocks")
 
         print(f"\nPerformance Notes:")
         print(f"  - Results may vary with CPU frequency scaling and power states")
@@ -327,21 +406,37 @@ def run_benchmark_suite(sizes: List[int], verbose: bool = True) -> Dict:
 
             # Benchmark optimized version
             if op_name == 'tnot':
-                time_ns = benchmark_operation(tc_func, a)
+                stats = benchmark_operation(tc_func, a)
             else:
-                time_ns = benchmark_operation(tc_func, a, b)
+                stats = benchmark_operation(tc_func, a, b)
 
-            result_opt = BenchmarkResult(op_name, size, time_ns, MEASURED_ITERATIONS)
+            result_opt = OpBenchmarkResult(
+                op_name, size,
+                time_ns=stats['median'] * BATCH_ITERATIONS,
+                iterations=BATCH_ITERATIONS,
+                stats=stats,
+                measurement_runs=MEASUREMENT_RUNS,
+            )
             results['results_optimized'].append(result_opt.to_dict())
 
-            # Benchmark Python baseline (only for smaller sizes to avoid timeout)
+            # Benchmark Python baseline (only for smaller sizes to avoid timeout).
+            # batch=20/runs=5 keeps the same 100-call total budget the old
+            # single-block warmup=10/iterations=100 used, just split into
+            # independent blocks so a CV/stats dict is computable here too.
             if size <= 10_000:
+                py_batch, py_runs = 20, 5
                 if op_name == 'tnot':
-                    time_ns_py = benchmark_operation(py_func, a, warmup=10, iterations=100)
+                    stats_py = benchmark_operation(py_func, a, warmup=10, batch=py_batch, runs=py_runs)
                 else:
-                    time_ns_py = benchmark_operation(py_func, a, b, warmup=10, iterations=100)
+                    stats_py = benchmark_operation(py_func, a, b, warmup=10, batch=py_batch, runs=py_runs)
 
-                result_py = BenchmarkResult(op_name, size, time_ns_py, 100)
+                result_py = OpBenchmarkResult(
+                    op_name, size,
+                    time_ns=stats_py['median'] * py_batch,
+                    iterations=py_batch,
+                    stats=stats_py,
+                    measurement_runs=py_runs,
+                )
                 results['results_baseline'].append(result_py.to_dict())
 
                 speedup = result_py.time_per_elem / result_opt.time_per_elem
@@ -350,7 +445,8 @@ def run_benchmark_suite(sizes: List[int], verbose: bool = True) -> Dict:
 
             if verbose:
                 speedup_str = f"{speedup:.1f}x" if speedup else "N/A"
-                print(f"  {op_name:8s} | {result_opt.throughput_mops:8.2f} Mops/s | "
+                cv_note = f" (cv={result_opt.stats['cv']:.1f}%)" if result_opt.stats else ""
+                print(f"  {op_name:8s} | {result_opt.throughput_mops:8.2f} Mops/s{cv_note} | "
                       f"{result_opt.time_per_elem:8.3f} ns/elem | Speedup: {speedup_str}")
 
     if verbose:
@@ -418,6 +514,16 @@ def print_summary(results: Dict):
             if speedups:
                 avg_speedup = sum(speedups) / len(speedups)
                 print(f"  {op_name:8s}: {avg_speedup:6.1f}x")
+
+    # High-CV warning, matching bench_fair_baseline.py's convention: a cell
+    # with high block-to-block variance means "rerun on an idle machine"
+    # before citing that specific number, not "the run failed."
+    high_cv = [r for r in results['results_optimized'] if r.get('cv_percent', 0) > 15.0]
+    if high_cv:
+        print(f"\n[WARN] {len(high_cv)} cell(s) have CV > 15% -- rerun on an idle "
+              f"machine before publishing these numbers:")
+        for r in high_cv:
+            print(f"  {r['operation']:8s} @ {r['size']:>10,}: cv={r['cv_percent']:.1f}%")
 
     print("\n" + "=" * 80)
 
