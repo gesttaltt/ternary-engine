@@ -63,7 +63,7 @@ result = td.tadd(packed_a, packed_b)  # Uses matmul instead of lookup
 - **Use cases:** Persistent storage, network transmission, memory-bound workloads
 - **TritNet roadmap:** Train BitNet on truth tables → distill to ternary weights → replace LUT with matmul
 - **Build:** `python build/build_dense243.py`
-- **Docs:** `docs/TRITNET_ROADMAP.md`
+- **Docs:** `docs/research/tritnet/TRITNET_ROADMAP.md`
 
 ### TritNet - Neural Network-Based Ternary Arithmetic (Experimental)
 
@@ -83,13 +83,13 @@ result = tritnet_model(input)  # 2-layer ternary matmul
 - Replace memory lookups with matrix multiplication (GPU/TPU friendly)
 - Enable hardware acceleration via tensor cores instead of memory access
 
-**Implementation Status - Phase 1 Complete:**
-- ✅ Truth table generation for all operations (243 samples for unary, 59,049 for binary)
-- ✅ TritNet model architecture (TritNetUnary, TritNetBinary)
-- ✅ Ternary layers with quantization-aware training
-- ✅ Training infrastructure with Adam optimizer
-- ✅ Model save/load (.tritnet format)
-- ✅ Weight export to NumPy for C++ integration
+**Implementation Status - Phases 1-5 Complete (2026-08-18):**
+- ✅ Phase 1: Truth table generation for all operations (243 samples for unary, 59,049 for binary)
+- ✅ Phase 2: Trained to ≥99% accuracy with ternary weights (tnot/tadd 100%, tmul 99.5%, tmin/tmax 99.9%)
+- ✅ Phase 3: C++ inference engine (scalar + AVX2) benchmarked against the LUT — **LUT wins by 169×-195×**, AVX2 recovers only ~10× of that gap
+- ✅ Phase 4: GPU (CUDA/PyTorch) batch inference — confirms rather than reverses Phase 3 (best case ~0.10-0.27× of LUT throughput; networks too small to reach GPU-compute-bound at any batch size that fits in VRAM)
+- ✅ Phase 5: Learned generalization — errors on the 3 imperfect ops are structured, not noise; a genuinely novel, closed-form-resistant, fully-associative operation was discovered and learned to 99.52%, but a bounded-domain operation always admits a cheap LUT, so the verdict is unchanged
+- **Overall verdict:** LUT wins by 1-2 orders of magnitude regardless of operation, hardware target, or how the operation was discovered. See `.claude/CLAUDE.md`'s "TritNet Development" section for the full phase-by-phase writeup and report links.
 
 **Operations:**
 - **tnot** - Unary negation (243 samples, 8 hidden neurons)
@@ -124,21 +124,22 @@ python models/tritnet/src/train_tritnet.py --operation tnot --hidden-size 8
 python models/tritnet/run_tritnet.py --all
 ```
 
-**Performance Goals:**
-- **Current LUT:** 0.25 ns pack, 0.91 ns unpack, memory-bound
-- **TritNet Target:** <10 ns inference with GPU acceleration, compute-bound
-- **Advantage:** Batching, parallelization, tensor core utilization
+**Performance (measured, not goals — see `.claude/CLAUDE.md` for dates/platforms):**
+- **LUT:** ~517-535 Mops/s (tnot), ~133-149 Mops/s (binary ops) — memory-bound, wins decisively
+- **TritNet AVX2 (CPU):** ~2.7-3.4 Mops/s (tnot), ~0.78-1.0 Mops/s (binary) — compute-bound, ~10× over scalar but 169×-195× behind LUT
+- **TritNet GPU (RTX 3050, fp16, largest batch fitting in 6GB):** ~65 Mops/s (tnot), ~37 Mops/s (binary) — beats AVX2-CPU by 15-47× but still only 0.10-0.27× of LUT
+- **Conclusion:** the honest niche for TritNet, if one exists, is discovering operations without a cheap closed form — not raw throughput on any hardware tried so far (see Phase 5 above)
 
 **Roadmap:**
 - Phase 1: Truth table generation ✅ COMPLETE
-- Phase 2: Train and validate 100% accuracy on all operations
-- Phase 3: C++ integration and benchmarking vs LUT
-- Phase 4: GPU/TPU acceleration and batch inference
-- Phase 5: Learned generalization beyond exact truth tables
+- Phase 2: Train and validate ≥99% accuracy on all operations ✅ COMPLETE
+- Phase 3: C++ integration and benchmarking vs LUT ✅ COMPLETE
+- Phase 4: GPU acceleration and batch inference ✅ COMPLETE (GPU only; no TPU path exists in this repo)
+- Phase 5: Learned generalization beyond exact truth tables ✅ COMPLETE
 
 **Documentation:**
-- **[docs/TRITNET_ROADMAP.md](docs/TRITNET_ROADMAP.md)** - Implementation roadmap and technical architecture
-- **[docs/TRITNET_VISION.md](docs/TRITNET_VISION.md)** - Long-term vision and research goals
+- **[docs/research/tritnet/TRITNET_ROADMAP.md](docs/research/tritnet/TRITNET_ROADMAP.md)** - Implementation roadmap and technical architecture
+- **[docs/research/tritnet/TRITNET_VISION.md](docs/research/tritnet/TRITNET_VISION.md)** - Long-term vision and research goals
 - **[models/tritnet/src/](models/tritnet/src/)** - Training scripts and model definitions
 - **[models/tritnet/run_tritnet.py](models/tritnet/run_tritnet.py)** - Unified TritNet workflow orchestration
 
@@ -168,23 +169,23 @@ python -c "import ternary_simd_engine; print('Success')"
 
 ### Manual Compilation
 
-⚠️ **Warning:** Manual compilation commands below are provided for reference but have **NOT been tested** on Linux/macOS. Windows is the only validated production platform.
+⚠️ **Warning:** Manual compilation commands below are provided for reference. **Prefer `python build/build.py`** (or the other `build/build_*.py` scripts) — it handles per-platform flags correctly and is what CI actually runs. Windows remains the only platform with formal, statistically-validated production benchmark claims; Linux x64 has full test-suite + CI validation (2026-08-11) but benchmark validation is still pending per project standard.
 
 **Windows (MSVC) - VALIDATED:**
 ```bash
 cl /O2 /GL /arch:AVX2 /std:c++17 /EHsc /LD ^
-   ternary_simd_engine.cpp /link /LTCG
+   src/engine/bindings_core_ops.cpp /link /LTCG
 ```
 
-**Linux/macOS - UNTESTED (use at own risk):**
+**Linux/macOS - locally functional, not formally benchmark-validated:**
 ```bash
-c++ -O3 -march=native -mavx2 -flto -shared -std=c++17 -fPIC \
+c++ -O3 -march=haswell -mavx2 -mfma -fopenmp -flto -shared -std=c++17 -fPIC \
     $(python3 -m pybind11 --includes) \
-    ternary_simd_engine.cpp \
+    src/engine/bindings_core_ops.cpp \
     -o ternary_simd_engine$(python3-config --extension-suffix)
 ```
 
-Note: OpenMP (`-fopenmp`) disabled by default due to documented CI crashes. For production use on Windows, use the validated build script: `python build/build.py`
+Note: OpenMP (`-fopenmp`) is enabled by default in `build/build.py` on GCC/Clang (disabled only on ARM and Apple Clang) — validated passing on Linux x64 (2026-07-23) via `tests/python/test_omp.py`. For any real build, use the validated build script: `python build/build.py`
 
 ## Usage
 
@@ -284,37 +285,21 @@ the geomeans; all per-cell data including exclusions is in
 - Very large (1M elements): 17,621-37,244 Mops/s (OpenMP effective, fusion shines)
 - Huge arrays (10M elements): 6,578-8,608 Mops/s (memory bandwidth limited)
 
-### Competitive Analysis vs NumPy INT8 (Latest: 2025-11-23)
+### Competitive Analysis vs NumPy INT8 (re-validated 2026-08-18, Linux x64)
 
-**✅ VALIDATED WITH NATIVE ENGINE BUILD**
+**⚠️ SUPERSEDES the numbers below this note — the 6-phase competitive suite was re-run under a verified-clean environment (`PYTHONPATH` unset, cwd outside the repo) 2026-08-18, closing a caveat that the phase 1-4 numbers this section originally shipped with had never proven themselves independent of a forgiving local `PYTHONPATH`. See `.claude/CLAUDE.md` Critical Gap #3 for the full history.**
 
-**Element-Wise Operations - Production Benchmarks:**
+| Phase | Result | Notes |
+|:------|:-------|:------|
+| 1. Arithmetic vs NumPy INT8 | 0.70×/0.69× avg | "Needs work" — engine ~parity with NumPy on single ops, not a clean win |
+| 2. Memory efficiency | **4.0× vs INT8** (exact match to README claim) | ✅ Proven |
+| 3. Throughput @ equivalent bit-width | Dense243 8.0× faster than an INT2 reference | Real kernel-vs-kernel comparison, sized to a genuine 1GB footprint |
+| 4. Neural workload (matmul) | 0.189× avg | "Too slow for AI" — real `ternary_zero_skip_gemm` kernel, not a naive Python loop |
+| 5-6. Model quantization / power | Framework-only | No measurement code yet |
 
-| Size | Operation | Ternary | NumPy INT8 | Speedup | Result |
-|:-----|:----------|:--------|:-----------|:--------|:-------|
-| 10K | Addition | 2.1 µs | 5.8 µs | **2.75×** | ✅ Ternary faster |
-| 100K | Addition | 9.1 µs | 52.5 µs | **5.76×** | ✅ Ternary faster |
-| 100K | Multiply | 7.7 µs | 71.2 µs | **9.25×** | ✅ Ternary faster |
-| 1M | Multiply | 70.1 µs | 813.5 µs | **11.60×** | ✅ Ternary faster |
-| 10M | Addition | 2.35 ms | 7.58 ms | **3.22×** | ✅ Ternary faster |
+**Commercial viability: 2/5 criteria validated** — see the table further below. This is a confirmed, re-verified number, not a first-pass estimate.
 
-**Key Findings:**
-- **2.96× average speedup on addition** (validated across 5 array sizes)
-- **5.96× average speedup on multiplication** (validated across 5 array sizes)
-- **4× memory advantage** - 2-bit encoding vs 8-bit INT8 (validated on 7B-405B models)
-- **5.42 GOPS throughput** at 1GB memory footprint
-- Performance gains from reduced memory traffic and superior SIMD utilization
-
-**Validated Commercial Claims:**
-- ✅ **4× smaller memory footprint** than INT8, 8× smaller than FP16 (70B model: 140GB → 17.5GB)
-- ✅ **3-12× faster on element-wise operations** at optimal array sizes (10K-1M elements)
-- ✅ **Peak 12.5 GOPS throughput** on single operations
-- ✅ **5.42 GOPS** at equivalent bit-width (1GB memory footprint)
-- ⚠️ **0.40× matmul speedup** - needs C++ SIMD optimization for AI viability
-
-**Latest Benchmark Results:** See [reports/benchmarks/2025-11-23/BENCHMARK_SUMMARY.md](reports/benchmarks/2025-11-23/BENCHMARK_SUMMARY.md)
-
-**See [COMPETITIVE_ANALYSIS.md](COMPETITIVE_ANALYSIS.md) for complete analysis, gap assessment, and commercial viability evaluation.**
+For the honest, apples-to-apples single-op comparison (same ternary semantics, fair NumPy baseline rather than a strawman), see [Fair Baseline vs NumPy](#fair-baseline-vs-numpy-2026-08-11-linux-x64) above: **tadd 1.7-3.5×, fused ops up to 6×, single non-saturating ops ~parity with NumPy (0.84× geomean)**.
 
 ### Operation Fusion (Phase 4.0 - Validated)
 
@@ -339,59 +324,63 @@ Performance validated with statistical rigor (variance, confidence intervals, co
 
 ## Architecture
 
-### Project Structure (v1.0 - Clean Separation)
+### Project Structure (current — see `.claude/CLAUDE.md` "Code Organization" for the authoritative version)
 
 ```
-ternary_core/              # Production-ready kernel (mathematically stable)
+src/core/                  # Production-ready kernel (mathematically stable)
 ├─ algebra/                # Core ternary operations
-│   ├─ ternary_algebra.h      # Scalar operations + LUTs (143 lines)
-│   └─ ternary_lut_gen.h      # Compile-time LUT generation (111 lines)
+│   ├─ ternary_algebra.h      # Scalar operations + LUTs
+│   └─ ternary_lut_gen.h      # Compile-time LUT generation
 ├─ simd/                   # SIMD acceleration
-│   ├─ ternary_simd_kernels.h # AVX2 vectorization (103 lines)
-│   ├─ ternary_cpu_detect.h   # Runtime CPU detection (185 lines)
-│   └─ ternary_fusion.h       # Operation fusion PoC (204 lines)
+│   ├─ ternary_simd_kernels.h # AVX2 vectorization
+│   ├─ ternary_cpu_detect.h   # Runtime CPU detection
+│   ├─ ternary_fusion.h       # Operation fusion
+│   └─ backend_*.{h,cpp}      # Pluggable Scalar/AVX2_v1/AVX2_v2 backend system
 ├─ ffi/                    # Cross-language FFI
-│   └─ ternary_c_api.h        # Pure C API (255 lines)
+├─ common/                 # Error types, shared utilities
+├─ config/, packing/, profiling/
 └─ core_api.h              # Unified entry point
 
-ternary_engine/            # Experimental optimizations
-└─ experimental/
-    ├─ dense243/           # Dense243 encoding (✓ VALIDATED - production-ready)
-    ├─ fusion/             # Fusion operations (Phase 4.0 validated, 4.1 pending)
-    └─ [future expansions]
+src/engine/                # Python bindings and library code
+├─ bindings_core_ops.cpp          # Core SIMD ops (ternary_simd_engine)
+├─ bindings_dense243.cpp          # Dense243 encoding (ternary_dense243_module)
+├─ bindings_tritnet_gemm.cpp      # TritNet GEMM
+├─ bindings_zero_skip_gemm.cpp    # Zero-skip ternary GEMM (used by competitive bench Phase 4)
+├─ bindings_backend_api.cpp       # Pluggable backend system (ternary_backend)
+├─ bindings_tritnet_inference.cpp # TritNet C++ inference engine, scalar+AVX2
+├─ py_array_validate.h            # Shared GEMM input-validation helpers
+└─ lib/dense243/                  # High-density encoding library
 
-scripts/                   # Build and development automation (v1.0 - Reorganized 2025-11-23)
-├─ build/                  # Build scripts (all platforms)
-│   ├─ build.py               # Standard optimized build
-│   ├─ build_dense243.py      # Dense243 module build
-│   ├─ build_pgo.py           # MSVC profile-guided optimization
-│   ├─ build_pgo_unified.py   # Clang PGO (cross-platform)
-│   └─ clean_all.py           # Cleanup build artifacts
-├─ tritnet/                # TritNet neural network training
-│   ├─ generate_truth_tables.py  # Truth table dataset generation
-│   ├─ ternary_layers.py         # Ternary neural network layers
-│   ├─ tritnet_model.py          # TritNet model definitions
-│   └─ train_tritnet.py          # Training orchestration
-└─ orchestration/          # High-level workflows (future)
+models/tritnet/            # TritNet training pipeline (Phases 1-5, all complete)
+├─ src/                    # Truth tables, ternary layers, model architectures
+├─ qat_common.py           # Shared QAT training code
+├─ inference/              # C++ inference engine (scalar + AVX2), weight export
+└─ phase{4,5}_*.py         # GPU benchmark, error characterization, novel-op discovery
 
-Root level:
-├─ ternary_simd_engine.cpp # Main engine (uses ternary_core/)
-├─ ternary_errors.h        # Error definitions
-└─ ternary_profiler.h      # Profiling utilities
+build/                     # Build scripts (build.py, build_dense243.py,
+                            # build_backend.py, build_zero_skip_gemm.py,
+                            # build_tritnet_gemm.py, build_tritnet_inference.py,
+                            # build_pgo*.py, build_all.py, clean_all.py)
+
+benchmarks/                # Competitive analysis suite
+tests/                     # tests/run_tests.py (unified runner), python/, cpp/
+docs/                      # API reference and architecture documentation
+opentimestamps/            # IP protection (timestamp_create.py, timestamp_verify.py)
+reports/                   # Dated session/validation reports (source of truth for history)
 ```
 
-**Total kernel implementation:** ~1,000 lines of validated code
+**Total kernel + bindings implementation:** ~9,700 lines of validated C++17 code (src/core/ + src/engine/)
 
 ### Intellectual Property Protection
 
 **OpenTimestamps SHA512-based IP protection system (Added 2025-11-23)**
 
 ```bash
-# Generate IP protection timestamp for snapshot
-python scripts/timestamp_snapshot.py --create
+# Generate IP protection timestamp for snapshot (runs immediately -- no --help/--dry-run)
+python opentimestamps/timestamp_create.py
 
 # Verify existing timestamp
-python scripts/timestamp_snapshot.py --verify timestamps/snapshot_YYYYMMDD_HHMMSS.ots
+python opentimestamps/timestamp_verify.py opentimestamps/timestamps/manifest_YYYYMMDD_HHMMSS.json.ots
 ```
 
 **How it works:**
@@ -704,25 +693,29 @@ Result: 100K results in ~9.1 μs (11,000 Mops/s)
 ### Implementation Files
 
 **Core Kernel** (`src/core/`):
-- `algebra/ternary_lut_gen.h` (111 lines) - Compile-time LUT generation
-- `algebra/ternary_algebra.h` (143 lines) - Scalar operations
-- `simd/ternary_simd_kernels.h` (738 lines) - AVX2 vectorization
-- `simd/ternary_cpu_detect.h` (144 lines) - Runtime CPU detection
-- `simd/ternary_fusion.h` (473 lines) - Operation fusion
-- `common/ternary_errors.h` (67 lines) - Error handling
-- `core_api.h` (89 lines) - Unified API
+- `algebra/ternary_lut_gen.h` (181 lines) - Compile-time LUT generation
+- `algebra/ternary_algebra.h` (200 lines) - Scalar operations
+- `simd/simd_avx2_32trit_ops.h` (117 lines) - AVX2 vectorization
+- `simd/cpu_simd_capability.h` (185 lines) - Runtime CPU detection
+- `simd/fused_binary_unary_ops.h` (252 lines) - Operation fusion
+- `simd/backend_*.{h,cpp}` - Pluggable Scalar/AVX2_v1/AVX2_v2 backend system
+- `common/ternary_errors.h` (164 lines) - Error handling
+- `core_api.h` (87 lines) - Unified API
 
 **High-Density Encodings** (`src/engine/dense243/`):
-- `ternary_dense243.h` (348 lines) - Dense243 pack/unpack
-- `ternary_dense243_simd.h` (357 lines) - SIMD-accelerated Dense243
-- `ternary_triadsextet.h` (449 lines) - TriadSextet encoding
+- `ternary_dense243.h` (260 lines) - Dense243 pack/unpack
+- `ternary_dense243_simd.h` (411 lines) - SIMD-accelerated Dense243
+- `ternary_triadsextet.h` (397 lines) - TriadSextet encoding
 
 **Python Bindings** (`src/engine/`):
-- `bindings_core_ops.cpp` (2,247 lines) - Main SIMD operations
-- `bindings_dense243.cpp` (1,215 lines) - Dense243 module
-- `bindings_tritnet_gemm.cpp` (152 lines) - TritNet GEMM
+- `bindings_core_ops.cpp` (580 lines) - Main SIMD operations
+- `bindings_dense243.cpp` (370 lines) - Dense243 module
+- `bindings_tritnet_gemm.cpp` (343 lines) - TritNet GEMM
+- `bindings_backend_api.cpp` (328 lines) - Pluggable backend system
+- `bindings_zero_skip_gemm.cpp` (247 lines) - Zero-skip ternary GEMM
+- `bindings_tritnet_inference.cpp` (189 lines) - TritNet C++ inference engine
 
-**Total Kernel**: ~6,000 lines of validated, production-ready C++17 code
+**Total kernel + bindings**: ~9,700 lines of validated C++17 code (`src/core/` + `src/engine/`)
 
 ### Deployment Status
 
@@ -735,32 +728,31 @@ Result: 100K results in ~9.1 μs (11,000 Mops/s)
 - Canonical indexing optimization (33% SIMD improvement)
 - Performance validated: 45,300 Mops/s peak throughput
 
-✅ **Validated & Ready** (ternary_engine/experimental/):
+✅ **Validated & Ready** (`src/engine/lib/dense243/`):
 - **Dense243 encoding** (all 243 states validated, 0.25 ns pack, 0.91 ns unpack)
 - **TriadSextet encoding** (all 27 states validated, 0.16 ns pack, 0.66 ns unpack)
-- **fused_tnot_tadd** (rigorous benchmarks: 1.94× conservative, up to 15.52× speedup)
+- **fused_tnot_tadd** (rigorous benchmarks: 1.94× conservative, up to 15.52× speedup, Windows x64 2025-10-29)
 
-⚠️ **Pending Validation** (ternary_engine/experimental/):
-- Phase 4.1 fusion operations (fused_tnot_tmul/tmin/tmax - implementation complete, benchmarks pending)
+✅ **Phase 4.1 fusion operations** (`fused_tnot_tmul`/`tmin`/`tmax`) - re-validated on Linux x64 native C++ (2026-08-18): 1.00×-2.89× speedup range, ~1.6× average, every measured cell beat 1.0×. The 2025-10-29 Windows table's higher tmin/tmax ceiling (9-11×) wasn't reproduced here — not asserted as a regression given the different, unverified original hardware; both numbers are kept side by side in `src/core/simd/docs/FUSION.md`.
 
-See comprehensive validation report in local-reports/ directory.
+See dated validation reports in [reports/](reports/) (the authoritative history of every fix, benchmark, and re-validation).
 
 ## Testing
 
 ```bash
 # Run all tests (unified test runner)
-python run_tests.py
+python tests/run_tests.py
 
 # Run individual test suites
-python tests/test_phase0.py     # Correctness
-python tests/test_omp.py         # OpenMP scaling
-python tests/test_errors.py      # Error handling
+python tests/python/test_phase0.py     # Correctness
+python tests/python/test_omp.py         # OpenMP scaling
+python tests/python/test_errors.py      # Error handling
 
 # Performance benchmarks
-python benchmarks/bench_phase0.py
+python benchmarks/python-with-interpreter-overhead/bench_simd_core_ops.py
 ```
 
-See **[TESTING.md](TESTING.md)** for comprehensive testing and CI/CD documentation.
+See **[tests/README.md](tests/README.md)** for comprehensive testing and CI/CD documentation.
 
 ## Competitive Benchmarking Suite
 
@@ -772,12 +764,12 @@ Comprehensive 6-phase benchmark suite comparing ternary operations against NumPy
 
 ```bash
 # Run full competitive benchmark suite (6 phases)
-python benchmarks/bench_competitive.py --all
+python benchmarks/python-with-interpreter-overhead/bench_competitive.py --all
 
 # Run specific phase
-python benchmarks/bench_competitive.py --phase 1  # vs NumPy
-python benchmarks/bench_competitive.py --phase 4  # Neural workloads
-python benchmarks/bench_competitive.py --phase 5  # Model quantization
+python benchmarks/python-with-interpreter-overhead/bench_competitive.py --phase 1  # vs NumPy
+python benchmarks/python-with-interpreter-overhead/bench_competitive.py --phase 4  # Neural workloads
+python benchmarks/python-with-interpreter-overhead/bench_competitive.py --phase 5  # Model quantization
 
 # Generate visualization report
 python benchmarks/utils/visualization.py results/competitive_results_*.json
@@ -821,15 +813,15 @@ python benchmarks/utils/visualization.py results/competitive_results_*.json
 
 | Criterion | Target | Status |
 |:----------|:-------|:-------|
-| Memory efficiency at same capacity | 4× vs INT8 | ✅ **PROVEN** (4.00x validated) |
-| Throughput at equivalent bit-width | > INT2 | ✅ **BASELINE** (5.42 GOPS) |
-| Inference latency in real models | < 2× FP16 | ⚠️ Needs C++ matmul |
+| Memory efficiency at same capacity | 4× vs INT8 | ✅ **PROVEN** (4.0× validated) |
+| Throughput at equivalent bit-width | > INT2 | ✅ **PROVEN** (Dense243 8.0× faster than a real INT2 reference) |
+| Inference latency in real models | < 2× FP16 | ❌ 0.189× avg matmul — "too slow for AI" against the real zero-skip GEMM kernel |
 | Power consumption on edge | 2-4× better | ⚠️ Needs hardware |
 | Accuracy retention after quantization | < 5% loss | ⚠️ Needs model testing |
 
-**Current Status:** 3/5 criteria validated (60%)
+**Current Status:** 2/5 criteria validated (40%) — re-confirmed 2026-08-18 under a verified-clean environment, see `.claude/CLAUDE.md` Critical Gap #3 for the full history.
 
-**Latest Full Results:** [reports/benchmarks/2025-11-23/BENCHMARK_SUMMARY.md](reports/benchmarks/2025-11-23/BENCHMARK_SUMMARY.md)
+**Latest Full Results:** [reports/archive/benchmarks/2025-11-23/BENCHMARK_SUMMARY.md](reports/archive/benchmarks/2025-11-23/BENCHMARK_SUMMARY.md) (original 2025-11-23 run; see [reports/2026-08-18/COMPETITIVE_BENCHMARK_REVALIDATION.md](reports/2026-08-18/COMPETITIVE_BENCHMARK_REVALIDATION.md) for the current re-validated numbers)
 
 ### Results Structure
 
@@ -873,28 +865,25 @@ pip install torch transformers
 
 - **[benchmarks/COMPETITIVE_BENCHMARKS.md](benchmarks/COMPETITIVE_BENCHMARKS.md)** - Complete suite documentation
 - **[benchmarks/README.md](benchmarks/README.md)** - Standard benchmark documentation
-- **[real.md](real.md)** - Original competitive benchmark requirements
 
 ## Documentation
 
 **Core Documentation:**
-- **[TESTING.md](TESTING.md)** - Testing and CI/CD guide
+- **[tests/README.md](tests/README.md)** - Testing and CI/CD guide
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guidelines
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history
 - **[docs/](docs/)** - Complete API reference and architecture docs
-- **[build/README.md](build/README.md)** - Build system documentation
+- **[docs/build-system/README.md](docs/build-system/README.md)** - Build system documentation
 - **[tests/README.md](tests/README.md)** - Test suite documentation
 
 **TritNet (Neural Network-Based Arithmetic):** ⭐ New!
-- **[docs/TRITNET_ROADMAP.md](docs/TRITNET_ROADMAP.md)** - Implementation roadmap and technical architecture
-- **[docs/TRITNET_VISION.md](docs/TRITNET_VISION.md)** - Long-term vision and research goals
+- **[docs/research/tritnet/TRITNET_ROADMAP.md](docs/research/tritnet/TRITNET_ROADMAP.md)** - Implementation roadmap and technical architecture (phase numbering superseded — see `.claude/CLAUDE.md`'s "TritNet Development" section for current phase status)
+- **[docs/research/tritnet/TRITNET_VISION.md](docs/research/tritnet/TRITNET_VISION.md)** - Long-term vision and research goals
 - **[models/tritnet/src/](models/tritnet/src/)** - Training scripts and model definitions
 
 **Competitive Benchmarking:** ⭐ New!
-- **[COMPETITIVE_ANALYSIS.md](COMPETITIVE_ANALYSIS.md)** - Complete competitive analysis, gap assessment, and viability evaluation ⭐
 - **[benchmarks/COMPETITIVE_BENCHMARKS.md](benchmarks/COMPETITIVE_BENCHMARKS.md)** - 6-phase competitive benchmark suite
 - **[benchmarks/README.md](benchmarks/README.md)** - Standard benchmark documentation
-- **[real.md](real.md)** - Original competitive benchmark requirements
 
 ## Current Limitations & Status
 
@@ -925,33 +914,26 @@ pip install torch transformers
 - ⚠️ **ARM/NEON**: Not yet supported (planned for future)
 
 **Technical Constraints:**
-- **Arrays**: 1D arrays only (multi-dimensional support planned)
+- **Arrays**: any shape/dimensionality (multi-dimensional support added 2026-08-18 — `process_binary_array`/`process_unary_array` generalized from 1D-only; output preserves input shape, both inputs must be C-contiguous)
 - **CPU requirement**: AVX2 instruction set (Intel Haswell 2013+, AMD Excavator 2015+)
   - Module performs runtime detection and fails gracefully on unsupported CPUs
-- **Size matching**: Binary operations require identical array sizes
+- **Size matching**: Binary operations require identical array shapes (a dedicated `ArrayShapeMismatchError` distinguishes "same size, different shape" from a plain size mismatch)
 - **Invalid encoding**: 0b11 is reserved/undefined
 - **Alignment**: Streaming stores require 32-byte alignment (automatically detected)
 
-**AI/ML Workload Limitations (as of 2025-11-28):**
+**AI/ML Workload — Matrix Multiplication Status:**
 
-⚠️ **Matrix Multiplication Status:**
-- **Implementation:** GEMM v1.0.0 exists (from TritNet v1.0.0 based on BitNet b1.58)
-- **Correctness:** ✅ All tests passing, mathematically validated
-- **Performance:** ❌ 0.37 Gops/s vs 20-30 Gops/s target (56-125× below target)
-- **Root cause identified:** Missing SIMD (56×), OpenMP (2×), cache blocking (3×)
-- **Status:** ⚠️ **Functional but unoptimized - separate optimization project required**
+The original GEMM v1.0.0 (derived from BitNet b1.58) described in earlier releases of this README was superseded by two different, better-validated paths:
+- **`ternary_zero_skip_gemm`** — a real sparse ternary-CSC kernel (skips zero products; ~40% of products in a ternary product are zero) used by the competitive benchmark's Phase 4. Current measured result: **0.189× avg vs NumPy matmul** ("too slow for AI" — see the Competitive Analysis table above), a genuine kernel-vs-kernel number, not a naive Python loop.
+- **TritNet's own GEMM/inference path** (Phases 1-5, complete 2026-08-18) — explored whether a learned-matmul approach could out-run a LUT for ternary arithmetic itself; conclusion was a decisive no (LUT wins by 169×-195× even against AVX2-vectorized TritNet, and by 46×-58× against direct closed-form GPU arithmetic). See the TritNet section above.
 
 **What This Means:**
-- ✅ **Excellent for element-wise operations** - 45,300 Mops/s peak validated (fused), 39,100 Mops/s (element-wise)
+- ✅ **Excellent for element-wise operations** - 45,300 Mops/s peak validated (fused), 39,100 Mops/s (element-wise), Windows x64
 - ✅ **Proven memory advantage** - 4× smaller than INT8, Dense243 format working
-- ⚠️ **Matrix multiplication** - Implementation exists but needs optimization (GEMM v1.0.0)
-- ⚠️ **Cannot yet claim "AI-ready"** - GEMM performance gap blocks AI/ML viability
+- ⚠️ **Matrix multiplication is still the weak point** - 0.189× avg vs NumPy with the real zero-skip kernel; a genuine optimization gap, not an unmeasured one
+- ⚠️ **Not "AI-ready"** by this project's own commercial-viability criteria (2/5 validated) - the GEMM performance gap remains the blocker
 
-**Root Cause Analysis:** Comprehensive statistical analysis complete (see `reports/performance/gemm_gap_root_cause.md`). GEMM v1.0.0 was built from BitNet b1.58 baseline without applying Ternary Engine optimization techniques (SIMD, AVX2, OpenMP). Optimization roadmap: SIMD → OpenMP → Cache blocking → 20-40 Gops/s target.
-
-**Next Steps:** User creating separate project for detailed GEMM optimization exploration. Do NOT merge to main kernel until performance targets met.
-
-See [COMPETITIVE_ANALYSIS.md](COMPETITIVE_ANALYSIS.md) for detailed gap analysis and commercial viability assessment.
+**Historical root-cause analysis:** `reports/performance/gemm_gap_root_cause.md` (statistical analysis of the original GEMM v1.0.0 gap — missing SIMD/OpenMP/cache-blocking; largely superseded by the zero-skip kernel above, kept as historical record).
 
 ## Advanced Features
 
@@ -981,138 +963,44 @@ See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md
 
 ## Roadmap
 
-**Current**: v1.3.0 - Production-ready kernel with operation fusion + canonical indexing + TritNet Phase 1
+**Status Reality Check:** `.claude/CLAUDE.md` is this project's actively-maintained, dated source of truth for what's done vs. pending — it has a fuller and more current changelog than this section. What follows is a summary, current as of 2026-08-18.
 
-**Completed (v1.3 - Validated 2025-11-28)**:
+**Completed:**
 
 **Core Engine:**
-- ✅ Clean kernel/engine separation (ternary_core/ vs ternary_engine/)
+- ✅ Kernel/engine separation (`src/core/` vs `src/engine/`)
 - ✅ Runtime CPU detection and graceful fallback
-- ✅ Alignment validation for streaming stores (fixes segfault risk)
-- ✅ Hardware concurrency clamping (fixes VM crashes)
-- ✅ **Dense243 encoding** (all 243 states validated, critical bug fixed)
-- ✅ **TriadSextet encoding** (all 27 states validated)
-- ✅ **Phase 3.2: Dual-shuffle optimization** (12-18% gain via canonical indexing, ADD-based)
-- ✅ **Phase 3.3: Operation fusion baseline** (4 Binary→Unary patterns, 7-35× speedup, 16/16 tests passing)
-- ✅ **Operation fusion Phase 4.0** (1.6-15.5× validated speedup with statistical rigor)
-- ✅ C FFI layer (cross-language ready)
-- ✅ Comprehensive testing (16 test functions, all passing on Windows x64)
-- ✅ Performance benchmarking (45,300 Mops/s peak; fair NumPy baseline 2026-08-11)
-- ✅ Build system fixes (Python 3.12+ compatibility, OMP_NUM_THREADS auto-config)
-- ✅ Documentation restructuring (semantic organization of docs/ and reports/)
+- ✅ Alignment validation for streaming stores, hardware concurrency clamping
+- ✅ **Dense243** (all 243 states validated) and **TriadSextet** (all 27 states validated) high-density encodings
+- ✅ Canonical-indexing SIMD optimization (33% gain) and operation fusion (1.0×-2.9× native C++, geomean ~1.6×, re-validated 2026-08-18)
+- ✅ Pluggable backend system (`ternary_backend`: Scalar/AVX2_v1/AVX2_v2, runtime-selectable)
+- ✅ Multi-dimensional array support (any shape, not just 1D — added 2026-08-18)
+- ✅ C FFI layer; OpenMP enabled by default on GCC/Clang (ARM/Apple-Clang excluded)
+- ✅ Test suite: 16 wired suites via `tests/run_tests.py`, Linux x64 CI on every push
+- ✅ Code-duplication cleanup between binding files (3 clusters, ~330-400 lines removed, 2026-08-18) and TritNet training scripts (shared `qat_common.py`)
+- ✅ Performance benchmarking with statistical rigor (`BenchmarkRunner`, CV/95% CI) adopted across the fusion, fair-baseline, and core-ops suites
 
-**TritNet (Neural Network-Based Arithmetic):**
-- ✅ **Phase 1 Complete** (2025-11-23):
-  - Truth table generation for all operations (243 unary, 59,049 binary samples each)
-  - TritNet model architecture (TritNetUnary, TritNetBinary)
-  - Ternary layers with quantization-aware training
-  - Training infrastructure with Adam optimizer
-  - Model save/load (.tritnet format)
-  - Weight export to NumPy for C++ integration
-- 📋 Phase 2: Train and validate 100% accuracy
-- 📋 Phase 3: C++ integration and LUT comparison
-- 📋 Phase 4: GPU/TPU batch inference
-- 📋 Phase 5: Learned generalization
+**TritNet (Neural Network-Based Arithmetic) — Phases 1-5, all complete (2026-08-18):**
+- ✅ Truth tables → ≥99% ternary-weight accuracy (Phase 2) → C++ scalar+AVX2 inference engine, benchmarked against the LUT (Phase 3: **LUT wins by 169×-195×**) → GPU/CUDA batch inference (Phase 4: confirms rather than reverses Phase 3) → learned generalization and novel-operation discovery (Phase 5: errors are structured not noise; a genuinely novel, closed-form-resistant operation is learnable to 99.52% but still loses to a trivial LUT)
+- **Verdict, unchanged across every phase and every hardware target tried:** LUT wins by 1-2 orders of magnitude. See the TritNet section above and `.claude/CLAUDE.md`'s "TritNet Development" section for the full writeup and report links.
 
 **Competitive Benchmarking:**
-- ✅ **6-phase benchmark suite** (2025-11-23):
-  - Phase 1: vs NumPy INT8 operations
-  - Phase 2: Memory efficiency analysis (proven 4× vs INT8, 8× vs FP16)
-  - Phase 3: Throughput at equivalent bit-width
-  - Phase 4: Neural network workload patterns
-  - Phase 5: Real model quantization (TinyLlama, Phi-2, Gemma)
-  - Phase 6: Power consumption measurement
-- ✅ Visualization and reporting tools
+- ✅ 6-phase suite implemented; Phases 1-4 have real measurement code (Phase 5-6 remain framework/descriptive-only)
+- ✅ Re-validated 2026-08-18 under a verified-clean environment: **2/5 commercial-viability criteria validated** (memory efficiency, throughput-at-bit-width; latency/power/accuracy-retention still open)
 
 **Infrastructure:**
-- ✅ **Scripts reorganization** (2025-11-23):
-  - Clean separation: build/, tritnet/, orchestration/
-  - Unified build system with cleanup
-- ✅ **OpenTimestamps IP protection** (2025-11-23):
-  - SHA512-based blockchain timestamping
-  - 88 files tracked in initial snapshot
-  - Verifiable proof of invention date
+- ✅ OpenTimestamps IP protection (SHA512 + Bitcoin blockchain timestamping)
+- ✅ Documentation debt pass across `docs/`, `tests/`, `reports/`, `benchmarks/`, `models/`, `research/`, `build/`, `scripts/`, `CONTRIBUTING.md` — recurring finding was stale paths/claims left behind by earlier reorganizations, see `.claude/CLAUDE.md`'s "Critical Gaps" for the full list of sessions
 
-**In Progress**:
-- 🔧 Phase 4.1 fusion validation (fused_tnot_tmul/tmin/tmax - implementation complete)
-- 🔧 TritNet Phase 2 training (achieving 100% accuracy on truth tables)
-- 🔧 Code refactoring (eliminate duplication between engines)
-- 🔧 Competitive benchmark execution and analysis
+**Open / Deferred:**
+- **ARM/NEON support** - deferred; no ARM cross-compiler, hardware, or emulator available in the environment this was last attempted from, and writing untested NEON intrinsics would violate this project's verify-by-execution discipline
+- **AVX-512** - not started; not evaluated on any AVX-512-capable hardware yet
+- **RISC-V, FPGA/ASIC** - not started, long-term vision only
+- **Profiler integration (VTune ITT, NVTX, Perfetto)** - the call-site framework exists in `src/core/profiling/ternary_profiler.h` and is genuinely wired into `bindings_core_ops.cpp`'s hot paths, but no build script defines `TERNARY_ENABLE_VTUNE`/`_NVTX`/`_PERFETTO`, so only the no-op stub has ever been built
+- **Windows x64 re-validation** - most 2026-08 fixes (multi-dim arrays, code dedup, TritNet Phases 3-5, competitive-benchmark re-validation) have been done and verified on Linux x64 only; Windows remains the only platform with a *production* performance claim, dated 2025-11-28, predating this work
+- **Real model quantization (Phase 5) / power measurement (Phase 6)** of the competitive suite - descriptive only, no measurement code yet
 
-**Planned (Next Quarter)**:
-- **Competitive benchmark validation** - Complete all 6 phases with real hardware
-- **Linux/macOS support** - Cross-platform validation and CI setup
-- **Model quantization** - TinyLlama to ternary weights
-- **⚠️ OpenCV POC (Experimental)** - Ternary-accelerated computer vision proof-of-concept
-  - **Status**: Experimental POC only, NOT production ready
-  - **Target**: Real-time edge detection (Sobel) for video conferencing (Zoom), AR filters (Instagram/TikTok/Snapchat), VR/AR
-  - **Location**: `opencv-poc/` directory
-  - **Pending**: Performance benchmarking, quality validation, production hardening
-  - **Vision**: CPU-based 4K video processing leveraging ternary gradients {-1, 0, +1}
-- Multi-platform SIMD (AVX-512, ARM NEON/SVE)
-- Multi-dimensional array support
-- OpenMP re-enablement with validation
-- Profiler integration (VTune ITT, NVTX for GPU, Perfetto)
-  - Framework implemented in `ternary_profiler.h`
-  - Awaiting integration into execution engine
-
-**Exploratory Research: BitNet/TritNet Matmul Integration** 🔬
-
-**Research Question:** Can we leverage BitNet's optimized 1.58-bit infrastructure to accelerate ternary matrix operations?
-
-**Hypothesis:** By integrating ternary engine with BitNet's highly optimized low-bit matmul kernels, we can achieve competitive AI/ML performance while exploring the limits of ternary computation.
-
-**Research Path:**
-
-1. **Phase A: BitNet Integration Study (Exploratory)**
-   - Investigate BitNet's 1.58-bit matmul implementation
-   - Analyze compatibility with balanced ternary {-1, 0, +1}
-   - Benchmark BitNet performance on ternary-compatible operations
-   - **Goal:** Understand if BitNet kernels can be adapted for ternary
-
-2. **Phase B: TritNet-BitNet Hybrid (Research)**
-   - Integrate TritNet models with BitNet inference engine
-   - Train TritNet to 100% accuracy on truth tables (Phase 2)
-   - Export ternary weights to BitNet format
-   - Benchmark hybrid approach vs pure TritNet
-   - **Goal:** Validate if learned matmul outperforms LUT-based approach
-
-3. **Phase C: Performance Characterization (Validation)**
-   - Compare BitNet-accelerated ternary vs NumPy BLAS
-   - Measure training speed on TritNet models
-   - Evaluate inference throughput on quantized models
-   - Benchmark batch processing capabilities
-   - **Goal:** Determine commercial viability for AI workloads
-
-4. **Phase D: Production Integration (Conditional)**
-   - Only proceed if Phase C shows >0.5× NumPy BLAS performance
-   - C++ integration of best approach (BitNet kernels or custom implementation)
-   - Optimize for GPU/TPU deployment
-   - Production hardening and validation
-   - **Goal:** Productionize matmul if viable
-
-**Expected Outcomes:**
-- ✅ **Best case:** BitNet integration provides competitive matmul (>0.5× NumPy), enabling AI/ML applications
-- ⚠️ **Good case:** Learned approach shows promise but needs custom optimization, guides C++ implementation
-- ❌ **Alternative case:** Matmul underperforms, pivot to memory-focused use cases (edge devices, embedded systems)
-
-**Timeline:** 3-6 months exploratory research, decision point after Phase C
-
-**Status:** Phase 1 (TritNet) complete, Phase A (BitNet study) pending
-
-**Documentation:**
-- [docs/TRITNET_ROADMAP.md](docs/TRITNET_ROADMAP.md) - TritNet implementation plan
-- [docs/TRITNET_VISION.md](docs/TRITNET_VISION.md) - Long-term research vision
-- [COMPETITIVE_ANALYSIS.md](COMPETITIVE_ANALYSIS.md) - Matmul gap analysis
-
-**Note:** This is exploratory research, not a guaranteed solution. We're investigating whether leveraging existing BitNet infrastructure (billions in ML hardware investment) can unlock ternary AI viability.
-
-**Long-Term Vision:**
-- Hardware-accelerated ternary computing (GPU/TPU/tensor cores)
-- Learned arithmetic operations beyond hand-coded LUTs
-- Custom ternary ASIC/FPGA designs
-- Ternary neural network quantization for production ML
-- BitNet-TritNet hybrid inference engines
+An earlier exploratory plan to integrate TritNet with BitNet's 1.58-bit matmul kernels (a 4-phase research path, A through D) was never executed — TritNet's actual roadmap took a different, self-contained path (native C++ engine → AVX2 → GPU → novel-operation discovery, documented above) and reached a definitive verdict without it. Kept here as historical context, not a live plan.
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 
@@ -1152,28 +1040,27 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 
 ---
 
-**Version**: 1.3.0 - Operation Fusion & Canonical Indexing Optimization
-**Status**: Production (Windows x64), Tests+CI validated (Linux x64), Experimental (macOS, ternary_engine/, TritNet)
-**Updated**: 2026-08-11
-**Platform**: Windows x64 (production, validated 2025-11-28), Linux x64 (tests + CI 2026-08-11, benchmarks pending), macOS (untested)
+**Version**: See `.claude/CLAUDE.md` (currently v1.46.0) for the authoritative, dated version history — this README summarizes rather than tracks it line-by-line
+**Status**: Production (Windows x64, dated 2025-11-28), Tests+CI validated (Linux x64), TritNet roadmap (Phases 1-5) complete, Experimental (macOS, ARM/NEON, AVX-512)
+**Updated**: 2026-08-20
+**Platform**: Windows x64 (production perf claims, validated 2025-11-28), Linux x64 (tests + CI + most 2026-08 fixes/re-validations, formal benchmark re-validation on Windows still pending), macOS (untested)
 
-**Recent Additions (2025-11-28):**
-- ✅ **Documentation restructuring** - Semantic organization of docs/ and reports/ directories
-- ✅ **Canonical indexing optimization** - 33% faster SIMD via dual-shuffle + ADD
-- ✅ **45.3 Gops/s peak throughput** - Fused operations at 1M elements
-- ✅ **39.1 Gops/s element-wise peak** - tnot @ 1M elements
-- ✅ **1.43× fused / 1.7–3.5× tadd** vs same-semantics NumPy (fair baseline, 2026-08-11)
-- ✅ **Three-path architecture validated** - OpenMP + SIMD + scalar tail
+**Recent Additions (2026-08):**
+- ✅ **TritNet Phases 1-5 complete** - truth tables → ≥99% accuracy → C++ engine (LUT wins 169×-195×) → GPU (confirms, doesn't reverse) → novel-operation discovery (99.52% on a genuinely new op, still loses to a LUT)
+- ✅ **Multi-dimensional array support** - any shape, not just 1D
+- ✅ **Competitive benchmark re-validation** - 2/5 commercial-viability criteria, confirmed under a verified-clean environment
+- ✅ **Code-duplication cleanup** - ~330-400 lines removed across binding files; shared TritNet training module
+- ✅ **Extensive documentation-debt pass** - stale paths and claims fixed across docs/, tests/, reports/, benchmarks/, models/, build/, and this file
 
-**Performance Summary (Validated 2025-11-28):**
+**Performance Summary (Windows x64, validated 2025-11-28 — the most recent formal production benchmark run):**
 - ✅ **45.3 Gops/s peak** throughput with fusion operations
 - ✅ **39.1 Gops/s peak** throughput for element-wise operations
 - ✅ **33% canonical indexing gain** via dual-shuffle + ADD optimization
-- ✅ **1.43× fused / 1.7–3.5× tadd** vs same-semantics NumPy (fair baseline, 2026-08-11)
+- ✅ **1.43× fused / 1.7–3.5× tadd** vs same-semantics NumPy (fair baseline, Linux x64, 2026-08-11)
 - ✅ **4× memory advantage** over INT8, 8× over FP16 (validated on 7B-405B models)
-- ⚠️ **Matmul optimization** - needs C++ SIMD optimization for AI/ML viability
+- ❌ **Matmul**: 0.189× avg vs NumPy (re-validated 2026-08-18, real zero-skip GEMM kernel) - the project's clearest remaining gap
 
-> **Note:** Performance metrics are *subject to analysis* - no standardized benchmarking exists for trit operations. Results represent actual measured throughput on validated Windows x64 systems.
+> **Note:** Performance metrics are *subject to analysis* - no standardized benchmarking exists for trit operations. Element-wise/fusion figures above are the most recent formal Windows x64 production run; matmul and competitive-suite figures are Linux x64, re-validated more recently and more rigorously (see the Competitive Analysis and Commercial Viability tables above).
 
 ---
 

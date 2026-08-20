@@ -1,6 +1,6 @@
 # Claude Code Configuration - Ternary Neural Network Engine
 
-**Doc-Type:** Project-Level Configuration · Version 1.46 · Updated 2026-08-18 · Author Ternary Engine Team
+**Doc-Type:** Project-Level Configuration · Version 1.47 · Updated 2026-08-20 · Author Ternary Engine Team
 
 Project-specific Claude Code configuration for the Ternary Neural Network Engine - a production-grade balanced ternary arithmetic library with SIMD acceleration, TritNet neural network-based operations, and competitive benchmarking suite.
 
@@ -40,7 +40,7 @@ This configuration defines **project-level standards** for the Ternary Engine co
 
 **documentation**:
 - Quick start: [README.md](../README.md)
-- Testing guide: [TESTING.md](../TESTING.md)
+- Testing guide: [tests/README.md](../tests/README.md)
 - Contributing: [CONTRIBUTING.md](../CONTRIBUTING.md)
 - API reference: [docs/](../docs/)
 - TritNet roadmap: [docs/research/tritnet/TRITNET_ROADMAP.md](../docs/research/tritnet/TRITNET_ROADMAP.md) (2025-11-23; phase numbering superseded — CLAUDE.md "TritNet Development" section is the source of truth for phase status)
@@ -844,7 +844,7 @@ ed2bfdc FEAT: Add comprehensive build cleanup system and fix path inconsistencie
 ### Documentation Types
 
 **README.md** - Project overview, quick start, performance claims
-**TESTING.md** - Testing and CI/CD guide
+**tests/README.md** - Testing and CI/CD guide
 **CONTRIBUTING.md** - Development guidelines
 **CHANGELOG.md** - Version history with dates
 **docs/** - API reference and architecture
@@ -1788,7 +1788,7 @@ failure.
 ### Internal Documentation
 
 **Quick start** - [README.md](../README.md)
-**Testing** - [TESTING.md](../TESTING.md)
+**Testing** - [tests/README.md](../tests/README.md)
 **Contributing** - [CONTRIBUTING.md](../CONTRIBUTING.md)
 **API reference** - [docs/](../docs/)
 **Architecture** - [docs/architecture/](../docs/architecture/)
@@ -1824,6 +1824,7 @@ failure.
 
 | Date       | Version | Description                                    |
 |:-----------|:--------|:-----------------------------------------------|
+| 2026-08-20 | v1.47.0 | User request ("review this project and let's continue the roadmap"). With TritNet's Phases 1-5 complete and gap #6's duplication clusters all fixed as of v1.46.0, this session's real find was that README.md -- the project's single most user-facing document -- had never been touched by any of the ~15 "same bug class" documentation-debt sessions in this changelog (each explicitly deferred it: "README.md ... left for a separate pass"). It was still dated 2026-08-11/v1.3.0 and had drifted badly: 9 broken links to files deleted in old reorgs (TESTING.md, COMPETITIVE_ANALYSIS.md, real.md, build/README.md, docs/TRITNET_ROADMAP.md/VISION.md at their pre-move paths, reports/benchmarks/2025-11-23/... at its pre-archival path), a stale Project Structure diagram describing a `ternary_core/`/`scripts/build/` layout that hasn't existed since the src/core+src/engine reorg, a false "1D arrays only" claim (multi-dim shipped 2026-08-18), a "3/5 criteria validated" competitive-viability figure superseded by the confirmed 2/5 (2026-08-18 revalidation), a stale "0.40x matmul"/"GEMM v1.0.0 from BitNet b1.58" narrative superseded by the real zero-skip-GEMM-kernel 0.189x figure, a TritNet roadmap section showing Phases 2-5 as still pending when all are complete, and an entire "Exploratory Research: BitNet/TritNet Matmul Integration" section presented as a live plan that was in fact never executed (TritNet took a different, self-contained path and reached its verdict without it). Rewrote all of it against this file's own current, dated figures; verified every markdown link and every implementation-file line count by direct filesystem check rather than by assumption. Also fixed CLAUDE.md's own 3 dangling TESTING.md references (the file was deleted in commit 9b1380f, 2025-11-22, and never had its references cleaned up) to point at the real tests/README.md. tests/run_tests.py 16/16 throughout (untouched by this session -- documentation only). Commit pending. |
 | 2026-08-18 | v1.46.0 | TritNet Phase 5's final bullet, "discover novel operations" (user-picked from a recommendation menu). New models/tritnet/phase5_novel_operations.py enumerates all 3^9=19,683 possible single-trit binary ternary operations, deduplicates by symmetry to 1,444 equivalence classes, filters out named-op-equivalents and cheap-closed-form matches two independent ways (curated arithmetic-primitive catalog + GF(3) algebraic degree, the latter verified against known cases first). 1,365 of 1,444 classes (94.5%) have no cheap closed form; of those 28 (2.0%) are fully associative (tadd itself is non-associative 79.6% of the time, H24); of those 17 are non-degenerate (use all 3 trit values). Trained the top-ranked candidate with the exact tadd/tmul/tmin/tmax checkpoint architecture: 99.52% accuracy, passing the project's >=99% GO threshold. Positive result with an honest reframing, not reversal, of Phase 3/4's conclusion: "no cheap arithmetic formula" was never the same question as "no cheap LUT" -- any bounded-domain operation (this one included) trivially admits a LUT, and Phase 3 already measured LUT beating AVX2-TritNet by 169-195x regardless of which operation is represented. All 3 Phase 5 bullets now closed; TritNet's Phase 1-5 roadmap is complete, verdict unchanged (LUT wins by orders of magnitude). Full writeup: reports/2026-08-18/TRITNET_PHASE5_NOVEL_OPERATIONS.md. Commit pending. |
 | 2026-08-18 | v1.45.0 | Same-day follow-up ("examine it further") on the multi-dim array work. Found a real pre-existing bug: checked out the actual pre-multi-dim commit's bindings_core_ops.cpp, rebuilt it, and confirmed tc.tadd(a[::2], b) (non-contiguous 1-D input) silently computed wrong results with no exception in every prior release -- 1-D contiguity was never validated at all before this feature's C-contiguity check happened to close the gap as a side effect. Added a regression test locking this in. Also found and closed a real test-coverage gap (the 4 int8-bridge fused ops were covered by neither the fused-ops test nor the int8-bridge test) and added edge-case coverage (0-d scalars, empty N-D, singleton dims, 6-D) that had been spot-checked but not regression-tested. test_multidim_arrays.py: 8 groups -> 11, run_tests.py still 16/16. Full writeup: reports/2026-08-18/MULTIDIM_ARRAY_SUPPORT.md. Commit pending. |
 | 2026-08-18 | v1.44.0 | User request ("let's focus now on arm/neon, multi-dimensional arrays"). ARM/NEON deferred (no ARM cross-compiler/hardware/emulator in this sandbox, and getting one needs sudo, which this session's permissions block -- user chose multi-dim-only after being told upfront). Multi-dim arrays: process_binary_array/process_unary_array generalized from 1-D-only to any shape; output preserves input shape; new ArrayShapeMismatchError distinguishes same-size-different-shape from the pre-existing ArraySizeMismatchError; both inputs must be C-contiguous. Correctness: 234-call SHA-256 digest identical before/after, new test_multidim_arrays.py (8 groups), run_tests.py 16/16 (was 15/15). Performance took 3 iterations, each caught by this doc's own "Modifying Hot Paths" discipline: buffer_info's 4-heap-allocation-per-call cost (root cause, found after a wrong first hypothesis about Python attribute lookups) replaced with array_t's zero-allocation direct accessors; a final ~1.5% gap from a bounds-checked shape accessor closed with a dedicated 1-D fast path. Final verification: all cells within the 5% threshold. Full writeup: reports/2026-08-18/MULTIDIM_ARRAY_SUPPORT.md. Commit pending. |
@@ -1888,4 +1889,4 @@ failure.
 
 ---
 
-**Version:** 1.46.0 · **Updated:** 2026-08-18 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
+**Version:** 1.47.0 · **Updated:** 2026-08-20 · **Project:** Ternary Engine · **Repository:** https://github.com/gesttaltt/ternary-engine
