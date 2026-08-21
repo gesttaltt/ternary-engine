@@ -285,19 +285,21 @@ the geomeans; all per-cell data including exclusions is in
 - Very large (1M elements): 17,621-37,244 Mops/s (OpenMP effective, fusion shines)
 - Huge arrays (10M elements): 6,578-8,608 Mops/s (memory bandwidth limited)
 
-### Competitive Analysis vs NumPy INT8 (re-validated 2026-08-18, Linux x64)
+### Competitive Analysis vs NumPy INT8 (re-validated 2026-08-18, Phase 4 updated 2026-08-20, Linux x64)
 
-**⚠️ SUPERSEDES the numbers below this note — the 6-phase competitive suite was re-run under a verified-clean environment (`PYTHONPATH` unset, cwd outside the repo) 2026-08-18, closing a caveat that the phase 1-4 numbers this section originally shipped with had never proven themselves independent of a forgiving local `PYTHONPATH`. See `.claude/CLAUDE.md` Critical Gap #3 for the full history.**
+**⚠️ SUPERSEDES the numbers below this note — the 6-phase competitive suite was re-run under a verified-clean environment (`PYTHONPATH` unset, cwd outside the repo) 2026-08-18, closing a caveat that the phase 1-4 numbers this section originally shipped with had never proven themselves independent of a forgiving local `PYTHONPATH`. Phase 4 specifically was re-measured again 2026-08-20 after a GEMM kernel fix (see row below). See `.claude/CLAUDE.md` Critical Gap #3 for the full history.**
 
 | Phase | Result | Notes |
 |:------|:-------|:------|
 | 1. Arithmetic vs NumPy INT8 | 0.70×/0.69× avg | "Needs work" — engine ~parity with NumPy on single ops, not a clean win |
 | 2. Memory efficiency | **4.0× vs INT8** (exact match to README claim) | ✅ Proven |
 | 3. Throughput @ equivalent bit-width | Dense243 8.0× faster than an INT2 reference | Real kernel-vs-kernel comparison, sized to a genuine 1GB footprint |
-| 4. Neural workload (matmul) | 0.189× avg | "Too slow for AI" — real `ternary_zero_skip_gemm` kernel, not a naive Python loop |
+| 4. Neural workload (matmul) | **~1.1×-1.2× avg** (was 0.189×) | "Viable for AI" — `DenseWeights` dense-packed kernel replaced the CSC/CSR `ZeroSkipWeights` kernel this phase used before; see note below |
 | 5-6. Model quantization / power | Framework-only | No measurement code yet |
 
-**Commercial viability: 2/5 criteria validated** — see the table further below. This is a confirmed, re-verified number, not a first-pass estimate.
+**Commercial viability: 2/5 criteria validated** — see the table further below. This is a confirmed, re-verified number, not a first-pass estimate. The Phase 4 improvement does **not** change this count — it fixes a stale/wrong matmul figure, but the "< 2× FP16" criterion Phase 4 is a proxy for compares against fp32 NumPy here, not fp16, so it still isn't a direct measurement of that specific criterion.
+
+**Phase 4 GEMM kernel fix (2026-08-20):** investigation found the CSC/CSR "zero-skip" kernel wasn't naive (already AVX2 + OpenMP + cache-aware) but had two structural problems: it vectorizes over the batch dimension while Phase 4 tests batch=1 (so AVX2 never engaged), and at ternary's real ~33-40% zero density, CSC/CSR index storage is ~3.3× *larger* than just the dense int8 weight array — "zero-skip" was optimizing the wrong resource on a memory-bandwidth-bound kernel. A new dense-packed kernel (`src/core/simd/ternary_gemm_dense.h`, `DenseWeights` in `ternary_zero_skip_gemm`) fixes both: measured **19×-32× faster than the best existing kernel at batch=1**, native and pybind-free (`benchmarks/cpp-native-kernels/bench_gemm_dense.cpp`). Fixing this also surfaced a benchmark-methodology bug (a 3-call warmup that was fine for the old ~1-5ms/call kernel left this machine's CPU frequency-scaling cold for the new ~10-30µs/call one, causing up to 50× run-to-run variance) — fixed with wall-clock warmup and interleaved median timing; stable across repeated runs. Full investigation: [reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md](reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md).
 
 For the honest, apples-to-apples single-op comparison (same ternary semantics, fair NumPy baseline rather than a strawman), see [Fair Baseline vs NumPy](#fair-baseline-vs-numpy-2026-08-11-linux-x64) above: **tadd 1.7-3.5×, fused ops up to 6×, single non-saturating ops ~parity with NumPy (0.84× geomean)**.
 
@@ -815,7 +817,7 @@ python benchmarks/utils/visualization.py results/competitive_results_*.json
 |:----------|:-------|:-------|
 | Memory efficiency at same capacity | 4× vs INT8 | ✅ **PROVEN** (4.0× validated) |
 | Throughput at equivalent bit-width | > INT2 | ✅ **PROVEN** (Dense243 8.0× faster than a real INT2 reference) |
-| Inference latency in real models | < 2× FP16 | ❌ 0.189× avg matmul — "too slow for AI" against the real zero-skip GEMM kernel |
+| Inference latency in real models | < 2× FP16 | ⚠️ ~1.1×-1.2× avg vs fp32 NumPy matmul (dense-packed kernel, 2026-08-20 — was 0.189× against the CSC/CSR kernel) — genuinely improved, but not a measurement of fp16 specifically, so this criterion stays unproven either way |
 | Power consumption on edge | 2-4× better | ⚠️ Needs hardware |
 | Accuracy retention after quantization | < 5% loss | ⚠️ Needs model testing |
 
@@ -924,16 +926,16 @@ pip install torch transformers
 **AI/ML Workload — Matrix Multiplication Status:**
 
 The original GEMM v1.0.0 (derived from BitNet b1.58) described in earlier releases of this README was superseded by two different, better-validated paths:
-- **`ternary_zero_skip_gemm`** — a real sparse ternary-CSC kernel (skips zero products; ~40% of products in a ternary product are zero) used by the competitive benchmark's Phase 4. Current measured result: **0.189× avg vs NumPy matmul** ("too slow for AI" — see the Competitive Analysis table above), a genuine kernel-vs-kernel number, not a naive Python loop.
+- **`ternary_zero_skip_gemm`** — two kernel strategies for ternary matmul, used by the competitive benchmark's Phase 4. `ZeroSkipWeights` (original, CSC/CSR sparse index) measured 0.189× avg vs NumPy ("too slow for AI") — investigated 2026-08-20 and found to be memory-bandwidth-bound with an index that's actually *larger* than the dense weight array at ternary's real sparsity, and SIMD that never engages at Phase 4's batch=1. `DenseWeights` (added 2026-08-20, now the kernel Phase 4 uses) fixes both: **~1.1×-1.2× avg vs NumPy** ("viable for AI" by the suite's own threshold), 19×-32× faster than `ZeroSkipWeights` at batch=1 specifically. See the Competitive Analysis table above and [reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md](reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md).
 - **TritNet's own GEMM/inference path** (Phases 1-5, complete 2026-08-18) — explored whether a learned-matmul approach could out-run a LUT for ternary arithmetic itself; conclusion was a decisive no (LUT wins by 169×-195× even against AVX2-vectorized TritNet, and by 46×-58× against direct closed-form GPU arithmetic). See the TritNet section above.
 
 **What This Means:**
 - ✅ **Excellent for element-wise operations** - 45,300 Mops/s peak validated (fused), 39,100 Mops/s (element-wise), Windows x64
 - ✅ **Proven memory advantage** - 4× smaller than INT8, Dense243 format working
-- ⚠️ **Matrix multiplication is still the weak point** - 0.189× avg vs NumPy with the real zero-skip kernel; a genuine optimization gap, not an unmeasured one
-- ⚠️ **Not "AI-ready"** by this project's own commercial-viability criteria (2/5 validated) - the GEMM performance gap remains the blocker
+- ✅ **Matrix multiplication improved substantially** - ~1.1×-1.2× avg vs NumPy with the dense-packed kernel (2026-08-20), up from 0.189×; genuinely re-measured on the same shapes/batch size, not a tuning claim
+- ⚠️ **Still not a full "AI-ready" claim** by this project's own commercial-viability criteria (2/5 validated) — this specific figure compares against fp32 NumPy, not the fp16 baseline that criterion actually names, and power/accuracy-retention criteria remain unmeasured
 
-**Historical root-cause analysis:** `reports/performance/gemm_gap_root_cause.md` (statistical analysis of the original GEMM v1.0.0 gap — missing SIMD/OpenMP/cache-blocking; largely superseded by the zero-skip kernel above, kept as historical record).
+**Historical root-cause analysis:** `reports/performance/gemm_gap_root_cause.md` (statistical analysis of the original GEMM v1.0.0 gap — missing SIMD/OpenMP/cache-blocking; superseded first by the zero-skip kernel, then by the dense-packed kernel above, kept as historical record).
 
 ## Advanced Features
 
@@ -1051,6 +1053,7 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 - ✅ **Competitive benchmark re-validation** - 2/5 commercial-viability criteria, confirmed under a verified-clean environment
 - ✅ **Code-duplication cleanup** - ~330-400 lines removed across binding files; shared TritNet training module
 - ✅ **Extensive documentation-debt pass** - stale paths and claims fixed across docs/, tests/, reports/, benchmarks/, models/, build/, and this file
+- ✅ **Dense-packed GEMM kernel** - fixed the "0.189× avg / too slow for AI" matmul verdict; new kernel is 19×-32× faster than the old CSC/CSR one at the tested batch size, flips the competitive suite's Phase 4 verdict to "viable for AI"
 
 **Performance Summary (Windows x64, validated 2025-11-28 — the most recent formal production benchmark run):**
 - ✅ **45.3 Gops/s peak** throughput with fusion operations
@@ -1058,7 +1061,7 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 - ✅ **33% canonical indexing gain** via dual-shuffle + ADD optimization
 - ✅ **1.43× fused / 1.7–3.5× tadd** vs same-semantics NumPy (fair baseline, Linux x64, 2026-08-11)
 - ✅ **4× memory advantage** over INT8, 8× over FP16 (validated on 7B-405B models)
-- ❌ **Matmul**: 0.189× avg vs NumPy (re-validated 2026-08-18, real zero-skip GEMM kernel) - the project's clearest remaining gap
+- ✅ **Matmul**: ~1.1×-1.2× avg vs NumPy (dense-packed kernel, 2026-08-20 — was 0.189× against the CSC/CSR kernel, re-validated 2026-08-18) - see Critical Gap #3 for the fp16-vs-fp32 caveat
 
 > **Note:** Performance metrics are *subject to analysis* - no standardized benchmarking exists for trit operations. Element-wise/fusion figures above are the most recent formal Windows x64 production run; matmul and competitive-suite figures are Linux x64, re-validated more recently and more rigorously (see the Competitive Analysis and Commercial Viability tables above).
 

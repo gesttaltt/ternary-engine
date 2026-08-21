@@ -45,7 +45,13 @@ def get_compiler_flags():
             compile_args.append("/openmp")
     else:
         compile_args = [
-            "-O3", "-march=native", "-mavx2", "-mfma",
+            # -march=haswell (not -native): this project's documented AVX2
+            # baseline (Intel Haswell 2013+/AMD Excavator 2015+); -native
+            # risks SIGILL if built on a newer-ISA machine and redistributed
+            # -- the same crash class already fixed for build_dense243.py,
+            # build_backend.py, build_tritnet_inference.py (see .claude/CLAUDE.md
+            # Critical Gaps), missed here until 2026-08-20.
+            "-O3", "-march=haswell", "-mavx2", "-mfma",
             "-std=c++17", "-flto", "-ffast-math", "-funroll-loops",
         ]
         link_args = ["-flto"]
@@ -78,6 +84,7 @@ def build_module(verbose=False, clean=False):
         "ternary_zero_skip_gemm",
         sources=[
             "src/core/simd/ternary_gemm_zero_skip.cpp",
+            "src/core/simd/ternary_gemm_dense.cpp",
             "src/engine/bindings_zero_skip_gemm.cpp",
         ],
         include_dirs=["src/core/simd"],
@@ -149,8 +156,18 @@ def validate():
     err3 = float(abs(C_tiled - C_ref).max())
     print(f"  Tiled max_error:  {err3:.2e}", "PASS" if err3 < 1e-4 else "FAIL")
 
+    # DenseWeights class (added 2026-08-20 -- prefer this, see module docstring)
+    DW = zs.DenseWeights(B)
+    C_dense = DW.gemm(A)
+    err4 = float(abs(C_dense - C_ref).max())
+    print(f"  Dense AVX2 max_error: {err4:.2e}", "PASS" if err4 < 1e-4 else "FAIL")
+
+    C_dense_scalar = DW.gemm(A, use_avx2=False)
+    err5 = float(abs(C_dense_scalar - C_ref).max())
+    print(f"  Dense scalar max_error: {err5:.2e}", "PASS" if err5 < 1e-4 else "FAIL")
+
     print("Validation done.")
-    return err < 1e-4 and err2 < 1e-4 and err3 < 1e-4
+    return err < 1e-4 and err2 < 1e-4 and err3 < 1e-4 and err4 < 1e-4 and err5 < 1e-4
 
 
 def main():

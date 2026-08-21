@@ -164,6 +164,88 @@ def test_sparsity_info() -> bool:
     return ok
 
 
+def test_dense_gemm_vs_reference() -> bool:
+    """DenseWeights.gemm matches NumPy across shapes and sparsities.
+
+    Added 2026-08-20 alongside ternary_gemm_dense.h/.cpp (see
+    src/engine/bindings_zero_skip_gemm.cpp module docstring): the
+    dense-packed kernel added because CSC/CSR index overhead exceeds the
+    dense array's own size at ternary's actual ~33-40% zero density.
+    Same shapes/sparsities as test_gemm_vs_reference, including M=1
+    (pure GEMV, the exact case that motivated this kernel), so a
+    regression here would be caught the same way a ZeroSkipWeights
+    regression would.
+    """
+    rng = np.random.default_rng(SEED)
+    ok = True
+    for m, k, n in SHAPES:
+        for zf in ZERO_FRACTIONS:
+            A, B = make_inputs(rng, m, k, n, zf)
+            ref = reference(A, B)
+            got = zs.DenseWeights(B).gemm(A)
+            ok &= check(f"dense gemm M={m} K={k} N={n} zero={zf}", got, ref)
+    if ok:
+        print(f"  [OK] DenseWeights.gemm matches reference for {len(SHAPES)} "
+              f"shapes x {len(ZERO_FRACTIONS)} sparsities")
+    return ok
+
+
+def test_dense_extreme_weights() -> bool:
+    """All-zero and no-zero weight matrices are handled correctly (dense kernel)."""
+    rng = np.random.default_rng(SEED)
+    A = rng.standard_normal((8, 32), dtype=np.float32)
+    ok = True
+
+    B_zero = np.zeros((32, 16), dtype=np.int8)
+    ok &= check("dense all-zero B", zs.DenseWeights(B_zero).gemm(A),
+                np.zeros((8, 16), dtype=np.float32))
+
+    B_dense = rng.choice(np.array([-1, 1], dtype=np.int8), size=(32, 16))
+    B_dense = B_dense.astype(np.int8)
+    ok &= check("dense no-zero B", zs.DenseWeights(B_dense).gemm(A),
+                reference(A, B_dense))
+    if ok:
+        print("  [OK] DenseWeights: all-zero and no-zero weight matrices")
+    return ok
+
+
+def test_dense_scalar_path() -> bool:
+    """DenseWeights.gemm(use_avx2=False) agrees with the AVX2 path and reference."""
+    rng = np.random.default_rng(SEED)
+    ok = True
+    for m, k, n in ((7, 33, 5), (64, 128, 96), (33, 129, 65)):
+        A, B = make_inputs(rng, m, k, n, 0.33)
+        ref = reference(A, B)
+        w = zs.DenseWeights(B)
+        ok &= check(f"dense scalar M={m} K={k} N={n}",
+                    w.gemm(A, use_avx2=False), ref)
+    if ok:
+        print("  [OK] DenseWeights scalar path matches reference")
+    return ok
+
+
+def test_dense_info() -> bool:
+    """DenseWeights.info() reports consistent K, N, and packed_bytes.
+
+    packed_bytes should equal K * ceil(N/8) * 8 regardless of sparsity
+    (unlike ZeroSkipWeights.info()'s nnz-dependent size) -- that
+    sparsity-independence is the whole point (see module docstring).
+    """
+    rng = np.random.default_rng(SEED)
+    ok = True
+    for m, k, n in ((1, 128, 64), (1, 128, 65), (1, 128, 71)):  # incl. N % 8 != 0
+        _, B = make_inputs(rng, m, k, n, 0.33)
+        info = zs.DenseWeights(B).info()
+        expected_bytes = k * ((n + 7) // 8) * 8
+        if info["K"] != k or info["N"] != n or info["packed_bytes"] != expected_bytes:
+            print(f"  [FAIL] dense info K={k} N={n}: {info} "
+                  f"(expected packed_bytes={expected_bytes})")
+            ok = False
+    if ok:
+        print("  [OK] DenseWeights.info() (K, N, packed_bytes incl. N%8!=0 tail)")
+    return ok
+
+
 def test_input_validation() -> bool:
     """Malformed inputs raise ValueError instead of crashing or reading garbage.
 
@@ -220,6 +302,15 @@ def test_input_validation() -> bool:
     expect_value_error("sparsity_info(non-contiguous B)",
                         lambda: zs.sparsity_info(B_noncontig))
 
+    # DenseWeights: same validation surface as ZeroSkipWeights
+    expect_value_error("DenseWeights(1-D B)", lambda: zs.DenseWeights(B_1d))
+    expect_value_error("DenseWeights(non-contiguous B)",
+                        lambda: zs.DenseWeights(B_noncontig))
+    dw = zs.DenseWeights(B)
+    expect_value_error("DenseWeights.gemm(1-D A)", lambda: dw.gemm(A_1d))
+    expect_value_error("DenseWeights.gemm(non-contiguous A)", lambda: dw.gemm(A_noncontig))
+    expect_value_error("DenseWeights.gemm(wrong K)", lambda: dw.gemm(A[:, :16]))
+
     if ok:
         print("  [OK] malformed inputs correctly rejected (2-D, contiguous, "
               "shape-compatible checks)")
@@ -238,6 +329,10 @@ def main() -> int:
         ("Tiled and scalar paths", test_tiled_and_scalar_paths()),
         ("Module-level gemm", test_module_level_gemm()),
         ("Sparsity reporting", test_sparsity_info()),
+        ("Dense: GEMM vs NumPy reference", test_dense_gemm_vs_reference()),
+        ("Dense: extreme weight matrices", test_dense_extreme_weights()),
+        ("Dense: scalar path", test_dense_scalar_path()),
+        ("Dense: info reporting", test_dense_info()),
         ("Input validation", test_input_validation()),
     ]
 

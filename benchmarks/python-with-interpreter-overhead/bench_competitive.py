@@ -31,6 +31,8 @@ import os
 # Add parent directory to path to import ternary engine
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))  # fixed 2026-08-12: was 1 dirname() short of repo root
 
+from benchmark_framework import compute_timing_statistics  # noqa: E402 (path insert above must run first)
+
 try:
     import ternary_simd_engine as tc
 except ImportError:
@@ -534,6 +536,20 @@ class CompetitiveBenchmark:
         would only belong in the timing if weights changed every call.
         Every ternary result is also checked against the NumPy reference
         (max abs error) so a speed number can't hide a correctness bug.
+
+        Switched to DenseWeights 2026-08-20 (see
+        src/core/simd/ternary_gemm_dense.h and
+        reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md): investigating
+        this phase's "0.189x avg / TOO SLOW FOR AI" verdict found ZeroSkipWeights'
+        CSC/CSR index storage is actually ~3.3x LARGER than the dense int8
+        weight array at ternary's real ~33% zero density, and its kernels
+        vectorize over the batch dimension -- which this phase's batch=1
+        (single-token inference) never engages. DenseWeights fixes both;
+        verified 19x-32x faster than the best ZeroSkipWeights kernel at
+        these exact shapes, batch=1, native pybind-free
+        (benchmarks/cpp-native-kernels/bench_gemm_dense.cpp). ZeroSkipWeights
+        is kept and still exercised by its own test/build-validation, but is
+        no longer the kernel this phase measures.
         """
         print("\n" + "=" * 80)
         print("PHASE 4: Neural Network Workload Patterns")
@@ -570,26 +586,68 @@ class CompetitiveBenchmark:
             B = np.ascontiguousarray(weights.T)  # (N, M), zsg convention: C = A @ B
             inp = rng.standard_normal((batch, N)).astype(np.float32)
 
-            # Precompute sparse index once -- see docstring on why this is
-            # excluded from the timed loop.
-            zw = zsg.ZeroSkipWeights(B)
-            sparsity = zw.info()['zero_fraction']
+            # Precompute the packed dense structure once -- see docstring
+            # on why this is excluded from the timed loop.
+            zw = zsg.DenseWeights(B)
+            sparsity = 1.0 - np.count_nonzero(weights) / weights.size
 
-            iterations = 100
-
-            for _ in range(3):
-                _ = zw.gemm_tiled(inp)
+            # Warmup by wall-clock duration, not a fixed call count.
+            #
+            # Found 2026-08-20 while validating the DenseWeights switch above:
+            # a fixed 3-call warmup was adequate for the old ZeroSkipWeights
+            # kernel (~1-5ms/call -> several ms of warmup) but leaves this
+            # machine's CPU cold for DenseWeights (~10-30us/call at this
+            # scale -> ~0.0001ms of warmup). Reproduced directly: repeated
+            # fresh-process runs of the identical shape/code with the old
+            # 3-call warmup gave call times ranging 7.6us-267us (>30x) for
+            # Small MLP, tracking this machine's already-documented
+            # powersave-governor DVFS ramp-up (CV_SPIKE_ROOT_CAUSE.md), not
+            # noise in the kernel itself. A fixed wall-clock warmup budget
+            # gives the CPU time to reach a stable frequency regardless of
+            # how fast the thing being warmed up is.
+            warmup_deadline = time.perf_counter() + 0.05  # 50ms
+            while time.perf_counter() < warmup_deadline:
+                _ = zw.gemm(inp)
                 _ = inp @ weights_f32.T
 
-            start = time.perf_counter_ns()
-            for _ in range(iterations):
-                out_tern = zw.gemm_tiled(inp)
-            ternary_time = (time.perf_counter_ns() - start) / iterations
+            # Interleaved rep-by-rep sampling (this project's own
+            # `interleaved_timing` requirement): alternating ternary/NumPy
+            # calls means both see the same clock/thermal drift pattern,
+            # rather than two back-to-back blocks that can land on
+            # different points of a drift curve. Median + CV via the
+            # shared compute_timing_statistics() (gap #8's statistics
+            # engine, already used by bench_fair_baseline.py /
+            # bench_simd_fusion_ops.py) instead of one no-variance block.
+            n_samples = 200
+            tern_times_ns, np_times_ns = [], []
+            for _ in range(n_samples):
+                t0 = time.perf_counter_ns()
+                out_tern = zw.gemm(inp)
+                tern_times_ns.append(time.perf_counter_ns() - t0)
 
-            start = time.perf_counter_ns()
-            for _ in range(iterations):
+                t0 = time.perf_counter_ns()
                 out_np = inp @ weights_f32.T
-            numpy_time = (time.perf_counter_ns() - start) / iterations
+                np_times_ns.append(time.perf_counter_ns() - t0)
+
+            tern_stats = compute_timing_statistics(tern_times_ns)
+            np_stats = compute_timing_statistics(np_times_ns)
+            ternary_time = tern_stats['median']
+            numpy_time = np_stats['median']
+
+            # Robustness check uses p90/median, not compute_timing_statistics()'s
+            # mean/stdev-based CV. Found 2026-08-20: at this kernel's speed
+            # (single-digit-to-tens of microseconds/call), a single OS
+            # scheduling hiccup among 200 samples (e.g. one 3.2ms outlier
+            # against a rock-steady ~13.8us median, p90 13.99us) inflates
+            # mean/stdev CV past 300% even though the median itself is
+            # reproducible to within a few percent across repeated
+            # fresh-process runs (verified: 4 runs, 2.09x-2.12x for this
+            # exact shape). Mean/stdev CV is the wrong tool for a
+            # heavy-tailed, median-robust distribution like this one; a
+            # spread that a few rare outliers can't dominate is.
+            tern_p90_ratio = np.percentile(tern_times_ns, 90) / ternary_time
+            np_p90_ratio = np.percentile(np_times_ns, 90) / numpy_time
+            is_stable = tern_p90_ratio < 2.0 and np_p90_ratio < 2.0
 
             max_err = float(np.max(np.abs(out_tern - out_np)))
 
@@ -598,11 +656,15 @@ class CompetitiveBenchmark:
             numpy_gops = (ops_count / numpy_time) * 1e9 / 1e9
             speedup = numpy_time / ternary_time
 
-            print(f"  Ternary (zero-skip GEMM, {sparsity:.1%} zeros): "
-                  f"{ternary_time/1e6:>8.3f}ms, {ternary_gops:>8.2f} GOPS")
+            print(f"  Ternary (dense-packed GEMM, {sparsity:.1%} zeros): "
+                  f"{ternary_time/1e6:>8.3f}ms, {ternary_gops:>8.2f} GOPS "
+                  f"(median; mean-CV={tern_stats['cv']:.0f}% -- outlier-inflated, "
+                  f"p90/median={tern_p90_ratio:.2f}x)")
             print(f"  NumPy:                                    "
-                  f"{numpy_time/1e6:>8.3f}ms, {numpy_gops:>8.2f} GOPS")
-            print(f"  Speedup: {speedup:.3f}x   (correctness max err: {max_err:.2e})")
+                  f"{numpy_time/1e6:>8.3f}ms, {numpy_gops:>8.2f} GOPS "
+                  f"(median; mean-CV={np_stats['cv']:.0f}%, p90/median={np_p90_ratio:.2f}x)")
+            print(f"  Speedup: {speedup:.3f}x   (correctness max err: {max_err:.2e})"
+                  f"{'' if is_stable else '  [WARN] p90/median >= 2x -- bulk of the distribution is spread out, not just rare outliers'}")
 
             results.append({
                 'name': name,
@@ -615,18 +677,29 @@ class CompetitiveBenchmark:
                 'numpy_gops': numpy_gops,
                 'speedup': speedup,
                 'max_abs_error': max_err,
+                'ternary_cv_percent': tern_stats['cv'],
+                'numpy_cv_percent': np_stats['cv'],
+                'ternary_p90_median_ratio': tern_p90_ratio,
+                'numpy_p90_median_ratio': np_p90_ratio,
+                'is_stable': is_stable,
             })
 
         self.results['phase4_neural_workload_patterns'] = results
 
         avg_speedup = sum(r['speedup'] for r in results) / len(results)
         max_err_overall = max(r['max_abs_error'] for r in results)
+        any_unstable = any(not r['is_stable'] for r in results)
 
         print("\n" + "-" * 80)
         print("Phase 4 Summary:")
-        print(f"  Average matmul speedup (compiled zero-skip GEMM vs NumPy): {avg_speedup:.3f}x")
+        print(f"  Average matmul speedup (compiled dense-packed GEMM vs NumPy): {avg_speedup:.3f}x")
         print(f"  Max correctness error across all configs: {max_err_overall:.2e}")
-        print(f"  Verdict: {'✓ VIABLE FOR AI' if avg_speedup > 0.5 else '✗ TOO SLOW FOR AI'}")
+        if any_unstable:
+            print(f"  [WARN] one or more configs had p90/median >= 2x -- this average "
+                  f"includes a cell where the bulk of the distribution is spread out "
+                  f"(not just rare outliers), do not cite it as a clean number without re-running")
+        print(f"  Verdict: {'✓ VIABLE FOR AI' if avg_speedup > 0.5 else '✗ TOO SLOW FOR AI'}"
+              f"{' (UNSTABLE -- see warning above)' if any_unstable else ''}")
         print(f"  Note: batch={batch} (single-token decode) with ~33% random-ternary "
               f"sparsity; NumPy's BLAS is extremely well-optimized at this scale, and "
               f"real trained-model sparsity (~40%, see CLAUDE.md falsification notes) "

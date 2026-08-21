@@ -1,17 +1,36 @@
 /**
- * bindings_zero_skip_gemm.cpp - Python Bindings for Zero-Skip Ternary GEMM
+ * bindings_zero_skip_gemm.cpp - Python Bindings for Ternary GEMM
  *
  * Copyright 2025 Ternary Engine Contributors
  * Licensed under the Apache License, Version 2.0
  *
- * Exposes the zero-skip kernel as a Python module: ternary_zero_skip_gemm
+ * Exposes two ternary GEMM strategies as one Python module:
+ * ternary_zero_skip_gemm
+ *
+ *   ZeroSkipWeights: CSC/CSR sparse-index kernels (the original approach).
+ *   DenseWeights:    dense-packed kernel, added 2026-08-20 -- despite the
+ *                    module's name, this is the one to prefer. At
+ *                    ternary's actual ~33-40% zero density, a CSC/CSR
+ *                    index costs MORE memory than the dense int8 array
+ *                    itself (see ternary_gemm_dense.h for the full
+ *                    analysis), and these kernels are memory-bandwidth-
+ *                    bound, not compute-bound. Measured 4.5x-9.5x faster
+ *                    than NumPy at batch=1 (vs ZeroSkipWeights' 0.06x-0.21x
+ *                    loss) at the exact shapes this project's competitive
+ *                    benchmark's Phase 4 tests -- see
+ *                    reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md.
+ *                    ZeroSkipWeights is kept for comparison / regression
+ *                    tracking, not because it's the recommended path.
  *
  * Python API:
+ *
+ *   weights = DenseWeights(B_int8)       # pack dense weights once
+ *   C = weights.gemm(A_float32)          # run GEMM (AVX2 or scalar)
  *
  *   weights = ZeroSkipWeights(B_int8)    # precompute sparse index once
  *   C = weights.gemm(A_float32)          # run GEMM (scalar or AVX2)
  *
- *   C = gemm(A_float32, B_int8)          # convenience all-in-one
+ *   C = gemm(A_float32, B_int8)          # convenience all-in-one (zero-skip)
  *
  *   info = sparsity_info(B_int8)         # measure zero fraction, nnz, etc.
  */
@@ -19,6 +38,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include "ternary_gemm_zero_skip.h"
+#include "ternary_gemm_dense.h"
 #include "py_array_validate.h"
 #include <stdexcept>
 #include <string>
@@ -117,6 +137,76 @@ private:
 };
 
 /* -------------------------------------------------------------------------
+ * DenseWeights class: holds a precomputed packed-dense layout for one
+ * weight matrix. See ternary_gemm_dense.h for why this beats the
+ * CSC/CSR-based ZeroSkipWeights above at ternary's actual sparsity.
+ * ---------------------------------------------------------------------- */
+
+class DenseWeights {
+public:
+    DenseWeights(py::array_t<int8_t> B) {
+        auto buf = validate_2d_contiguous(B, "B", "2-D [K, N] int8");
+
+        K_ = (int)buf.shape[0];
+        N_ = (int)buf.shape[1];
+        const int8_t* data = static_cast<const int8_t*>(buf.ptr);
+        packed_ = pack_ternary_dense(data, K_, N_);
+        if (!packed_)
+            throw std::runtime_error("Failed to pack dense weight matrix");
+    }
+
+    ~DenseWeights() {
+        free_ternary_packed(packed_);
+    }
+
+    DenseWeights(const DenseWeights&) = delete;
+    DenseWeights& operator=(const DenseWeights&) = delete;
+
+    py::array_t<float> gemm(py::array_t<float> A, bool use_avx2 = true) {
+        auto buf = validate_2d_contiguous(A, "A", "2-D [M, K] float32");
+        int M = (int)buf.shape[0];
+        int K = (int)buf.shape[1];
+        if (K != K_)
+            throw std::invalid_argument(
+                "A columns (" + std::to_string(K) +
+                ") must match weight rows (" + std::to_string(K_) + ")"
+            );
+
+        py::array_t<float> C({M, N_});
+        auto c_buf = C.request();
+        const float* a_ptr = static_cast<const float*>(buf.ptr);
+        float*       c_ptr = static_cast<float*>(c_buf.ptr);
+
+        if (use_avx2)
+            ternary_gemm_packed_avx2(M, N_, K_, a_ptr, packed_, c_ptr);
+        else
+            ternary_gemm_packed_scalar(M, N_, K_, a_ptr, packed_, c_ptr);
+
+        return C;
+    }
+
+    py::dict info() const {
+        py::dict d;
+        d["K"] = K_;
+        d["N"] = N_;
+        d["n_blocks"] = packed_->n_blocks;
+        /* Packed storage is always K*n_blocks*8 bytes (dense, zero-padded
+         * tail) -- unlike ZeroSkipWeights, this does not vary with
+         * sparsity, and is smaller than the CSC/CSR index whenever
+         * non-zero density exceeds 1/5 (see ternary_gemm_dense.h). */
+        d["packed_bytes"] = (long long)packed_->n_blocks * K_ * 8;
+        return d;
+    }
+
+    int K() const { return K_; }
+    int N() const { return N_; }
+
+private:
+    int             K_, N_;
+    TernaryPacked*  packed_;
+};
+
+/* -------------------------------------------------------------------------
  * Module-level convenience functions
  * ---------------------------------------------------------------------- */
 
@@ -186,26 +276,30 @@ py::dict py_sparsity_info(py::array_t<int8_t> B) {
 
 PYBIND11_MODULE(ternary_zero_skip_gemm, m) {
     m.doc() = R"doc(
-        Zero-Skip Ternary GEMM
+        Ternary GEMM: two strategies, DenseWeights and ZeroSkipWeights
 
-        Implements matrix multiplication for ternary weight matrices {-1, 0, +1}
-        by skipping zero weights entirely.  Uses a precomputed CSC sparse index
-        to eliminate ~33% of multiply-accumulate operations.
+        DenseWeights (added 2026-08-20, prefer this): packs the dense int8
+        weight matrix once, no sparse index. At ternary's actual ~33-40%
+        zero density, a CSC/CSR index costs MORE bytes than the dense array
+        itself, and these kernels are memory-bandwidth-bound -- measured
+        4.5x-9.5x faster than NumPy at batch=1 (vs ZeroSkipWeights' loss),
+        see src/core/simd/ternary_gemm_dense.h and
+        reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md.
 
-        See: research/FINDINGS.md, § p-adic / 3-adic Structure
+        ZeroSkipWeights (original): precomputed CSC/CSR sparse index,
+        skips zero weights entirely. Kept for comparison / regression
+        tracking. See: research/FINDINGS.md, § p-adic / 3-adic Structure
 
         Typical usage:
             import numpy as np
             import ternary_zero_skip_gemm as zs
 
-            # Build sparse index once per weight matrix
             W = np.random.choice([-1, 0, 1], size=(K, N)).astype(np.int8)
-            weights = zs.ZeroSkipWeights(W)
-            print(weights.info())   # confirms ~33% zero fraction
+            weights = zs.DenseWeights(W)      # pack once per weight matrix
+            print(weights.info())
 
-            # Run GEMM for each batch
             A = np.random.randn(M, K).astype(np.float32)
-            C = weights.gemm(A)     # [M, N] float32
+            C = weights.gemm(A)               # [M, N] float32
     )doc";
 
     py::class_<ZeroSkipWeights>(m, "ZeroSkipWeights",
@@ -232,6 +326,21 @@ PYBIND11_MODULE(ternary_zero_skip_gemm, m) {
     m.def("sparsity_info", &py_sparsity_info,
           py::arg("B"),
           "Measure zero fraction and non-zero counts for a ternary weight matrix.");
+
+    py::class_<DenseWeights>(m, "DenseWeights",
+        "Precomputed dense-packed structure for one ternary weight matrix. "
+        "Prefer this over ZeroSkipWeights -- see module docstring.")
+        .def(py::init<py::array_t<int8_t>>(), py::arg("B"),
+             "Pack B [K, N] int8 with values in {-1, 0, +1} into contiguous "
+             "8-column blocks once.")
+        .def("gemm", &DenseWeights::gemm,
+             py::arg("A"), py::arg("use_avx2") = true,
+             "Compute C = A @ B (N-vectorized AVX2, M-blocked by 4). "
+             "Returns [M, N] float32.")
+        .def("info", &DenseWeights::info,
+             "Return dict with K, N, n_blocks, packed_bytes.")
+        .def_property_readonly("K", &DenseWeights::K)
+        .def_property_readonly("N", &DenseWeights::N);
 
 #ifdef __AVX2__
     m.attr("has_avx2") = true;
