@@ -92,21 +92,40 @@ def load_wikitext2_test() -> str:
 # Quantization
 # ---------------------------------------------------------------------------
 
-def quantize_linear_weight(weight: torch.Tensor) -> tuple:
+def quantize_linear_weight(weight: torch.Tensor, per_channel: bool = False) -> tuple:
     """BitNet-style absmean ternary quantization of one weight tensor.
 
-    Returns (dequantized_weight, scale, zero_fraction) so callers can
-    both replace the weight in-place and accumulate sparsity/scale
-    statistics across the whole model.
+    per_channel=False (original scheme): one scale for the whole tensor
+    -- exactly this project's own documented "simple threshold-based"
+    strategy, and what produced the catastrophic degradation in the
+    first Phase 5 run (2026-08-22).
+
+    per_channel=True: one scale per output row (weight shape is
+    [out_features, in_features] for nn.Linear, so this is per-output-
+    channel scaling) -- the natural next-cheapest refinement, still no
+    calibration data or retraining, just a finer-grained absmean. Direct
+    follow-up asking whether the original result was a scheme artifact
+    or something more fundamental.
+
+    Returns (dequantized_weight, representative_scale, zero_fraction) so
+    callers can both replace the weight in-place and accumulate
+    sparsity/scale statistics across the whole model. representative_scale
+    is the single tensor-wide scale for per_channel=False, or the mean
+    of the per-row scales for per_channel=True (a summary value only --
+    the actual per-row scales are what's used for dequantization).
     """
-    scale = weight.abs().mean().clamp(min=1e-8)
+    if per_channel:
+        scale = weight.abs().mean(dim=1, keepdim=True).clamp(min=1e-8)  # [out, 1]
+    else:
+        scale = weight.abs().mean().clamp(min=1e-8)  # scalar
     ternary = torch.clamp(torch.round(weight / scale), -1, 1)
     dequant = ternary * scale
     zero_fraction = (ternary == 0).float().mean().item()
-    return dequant, scale.item(), zero_fraction
+    representative_scale = scale.mean().item()
+    return dequant, representative_scale, zero_fraction
 
 
-def quantize_model_(model: nn.Module) -> dict:
+def quantize_model_(model: nn.Module, per_channel: bool = False) -> dict:
     """Quantize every nn.Linear weight inside the model's transformer
     layers IN PLACE (embedding/lm_head excluded -- see module docstring).
     Returns per-layer stats for the report."""
@@ -120,7 +139,7 @@ def quantize_model_(model: nn.Module) -> dict:
         if "lm_head" in name:
             continue
         with torch.no_grad():
-            dequant, scale, zero_frac = quantize_linear_weight(module.weight.data)
+            dequant, scale, zero_frac = quantize_linear_weight(module.weight.data, per_channel=per_channel)
             module.weight.data.copy_(dequant)
         stats["layers"].append({
             "name": name,
@@ -208,76 +227,140 @@ def compute_memory_footprint(quant_stats: dict) -> dict:
 # Main
 # ---------------------------------------------------------------------------
 
+def _load_fresh_model():
+    """Load a fresh, unmodified copy of the model from the (cached) HF
+    checkpoint. Called once per quantization scheme rather than keeping
+    multiple copies resident -- this machine has 7GB RAM total and the
+    model alone is ~4.4GB in fp32, so a second in-memory backup copy of
+    the quantizable weights would risk OOM. Reloading from the local
+    cache costs a few seconds, not a real download (verified: ~4s once
+    cached vs several minutes for the original download)."""
+    from transformers import AutoModelForCausalLM
+    model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, dtype=torch.float32)
+    model.eval()
+    return model
+
+
+def _evaluate_scheme(scheme_name: str, per_channel, tokenizer, text: str,
+                      seq_len: int, max_tokens: int) -> dict:
+    """Load a fresh model, optionally quantize it (per_channel=None means
+    no quantization -- the fp32 baseline), measure perplexity, and free
+    the model before returning. per_channel=False is the original
+    per-tensor scheme; per_channel=True is the per-output-row refinement
+    added 2026-08-22 to test whether the original catastrophic result was
+    a scheme artifact or something more fundamental."""
+    import gc
+
+    print(f"\n--- {scheme_name} ---")
+    model = _load_fresh_model()
+
+    quant_stats = None
+    if per_channel is not None:
+        t0 = time.time()
+        quant_stats = quantize_model_(model, per_channel=per_channel)
+        zero_fracs = [l["zero_fraction"] for l in quant_stats["layers"]]
+        print(f"  Quantized {len(quant_stats['layers'])} layers "
+              f"({quant_stats['total_quantized_params']:,} / "
+              f"{quant_stats['total_params_all']:,} params) in {time.time() - t0:.1f}s")
+        print(f"  Zero fraction across layers: mean={sum(zero_fracs)/len(zero_fracs):.3f}, "
+              f"min={min(zero_fracs):.3f}, max={max(zero_fracs):.3f}")
+
+    ppl = compute_perplexity(model, tokenizer, text, seq_len, max_tokens)
+    print(f"  Perplexity: {ppl['perplexity']:.3f}  "
+          f"({ppl['n_blocks']} blocks, {ppl['eval_wall_seconds']:.1f}s)")
+
+    del model
+    gc.collect()
+
+    return {"perplexity_result": ppl, "quant_stats": quant_stats}
+
+
 def run_analysis(max_tokens: int = DEFAULT_MAX_TOKENS, seq_len: int = SEQ_LEN) -> dict:
     """Library entry point -- no argparse/sys.argv involved, so this can
     be called directly from another script (e.g. bench_competitive.py's
     Phase 5) without that caller's own CLI arguments (--all, --phase, ...)
-    being mistaken for this module's flags."""
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    being mistaken for this module's flags.
+
+    Runs THREE evaluations on the same corpus/token window: fp32 baseline,
+    per-tensor ternary quantization (this project's original "simple
+    threshold-based" scheme), and per-channel ternary quantization (the
+    natural next-cheapest refinement, added 2026-08-22 as a direct
+    follow-up to the first run's catastrophic per-tensor result -- asks
+    whether that was a scheme artifact or something more fundamental).
+    """
+    from transformers import AutoTokenizer
 
     print("=" * 80)
     print(f"Phase 5: Real Model Quantization -- {MODEL_NAME}")
     print("=" * 80)
 
-    print("\nLoading model and tokenizer...")
-    t0 = time.time()
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, dtype=torch.float32)
-    model.eval()
-    print(f"  Loaded in {time.time() - t0:.1f}s")
 
     print("\nFetching WikiText-2 test corpus...")
     text = load_wikitext2_test()
     print(f"  {len(text):,} characters")
 
-    print(f"\n--- Baseline (fp32) perplexity, {max_tokens} tokens, "
-          f"{seq_len}-token blocks ---")
-    baseline_ppl = compute_perplexity(model, tokenizer, text, seq_len, max_tokens)
-    print(f"  Perplexity: {baseline_ppl['perplexity']:.3f}  "
-          f"({baseline_ppl['n_blocks']} blocks, "
-          f"{baseline_ppl['eval_wall_seconds']:.1f}s)")
-
-    print("\n--- Quantizing all attention/MLP nn.Linear weights to ternary ---")
-    t0 = time.time()
-    quant_stats = quantize_model_(model)
-    print(f"  Quantized {len(quant_stats['layers'])} layers "
-          f"({quant_stats['total_quantized_params']:,} / "
-          f"{quant_stats['total_params_all']:,} params) in {time.time() - t0:.1f}s")
-    zero_fracs = [l["zero_fraction"] for l in quant_stats["layers"]]
-    print(f"  Zero fraction across layers: mean={sum(zero_fracs)/len(zero_fracs):.3f}, "
-          f"min={min(zero_fracs):.3f}, max={max(zero_fracs):.3f}")
-
-    print(f"\n--- Quantized (ternary) perplexity, same {max_tokens} tokens ---")
-    quant_ppl = compute_perplexity(model, tokenizer, text, seq_len, max_tokens)
-    print(f"  Perplexity: {quant_ppl['perplexity']:.3f}  "
-          f"({quant_ppl['n_blocks']} blocks, "
-          f"{quant_ppl['eval_wall_seconds']:.1f}s)")
-
-    ppl_degradation_pct = (
-        (quant_ppl["perplexity"] - baseline_ppl["perplexity"]) / baseline_ppl["perplexity"] * 100
+    baseline = _evaluate_scheme(
+        f"Baseline (fp32), {max_tokens} tokens, {seq_len}-token blocks",
+        None, tokenizer, text, seq_len, max_tokens,
     )
-    latency_ratio = quant_ppl["seconds_per_block"] / baseline_ppl["seconds_per_block"]
+    per_tensor = _evaluate_scheme(
+        "Per-tensor ternary (original scheme: one scale for the whole weight matrix)",
+        False, tokenizer, text, seq_len, max_tokens,
+    )
+    per_channel = _evaluate_scheme(
+        "Per-channel ternary (one scale per output row)",
+        True, tokenizer, text, seq_len, max_tokens,
+    )
 
-    memory = compute_memory_footprint(quant_stats)
+    baseline_ppl = baseline["perplexity_result"]
+
+    def summarize(scheme_result, quant_stats):
+        ppl = scheme_result["perplexity_result"]
+        degradation_pct = (ppl["perplexity"] - baseline_ppl["perplexity"]) / baseline_ppl["perplexity"] * 100
+        latency_ratio = ppl["seconds_per_block"] / baseline_ppl["seconds_per_block"]
+        zero_fracs = [l["zero_fraction"] for l in quant_stats["layers"]]
+        memory = compute_memory_footprint(quant_stats)
+        return {
+            "perplexity": ppl,
+            "perplexity_degradation_pct": degradation_pct,
+            "latency_ratio_ternary_over_fp32": latency_ratio,
+            "quantization_stats": {
+                "n_layers_quantized": len(quant_stats["layers"]),
+                "total_quantized_params": quant_stats["total_quantized_params"],
+                "total_params_all": quant_stats["total_params_all"],
+                "zero_fraction_mean": sum(zero_fracs) / len(zero_fracs),
+                "zero_fraction_min": min(zero_fracs),
+                "zero_fraction_max": max(zero_fracs),
+                "per_layer": quant_stats["layers"],
+            },
+            "memory_footprint": memory,
+            "success_criteria": {
+                "accuracy_loss_under_5pct": abs(degradation_pct) < 5.0,
+                "memory_under_25pct_of_fp16": memory["ternary_dense243_total_mb"] / memory["fp16_total_mb"] < 0.25,
+            },
+        }
+
+    per_tensor_summary = summarize(per_tensor, per_tensor["quant_stats"])
+    per_channel_summary = summarize(per_channel, per_channel["quant_stats"])
 
     print("\n" + "-" * 80)
     print("Phase 5 Summary:")
-    print(f"  Perplexity: {baseline_ppl['perplexity']:.3f} (fp32) -> "
-          f"{quant_ppl['perplexity']:.3f} (ternary)  "
-          f"[{ppl_degradation_pct:+.2f}%]")
-    print(f"  Success criterion (<5% accuracy loss): "
-          f"{'PASS' if abs(ppl_degradation_pct) < 5.0 else 'FAIL'}")
-    print(f"  Forward-pass latency ratio (ternary-simulated / fp32, "
-          f"SAME PyTorch ops -- NOT this project's ternary kernels): "
-          f"{latency_ratio:.3f}x")
-    print(f"  Memory: {memory['fp16_total_mb']:.1f} MB (fp16) -> "
-          f"{memory['ternary_dense243_total_mb']:.1f} MB (Dense243, quantized layers only) "
-          f"[{memory['reduction_vs_fp16_dense243']:.2f}x smaller]")
-    print(f"  Success criterion (<25% of FP16 memory): "
-          f"{'PASS' if memory['ternary_dense243_total_mb'] / memory['fp16_total_mb'] < 0.25 else 'FAIL'}")
+    print(f"  Baseline (fp32) perplexity: {baseline_ppl['perplexity']:.3f}")
+    for label, summary in (("Per-tensor", per_tensor_summary), ("Per-channel", per_channel_summary)):
+        print(f"\n  {label}:")
+        print(f"    Perplexity: {summary['perplexity']['perplexity']:.3f}  "
+              f"[{summary['perplexity_degradation_pct']:+.2f}%]")
+        print(f"    Success criterion (<5% accuracy loss): "
+              f"{'PASS' if summary['success_criteria']['accuracy_loss_under_5pct'] else 'FAIL'}")
+        print(f"    Memory: {summary['memory_footprint']['fp16_total_mb']:.1f} MB (fp16) -> "
+              f"{summary['memory_footprint']['ternary_dense243_total_mb']:.1f} MB (Dense243) "
+              f"[{summary['memory_footprint']['reduction_vs_fp16_dense243']:.2f}x smaller]")
+        print(f"    Success criterion (<25% of FP16 memory): "
+              f"{'PASS' if summary['success_criteria']['memory_under_25pct_of_fp16'] else 'FAIL'}")
     print()
-    print("  IMPORTANT: the latency ratio above reflects standard PyTorch float32")
-    print("  ops on dequantized ternary weights, NOT this project's own AVX2 ternary")
+    print("  IMPORTANT: latency ratios reflect standard PyTorch float32 ops on")
+    print("  dequantized ternary weights, NOT this project's own AVX2 ternary")
     print("  kernels (src/core/simd/ternary_gemm_dense.h) -- that integration is out")
     print("  of scope for this quantization-accuracy measurement. The kernel-speed")
     print("  question is answered separately: see reports/2026-08-20/")
@@ -288,30 +371,22 @@ def run_analysis(max_tokens: int = DEFAULT_MAX_TOKENS, seq_len: int = SEQ_LEN) -
             "timestamp": datetime.now().isoformat(),
             "model": MODEL_NAME,
             "corpus": "Salesforce/wikitext, wikitext-2-raw-v1, test split",
-            "quantization": "BitNet-style absmean ternary, nn.Linear in "
-                             "attention/MLP blocks only (embedding/lm_head excluded)",
+            "quantization_schemes": {
+                "per_tensor": "BitNet-style absmean ternary, ONE scale for the whole "
+                               "weight matrix -- this project's original 'simple "
+                               "threshold-based' scheme",
+                "per_channel": "BitNet-style absmean ternary, one scale PER OUTPUT ROW "
+                                "-- added 2026-08-22 as a direct follow-up to test "
+                                "whether the per-tensor scheme's catastrophic result "
+                                "was a scheme artifact",
+            },
             "scope_note": "Latency figures are standard PyTorch fp32 ops on "
                            "dequantized weights, NOT this project's own ternary "
                            "engine kernels -- see module docstring.",
         },
         "baseline_fp32": baseline_ppl,
-        "quantized_ternary": quant_ppl,
-        "perplexity_degradation_pct": ppl_degradation_pct,
-        "latency_ratio_ternary_over_fp32": latency_ratio,
-        "quantization_stats": {
-            "n_layers_quantized": len(quant_stats["layers"]),
-            "total_quantized_params": quant_stats["total_quantized_params"],
-            "total_params_all": quant_stats["total_params_all"],
-            "zero_fraction_mean": sum(zero_fracs) / len(zero_fracs),
-            "zero_fraction_min": min(zero_fracs),
-            "zero_fraction_max": max(zero_fracs),
-            "per_layer": quant_stats["layers"],
-        },
-        "memory_footprint": memory,
-        "success_criteria": {
-            "accuracy_loss_under_5pct": abs(ppl_degradation_pct) < 5.0,
-            "memory_under_25pct_of_fp16": memory["ternary_dense243_total_mb"] / memory["fp16_total_mb"] < 0.25,
-        },
+        "per_tensor": per_tensor_summary,
+        "per_channel": per_channel_summary,
     }
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
