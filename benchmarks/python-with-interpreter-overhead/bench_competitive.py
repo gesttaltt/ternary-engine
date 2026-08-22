@@ -710,63 +710,54 @@ class CompetitiveBenchmark:
         """
         Phase 5: Real Model Quantization
 
-        Analysis framework for quantizing real models to ternary.
-        This would be the PROOF - if a ternary-quantized model maintains
-        reasonable accuracy and runs faster, we have a product.
+        Runs a real ternary quantization + WikiText-2 perplexity comparison
+        on TinyLlama-1.1B-Chat-v1.0 via benchmarks/model_quantization/
+        quantize_tinyllama.py. Wired up 2026-08-22 -- this phase previously
+        only printed a static "framework" description and a target-model
+        list, with no actual model ever loaded or quantized.
+
+        Scoped to TinyLlama-1.1B only (not the originally-planned
+        TinyLlama+Phi-2+Gemma-2B trio) per user direction, 2026-08-22: on
+        a CPU-only sandbox, downloading and evaluating all three wasn't
+        worth it for a first real data point -- TinyLlama is the smallest
+        of the three and proves the methodology; extending to the other
+        two is mechanical (same script, different model name) if wanted
+        later.
+
+        This is a HEAVY phase relative to Phases 1-4: it downloads a
+        real ~2.2GB model (cached after the first run) and runs two full
+        forward-pass perplexity evaluations on CPU. Not run as part of a
+        quick sanity check -- expect several minutes even with the cache
+        warm, or considerably longer on a slow connection for the first run.
         """
         print("\n" + "=" * 80)
-        print("PHASE 5: Model Quantization Analysis")
+        print("PHASE 5: Real Model Quantization (TinyLlama-1.1B)")
         print("=" * 80)
 
-        print("\nQuantization Strategy:")
-        print("  Simple threshold-based:")
-        print("    Values > threshold  → +1")
-        print("    Values < -threshold → -1")
-        print("    Values in between   → 0")
+        try:
+            import torch  # noqa: F401
+            from transformers import AutoModelForCausalLM  # noqa: F401
+        except ImportError as e:
+            print(f"\ntorch/transformers not available ({e}) -- skipping Phase 5")
+            print("Install with: pip install torch transformers")
+            self.results['phase5_model_quantization'] = {
+                'error': f'torch/transformers not available: {e}'
+            }
+            return
 
-        print("\nTarget Models for Testing:")
-        models = [
-            ("TinyLlama-1.1B", "1.1B parameters", "Chat model"),
-            ("Phi-2", "2.7B parameters", "Small but capable"),
-            ("Gemma-2B", "2B parameters", "Google small model"),
-        ]
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'model_quantization'
+        ))
+        from quantize_tinyllama import run_analysis
 
-        for name, size, description in models:
-            print(f"  • {name}: {size} - {description}")
+        try:
+            results = run_analysis()
+        except Exception as e:
+            print(f"\nPhase 5 failed: {type(e).__name__}: {e}")
+            self.results['phase5_model_quantization'] = {'error': str(e)}
+            return
 
-        print("\nQuantization Metrics to Measure:")
-        metrics = [
-            "Perplexity degradation",
-            "Accuracy on benchmark tasks",
-            "Inference latency",
-            "Memory footprint",
-            "Throughput (tokens/sec)",
-        ]
-
-        for metric in metrics:
-            print(f"  • {metric}")
-
-        print("\nSuccess Criteria:")
-        print("  ✓ Accuracy loss < 5% on benchmarks")
-        print("  ✓ Inference latency < 2x original")
-        print("  ✓ Memory footprint < 25% of FP16")
-        print("  ✓ Maintains coherent text generation")
-
-        self.results['phase5_model_quantization'] = {
-            'status': 'Framework defined - requires actual model implementation',
-            'target_models': [m[0] for m in models],
-            'metrics': metrics,
-            'note': 'Requires PyTorch/Transformers integration'
-        }
-
-        print("\n" + "-" * 80)
-        print("Phase 5 Summary:")
-        print("  Status: ⚠ FRAMEWORK READY - NEEDS IMPLEMENTATION")
-        print("  Next steps:")
-        print("    1. Implement quantize_to_ternary() function")
-        print("    2. Test on TinyLlama-1.1B")
-        print("    3. Measure accuracy and performance")
-        print("    4. Compare with INT8/INT4 quantized versions")
+        self.results['phase5_model_quantization'] = results
 
     def phase6_power_consumption(self):
         """
