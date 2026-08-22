@@ -295,9 +295,10 @@ the geomeans; all per-cell data including exclusions is in
 | 2. Memory efficiency | **4.0× vs INT8** (exact match to README claim) | ✅ Proven |
 | 3. Throughput @ equivalent bit-width | Dense243 8.0× faster than an INT2 reference | Real kernel-vs-kernel comparison, sized to a genuine 1GB footprint |
 | 4. Neural workload (matmul) | **~1.1×-1.2× avg** (was 0.189×) | "Viable for AI" — `DenseWeights` dense-packed kernel replaced the CSC/CSR `ZeroSkipWeights` kernel this phase used before; see note below |
-| 5-6. Model quantization / power | Framework-only | No measurement code yet |
+| 5. Model quantization | Framework-only | No measurement code yet |
+| 6. Power consumption | Real measurement code (2026-08-22) | Auto-detects a real hardware monitor (Intel RAPL / NVIDIA `nvidia-smi` / Windows) where available and reports honestly if none is (falls back to a clearly-labeled simulated `MockPowerMonitor`, never silently) — see note below |
 
-**Commercial viability: 2/5 criteria validated** — see the table further below. This is a confirmed, re-verified number, not a first-pass estimate. The Phase 4 improvement does **not** change this count — it fixes a stale/wrong matmul figure, but the "< 2× FP16" criterion Phase 4 is a proxy for compares against fp32 NumPy here, not fp16, so it still isn't a direct measurement of that specific criterion.
+**Commercial viability: 2/5 criteria validated** — see the table further below. This is a confirmed, re-verified number, not a first-pass estimate. The Phase 4 improvement does **not** change this count — it fixes a stale/wrong matmul figure, but the "< 2× FP16" criterion Phase 4 is a proxy for compares against fp32 NumPy here, not fp16, so it still isn't a direct measurement of that specific criterion. Phase 6 being wired to real measurement code also does **not** change this count on its own — a run needs an actual reachable hardware power monitor to produce a citable number, which this project's own dev sandbox does not have (confirmed: no RAPL read permission, no `perf` access, no sudo); the fix means Phase 6 will produce a genuine number the first time it's run somewhere that does have one, instead of remaining unwired.
 
 **Phase 4 GEMM kernel fix (2026-08-20):** investigation found the CSC/CSR "zero-skip" kernel wasn't naive (already AVX2 + OpenMP + cache-aware) but had two structural problems: it vectorizes over the batch dimension while Phase 4 tests batch=1 (so AVX2 never engaged), and at ternary's real ~33-40% zero density, CSC/CSR index storage is ~3.3× *larger* than just the dense int8 weight array — "zero-skip" was optimizing the wrong resource on a memory-bandwidth-bound kernel. A new dense-packed kernel (`src/core/simd/ternary_gemm_dense.h`, `DenseWeights` in `ternary_zero_skip_gemm`) fixes both: measured **19×-32× faster than the best existing kernel at batch=1**, native and pybind-free (`benchmarks/cpp-native-kernels/bench_gemm_dense.cpp`). Fixing this also surfaced a benchmark-methodology bug (a 3-call warmup that was fine for the old ~1-5ms/call kernel left this machine's CPU frequency-scaling cold for the new ~10-30µs/call one, causing up to 50× run-to-run variance) — fixed with wall-clock warmup and interleaved median timing; stable across repeated runs. Full investigation: [reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md](reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md).
 
@@ -1000,7 +1001,7 @@ See [docs/pgo/README.md](docs/pgo/README.md) and [docs/pgo/CLANG_INSTALLATION.md
 - **RISC-V, FPGA/ASIC** - not started, long-term vision only
 - **Profiler integration (VTune ITT, NVTX, Perfetto)** - the call-site framework exists in `src/core/profiling/ternary_profiler.h` and is genuinely wired into `bindings_core_ops.cpp`'s hot paths, but no build script defines `TERNARY_ENABLE_VTUNE`/`_NVTX`/`_PERFETTO`, so only the no-op stub has ever been built
 - **Windows x64 re-validation** - most 2026-08 fixes (multi-dim arrays, code dedup, TritNet Phases 3-5, competitive-benchmark re-validation) have been done and verified on Linux x64 only; Windows remains the only platform with a *production* performance claim, dated 2025-11-28, predating this work
-- **Real model quantization (Phase 5) / power measurement (Phase 6)** of the competitive suite - descriptive only, no measurement code yet
+- **Real model quantization (Phase 5)** of the competitive suite - descriptive only, no measurement code yet. **Power measurement (Phase 6)** wired to real code 2026-08-22 (auto-detects Intel RAPL / NVIDIA / Windows monitors, honest Mock fallback) but this project's dev sandbox has no reachable hardware monitor to actually validate against (no RAPL read permission, no `perf` access, no sudo) — needs running somewhere with real access before a citable number exists
 
 An earlier exploratory plan to integrate TritNet with BitNet's 1.58-bit matmul kernels (a 4-phase research path, A through D) was never executed — TritNet's actual roadmap took a different, self-contained path (native C++ engine → AVX2 → GPU → novel-operation discovery, documented above) and reached a definitive verdict without it. Kept here as historical context, not a live plan.
 
@@ -1042,9 +1043,9 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 
 ---
 
-**Version**: See `.claude/CLAUDE.md` (currently v1.46.0) for the authoritative, dated version history — this README summarizes rather than tracks it line-by-line
+**Version**: See `.claude/CLAUDE.md` (currently v1.49.0) for the authoritative, dated version history — this README summarizes rather than tracks it line-by-line
 **Status**: Production (Windows x64, dated 2025-11-28), Tests+CI validated (Linux x64), TritNet roadmap (Phases 1-5) complete, Experimental (macOS, ARM/NEON, AVX-512)
-**Updated**: 2026-08-20
+**Updated**: 2026-08-22
 **Platform**: Windows x64 (production perf claims, validated 2025-11-28), Linux x64 (tests + CI + most 2026-08 fixes/re-validations, formal benchmark re-validation on Windows still pending), macOS (untested)
 
 **Recent Additions (2026-08):**
@@ -1054,6 +1055,7 @@ Developed by Jonathan Verdun with grateful acknowledgment to Ivan Weiss Van der 
 - ✅ **Code-duplication cleanup** - ~330-400 lines removed across binding files; shared TritNet training module
 - ✅ **Extensive documentation-debt pass** - stale paths and claims fixed across docs/, tests/, reports/, benchmarks/, models/, build/, and this file
 - ✅ **Dense-packed GEMM kernel** - fixed the "0.189× avg / too slow for AI" matmul verdict; new kernel is 19×-32× faster than the old CSC/CSR one at the tested batch size, flips the competitive suite's Phase 4 verdict to "viable for AI"
+- ✅ **Phase 6 power measurement wired up** - was purely descriptive; now runs a real hardware-monitor-based comparison (Intel RAPL / NVIDIA / Windows, auto-detected, honest simulated fallback) — also fixed a real silent-failure bug in the RAPL permission check found along the way
 
 **Performance Summary (Windows x64, validated 2025-11-28 — the most recent formal production benchmark run):**
 - ✅ **45.3 Gops/s peak** throughput with fusion operations

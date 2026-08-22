@@ -77,10 +77,47 @@ class IntelRAPLMonitor(PowerMonitor):
         self.rapl_path = "/sys/class/powercap/intel-rapl/intel-rapl:0/"
         self.start_energy = 0
         self.end_energy = 0
+        self.max_energy_range_uj = self._read_max_energy_range()
+
+    def _read_max_energy_range(self) -> float:
+        """Read this domain's counter wrap point (microjoules), for
+        wraparound correction in get_energy_joules(). Falls back to 0
+        (wraparound correction becomes a no-op) if unreadable -- this
+        file is typically world-readable even when energy_uj isn't, but
+        don't assume."""
+        try:
+            with open(os.path.join(self.rapl_path, "max_energy_range_uj"), 'r') as f:
+                return float(f.read().strip())
+        except (IOError, PermissionError, ValueError):
+            return 0.0
 
     def is_available(self) -> bool:
-        """Check if RAPL is available"""
-        return os.path.exists(self.rapl_path)
+        """Check if RAPL is genuinely usable: the energy_uj file must exist
+        AND actually be readable by this process, not just the directory.
+
+        Found 2026-08-22: `energy_uj` is root-only (`-r--------`) on a
+        stock Linux install unless a udev rule grants group/world read
+        access -- the common case for an unprivileged user, not a sandbox
+        quirk. The prior check (`os.path.exists(self.rapl_path)`, the
+        directory) is True regardless of that file's permissions, so this
+        monitor would report itself "available", then silently read 0.0J
+        for every measurement (via _read_energy()'s own PermissionError
+        fallback below) behind one easy-to-miss warning per call -- the
+        same silent-degrade shape already found and fixed elsewhere in
+        this project's benchmarks/ and models/ (see .claude/CLAUDE.md
+        Critical Gaps). Attempting a real read here lets the auto-detect
+        cascade in PowerConsumptionBenchmark._create_monitor() correctly
+        fall through to NVIDIAPowerMonitor/MockPowerMonitor instead.
+        """
+        energy_path = os.path.join(self.rapl_path, "energy_uj")
+        if not os.path.exists(energy_path):
+            return False
+        try:
+            with open(energy_path, 'r') as f:
+                f.read()
+            return True
+        except (IOError, PermissionError):
+            return False
 
     def _read_energy(self) -> float:
         """Read current energy counter (microjoules)"""
@@ -101,8 +138,21 @@ class IntelRAPLMonitor(PowerMonitor):
         return 0.0  # Power calculated from energy
 
     def get_energy_joules(self) -> float:
-        """Get total energy consumed"""
+        """Get total energy consumed.
+
+        RAPL's energy_uj is a wrapping counter (wraps at
+        max_energy_range_uj, ~65.5kJ on this hardware -- confirmed via
+        max_energy_range_uj, not assumed) -- a long enough or high-enough-
+        power measurement window can wrap mid-benchmark, making
+        end_energy < start_energy and producing a nonsensical negative
+        Joules reading without this correction. Not reachable at this
+        module's default duration_sec=10.0 on typical desktop/laptop
+        power draw, but cheap to guard unconditionally rather than rely
+        on that always holding for every caller/duration.
+        """
         energy_uj = self.end_energy - self.start_energy
+        if energy_uj < 0 and self.max_energy_range_uj > 0:
+            energy_uj += self.max_energy_range_uj
         return energy_uj / 1_000_000  # Convert microjoules to joules
 
 

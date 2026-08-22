@@ -772,50 +772,98 @@ class CompetitiveBenchmark:
         """
         Phase 6: Power Consumption
 
-        Framework for measuring energy efficiency.
-        Edge AI is power-constrained - if ternary saves power, that's the killer feature.
+        Runs a real energy-efficiency comparison via
+        bench_power_efficiency.py's PowerConsumptionBenchmark, using
+        whichever hardware power monitor is genuinely available on this
+        machine (Intel RAPL, NVIDIA nvidia-smi, Windows PowerShell) --
+        auto-detected the same way that script's own standalone CLI does.
+
+        Wired up 2026-08-22 -- this phase previously only printed a
+        static "framework" description with the literal note "Requires
+        actual hardware power monitoring", despite
+        bench_power_efficiency.py already containing real, working
+        monitor code. Fixed the same day, in that file: `IntelRAPLMonitor
+        .is_available()` checked only that the RAPL directory existed,
+        not that its energy_uj counter file was actually *readable* --
+        that file is root-only by default on a stock Linux install (the
+        common case for an unprivileged user, confirmed concretely on
+        this machine: directory present, `energy_uj` permission denied),
+        so the old check would have silently reported "available" and
+        then measured 0.0 Joules for everything, behind one easy-to-miss
+        warning per call. If no real hardware monitor is available, this
+        phase falls through to `MockPowerMonitor` and says so loudly --
+        it never reports a simulated number as if it were a real one.
         """
         print("\n" + "=" * 80)
-        print("PHASE 6: Power Consumption Framework")
+        print("PHASE 6: Power Consumption")
         print("=" * 80)
 
-        print("\nPower Measurement Strategy:")
-        print("  Hardware platforms:")
-        print("    • Raspberry Pi 4/5 (ARM Cortex-A)")
-        print("    • NVIDIA Jetson Nano/Xavier (ARM + GPU)")
-        print("    • x86 laptop (Intel/AMD)")
-        print("    • Desktop workstation")
+        try:
+            from bench_power_efficiency import PowerConsumptionBenchmark
+        except ImportError as e:
+            print(f"\nbench_power_efficiency.py not importable ({e}) -- skipping Phase 6")
+            self.results['phase6_power_consumption'] = {'error': str(e)}
+            return
 
-        print("\n  Metrics to measure:")
-        print("    • Watts consumed per billion operations")
-        print("    • Battery life impact (on portable devices)")
-        print("    • Thermal characteristics (temperature rise)")
-        print("    • Power efficiency vs INT8/INT4")
+        pb = PowerConsumptionBenchmark(platform='auto')
+        monitor_name = type(pb.monitor).__name__
+        is_real_hw = monitor_name != 'MockPowerMonitor'
 
-        print("\n  Measurement approach:")
-        print("    1. Run operation for 10 seconds")
-        print("    2. Measure total energy (Joules)")
-        print("    3. Calculate operations/Joule")
-        print("    4. Compare with baseline")
+        size = 1_000_000
+        rng = np.random.default_rng(42)
+        a_tern = rng.integers(0, 3, size, dtype=np.uint8)
+        b_tern = rng.integers(0, 3, size, dtype=np.uint8)
+        a_np = rng.integers(-1, 2, size, dtype=np.int8)
+        b_np = rng.integers(-1, 2, size, dtype=np.int8)
 
-        print("\n  Required hardware:")
-        print("    • USB power meter (for ARM boards)")
-        print("    • NVIDIA power monitoring (nvidia-smi)")
-        print("    • Intel RAPL (Running Average Power Limit)")
-        print("    • Thermal sensors")
+        # Shorter than bench_power_efficiency.py's own 10s default --
+        # this phase is one of six in a full suite run, not a dedicated
+        # power-measurement session.
+        duration = 3.0
+
+        tern_result = None
+        if tc is not None:
+            tern_result = pb.benchmark_operation(
+                "Ternary Addition", lambda: tc.tadd(a_tern, b_tern), duration_sec=duration
+            )
+        np_result = pb.benchmark_operation(
+            "NumPy INT8 Addition", lambda: np.add(a_np, b_np, dtype=np.int8), duration_sec=duration
+        )
+
+        efficiency_advantage = None
+        if tern_result is not None and np_result.get('ops_per_joule', 0) > 0:
+            efficiency_advantage = tern_result['ops_per_joule'] / np_result['ops_per_joule']
 
         self.results['phase6_power_consumption'] = {
-            'status': 'Framework defined - requires hardware access',
-            'platforms': ['Raspberry Pi', 'Jetson', 'x86', 'Desktop'],
-            'metrics': ['Watts/GOPS', 'Battery life', 'Thermal'],
-            'note': 'Requires actual hardware power monitoring'
+            'monitor_type': monitor_name,
+            'is_real_hardware_measurement': is_real_hw,
+            'ternary': tern_result,
+            'numpy': np_result,
+            'efficiency_advantage': efficiency_advantage,
         }
 
         print("\n" + "-" * 80)
         print("Phase 6 Summary:")
-        print("  Status: ⚠ FRAMEWORK READY - NEEDS HARDWARE")
-        print("  Expected advantage: 2-4x lower power consumption")
-        print("  Killer feature for edge AI deployment")
+        if not is_real_hw:
+            print("  [WARN] No real hardware power monitor available on this machine "
+                  "(checked: Windows PowerShell, Intel RAPL, NVIDIA nvidia-smi).")
+            print("  The numbers above are SIMULATED (MockPowerMonitor, fixed ~50W draw), "
+                  "NOT a real measurement.")
+            print("  Re-run on a machine with RAPL/nvidia-smi access (or with the needed "
+                  "permissions) for genuine numbers.")
+            print("  Status: ⚠ NO HARDWARE MONITOR -- results are simulated, not citable")
+        else:
+            print(f"  Real hardware measurement via {monitor_name}")
+            if efficiency_advantage is not None:
+                print(f"  Ternary power efficiency: {efficiency_advantage:.2f}x ops/Joule vs NumPy")
+                if efficiency_advantage > 1.5:
+                    print("  Status: ✓ SIGNIFICANT POWER ADVANTAGE")
+                elif efficiency_advantage > 1.0:
+                    print("  Status: ⚠ MODEST POWER ADVANTAGE")
+                else:
+                    print("  Status: ✗ NO POWER ADVANTAGE")
+            else:
+                print("  Status: ⚠ MEASUREMENT INCOMPLETE (missing engine or zero-energy reading)")
 
     def save_results(self):
         """Save results to JSON file"""
