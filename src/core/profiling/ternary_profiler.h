@@ -18,11 +18,14 @@
 // IMPLEMENTATION STATUS
 // =============================================================================
 //
-// **CALL SITES INTEGRATED; PROFILER BACKENDS UNVERIFIED**
+// **CALL SITES INTEGRATED; PERFETTO VERIFIED, VTUNE/NVTX STILL UNVERIFIED**
 //
 // This header provides cross-platform profiler integration for performance analysis.
 // Status (corrected 2026-08-12 — this section previously overclaimed, see
-// CLAUDE.md "Critical Gaps" for the reconciled status):
+// CLAUDE.md "Critical Gaps" for the reconciled status; corrected again
+// 2026-08-25 in the opposite direction — Perfetto below had been left
+// describing itself as a stub for a full session after the real backend
+// was implemented further down in this same file):
 //   - Call sites: genuinely wired into the hot path — see
 //     TERNARY_PROFILE_TASK_BEGIN/END usage in bindings_core_ops.cpp
 //   - VTune (ITT API): macros implemented, but no build script in build/
@@ -31,7 +34,14 @@
 //     substantiate; treat as unverified until someone actually builds
 //     with -DTERNARY_ENABLE_VTUNE -littnotify and confirms
 //   - NVTX (CUDA/GPU): Framework ready, awaiting GPU port
-//   - Perfetto: Stub placeholder for future web-based tracing
+//   - Perfetto: REAL backend, built and verified 2026-08-25 -- vendored
+//     SDK (third_party/perfetto/), real TRACE_EVENT_BEGIN/END/TRACE_EVENT
+//     calls, wired into both a standalone native demo
+//     (benchmarks/cpp-native-kernels/bench_perfetto_trace.cpp) and the
+//     main ternary_simd_engine module (build/build.py --enable-perfetto).
+//     Verified against actual trace contents (trace_processor_shell),
+//     not just "it compiled" -- see
+//     reports/2026-08-25/PERFETTO_PROFILER_INTEGRATION.md
 //   - Default (no-op, what every current build actually uses): Zero
 //     overhead when profiling disabled
 //
@@ -46,9 +56,9 @@
 // - Integration with existing profiling workflows
 //
 // PROFILER TARGETS:
-//   1. Intel VTune (ITT API) - CPU profiling [INTEGRATED]
-//   2. NVIDIA Nsight (NVTX) - GPU profiling [Framework ready]
-//   3. Chrome Tracing (Perfetto) - Web timeline [Stub only]
+//   1. Intel VTune (ITT API) - CPU profiling [Macros implemented, unbuilt/unverified]
+//   2. NVIDIA Nsight (NVTX) - GPU profiling [Framework ready, awaiting GPU port]
+//   3. Perfetto - Tracing (ui.perfetto.dev) [REAL, built and verified 2026-08-25]
 //
 // CROSS-PLATFORM COMPATIBILITY:
 //   - GCC/Clang (Linux/macOS): Full support
@@ -275,6 +285,20 @@ struct TernaryProfileScope {
 
 #define TERNARY_PROFILE_SCOPE(domain, task_name) \
     TernaryProfileScope<decltype(domain)> __profile_scope_##__LINE__(domain, task_name)
+
+#elif defined(TERNARY_ENABLE_PERFETTO)
+
+// Perfetto's TRACE_EVENT (unscoped, one-argument form -- not
+// TRACE_EVENT_BEGIN/END) is documented as "Begin a slice which gets
+// automatically closed when going out of scope," so it's a direct RAII
+// fit with no wrapper struct needed. Found 2026-08-25: this branch was
+// missing entirely when the real Perfetto backend was added a few lines
+// above (TERNARY_PROFILE_TASK_BEGIN/END became real, but this guard was
+// never extended past VTUNE/NVTX) -- silently fell through to the no-op
+// stub below, the same silent-degrade shape this project has repeatedly
+// hunted and fixed elsewhere.
+#define TERNARY_PROFILE_SCOPE(domain, task_name) \
+    TRACE_EVENT("ternary_core", perfetto::DynamicString(task_name))
 
 #else
 

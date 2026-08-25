@@ -20,7 +20,7 @@
  * COMPILATION (from benchmarks/cpp-native-kernels/ directory):
  *   g++ -O3 -march=haswell -mavx2 -mfma -fopenmp -std=c++17 \
  *       -DTERNARY_ENABLE_PERFETTO \
- *       -I../../src/core -I../../third_party \
+ *       -I../../src/core -I../.. \
  *       bench_perfetto_trace.cpp \
  *       ../../src/core/profiling/ternary_profiler_perfetto.cc \
  *       ../../third_party/perfetto/perfetto.cc \

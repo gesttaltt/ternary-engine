@@ -76,9 +76,11 @@ void ternary_gemm_packed_scalar(
 );
 
 /* AVX2 kernel: N-vectorized (8 output columns/register), M-blocked in
- * groups of 4 so each loaded/widened weight tile is reused across 4
- * batch rows before moving on -- the register-blocking that gives
- * batch>1 arithmetic-intensity gains without needing zero-skip indices.
+ * groups of TERNARY_GEMM_DENSE_MB (8 as of 2026-08-22, was 4 -- see
+ * ternary_gemm_dense.cpp's #define comment for why) so each loaded/
+ * widened weight tile is reused across that many batch rows before
+ * moving on -- the register-blocking that gives batch>1 arithmetic-
+ * intensity gains without needing zero-skip indices.
  * Falls back to ternary_gemm_packed_scalar on non-AVX2 builds. */
 void ternary_gemm_packed_avx2(
     int M, int N, int K,

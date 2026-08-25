@@ -108,7 +108,9 @@ void ternary_gemm_packed_scalar(
 }
 
 /* -------------------------------------------------------------------------
- * AVX2 kernel: N-vectorized (8 cols/register), M-blocked (4 rows/tile)
+ * AVX2 kernel: N-vectorized (8 cols/register), M-blocked
+ * (TERNARY_GEMM_DENSE_MB rows/tile, 8 as of 2026-08-22 -- see the
+ * #define's own comment above for why)
  * ---------------------------------------------------------------------- */
 
 #ifdef __AVX2__
