@@ -150,13 +150,32 @@
     nvtxDomainRangePop(domain)
 
 // =============================================================================
-// Chrome Tracing / Perfetto Support (ROADMAP)
+// Chrome Tracing / Perfetto Support
 // =============================================================================
+//
+// Real integration, added 2026-08-25 -- see third_party/perfetto/README.md
+// for the vendored SDK's provenance, and ternary_profiler_perfetto.cc for
+// the one translation unit that owns PERFETTO_TRACK_EVENT_STATIC_STORAGE()
+// and the start/stop helpers below. Unlike VTune/NVTX, Perfetto needs no
+// proprietary tool or GPU to build and verify against -- it's an
+// open-source SDK, which is why this backend (and not those two) is the
+// one this project could actually finish and verify. See
+// reports/2026-08-25/PERFETTO_PROFILER_INTEGRATION.md for the validated
+// end-to-end trace.
+//
+// Perfetto's TRACE_EVENT_BEGIN/END take a compile-time CATEGORY string,
+// not a runtime domain handle like ITT/NVTX -- this project only ever
+// uses one category ("ternary_core"), so TERNARY_PROFILE_DOMAIN is kept
+// as an unused placeholder for macro-signature compatibility with the
+// other two backends, and the category name is hardcoded here rather
+// than threaded through from the call site.
 
 #elif defined(TERNARY_ENABLE_PERFETTO)
 
-// ROADMAP: Perfetto SDK integration planned for future release
-// Current: Stub implementation (compiles but no output)
+// gen_amalgamated expanded: #include "third_party/perfetto/perfetto.h"
+#include "third_party/perfetto/perfetto.h"
+
+PERFETTO_DEFINE_CATEGORIES(perfetto::Category("ternary_core"));
 
 #define TERNARY_PROFILE_DOMAIN(var_name, domain_name) \
     int var_name = 0
@@ -165,16 +184,31 @@
     const char* var_name = task_name
 
 #define TERNARY_PROFILE_TASK_BEGIN(domain, handle) \
-    ((void)0)
+    TRACE_EVENT_BEGIN("ternary_core", perfetto::DynamicString(handle))
 
 #define TERNARY_PROFILE_TASK_END(domain) \
-    ((void)0)
+    TRACE_EVENT_END("ternary_core")
 
 #define TERNARY_PROFILE_FRAME_BEGIN(domain) \
-    ((void)0)
+    TRACE_EVENT_BEGIN("ternary_core", "Frame")
 
 #define TERNARY_PROFILE_FRAME_END(domain) \
-    ((void)0)
+    TRACE_EVENT_END("ternary_core")
+
+// Start/stop helpers: implemented in ternary_profiler_perfetto.cc (the one
+// translation unit linking perfetto.cc). Not part of the VTune/NVTX
+// backends' contract (those attach to an already-running external
+// profiler instead) -- Perfetto's in-process backend needs the traced
+// program itself to start a session and write the resulting trace file.
+extern "C" {
+// Initializes the in-process backend, registers track events, and starts
+// a session writing directly to trace_file_path. Returns true on success.
+// Call once, before any TERNARY_PROFILE_* macro use.
+bool ternary_profiler_perfetto_start(const char* trace_file_path);
+// Stops the session (flushing all pending events to the file opened by
+// ternary_profiler_perfetto_start) and closes the file.
+void ternary_profiler_perfetto_stop();
+}
 
 // =============================================================================
 // No-Op Stubs (default, zero overhead)
