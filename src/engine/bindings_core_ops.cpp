@@ -577,4 +577,35 @@ PYBIND11_MODULE(ternary_simd_engine, m) {
           "Fused tnot(tmin(a, b)) on int8 arrays. Maximum optimization: bridge + operation fusion.");
     m.def("fused_tnot_tmax_int8", &fused_tnot_tmax_int8_array, py::arg("a"), py::arg("b"),
           "Fused tnot(tmax(a, b)) on int8 arrays. Maximum optimization: bridge + operation fusion.");
+
+    // =========================================================================
+    // Perfetto profiler control
+    // =========================================================================
+    //
+    // Only meaningful when this module is built with -DTERNARY_ENABLE_PERFETTO
+    // (build/build.py's --enable-perfetto flag; default builds don't define
+    // it -- zero overhead, matching this project's stated no-op-by-default
+    // design). When built with it, the TERNARY_PROFILE_TASK_BEGIN/END call
+    // sites already wired into the tadd/tmul/etc. array functions above
+    // (OpenMP_Parallel / Serial_SIMD / Scalar_Tail) emit real Perfetto
+    // trace events; these two functions let Python code start/stop the
+    // session that captures them, since Perfetto's in-process backend
+    // needs the traced program itself to do that (unlike VTune/NVTX,
+    // which attach externally). See
+    // src/core/profiling/ternary_profiler_perfetto.cc and
+    // reports/2026-08-25/PERFETTO_PROFILER_INTEGRATION.md.
+#ifdef TERNARY_ENABLE_PERFETTO
+    m.def("perfetto_start", [](const std::string& trace_path) {
+        return ternary_profiler_perfetto_start(trace_path.c_str());
+    }, py::arg("trace_path"),
+       "Start a Perfetto tracing session, writing events to trace_path as "
+       "they occur. Call before any tadd/tmul/tmin/tmax/tnot calls you "
+       "want captured. Returns True on success.");
+    m.def("perfetto_stop", &ternary_profiler_perfetto_stop,
+          "Stop the active Perfetto tracing session and flush/close the "
+          "trace file. No-op if no session is active.");
+    m.attr("has_perfetto") = true;
+#else
+    m.attr("has_perfetto") = false;
+#endif
 }

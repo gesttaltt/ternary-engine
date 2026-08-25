@@ -115,19 +115,78 @@ makes it a real verification and not just "a file exists":
 - Does NOT claim VTune or NVTX are now viable — those remain blocked by
   the same hardware/license constraints as before; nothing about this
   session changes that.
-- Does NOT wire Perfetto into the main pybind11 module build
-  (`build/build.py`) — the demo proves the backend works against a real
-  kernel via a native, pybind-free program (matching `ffi_isolation`);
-  wiring it into the Python-facing module would need
-  `bindings_core_ops.cpp`'s own build script updated and is a separate,
-  larger step not attempted here.
 - Does claim: this project now has its **first real, verified profiler
   trace ever** — not a stub, not "should work," an actual trace file
   whose contents were checked against the code that produced it and
   found to be exactly correct. `TERNARY_ENABLE_VTUNE`/`_NVTX` remain
   unbuilt (as documented); `TERNARY_ENABLE_PERFETTO` no longer is.
 
-## Files changed
+## 5. Same-day follow-up: wiring it into the main pybind11 module build
+
+Direct follow-up (user: "wire it into the main module build"). Added
+`build/build.py --enable-perfetto`: adds `-DTERNARY_ENABLE_PERFETTO` and
+the two extra sources (`third_party/perfetto/perfetto.cc`,
+`src/core/profiling/ternary_profiler_perfetto.cc`) to the
+`ternary_simd_engine` extension when passed; default builds are
+completely unaffected (verified: `has_perfetto` attribute is `False` and
+`tests/run_tests.py` is 16/16 on the plain `python build/build.py`
+build). Added `perfetto_start(trace_path)`/`perfetto_stop()` Python
+bindings in `bindings_core_ops.cpp` so a user can actually drive a
+tracing session around real `tadd`/`tmul`/etc. calls, plus a
+`has_perfetto` capability flag matching the existing `has_avx2`
+convention.
+
+**A real, pre-existing latent bug surfaced immediately**: running the
+default build followed immediately by `--enable-perfetto` silently
+reused the *first* build's `.so`, unchanged — `has_perfetto` stayed
+`False`. Root cause, confirmed by inspecting `build/temp.linux-x86_64-
+cpython-312/` directly: distutils' `build_ext --inplace` doesn't just
+skip individually-stale `.o` files, it skips the **entire** extension
+rebuild whenever the existing in-place `.so` already looks newer than
+every one of its declared source files — it has no way to know that the
+sources *list* or compiler *flags* changed between two invocations, only
+file mtimes. Since the newly-added `perfetto.cc`/
+`ternary_profiler_perfetto.cc` files' mtimes predated the `.so` that had
+just been built moments earlier, distutils considered the whole
+extension "up to date" and skipped compiling anything at all -- no
+`perfetto.o` or `ternary_profiler_perfetto.o` were ever produced.
+
+This isn't specific to the Perfetto flag -- it was a latent bug in
+`build.py` from before this session, just never visible because compiler
+flags and the sources list essentially never changed between two
+consecutive runs of this script without also editing
+`bindings_core_ops.cpp` (which *does* update its own mtime and force a
+partial recompile, just not necessarily a full relink-from-scratch of
+every source). Fixed by adding `--force` to the `build_ext` invocation --
+this script always intends a full rebuild, never incremental reuse, so
+forcing that to be literally true regardless of timestamps is the
+correct fix for both the Perfetto case and the general one.
+
+**Verified after the fix**, clean `build/temp.../` each time:
+
+- `python build/build.py --enable-perfetto`: `perfetto.o` and
+  `ternary_profiler_perfetto.o` both genuinely compiled; resulting `.so`
+  jumps from 3,714.9 KB (default) to 55,714.8 KB (unstripped, full
+  Perfetto/protobuf code linked in -- expected for a debug-style build,
+  not optimized for distribution size). `tc.has_perfetto == True`.
+- Drove a real tracing session **through the actual Python module**
+  (not just the native demo): `tc.perfetto_start(path)`, several
+  `tc.tadd`/`tc.tmul` calls at sizes crossing the OMP threshold and the
+  32-element tail boundary, `tc.perfetto_stop()`. Queried the resulting
+  trace with `trace_processor_shell` the same way as the native demo:
+  5 `OpenMP_Parallel` slices (the 5 `tadd` calls at n=2,000,000, above
+  threshold), 5 `Serial_SIMD` + 5 `Scalar_Tail` slices (the 5 `tmul`
+  calls at n=1,000, below threshold and not a multiple of 32) -- exactly
+  matching the call pattern, the same style of internally-consistent
+  verification as the native demo, now proven through the real
+  pybind11-facing module.
+- `tests/run_tests.py` 16/16 with the Perfetto-enabled `.so` active --
+  confirms enabling profiling doesn't change any operation's correctness.
+- Rebuilt the plain default `.so` afterward and re-confirmed
+  `has_perfetto == False` and 16/16 again, restoring the repo's normal
+  build state.
+
+## Files changed (this session, both parts)
 
 - `third_party/perfetto/{perfetto.h,perfetto.cc,README.md}` (new,
   vendored)
@@ -136,6 +195,10 @@ makes it a real verification and not just "a file exists":
 - `src/core/profiling/ternary_profiler_perfetto.cc` (new)
 - `benchmarks/cpp-native-kernels/bench_perfetto_trace.cpp` (new)
 - `build/build_perfetto_demo.py` (new)
+- `src/engine/bindings_core_ops.cpp` (§5: `perfetto_start`/`_stop`/
+  `has_perfetto` bindings)
+- `build/build.py` (§5: `--enable-perfetto` flag; `--force` fix for the
+  stale-rebuild bug found while adding it)
 
 `tests/run_tests.py`: 16/16 throughout (none of these files touch the
 core kernel's default no-op build path — verified separately by

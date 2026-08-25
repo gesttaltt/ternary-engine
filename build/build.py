@@ -50,9 +50,27 @@ def setup_directories():
     print(f"  Temp:   {BUILD_TEMP_DIR}")
     print(f"  Output: {BUILD_OUTPUT_DIR}\n")
 
-def build_module():
-    """Build the module using setuptools"""
+def build_module(enable_perfetto=False):
+    """Build the module using setuptools.
+
+    enable_perfetto: adds -DTERNARY_ENABLE_PERFETTO and links the vendored
+    Perfetto SDK (third_party/perfetto/) + its glue TU
+    (src/core/profiling/ternary_profiler_perfetto.cc), activating the
+    real TERNARY_PROFILE_TASK_BEGIN/END call sites already wired into
+    bindings_core_ops.cpp's hot paths (see
+    src/core/profiling/ternary_profiler.h and
+    reports/2026-08-25/PERFETTO_PROFILER_INTEGRATION.md, which validated
+    this same backend via a standalone native demo before it was wired
+    in here). Default is False -- matching this project's stated
+    "zero overhead when profiling disabled" design, the default build
+    is unaffected either way and doesn't touch these files at all.
+    Verified on Linux x64 only; Windows/macOS wiring is mechanically
+    consistent with the rest of this script's per-platform branching but
+    UNVERIFIED -- no Windows/macOS machine available to build and run it.
+    """
     print("Building ternary_simd_engine module...\n")
+    if enable_perfetto:
+        print("  (with Perfetto profiler support: -DTERNARY_ENABLE_PERFETTO)\n")
 
     # Generate setup code
     setup_code = f'''
@@ -62,6 +80,7 @@ import os
 import platform
 
 PROJECT_ROOT = r"{PROJECT_ROOT}"
+ENABLE_PERFETTO = {enable_perfetto}
 
 # Platform-specific compiler flags
 system = platform.system()
@@ -120,10 +139,32 @@ else:
     ]
     link_args = ['-fopenmp']  # OpenMP linker flag
 
+# Optional Perfetto profiler support (build/build.py --enable-perfetto).
+# Default build never touches these files or flags -- zero overhead when
+# disabled, matching this project's stated profiler design. See
+# src/core/profiling/ternary_profiler.h and
+# reports/2026-08-25/PERFETTO_PROFILER_INTEGRATION.md.
+extra_sources = []
+if ENABLE_PERFETTO:
+    if is_windows:
+        compile_args.append('/DTERNARY_ENABLE_PERFETTO')
+        # UNVERIFIED: no Windows machine available to build/run this.
+        # Perfetto's SDK is cross-platform and MSVC is a supported
+        # compiler upstream, but this project's own verify-by-execution
+        # discipline means this branch is mechanically consistent with
+        # the rest of this script, not a tested claim.
+    else:
+        compile_args.append('-DTERNARY_ENABLE_PERFETTO')
+        link_args.append('-lpthread')
+    extra_sources = [
+        os.path.join(PROJECT_ROOT, 'third_party', 'perfetto', 'perfetto.cc'),
+        os.path.join(PROJECT_ROOT, 'src', 'core', 'profiling', 'ternary_profiler_perfetto.cc'),
+    ]
+
 ext_modules = [
     Extension(
         'ternary_simd_engine',
-        [os.path.join(PROJECT_ROOT, 'src', 'engine', 'bindings_core_ops.cpp')],
+        [os.path.join(PROJECT_ROOT, 'src', 'engine', 'bindings_core_ops.cpp')] + extra_sources,
         include_dirs=[
             pybind11.get_include(),
             PROJECT_ROOT,
@@ -165,8 +206,22 @@ setup(
         # On Unix, use system temp
         temp_arg = []
 
+    # --force: distutils' build_ext skips the ENTIRE extension rebuild (not
+    # just individual stale .o files) whenever the existing --inplace .so
+    # already looks newer than every source file -- it has no way to know
+    # compiler flags or the sources list changed since the last run.
+    # Found 2026-08-25 while adding --enable-perfetto: running the default
+    # build immediately followed by --enable-perfetto silently reused the
+    # first build's .so untouched (has_perfetto stayed False) because the
+    # new perfetto.cc/ternary_profiler_perfetto.cc sources' mtimes predate
+    # the .so that had just been built moments earlier. This script always
+    # intends a full rebuild, not incremental reuse, so --force makes that
+    # actually true regardless of timestamps -- not specific to the
+    # Perfetto flag, this was a latent bug in every prior invocation too,
+    # just never visible because compiler flags/sources rarely changed
+    # between two consecutive runs without also touching bindings_core_ops.cpp.
     result = subprocess.run(
-        [sys.executable, str(setup_temp_path), "build_ext", "--inplace"] + temp_arg,
+        [sys.executable, str(setup_temp_path), "build_ext", "--inplace", "--force"] + temp_arg,
         cwd=str(PROJECT_ROOT),
         capture_output=False
     )
@@ -230,13 +285,31 @@ def print_summary():
             print(f"  - {module_file.name} ({size_kb:.1f} KB)")
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Build ternary_simd_engine (Standard Optimized)")
+    parser.add_argument(
+        "--enable-perfetto", action="store_true",
+        help="Build with real Perfetto profiler tracing support "
+             "(-DTERNARY_ENABLE_PERFETTO). Default build is unaffected -- "
+             "zero overhead when this flag is omitted. See "
+             "reports/2026-08-25/PERFETTO_PROFILER_INTEGRATION.md. "
+             "Verified on Linux x64 only."
+    )
+    args = parser.parse_args()
+
     print_header()
     setup_directories()
-    build_module()
+    build_module(enable_perfetto=args.enable_perfetto)
     if not copy_to_latest():
         print("\n[FAIL] BUILD INCOMPLETE - no module files were produced")
         sys.exit(1)
     print_summary()
+    if args.enable_perfetto:
+        print("\nBuilt with Perfetto support. Drive tracing from Python:")
+        print("  import ternary_simd_engine as tc")
+        print("  tc.perfetto_start('trace.perfetto-trace')")
+        print("  # ... tc.tadd(a, b), etc. ...")
+        print("  tc.perfetto_stop()")
 
 if __name__ == "__main__":
     main()
