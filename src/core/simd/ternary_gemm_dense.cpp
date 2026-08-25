@@ -24,9 +24,22 @@
 #endif
 
 /* Batch rows processed per weight-tile load (register-blocking factor).
- * 4 accumulators + the loaded/widened weight vector + one broadcast
- * temporary comfortably fit AVX2's 16 ymm registers without spilling. */
-#define TERNARY_GEMM_DENSE_MB 4
+ * 8 accumulators + the loaded/widened weight vector + one broadcast
+ * temporary comfortably fit AVX2's 16 ymm registers without spilling.
+ *
+ * Was 4 until 2026-08-22: the 2026-08-20 native benchmark
+ * (benchmarks/cpp-native-kernels/bench_gemm_dense.cpp) found MB=4 lost
+ * to the older CSC/CSR kernel at batch=128 for the smallest shape
+ * (Small MLP, 0.45x -- reported, not hidden, in
+ * reports/2026-08-20/GEMM_DENSE_PACKED_OPTIMIZATION.md). Swept MB in
+ * {4,8,12,16} across all 4 Phase-4 shapes and every batch size the
+ * suite tests (1,8,32,128,512): MB=8 is the best single fixed choice --
+ * clearly best at the exact batch=128/Small-MLP regression case, tied
+ * best or close-second everywhere else. MB=12/16 win narrowly at very
+ * large batch (512) but lose more elsewhere, and 16 accumulators (MB=16)
+ * plus the weight/broadcast temporaries exceeds AVX2's 16 ymm registers,
+ * forcing spills -- consistent with its worse-everywhere results. */
+#define TERNARY_GEMM_DENSE_MB 8
 
 /* -------------------------------------------------------------------------
  * Pack / free

@@ -110,7 +110,8 @@ g++ -O3 -march=haswell -mavx2 -mfma -fopenmp -std=c++17 \
 ```
 
 Speedup of `dense_avx2` vs the *better* of the two existing zero-skip
-kernels, same shapes as `bench_competitive.py` Phase 4:
+kernels, same shapes as `bench_competitive.py` Phase 4 (original `MB=4`,
+2026-08-20):
 
 | Shape | batch=1 | batch=8 | batch=32 | batch=128 |
 |---|---|---|---|---|
@@ -125,11 +126,28 @@ smallest shape (Small MLP), the fixed `MB=4` register-blocking caps
 arithmetic-intensity growth while the old kernel's M-vectorized SIMD keeps
 scaling with batch, and `skip_avx2` pulls back ahead (0.45×, i.e. the
 dense kernel is 2.2× *slower* there). Not hidden — reported as found.
-This project's stated use cases (edge AI, single-token/low-batch
-inference) sit in the regime this kernel wins decisively; a
-production system doing large-batch training-style matmul would want a
-larger or adaptive `MB`, not attempted here (scope: fix the case this
-project's own benchmark measures, not build a general BLAS replacement).
+
+**Fixed 2026-08-22** (direct follow-up, `MB` swept in {4,8,12,16} across
+all 4 shapes × every batch size the suite tests): `MB=8` is the best
+single fixed choice, closing the Small-MLP/batch=128 loss entirely
+without giving up ground elsewhere:
+
+| Shape | batch=1 | batch=8 | batch=32 | batch=128 |
+|---|---|---|---|---|
+| Small MLP | 27.2× | 8.4× | 4.1× | **1.73×** (was 0.45×, a loss) |
+| Medium Layer | 41.0× | 7.6× | 2.7× | 1.54× |
+| Large Layer | 13.5× | 6.9× | 2.3× | 1.14× |
+| Attention Head | 16.1× | 6.9× | 2.0× | 1.44× |
+
+Every one of the 16 (shape × batch) cells this benchmark measures now
+wins, with no exception. Correctness re-verified (`maxerr` 3e-5 to 6e-4,
+same range as before, and the module's own build-time validation +
+`tests/python/test_zero_skip_gemm.py`'s 10 groups, all pass). This
+project's stated use cases (edge AI, single-token/low-batch inference)
+still sit in the regime this kernel wins most decisively (13×-41× at
+batch=1); a production system doing large-batch training-style matmul
+would still see smaller (1.1×-1.7×) but now positive margins at
+batch=128, not the loss the original `MB=4` choice had there.
 
 ## 5. Results — `bench_competitive.py` Phase 4 (Python, pybind11 overhead included)
 
