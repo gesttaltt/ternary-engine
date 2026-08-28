@@ -1,6 +1,6 @@
 # Ternary Engine Roadmap
 
-**Last Updated:** 2026-08-17
+**Last Updated:** 2026-08-28
 **Current Version:** v1.1.0 "ktr" (doc below still describes the v1.2.0 plan as upcoming; see the reality-check section immediately below — most of it has since shipped)
 **Target Version:** v1.2.0 → v2.0 → v3.0+
 
@@ -125,6 +125,46 @@ full-model run) before concluding either way. `--protect-first`/
 passed at their original fp16 weights, never hooked/quantized/
 checkpointed as quantized).
 
+**RESOLVED (2026-08-28, later the same day): step (1) was run at
+full-model scale on GPU. It FAILS.** The pipeline was CPU-only, which is
+precisely why this had never been run; adding `--device cuda` to
+`quantize_tinyllama_gptq.py` (quantization math unchanged, verified
+equivalent to the CPU path to 1.8e-05 on zero-fraction and 1.4e-07 on
+scale before being trusted) made a full 154-layer pass cost **4.0 minutes
+instead of ~2.5-3.5h** — 42x on calibration+quantization, 193x
+end-to-end. Results, all fp16 / 8192-token eval / this environment:
+
+| Run | Layers ternarized | Perplexity | vs baseline |
+|---|---|---|---|
+| fp16 baseline | 0 / 154 | 12.780 | — |
+| full model, no protection (control) | 154 / 154 | 18,565.469 | +145,167% |
+| full model, `--protect-first 3 --protect-last 3` | 112 / 154 (73%) | 14,285.862 | +111,681% |
+
+Mixed-precision PTQ misses the <5% criterion by ~4 orders of magnitude.
+Worse for the hypothesis: **the benefit of protection shrinks as coverage
+grows** — 2.04x at the 2-block pilot scale, only 1.30x at full-model
+scale — the opposite of what "protect the sensitive layers and the rest
+is fine" predicts. Per the decision rule stated below, step (1) is now
+exhausted.
+
+**⚠ The GPTQ numbers recorded in the v1.56.0 note above do not reproduce
+in the current environment.** Re-running the same script with the same
+flags now gives an fp16 baseline of 12.780 (not 7.172), blocks 0-1
+quantized -> 1,336.567 (not 4,776.805), and blocks 0-1 protected / 2-3
+quantized -> 656.236 (not 261.189) — an improvement from protection of
+2.04x, not ~18.8x. This is **not** a GPU artifact (CPU and CUDA agree to
+6.4e-05 on baseline perplexity within this session). `transformers` and
+`pyarrow` were absent from this machine and had to be reinstalled at the
+start of the later session, so the two runs used different, unrecorded
+`transformers` versions; note also that this session's *fp16* baseline
+matches the documented *fp32* baseline (12.780) to 5 decimals, which is
+the physically expected result and makes 7.172 the number more in need of
+explanation. **Treat the "~18.8x better" claim above as unverified until
+a re-run with a pinned `transformers` version resolves it.** The
+qualitative early-block-sensitivity finding survives in both
+environments; only its magnitude is in dispute. Full detail:
+reports/2026-08-28/GPTQ_GPU_ENABLEMENT_AND_FULL_MODEL_MIXED_PRECISION.md
+
 **Recommendation, in order, before concluding PTQ is a dead end or
 committing to a costlier pivot:**
 1. **Cheap, low-risk, in progress:** mixed-precision PTQ — keep the most
@@ -132,32 +172,48 @@ committing to a costlier pivot:**
    fp16/int8 and ternarize only the bulk of the middle, exactly what
    nearly every published low-bit quantization technique actually does
    (none of them ternarize 100% of the model uniformly). This reuses
-   100% of the existing GPTQ pipeline. **First result above confirms this
-   helps a lot (~18.8x) but a 2-block pilot isn't enough evidence either
-   way at full-model scale** — a real answer needs a full run with more
-   blocks protected before concluding whether mixed precision alone can
-   reach <5%, or whether it just delays the same compounding failure.
+   100% of the existing GPTQ pipeline. **DONE 2026-08-28, and it FAILS**
+   (see the RESOLVED box above): at full-model scale with 6 of 22 blocks
+   protected, perplexity is 14,285.862 against a 12.780 baseline
+   (+111,681%), and the benefit of protection shrinks rather than grows
+   with coverage. Mixed precision delays the compounding failure; it does
+   not avert it.
 2. **If (1) also fails at full-model scale: the real fix is QAT or
    training from scratch**,
    matching what actually-successful ternary models do — this project
    already has proven QAT building blocks at small scale
    (`models/tritnet/qat_common.py`'s `TernaryLinearQAT`, validated on
    TritNet's own ops) that could in principle extend to real transformer
-   layers, lowering some of the engineering risk. But this is a
-   materially bigger, separate investment: real GPU compute and stable
-   multi-hour-plus sessions, neither reliably available in this specific
-   sandbox (3 full machine reboots occurred during this single session's
-   GPTQ work alone, confirmed via `uptime`/`last`, and no GPU access has
-   been available on any checked peer session). **Not recommended as an
-   opportunistic pivot inside this environment** — it should be a
-   deliberate, separately-resourced decision (e.g., a rented GPU
-   instance) once (1) is exhausted, not something attempted here on the
-   assumption it will just work.
+   layers, lowering some of the engineering risk. **This is now the
+   active recommendation, since (1) is exhausted as of 2026-08-28.**
 
-Net: don't abandon the current PTQ direction yet, but don't keep pouring
-effort into ever-more-sophisticated PTQ variants past step (1) either —
-the data so far is a consistent, repeated negative result, not an
-under-tuned one.
+   **The GPU half of this step's stated blocker has lifted.** This
+   paragraph previously deferred QAT partly because "no GPU access has
+   been available on any checked peer session" — that premise was
+   stale: a CUDA GPU (RTX 3050, 6GB, compute 8.6) is present and working
+   on this host, and the 2026-08-28 session used it to run a full
+   154-layer GPTQ pass in 4.0 minutes. That does **not** make training a
+   1.1B model from scratch tractable on a 6GB card — it is not — but
+   it does make **small-scale QAT experiments** tractable here. The
+   session-instability half of the blocker stands (3 machine reboots
+   during the earlier GPTQ session), which argues for short, checkpointed
+   experiments rather than long unattended ones.
+
+   **Recommended concrete next step:** a scoped QAT feasibility
+   experiment — a small transformer, or a few layers of TinyLlama,
+   fine-tuned with `TernaryLinearQAT` in the loop on the GPU, measuring
+   whether perplexity recovers toward the fp16 baseline in a way PTQ
+   demonstrably cannot. That is falsifiable and answerable in this
+   environment. It is explicitly *not* a commitment to full training from
+   scratch, which remains a separately-resourced decision.
+
+Net (updated 2026-08-28): step (1) is done and negative, so the PTQ
+direction **is** now exhausted by this document's own rule. Four
+techniques have been tried — naive per-tensor (+697,074%), naive
+per-channel (+1,037,361%), GPTQ (+145,167%), GPTQ + mixed precision
+(+111,681%) — and all four failed in the same direction, not a better
+one. Do not invest in a fifth PTQ variant. The open question worth
+spending on is whether QAT behaves differently, which is step (2).
 
 ---
 

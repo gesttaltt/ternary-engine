@@ -52,6 +52,19 @@ USAGE: python benchmarks/model_quantization/quantize_tinyllama_gptq.py
        python benchmarks/model_quantization/quantize_tinyllama_gptq.py --layers 7
            (process only the first N nn.Linear layers found -- for timing
            a partial run before committing to the full ~154-layer model)
+       python benchmarks/model_quantization/quantize_tinyllama_gptq.py \
+           --device cuda --protect-first 3 --protect-last 3
+           (full-model mixed-precision run on GPU -- the step
+           docs/planning/ROADMAP.md calls for; see --device below)
+
+DEVICE (added 2026-08-28): every earlier run of this script was CPU-only.
+That is the direct reason the full-model mixed-precision run the roadmap
+asks for had never been executed -- a full 154-layer pass costs ~2.5-3.5h
+on this machine's CPU, and it reboots often enough mid-run for that to be
+a real obstacle (which is also why the checkpoint/resume machinery below
+exists). --device cuda moves the resident model, the calibration forward
+passes, the Hessian accumulation and the GPTQ column loop onto the GPU.
+The mathematics is untouched; only where it executes changes.
 OUTPUT: benchmarks/results/model_quantization/tinyllama_gptq_<timestamp>.json
 """
 
@@ -161,7 +174,13 @@ class GPTQLayerQuantizer:
     def __init__(self, layer: nn.Linear):
         self.layer = layer
         self.rows, self.columns = layer.weight.shape  # [out_features, in_features]
-        self.H = torch.zeros((self.columns, self.columns), dtype=torch.float32)
+        # H lives on the same device as the layer it describes, so add_batch()
+        # never forces a device transfer of the activation tensor (the hook
+        # fires once per calibration sequence per layer -- a per-call H2D/D2H
+        # round trip there would dominate the GPU path's runtime).
+        self.device = layer.weight.device
+        self.H = torch.zeros((self.columns, self.columns), dtype=torch.float32,
+                             device=self.device)
         self.nsamples = 0
 
     def add_batch(self, inp: torch.Tensor):
@@ -183,7 +202,17 @@ class GPTQLayerQuantizer:
     def quantize(self, percdamp: float = 0.01) -> dict:
         """Quantizes self.layer.weight in place. Returns stats for the report."""
         W = self.layer.weight.data.clone().float()
-        H = self.H.clone()
+        if self.H is None:
+            raise RuntimeError(
+                "quantize() called twice on the same GPTQLayerQuantizer -- the "
+                "Hessian is consumed (not copied) by the first call."
+            )
+        # Ownership transfer, not a copy: self.H is never read again after
+        # this point, and cloning it momentarily doubled the largest Hessian
+        # (down_proj is 5,632 columns = ~127MB fp32) for no benefit. On a 6GB
+        # card shared with a desktop session that headroom is worth having.
+        H = self.H
+        self.H = None
 
         # Columns with zero Hessian entries (never activated during
         # calibration) can't be meaningfully compensated -- zero them out
@@ -195,7 +224,7 @@ class GPTQLayerQuantizer:
             W[:, dead] = 0
 
         damp = percdamp * torch.mean(torch.diag(H))
-        diag_idx = torch.arange(self.columns)
+        diag_idx = torch.arange(self.columns, device=H.device)
         H[diag_idx, diag_idx] += damp
 
         # Cholesky of H, invert via cholesky_inverse, then Cholesky of the
@@ -213,18 +242,29 @@ class GPTQLayerQuantizer:
         # scale granularity.
         scale = W.abs().mean().clamp(min=1e-8)
 
-        zero_count = 0
+        # Accumulated as a device-resident tensor rather than an int: the
+        # original `int(...sum().item())` inside the loop forced a GPU->CPU
+        # sync on EVERY column (5,632 of them for down_proj), which stalls the
+        # pipeline and would have dominated the CUDA path's runtime. Summed
+        # once at the end instead -- identical value, no per-column sync.
+        zero_count_t = torch.zeros((), dtype=torch.int64, device=W.device)
         for i in range(self.columns):
             w_col = W[:, i]
             d = Hinv[i, i]
             q_col = torch.clamp(torch.round(w_col / scale), -1, 1) * scale
-            zero_count += int((q_col == 0).sum().item())
+            zero_count_t += (q_col == 0).sum()
             err = (w_col - q_col) / d
             if i + 1 < self.columns:
                 W[:, i + 1:] -= torch.outer(err, Hinv[i, i + 1:])
             W[:, i] = q_col
+        zero_count = int(zero_count_t.item())
 
         self.layer.weight.data.copy_(W)
+
+        # Free this layer's working set now rather than at block end: a block
+        # holds up to ~227MB of Hessian across its 7 Linears, and the Cholesky
+        # chain above allocated several more temporaries of that same size.
+        del H, H_chol, Hinv, W
 
         return {
             "scale": scale.item(),
@@ -371,10 +411,11 @@ def collect_calibration_and_quantize(model, tokenizer, calib_text: str,
             "protected_blocks": sorted(protected_blocks),
         }
 
+    device = next(model.parameters()).device
     ids = tokenizer(calib_text, return_tensors="pt").input_ids[0]
     n_seqs = min(CALIB_SEQS, len(ids) // CALIB_SEQ_LEN)
     calib_batches = [
-        ids[s * CALIB_SEQ_LEN:(s + 1) * CALIB_SEQ_LEN].unsqueeze(0)
+        ids[s * CALIB_SEQ_LEN:(s + 1) * CALIB_SEQ_LEN].unsqueeze(0).to(device)
         for s in range(n_seqs)
     ]
     print(f"  Calibration: {n_seqs} sequences x {CALIB_SEQ_LEN} tokens")
@@ -496,6 +537,16 @@ def collect_calibration_and_quantize(model, tokenizer, calib_text: str,
               f"(calib={calib_time:.1f}s, quant_total={block_quant_time:.1f}s): "
               f"{n_quantized}/{limit} layers quantized so far")
 
+        # Drop this block's quantizers (and with them any Hessian not already
+        # freed inside quantize(), e.g. layers skipped by a --layers limit)
+        # before the next block allocates its own. On CUDA, also return the
+        # freed blocks to the driver: this model's per-block Hessian working
+        # set is a meaningful fraction of a 6GB card shared with a desktop
+        # session, and PyTorch's caching allocator will otherwise hold them.
+        quantizers.clear()
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
         # Only checkpoint a block once EVERY one of its Linears has been
         # quantized -- a partial block (cut short by --layers, used for
         # timing tests only) would otherwise look "done" to a future
@@ -543,8 +594,9 @@ def collect_calibration_and_quantize(model, tokenizer, calib_text: str,
 # ---------------------------------------------------------------------------
 
 def compute_perplexity(model, tokenizer, text: str, seq_len: int, max_tokens: int) -> dict:
+    device = next(model.parameters()).device
     ids = tokenizer(text, return_tensors="pt").input_ids[0]
-    ids = ids[:max_tokens]
+    ids = ids[:max_tokens].to(device)
     n_blocks = len(ids) // seq_len
     if n_blocks == 0:
         raise ValueError(f"Not enough tokens ({len(ids)}) for one {seq_len}-token block")
@@ -619,15 +671,50 @@ def main():
     parser.add_argument("--protect-last", type=int, default=0,
                          help="Keep the last M transformer blocks at original "
                               "fp16 precision (see --protect-first).")
+    parser.add_argument("--device", choices=["auto", "cuda", "cpu"], default="auto",
+                         help="Compute device (default auto: CUDA if available, "
+                              "else CPU). Added 2026-08-28: every prior run of "
+                              "this script was CPU-only, which is why the "
+                              "full-model mixed-precision run docs/planning/"
+                              "ROADMAP.md calls for had never actually been "
+                              "executed -- a full 154-layer pass costs ~2.5-3.5h "
+                              "on CPU here, and this machine reboots often enough "
+                              "mid-run for that to matter. The quantization math "
+                              "is unchanged by this flag; only where it runs is. "
+                              "'cuda' is an explicit request and FAILS LOUDLY if "
+                              "unavailable rather than silently falling back to "
+                              "CPU and reporting a CPU-speed result as if it were "
+                              "a GPU one.")
     args = parser.parse_args()
     checkpoint_dir = None if args.no_checkpoint else Path(args.checkpoint_dir)
     torch_dtype = torch.float16 if args.dtype == "fp16" else torch.float32
+
+    if args.device == "cuda":
+        if not torch.cuda.is_available():
+            raise SystemExit(
+                "--device cuda requested but torch.cuda.is_available() is False. "
+                "Refusing to silently fall back to CPU (a CPU run mislabeled as "
+                "GPU would produce a meaningless timing comparison). Use "
+                "--device cpu or --device auto if a CPU run is what you want."
+            )
+        device = torch.device("cuda")
+    elif args.device == "cpu":
+        device = torch.device("cpu")
+    else:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     print("=" * 80)
     print(f"GPTQ-style calibrated ternary quantization -- {MODEL_NAME}")
     print(f"Load/compute precision: {args.dtype}")
+    if device.type == "cuda":
+        props = torch.cuda.get_device_properties(0)
+        free_b, total_b = torch.cuda.mem_get_info()
+        print(f"Device: cuda -- {props.name}, compute {props.major}.{props.minor}, "
+              f"{total_b / 1024**3:.2f}GB total / {free_b / 1024**3:.2f}GB free")
+    else:
+        print("Device: cpu")
     print("=" * 80)
 
     print("\nLoading model and tokenizer...")
@@ -635,7 +722,11 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, dtype=torch_dtype)
     model.eval()
-    print(f"  Loaded in {time.time() - t0:.1f}s")
+    model.to(device)
+    print(f"  Loaded in {time.time() - t0:.1f}s (device={device})")
+    if device.type == "cuda":
+        print(f"  Model resident on GPU: "
+              f"{torch.cuda.memory_allocated() / 1024**3:.2f}GB allocated")
 
     print("\nFetching WikiText-2 test corpus...")
     text = load_wikitext2_test()
@@ -714,6 +805,9 @@ def main():
             "layers_limit": args.layers,
             "protect_first": args.protect_first,
             "protect_last": args.protect_last,
+            "device": str(device),
+            "device_name": (torch.cuda.get_device_properties(0).name
+                            if device.type == "cuda" else None),
             "calib_window": [calib_start, calib_end],
             "eval_window": [0, args.max_tokens],
         },
