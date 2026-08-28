@@ -59,6 +59,106 @@ ever defines the macros to activate them; `test_falsification.py`'s one
 completed run reported FALSIFIED (2/5 criteria) in a noisy shared container
 and needs an isolated re-run before that number means anything either way.
 
+**⚠️ IMPORTANT — strategic note on the accuracy-retention criterion
+(2026-08-28): PTQ may be structurally the wrong tool, not just
+under-tuned.** Of the project's 5 commercial-viability criteria (see
+CLAUDE.md → "Commercial Viability Criteria"), 2/5 are validated (memory
+efficiency 4x vs INT8; throughput at equivalent bit-width, Dense243 8x
+faster than an INT2 reference). Of the 3 remaining, "inference latency
+<2x FP16" and "power consumption 2-4x better" are testing/infrastructure
+gaps (need a real fp16 baseline comparison, and a machine with RAPL/perf
+permissions this sandbox lacks) — tractable with more engineering effort
+alone. **"Accuracy retention <5% loss" looks different: every
+post-training-quantization (PTQ) technique tried so far has failed, and
+each more sophisticated attempt failed in the same direction, not a
+better one:**
+
+| Technique | Perplexity (baseline → quantized) | Scope |
+|---|---|---|
+| Naive per-tensor absmean | 12.780 → 89,100.682 (+697,074%) | 100% of layers |
+| Naive per-channel absmean | 12.780 → 132,590.254 (+1,037,361%, WORSE) | 100% of layers |
+| GPTQ-style (Hessian error compensation) | 7.172 → 26.139 (+264%) | 1 of 22 blocks (~5% of layers) |
+| GPTQ-style (Hessian error compensation) | 7.172 → 4,776.805 (+66,502%) | 2 of 22 blocks (~9% of layers) |
+
+(GPTQ rows use a fresh fp16 baseline, not directly comparable to the
+fp32 baseline in the naive rows — see
+`benchmarks/model_quantization/quantize_tinyllama_gptq.py`.) The GPTQ
+row-to-row jump is the concerning part: in log-perplexity (NLL) terms,
+block 0 alone adds +1.29 nats but block 1 adds +5.21 more on top of
+that — degradation compounding *faster than additively* as more blocks
+are touched, at only 9% of the model quantized. This matches this
+project's own prior observation (Phase 5 TinyLlama session,
+`reports/2026-08-22/PHASE5_TINYLLAMA_QUANTIZATION.md`) that published
+ternary/1.58-bit successes (BitNet b1.58 and similar) train **from
+scratch** with quantization-aware training (QAT); none of them
+post-hoc-quantize an already-converged checkpoint the way every attempt
+here has. Ternary is a 3-level quantizer — a much more aggressive
+compression than the int4/int8 targets GPTQ's error-compensation math
+was originally built for — so it's plausible no amount of better PTQ
+math closes this gap, because the failure mode isn't "insufficiently
+compensated rounding error," it's "3 discrete values can't represent
+what this checkpoint's weights need without retraining."
+
+**UPDATE (2026-08-28, same day): mixed-precision PTQ tried, and it genuinely
+helps — direction confirmed, magnitude not yet enough.** Ran the cheapest
+possible controlled comparison: quantize the same 14/154 layers (2 whole
+blocks) either as blocks 0-1 directly, or with blocks 0-1 protected at fp16
+and blocks 2-3 quantized in their place instead (`--protect-first 2 --layers
+14`, same script, same calibration data):
+
+| Scope (14/154 layers quantized either way) | Perplexity | vs baseline |
+|---|---|---|
+| Blocks 0-1 quantized (no protection) | 7.172 → 4,776.805 | +66,502% |
+| Blocks 0-1 protected, blocks 2-3 quantized instead | 7.172 → 261.189 | +3,542% |
+
+**~18.8x better** for the identical amount of the model touched, just by
+moving *which* blocks get quantized — confirms the hypothesis that the
+earliest transformer blocks are disproportionately sensitive to ternary
+quantization, exactly as most published low-bit techniques already assume
+when they protect early/late layers. Still nowhere near the <5% criterion
+at this scale (14/154 layers, 9%), so this is a real, positive, but
+partial result, not a solved problem: worth extending (protect more of the
+front AND back, e.g. `--protect-first 3 --protect-last 3` over a
+full-model run) before concluding either way. `--protect-first`/
+`--protect-last` are now real flags on
+`quantize_tinyllama_gptq.py` (mixed-precision blocks are simply forward-
+passed at their original fp16 weights, never hooked/quantized/
+checkpointed as quantized).
+
+**Recommendation, in order, before concluding PTQ is a dead end or
+committing to a costlier pivot:**
+1. **Cheap, low-risk, in progress:** mixed-precision PTQ — keep the most
+   sensitive layers (embeddings, first/last transformer blocks) at
+   fp16/int8 and ternarize only the bulk of the middle, exactly what
+   nearly every published low-bit quantization technique actually does
+   (none of them ternarize 100% of the model uniformly). This reuses
+   100% of the existing GPTQ pipeline. **First result above confirms this
+   helps a lot (~18.8x) but a 2-block pilot isn't enough evidence either
+   way at full-model scale** — a real answer needs a full run with more
+   blocks protected before concluding whether mixed precision alone can
+   reach <5%, or whether it just delays the same compounding failure.
+2. **If (1) also fails at full-model scale: the real fix is QAT or
+   training from scratch**,
+   matching what actually-successful ternary models do — this project
+   already has proven QAT building blocks at small scale
+   (`models/tritnet/qat_common.py`'s `TernaryLinearQAT`, validated on
+   TritNet's own ops) that could in principle extend to real transformer
+   layers, lowering some of the engineering risk. But this is a
+   materially bigger, separate investment: real GPU compute and stable
+   multi-hour-plus sessions, neither reliably available in this specific
+   sandbox (3 full machine reboots occurred during this single session's
+   GPTQ work alone, confirmed via `uptime`/`last`, and no GPU access has
+   been available on any checked peer session). **Not recommended as an
+   opportunistic pivot inside this environment** — it should be a
+   deliberate, separately-resourced decision (e.g., a rented GPU
+   instance) once (1) is exhausted, not something attempted here on the
+   assumption it will just work.
+
+Net: don't abandon the current PTQ direction yet, but don't keep pouring
+effort into ever-more-sophisticated PTQ variants past step (1) either —
+the data so far is a consistent, repeated negative result, not an
+under-tuned one.
+
 ---
 
 ## Vision
