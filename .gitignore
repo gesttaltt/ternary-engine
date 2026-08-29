@@ -78,3 +78,7 @@ build_log.txt
 
 # Personal Claude Code preferences (not project config; contents vary per contributor)
 .claude/CLAUDE.local.md
+
+# Compiled native benchmark binaries (sources only are tracked)
+benchmarks/cpp-native-kernels/bench_*
+!benchmarks/cpp-native-kernels/bench_*.cpp
