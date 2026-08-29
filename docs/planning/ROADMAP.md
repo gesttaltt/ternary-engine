@@ -216,21 +216,67 @@ committing to a costlier pivot:**
    during the earlier GPTQ session), which argues for short, checkpointed
    experiments rather than long unattended ones.
 
-   **Recommended concrete next step:** a scoped QAT feasibility
-   experiment — a small transformer, or a few layers of TinyLlama,
-   fine-tuned with `TernaryLinearQAT` in the loop on the GPU, measuring
-   whether perplexity recovers toward the fp16 baseline in a way PTQ
-   demonstrably cannot. That is falsifiable and answerable in this
-   environment. It is explicitly *not* a commitment to full training from
-   scratch, which remains a separately-resourced decision.
+   **DONE 2026-08-29 — the hypothesis is CONFIRMED in direction and
+   magnitude, and the criterion is still missed by orders of magnitude.**
+   `benchmarks/model_quantization/qat_tinyllama.py` implements block-local
+   ternary QAT (STE, distilled against each block's own fp16 teacher
+   output), deliberately mirroring the GPTQ script's harness, windows, and
+   — critically — its *exact* quantizer, so the only variable is
+   whether weights are **trained** under it or **rounded** into it:
 
-Net (updated 2026-08-28): step (1) is done and negative, so the PTQ
-direction **is** now exhausted by this document's own rule. Four
-techniques have been tried — naive per-tensor (+697,074%), naive
-per-channel (+1,037,361%), GPTQ (+145,167%), GPTQ + mixed precision
-(+111,681%) — and all four failed in the same direction, not a better
-one. Do not invest in a fifth PTQ variant. The open question worth
-spending on is whether QAT behaves differently, which is step (2).
+   | Scope | GPTQ (rounded) | QAT (trained) | QAT advantage |
+   |---|---|---|---|
+   | block 0 (7/154), 2048-tok eval | 78.847 | **25.546** | **3.1x** |
+   | blocks 0-1 (14/154) | 1,336.567 | **280.973** | **4.8x** |
+   | full model (154/154) | 18,565.469 | **2,237.038** | **8.3x** |
+   | full model, vs GPTQ+mixed (112/154) | 14,285.862 | **2,237.038** | **6.4x** |
+
+   Training beats rounding decisively, consistently, and by a **growing**
+   margin as scope grows — the opposite of the pattern the four PTQ
+   techniques showed, where each more sophisticated attempt failed in the
+   same direction. At full model scale QAT also beats mixed-precision PTQ
+   while ternarizing *more* of the network (100% vs 73%), i.e. without the
+   concession that was mixed precision's entire advantage. **This is the
+   first technique tried against this criterion that improves on its
+   predecessor rather than joining it.** But 2,237.038 against a 12.780
+   baseline is not a usable model, and <5% remains far off.
+
+   **The actionable finding is where the remaining loss lives.** Each
+   block's output is matched to within ~1e-5 MSE of its fp16 teacher, yet
+   end-to-end perplexity is still 22-24x baseline; tripling the training
+   budget (200 -> 600 steps/block) cuts the loss another ~40% but buys only
+   ~10% perplexity. Per-block teacher MSE grows monotonically with depth
+   across the full run (0.00002 at block 1 -> 0.02668 at block 22, ~1,300x)
+   because each block inherits an already-degraded input. **So the
+   bottleneck is the objective, not the budget or the quantizer:** matching
+   each block locally is not the same as preserving the next-token
+   distribution, and no block is ever told what its residual costs
+   downstream.
+
+   **Next step, and it is a change of objective rather than more compute:**
+   end-to-end QAT, backpropagating the real language-modeling loss through
+   the whole quantized model, which is what block-local distillation is a
+   cheap approximation of and what the published ternary successes actually
+   do. Note this is a materially larger ask than the run above (which fit
+   in 6GB precisely because only one block was ever on the backward graph),
+   and the honest reading of the numbers so far is that it would need to
+   close ~2 orders of magnitude — plausible for training-from-scratch,
+   speculative for fine-tuning a converged checkpoint. Full detail:
+   reports/2026-08-29/QAT_VS_PTQ_TERNARY_HEAD_TO_HEAD.md
+
+Net (updated 2026-08-29): step (1) is done and negative — four PTQ
+techniques tried (naive per-tensor +697,074%, naive per-channel
++1,037,361%, GPTQ +145,167%, GPTQ + mixed precision +111,681%), all
+failing in the same direction. Do not invest in a fifth PTQ variant.
+Step (2) is now also done at the block-local scale, and **it behaves
+differently**: QAT beats PTQ by 3.1x-8.3x at matched scope with the margin
+growing as scope grows (+17,404% at full model vs GPTQ's +145,167%). That
+answers "does training behave differently from rounding" with a clear yes,
+while leaving "<5%" unreached by orders of magnitude. The remaining loss
+is now localized to the *objective* (block-local distillation is blind to
+downstream cost), so the next investment is end-to-end QAT — a change of
+objective, not of budget — with the caveat that it must close ~2 orders
+of magnitude to matter.
 
 ---
 
