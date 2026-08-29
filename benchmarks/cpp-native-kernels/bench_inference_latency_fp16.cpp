@@ -203,12 +203,25 @@ int main() {
      * whose threading strategy scales better on 6 cores. */
     OPENBLAS_SET_THREADS_SYM(1);
 
-    /* TinyLlama-1.1B's real projection shapes. */
+    /* Real projection shapes from two models:
+     *   TinyLlama-1.1B  -- the model this project's (failed) quantization
+     *                      experiments used throughout;
+     *   BitNet b1.58 large (1bitLLM/bitnet_b1_58-large) -- a model actually
+     *                      TRAINED ternary, added 2026-08-29. Its shapes are
+     *                      what the engine would face running a real ternary
+     *                      LLM, which is the engine's actual job; see
+     *                      benchmarks/model_quantization/run_bitnet_on_engine.py.
+     * Only shape and batch affect timing here (the dense kernel does the same
+     * work regardless of which +-1 values the weights hold, since it does not
+     * skip zeros), so synthetic ternary weights are representative. */
     const Shape shapes[] = {
-        {"q_proj / o_proj  [2048x2048]", 2048, 2048},
-        {"k_proj / v_proj  [2048x256] ",  2048,  256},
-        {"gate/up_proj     [2048x5632]", 2048, 5632},
-        {"down_proj        [5632x2048]", 5632, 2048},
+        {"TinyLlama q/o_proj    [2048x2048]", 2048, 2048},
+        {"TinyLlama k/v_proj    [2048x256] ", 2048,  256},
+        {"TinyLlama gate/up     [2048x5632]", 2048, 5632},
+        {"TinyLlama down_proj   [5632x2048]", 5632, 2048},
+        {"BitNet    q/k/v/o     [1536x1536]", 1536, 1536},
+        {"BitNet    gate/up     [1536x4096]", 1536, 4096},
+        {"BitNet    down_proj   [4096x1536]", 4096, 1536},
     };
     const int batches[] = {1, 8, 32, 128};
 

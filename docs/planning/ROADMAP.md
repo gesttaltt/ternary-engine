@@ -306,15 +306,37 @@ Note CLAUDE.md's own "Commercial Viability Criteria" block still lists
 criterion 2 as "Needs INT2 reference" and criterion 5 as "Needs models";
 both are stale — 2 is validated, and 5 has extensive data.
 
-**Criterion 4 is genuinely blocked, and it is worth recording why so nobody
-re-litigates it.** Checked directly 2026-08-29: the RAPL powercap domains
-exist on this host (`/sys/class/powercap/intel-rapl:0`) but `energy_uj` is
-**not readable** without root — the standard mitigation after RAPL's
-side-channel disclosure — and `perf_event_paranoid` is 4. GPU power *is*
-readable via `nvidia-smi` (verified, 32.98 W idle), but that measures the
-wrong device: this project's ternary kernels are CPU AVX2, so GPU telemetry
-cannot substantiate a claim about them. This needs either root on this
-machine or different hardware. Not an engineering problem.
+**Criterion 4 is blocked only by a FILE PERMISSION, not by hardware
+— CORRECTED 2026-08-29.** An earlier revision of this section said it
+"needs either root on this machine or different hardware", which overstated
+it: the hardware is fine and RAPL works on this Ryzen. The actual state is
+
+```
+-r-------- root:root /sys/class/powercap/intel-rapl:0/energy_uj
+```
+
+i.e. the counter is present and functional but mode 0400, the standard
+mitigation after RAPL's side-channel disclosure (`perf_event_paranoid` is
+also 4). Making it group/world readable, or running the benchmark as root,
+unblocks the criterion immediately on this machine:
+
+```bash
+sudo chmod a+r /sys/class/powercap/intel-rapl:0/energy_uj \
+               /sys/class/powercap/intel-rapl:0:0/energy_uj
+```
+
+(Note this is a deliberate security trade-off, not an oversight — readable
+RAPL counters are the basis of the PLATYPUS class of side-channel attacks.
+Granting it on a personal development machine is reasonable; granting it on
+a shared or production host is not.)
+
+GPU power *is* readable via `nvidia-smi` (verified, 32.98 W idle) but
+measures the wrong device: this project's ternary kernels are CPU AVX2, so
+GPU telemetry cannot substantiate a claim about them.
+
+**Status: awaiting the permission grant, then measurable in ~an hour.** This
+is the cheapest remaining criterion by a wide margin — it is one command
+away from taking the project from 3/5 to 4/5.
 
 **Criterion 5 is answered in the sense that matters, even though it fails.**
 Five techniques have now been measured against a 12.780 fp16 baseline:
