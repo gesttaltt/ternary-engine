@@ -152,18 +152,32 @@ in the current environment.** Re-running the same script with the same
 flags now gives an fp16 baseline of 12.780 (not 7.172), blocks 0-1
 quantized -> 1,336.567 (not 4,776.805), and blocks 0-1 protected / 2-3
 quantized -> 656.236 (not 261.189) — an improvement from protection of
-2.04x, not ~18.8x. This is **not** a GPU artifact (CPU and CUDA agree to
-6.4e-05 on baseline perplexity within this session). `transformers` and
-`pyarrow` were absent from this machine and had to be reinstalled at the
-start of the later session, so the two runs used different, unrecorded
-`transformers` versions; note also that this session's *fp16* baseline
-matches the documented *fp32* baseline (12.780) to 5 decimals, which is
-the physically expected result and makes 7.172 the number more in need of
-explanation. **Treat the "~18.8x better" claim above as unverified until
-a re-run with a pinned `transformers` version resolves it.** The
-qualitative early-block-sensitivity finding survives in both
-environments; only its magnitude is in dispute. Full detail:
+2.04x, not ~18.8x. Three candidate explanations were tested and **all three
+are excluded**: it is not a GPU artifact (CPU and CUDA agree to 6.4e-05 on
+baseline perplexity), not a `transformers` version difference (v4.46.3 and
+v5.16.1 agree to ~0.1% on every cell of a window grid — and the committed
+script's `dtype=` kwarg is v5-only, so the earlier session must itself have
+run v5, which is exactly where 12.780 is measured), and not an
+eval-window difference (a scan of 54 `(seq_len, max_tokens)` combinations
+found nothing within 0.236 of 7.172). The code has not drifted either:
+only two commits have ever touched the file, and every relevant constant
+plus the body of `compute_perplexity()` is byte-identical between them.
+This session's *fp16* baseline also agrees to 5 decimals with the *fp32*
+baseline (12.780) that the sibling script `quantize_tinyllama.py`
+established independently.
+
+**Therefore: treat the 7.172-based GPTQ rows above — and the "~18.8x
+better" claim derived from them — as NOT REPRODUCIBLE from the committed
+code, not merely as "measured in a different environment".** They are
+superseded by this session's internally consistent numbers. This is not
+proof the earlier run was wrong: that session developed the script in
+stages, so intermediate runs may have used code differing from what was
+finally committed, and the HuggingFace cache was empty at the start of
+this session so the earlier model snapshot cannot be inspected. The
+*qualitative* early-block-sensitivity finding does reproduce, at 2.04x
+rather than ~18.8x. Full detail:
 reports/2026-08-28/GPTQ_GPU_ENABLEMENT_AND_FULL_MODEL_MIXED_PRECISION.md
+section 5.1
 
 **Recommendation, in order, before concluding PTQ is a dead end or
 committing to a costlier pivot:**

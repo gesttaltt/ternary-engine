@@ -174,28 +174,80 @@ an fp16 baseline of **12.780**, and the corresponding pilots give
 | blocks 0–1 protected, 2–3 quantized (14/154) | 261.189 | **656.236** |
 | improvement from protection | ~18.8x | **2.04x** |
 
-Neither number set is being declared correct here. What is established:
+### 5.1 Follow-up investigation: the 7.172 baseline is not reproducible
 
-- The discrepancy is **not** a GPU artifact. The §3 A/B shows CPU and CUDA
-  agree to 6.4e-05 on baseline perplexity within this session.
-- The environment genuinely changed between the two sessions. `transformers`
-  and `pyarrow` were **absent** from this machine at the start of this
-  session and had to be reinstalled, and the HuggingFace model cache was
-  empty — so the earlier session ran against a different (unrecorded)
-  `transformers` version. `transformers` 5.16.1 was installed here.
-  A different default attention implementation or tokenizer behavior
-  between major versions is the most likely explanation and is testable.
-- Notably, this session's **fp16** baseline (12.780280) matches the
-  documented **fp32** baseline (12.780) to 5 decimal places, which is the
-  physically expected result for fp16 inference of this model and makes
-  7.172 the number more in need of explanation.
+The discrepancy was chased down rather than left as "probably an
+environment difference". Three candidate explanations were tested; all
+three are excluded.
 
-**Consequence:** the roadmap's GPTQ rows and this session's rows must not
-be compared to each other, and the "~18.8x better" claim recorded in
-ROADMAP.md v1.56.0 should be treated as unverified pending a re-run that
-pins the `transformers` version. The *qualitative* conclusion that early
-blocks are disproportionately sensitive survives in both environments; only
-its magnitude is in dispute.
+**(a) Not a GPU artifact.** The §3 A/B shows CPU and CUDA agree on baseline
+perplexity to 6.4e-05 relative within this session.
+
+**(b) Not a `transformers` version difference.** The same measurement was
+re-run under `transformers` 4.46.3, installed into an isolated directory
+and shadowed via `PYTHONPATH` so the machine's own environment was left
+untouched. The two major versions agree to ~0.1% everywhere:
+
+| seq_len / max_tokens | transformers 4.46.3 | transformers 5.16.1 |
+|---|---|---|
+| **512 / 8192 (the script's own defaults)** | **12.796** | **12.780** |
+| 512 / 2048 | 10.350 | 10.320 |
+| 1024 / 8192 | 10.855 | 10.881 |
+| 2048 / 2048 | 6.122 | 6.119 |
+
+This is doubly excluded, because the committed script calls
+`AutoModelForCausalLM.from_pretrained(..., dtype=...)`, and `dtype=` is a
+**v5-only** kwarg -- 4.46.3 raises `TypeError: LlamaForCausalLM.__init__()
+got an unexpected keyword argument 'dtype'` (it wants `torch_dtype=`). So
+the earlier session must itself have run a v5-era `transformers`, which is
+exactly where 12.780 is measured. The probe used for the table above was
+made version-adaptive and reports the dtype the weights actually landed in,
+so a silently-ignored dtype kwarg could not masquerade as fp16.
+
+**(c) Not an eval-window difference.** Perplexity here is genuinely very
+sensitive to `seq_len` -- longer blocks give more context per prediction,
+so the number drops (12.780 at seq_len 512 vs 9.618 at seq_len 2048, same
+8192-token window). That made "they used a different window" a serious
+hypothesis. It does not survive: a scan of **54** `(seq_len, max_tokens)`
+combinations (seq_len 128-2048, max_tokens 1024-16384) found **no
+configuration within 0.236 of 7.172**; the closest were 6.936 (1536/3072)
+and 7.436 (768/2048).
+
+**And the code itself has not drifted.** `git log` shows only two commits
+have ever touched this file -- the one that added it (`3edfd2d`, the
+v1.56.0 commit whose changelog records 7.172) and this session's
+(`401b397`). `SEQ_LEN = 512`, `DEFAULT_MAX_TOKENS = 8192`,
+`CALIB_TOKEN_OFFSET`, `CALIB_SEQS`, `CALIB_SEQ_LEN`, `MODEL_NAME` and the
+body of `compute_perplexity()` are byte-identical between the committed
+version and the version measured here.
+
+**Conclusion, stated at the strength the evidence supports:** running the
+committed code with its documented flags yields a baseline of **12.78**,
+robustly -- across two `transformers` major versions, across CPU and GPU,
+and it independently agrees to 5 decimal places with the **fp32** baseline
+(12.780) that the sibling script `quantize_tinyllama.py` established in an
+earlier session. **The 7.172 figure cannot currently be reproduced from the
+committed code in any configuration tested.**
+
+This is *not* proof that the earlier run was wrong. Two explanations remain
+open and are not testable after the fact:
+
+- That session developed this script in stages (its own changelog describes
+  a first per-layer implementation, later rewritten to block-sequential).
+  Intermediate runs may have used code that differs from what was finally
+  committed.
+- The HuggingFace model cache on this machine was **empty** at the start of
+  this session and TinyLlama had to be re-downloaded, so the exact model
+  snapshot the earlier session used cannot be inspected.
+
+**Consequence for the documentation:** the roadmap's GPTQ rows (7.172 ->
+26.139, -> 4,776.805, -> 261.189) and the "**~18.8x better**"
+mixed-precision claim derived from them should be treated as **not
+reproducible**, rather than merely "measured in a different environment".
+They are superseded by this session's same-environment, internally
+consistent numbers. The *qualitative* finding they were used to support --
+that early transformer blocks are disproportionately sensitive to ternary
+quantization -- does reproduce here, at 2.04x rather than ~18.8x.
 
 ---
 
