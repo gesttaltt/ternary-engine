@@ -39,6 +39,14 @@ except ImportError:
 
 
 class PowerMonitor:
+    #: Subclasses that fabricate rather than measure set this True.
+    IS_SIMULATED = False
+    #: Which physical device this monitor observes. The workloads in this
+    #: file are CPU workloads (ternary_simd_engine's AVX2 kernels and NumPy
+    #: baselines), so a monitor whose MEASURES != 'cpu' cannot substantiate
+    #: a claim about them, no matter how real its readings are.
+    MEASURES = 'cpu'
+
     """
     Abstract base class for power monitoring
 
@@ -167,8 +175,30 @@ class NVIDIAPowerMonitor(PowerMonitor):
         super().__init__()
         self.samples = []
 
+    MEASURES = 'gpu'
+
     def is_available(self) -> bool:
-        """Check if nvidia-smi is available"""
+        """True when nvidia-smi is present. NOTE: this monitor is excluded
+        from _create_monitor()'s auto-detect chain (2026-08-29) -- the
+        exclusion is there, not here, because "is nvidia-smi available" is
+        a genuine question worth answering honestly for an explicit
+        --platform nvidia run.
+
+        Why it was excluded: it used to sit ahead of MockPowerMonitor in
+        that chain, so on this host
+        -- CPU ternary kernels, an NVIDIA GPU present, and RAPL's energy_uj
+        root-only -- `--platform auto` therefore selected GPU power
+        monitoring for a purely CPU workload and reported ~11.3 W of *idle
+        GPU* draw as the energy cost of AVX2 ternary operations, computed a
+        "1.02x ternary advantage" from it, and exited 0 with
+        is_simulated=False.
+
+        That is more insidious than the mock-power fallback fixed alongside
+        it: nothing is fabricated, so no simulation marker would ever catch
+        it -- the readings are real measurements of the wrong device. Use
+        `--platform nvidia` explicitly, and only for a GPU workload; main()
+        still exits 2 on the device mismatch if the workload is CPU.
+        """
         try:
             subprocess.run(
                 ['nvidia-smi'],
@@ -293,8 +323,28 @@ class MockPowerMonitor(PowerMonitor):
         super().__init__()
         self.start_time = 0
 
+    #: Marks this monitor as fabricating its numbers. Checked before any
+    #: result is reported or saved -- see PowerConsumptionBenchmark.
+    IS_SIMULATED = True
+
     def is_available(self) -> bool:
-        return True
+        """Deliberately NOT auto-selectable (fixed 2026-08-29).
+
+        This previously returned True and sat last in _create_monitor()'s
+        auto-detect chain, so on any machine where RAPL's energy_uj is
+        root-only -- the default on modern kernels, and the exact situation
+        on this host -- `--platform auto` silently selected a monitor that
+        fabricates 50 W, computed a real-looking ops/joule ratio from it,
+        and saved it to JSON with no marker of any kind, exiting 0.
+
+        That is the same silent-fallback class already fixed twice in this
+        repo (bench_competitive.py's mock (a+b)%3 arithmetic;
+        test_falsification.py substituting NumPy for the real engine), and
+        it would corrupt commercial-viability criterion 4 specifically.
+        Selecting simulated power now requires an explicit
+        `--platform mock`.
+        """
+        return False
 
     def start_monitoring(self):
         self.start_time = time.time()
@@ -341,7 +391,14 @@ class PowerConsumptionBenchmark:
                 'timestamp': datetime.now().isoformat(),
                 'platform': sys.platform,
                 'architecture': platform_module.machine(),
-                'monitor_type': type(self.monitor).__name__
+                'monitor_type': type(self.monitor).__name__,
+                # Explicit, machine-checkable marker: True means the numbers
+                # in this file are FABRICATED, not measured. Added 2026-08-29
+                # alongside closing the silent auto-fallback to
+                # MockPowerMonitor -- previously nothing in a saved result
+                # distinguished a real run from a simulated one.
+                'is_simulated': bool(getattr(self.monitor, 'IS_SIMULATED', False)),
+                'measures_device': getattr(self.monitor, 'MEASURES', 'cpu'),
             },
             'benchmarks': []
         }
@@ -350,20 +407,33 @@ class PowerConsumptionBenchmark:
         """Create appropriate power monitor for platform"""
         if self.platform == "auto":
             # Auto-detect
+            # CPU monitors only: every workload in this file runs on the
+            # CPU. NVIDIAPowerMonitor (GPU) and MockPowerMonitor (fabricated)
+            # are reachable only via an explicit --platform, for the reasons
+            # in their is_available() docstrings.
             monitors = [
                 WindowsPowerMonitor(),
                 IntelRAPLMonitor(),
-                NVIDIAPowerMonitor(),
-                MockPowerMonitor()
             ]
 
             for monitor in monitors:
                 if monitor.is_available():
                     print(f"Using power monitor: {type(monitor).__name__}")
                     return monitor
+            # falls through to the explicit error below
 
-            print("Warning: No power monitor available, using mock")
-            return MockPowerMonitor()
+            print("=" * 70)
+            print("ERROR: No real power monitor is available on this machine.")
+            print("  Intel RAPL is the usual path here; its energy_uj is")
+            print("  root-only by default (post-PLATYPUS mitigation). Either:")
+            print("    sudo chmod a+r /sys/class/powercap/intel-rapl:0/energy_uj \\")
+            print("                   /sys/class/powercap/intel-rapl:0:0/energy_uj")
+            print("  or run this benchmark under sudo.")
+            print("  Refusing to fall back to simulated power, which would")
+            print("  produce fabricated numbers indistinguishable from real")
+            print("  ones. Pass --platform mock if you explicitly want that.")
+            print("=" * 70)
+            raise SystemExit(2)
 
         elif self.platform == "windows":
             return WindowsPowerMonitor()
@@ -546,6 +616,30 @@ def main():
     benchmark.run_comparative_benchmark(size=args.size)
     benchmark.save_results()
 
+    # A simulated run must be impossible to mistake for a real one, including
+    # by a caller that only checks the exit code (exit 2, distinct from
+    # success 0). Mirrors the fix already applied to test_falsification.py.
+    if getattr(benchmark.monitor, "MEASURES", "cpu") != "cpu":
+        print()
+        print("!" * 70)
+        print("!! DEVICE MISMATCH -- the selected monitor measures "
+              f"{getattr(benchmark.monitor, 'MEASURES', '?').upper()},")
+        print("!! but every workload in this benchmark runs on the CPU.")
+        print("!! These readings are real but describe the wrong device.")
+        print("!! Do not cite this run for commercial-viability criterion 4.")
+        print("!" * 70)
+        return 2
+
+    if getattr(benchmark.monitor, "IS_SIMULATED", False):
+        print()
+        print("!" * 70)
+        print("!! SIMULATED POWER -- THESE NUMBERS ARE FABRICATED, NOT MEASURED")
+        print("!! MockPowerMonitor reports a fixed 50 W regardless of workload.")
+        print("!! Do not cite this run for commercial-viability criterion 4.")
+        print("!" * 70)
+        return 2
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
