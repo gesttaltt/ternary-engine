@@ -399,6 +399,11 @@ class PowerConsumptionBenchmark:
                 # distinguished a real run from a simulated one.
                 'is_simulated': bool(getattr(self.monitor, 'IS_SIMULATED', False)),
                 'measures_device': getattr(self.monitor, 'MEASURES', 'cpu'),
+                # The engine threads via OpenMP above OMP_THRESHOLD while
+                # NumPy's elementwise ops are single-threaded, so an
+                # uncontrolled run compares ~12 cores against 1 -- recorded
+                # here because it materially changes energy ratios.
+                'omp_num_threads': os.environ.get('OMP_NUM_THREADS', 'unset (engine may use all cores)'),
             },
             'benchmarks': []
         }
@@ -525,29 +530,60 @@ class PowerConsumptionBenchmark:
         print("=" * 80)
         print(f"Array size: {size:,} elements")
 
-        # Prepare data
+        # Prepare data. The engine's uint8 API encodes trits as v = trit + 1
+        # (0 -> -1, 1 -> 0, 2 -> +1); tadd_int8 takes raw {-1,0,+1} int8.
         a_tern = np.random.randint(0, 3, size, dtype=np.uint8)
         b_tern = np.random.randint(0, 3, size, dtype=np.uint8)
 
         a_np = np.random.randint(-1, 2, size, dtype=np.int8)
         b_np = np.random.randint(-1, 2, size, dtype=np.int8)
+        a_np16 = a_np.astype(np.int16)          # avoids int8 overflow in a+b
 
-        # Benchmark ternary
+        # CORRECTED 2026-08-29 -- the baseline used to be np.add(a, b), a raw
+        # WRAPPING int8 add, timed against tc.tadd, a SATURATING ternary add.
+        # Those are different operations, so the resulting "0.54x, NO POWER
+        # ADVANTAGE" verdict compared unlike things. tadd's saturation was
+        # verified here against clip over the complete 9-entry truth table
+        # before this baseline was adopted; that equivalence is asserted
+        # below rather than assumed, so a future kernel change that breaks it
+        # fails loudly instead of silently restoring the old mismatch.
+        if tc:
+            probe_a = np.array([-1, -1, -1, 0, 0, 0, 1, 1, 1], dtype=np.int8)
+            probe_b = np.array([-1, 0, 1, -1, 0, 1, -1, 0, 1], dtype=np.int8)
+            expected = np.clip(probe_a.astype(np.int16) + probe_b, -1, 1).astype(np.int8)
+            if not np.array_equal(tc.tadd_int8(probe_a, probe_b), expected):
+                raise SystemExit(
+                    "tadd_int8 is no longer equivalent to clip(a+b,-1,1); the "
+                    "NumPy baseline below would be comparing different "
+                    "operations. Refusing to produce a power ratio.")
+
         if tc:
             ternary_result = self.benchmark_operation(
-                "Ternary Addition",
+                "Ternary Addition (saturating)",
                 lambda: tc.tadd(a_tern, b_tern),
                 duration_sec=10.0
             )
             self.results['benchmarks'].append(ternary_result)
 
-        # Benchmark NumPy
+        # THE baseline: same operation, expressed in NumPy.
         numpy_result = self.benchmark_operation(
-            "NumPy INT8 Addition",
-            lambda: np.add(a_np, b_np, dtype=np.int8),
+            "NumPy saturating equivalent  clip(a+b,-1,1)",
+            lambda: np.clip(a_np16 + b_np, -1, 1).astype(np.int8),
             duration_sec=10.0
         )
         self.results['benchmarks'].append(numpy_result)
+
+        # Kept for transparency, NOT used for the verdict: a raw wrapping add
+        # is a strictly simpler operation, and ternary loses to it. Reporting
+        # only the favourable comparison would be the same selective framing
+        # this project retired with its "8,234x vs Python" headline.
+        raw_result = self.benchmark_operation(
+            "NumPy raw a+b  [NOT equivalent -- reference only]",
+            lambda: np.add(a_np, b_np, dtype=np.int8),
+            duration_sec=10.0
+        )
+        raw_result['not_semantically_equivalent'] = True
+        self.results['benchmarks'].append(raw_result)
 
         # Calculate advantage
         if tc and 'ops_per_joule' in ternary_result and 'ops_per_joule' in numpy_result:

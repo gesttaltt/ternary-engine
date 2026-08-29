@@ -299,7 +299,7 @@ whether the remaining work is *possible in this environment*:
 | 1 | Memory efficiency 4x vs INT8 | ✅ **Validated** (re-confirmed 2026-08-18) | done |
 | 2 | Throughput at equivalent bit-width > INT2 | ✅ **Validated** — Dense243 8.0x faster than an INT2 reference (2026-08-18) | done |
 | 3 | Inference latency < 2x FP16 | ✅ **Validated 2026-08-29** for batch ≤ 32 (borderline ~1.7-2.0x at batch 128) | done |
-| 4 | Power consumption 2-4x better | ❌ Not measured | ❌ **no** — blocked, see below |
+| 4 | Power consumption 2-4x better | ✅ **Validated 2026-08-29** — 3.05-3.92x idle-subtracted, 5.3-8.0x raw | done |
 | 5 | Accuracy retention < 5% loss | ❌ Fails, now thoroughly characterized | partly — see below |
 
 Note CLAUDE.md's own "Commercial Viability Criteria" block still lists
@@ -334,9 +334,14 @@ GPU power *is* readable via `nvidia-smi` (verified, 32.98 W idle) but
 measures the wrong device: this project's ternary kernels are CPU AVX2, so
 GPU telemetry cannot substantiate a claim about them.
 
-**Status: awaiting the permission grant, then measurable in ~an hour.** This
-is the cheapest remaining criterion by a wide margin — it is one command
-away from taking the project from 3/5 to 4/5.
+**RESOLVED 2026-08-29**: the chmod was applied and criterion 4 measured
+**3.05-3.92x idle-subtracted / 5.3-8.0x raw**, inside-to-above the 2-4x
+target. The project is now at **4/5**. Getting a trustworthy number
+required fixing three bugs in the project's own power benchmark: silent
+mock fallback, GPU-monitor-for-a-CPU-workload, and — the one that decided
+the old verdict — timing a *saturating* ternary add against a *raw
+wrapping* int8 add. Full detail:
+reports/2026-08-29/CRITERION4_POWER_EFFICIENCY_RAPL.md
 
 **Criterion 5 is answered in the sense that matters, even though it fails.**
 Five techniques have now been measured against a 12.780 fp16 baseline:
