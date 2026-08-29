@@ -6,7 +6,7 @@
 
 ---
 
-## Status Reality Check (2026-08-17)
+## Status Reality Check (2026-08-17, refreshed 2026-08-29)
 
 This document's body (dated 2025-11-24) was written before most of the
 v1.2.0 plan below was implemented, and has not been kept in sync. **CLAUDE.md
@@ -25,17 +25,20 @@ the rest of the document can be read as history rather than a live plan.
 | Dual-shuffle XOR | **Not implemented** — explicitly labeled a "future enhancement" in `backend_avx2_v2_optimized.cpp`; its test (`test_dual_shuffle_validation.py`) correctly reports failure rather than being faked or skipped |
 | Multi-platform CI | Linux x64 CI builds + runs the full test suite (15/15); no formal benchmark/performance validation on Linux yet, and macOS is untested |
 
-**TritNet — the plan below undercounts what's real:** Phase 2A (tnot) was
-listed above as "Pending Validation" in this doc's original body; in reality
-Phases 1–3 are all complete (truth tables → QAT training → C++ inference,
-scalar and AVX2 → Python bindings), a scope well beyond this document's
-tracking. The load-bearing open item is **Phase 4 (GPU acceleration)**,
-which has not been started — no CUDA/ROCm code exists in the tree despite
-the v3.0 target below. This matters because Phase 3's own benchmark found
-LUT beats AVX2-TritNet by 169×–195× on CPU; TritNet's practical case now
-rests entirely on the unstarted Phase 4/5 work, not on anything shipped so
-far. See CLAUDE.md → "TritNet Development" for the authoritative phase
-table.
+**TritNet — CORRECTED 2026-08-29; the paragraph here was itself stale.**
+It previously said Phase 4 (GPU) "has not been started — no CUDA/ROCm code
+exists in the tree". That has been false since 2026-08-17: **Phases 1–5 are
+all complete**, and the answer they produced is negative. Phase 3 found LUT
+beats AVX2-TritNet by 169×–195× on CPU; Phase 4 ran real batched CUDA
+inference on this host's RTX 3050 and reached only 0.10–0.27× of LUT
+throughput (the networks are too small to become GPU-compute-bound at any
+batch fitting in 6GB); Phase 5 then found that direct closed-form GPU
+arithmetic beats TritNet-GPU by 46–58× *and* is exact, so no niche exists
+for TritNet as a replacement for exact per-trit-chunk arithmetic. **TritNet
+is answered, not pending.** The only bullet never started is "discover
+novel ternary operations" — an operation with no cheap closed form is the
+one place a TritNet-shaped result could still live. See CLAUDE.md →
+"TritNet Development" for the authoritative phase table.
 
 **v2.0 → v4.0 (index-arithmetic elimination, AVX-512, ARM NEON/SVE, RISC-V
 Vector, GPU/CUDA, FPGA/ASIC):** none of this has been started. No code
@@ -48,16 +51,22 @@ list*, not a record of achievement — several of those criteria (e.g. "Builds
 on Windows/Linux/macOS", GPU backend, TritNet 100% *and* GPU-competitive)
 are still open per the table above. Read them as goals, not checkmarks.
 
-**Other open production gaps** (full detail in CLAUDE.md → "Critical Gaps &
-Known Issues"): competitive-benchmark results need a clean-environment
-re-run before being cited further; Dense243's Windows `/arch:AVX2` flag is
-unvalidated on actual Windows hardware; `train_phase2a.py`/`train_phase2b.py`
-still duplicate their QAT training code instead of sharing a module;
-`BenchmarkRunner` remains built but unused by the 3 active benchmark
-scripts; VTune/NVTX/Perfetto profiler backends have call sites but no build
-ever defines the macros to activate them; `test_falsification.py`'s one
-completed run reported FALSIFIED (2/5 criteria) in a noisy shared container
-and needs an isolated re-run before that number means anything either way.
+**Other open production gaps — REFRESHED 2026-08-29** (full detail in
+CLAUDE.md → "Critical Gaps & Known Issues"). Four items listed here have
+since been closed and are recorded as done rather than silently dropped:
+
+| Previously listed as open | Status 2026-08-29 |
+|---|---|
+| Competitive-benchmark results need a clean-environment re-run | ✅ Done 2026-08-18 (reports/2026-08-18/COMPETITIVE_BENCHMARK_REVALIDATION.md) |
+| `train_phase2a.py`/`train_phase2b.py` duplicate QAT code | ✅ Closed — `models/tritnet/qat_common.py` is now the shared module |
+| `BenchmarkRunner` built but unused | ✅ Closed — now used by all 3 active benchmark scripts |
+| VTune/NVTX/Perfetto have call sites but no build activates them | ⚠️ Partly closed — Perfetto is a real vendored backend with `build/build.py --enable-perfetto` and a verified trace; VTune and NVTX remain stubs |
+
+Genuinely still open: Dense243's Windows `/arch:AVX2` flag is unvalidated on
+actual Windows hardware; `test_falsification.py`'s one completed run
+reported FALSIFIED (2/5 criteria) in a noisy shared container and needs an
+isolated re-run before that number means anything either way. The Linux CI
+test suite is now **16/16**, not the 15/15 quoted in the table above.
 
 **⚠️ IMPORTANT — strategic note on the accuracy-retention criterion
 (2026-08-28): PTQ may be structurally the wrong tool, not just
@@ -277,6 +286,81 @@ is now localized to the *objective* (block-local distillation is blind to
 downstream cost), so the next investment is end-to-end QAT — a change of
 objective, not of budget — with the caveat that it must close ~2 orders
 of magnitude to matter.
+
+---
+
+## Where To Continue (2026-08-29)
+
+The five commercial-viability criteria, with what is actually known now and
+whether the remaining work is *possible in this environment*:
+
+| # | Criterion | Status | Tractable here? |
+|---|---|---|---|
+| 1 | Memory efficiency 4x vs INT8 | ✅ **Validated** (re-confirmed 2026-08-18) | done |
+| 2 | Throughput at equivalent bit-width > INT2 | ✅ **Validated** — Dense243 8.0x faster than an INT2 reference (2026-08-18) | done |
+| 3 | Inference latency < 2x FP16 | ❌ **Never measured** | ✅ **yes — the one tractable gap** |
+| 4 | Power consumption 2-4x better | ❌ Not measured | ❌ **no** — blocked, see below |
+| 5 | Accuracy retention < 5% loss | ❌ Fails, now thoroughly characterized | partly — see below |
+
+Note CLAUDE.md's own "Commercial Viability Criteria" block still lists
+criterion 2 as "Needs INT2 reference" and criterion 5 as "Needs models";
+both are stale — 2 is validated, and 5 has extensive data.
+
+**Criterion 4 is genuinely blocked, and it is worth recording why so nobody
+re-litigates it.** Checked directly 2026-08-29: the RAPL powercap domains
+exist on this host (`/sys/class/powercap/intel-rapl:0`) but `energy_uj` is
+**not readable** without root — the standard mitigation after RAPL's
+side-channel disclosure — and `perf_event_paranoid` is 4. GPU power *is*
+readable via `nvidia-smi` (verified, 32.98 W idle), but that measures the
+wrong device: this project's ternary kernels are CPU AVX2, so GPU telemetry
+cannot substantiate a claim about them. This needs either root on this
+machine or different hardware. Not an engineering problem.
+
+**Criterion 5 is answered in the sense that matters, even though it fails.**
+Five techniques have now been measured against a 12.780 fp16 baseline:
+
+| Technique | Full-model perplexity | vs baseline |
+|---|---|---|
+| Naive per-tensor absmean | 89,100.682 | +697,074% |
+| Naive per-channel absmean | 132,590.254 | +1,037,361% |
+| GPTQ (Hessian error compensation) | 18,565.469 | +145,167% |
+| GPTQ + mixed precision (73% coverage) | 14,285.862 | +111,681% |
+| **Block-local QAT (100% coverage)** | **2,237.038** | **+17,404%** |
+
+QAT is the first technique to improve on its predecessor rather than join
+it, and the remaining loss is now *localized*: per-block outputs match their
+fp16 teachers to ~1e-5 MSE while end-to-end perplexity stays 22-24x
+baseline, so the bottleneck is the block-local **objective**, not the
+budget or the quantizer. The next experiment is end-to-end QAT against the
+real LM loss. **Be clear-eyed about it:** it must close ~2 orders of
+magnitude, it needs the whole model on the backward graph (not the
+one-block-at-a-time trick that made the current run fit in 6GB), and the
+honest prior is that this is plausible for training-from-scratch and
+speculative for fine-tuning a converged checkpoint.
+
+### Recommendation
+
+**Do criterion 3 next.** It is the only unvalidated criterion whose work is
+actually possible in this environment, and it is the only remaining way to
+move the project from **2/5 to 3/5 validated**. Everything needed already
+exists: `src/core/simd/ternary_gemm_dense.{h,cpp}` and the `DenseWeights`
+path in `ternary_zero_skip_gemm` (whose batch=128 regression was fixed
+2026-08-22, and which now wins all 16 shape x batch cells), against an FP16
+reference on the same CPU. Keep it CPU-vs-CPU: comparing a CPU ternary
+kernel against GPU FP16 would repeat exactly the category error this
+project already retired with the "8,234x vs Python" headline.
+
+Two supporting notes: measure in native C++ per this document's own
+`ffi_isolation` rule rather than through pybind11, and quote `seq_len`/shape
+alongside every number — the reproducibility investigation
+(reports/2026-08-29/PERPLEXITY_BASELINE_REPRODUCIBILITY.md) showed how
+easily unmatched settings make two runs look like a finding.
+
+Lower priority, and explicitly *not* recommended as the next move: more PTQ
+variants (exhausted, four consecutive same-direction failures), TritNet
+throughput work (answered negative on CPU and GPU), and the v2.0-v4.0
+backend targets (AVX-512, ARM, RISC-V, FPGA), none of which have any code
+and none of which change a commercial-viability criterion.
 
 ---
 
