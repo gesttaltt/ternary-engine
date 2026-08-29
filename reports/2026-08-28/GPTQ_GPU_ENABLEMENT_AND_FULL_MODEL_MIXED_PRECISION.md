@@ -176,6 +176,12 @@ an fp16 baseline of **12.780**, and the corresponding pilots give
 
 ### 5.1 Follow-up investigation: the 7.172 baseline is not reproducible
 
+> Written up standalone in
+> [reports/2026-08-29/PERPLEXITY_BASELINE_REPRODUCIBILITY.md](../2026-08-29/PERPLEXITY_BASELINE_REPRODUCIBILITY.md),
+> and reproducible via the committed
+> `benchmarks/model_quantization/probe_perplexity_reproducibility.py`.
+> Summary follows.
+
 The discrepancy was chased down rather than left as "probably an
 environment difference". Three candidate explanations were tested; all
 three are excluded.

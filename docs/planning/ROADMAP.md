@@ -176,8 +176,11 @@ finally committed, and the HuggingFace cache was empty at the start of
 this session so the earlier model snapshot cannot be inspected. The
 *qualitative* early-block-sensitivity finding does reproduce, at 2.04x
 rather than ~18.8x. Full detail:
-reports/2026-08-28/GPTQ_GPU_ENABLEMENT_AND_FULL_MODEL_MIXED_PRECISION.md
-section 5.1
+reports/2026-08-29/PERPLEXITY_BASELINE_REPRODUCIBILITY.md (standalone
+write-up), reports/2026-08-28/GPTQ_GPU_ENABLEMENT_AND_FULL_MODEL_MIXED_PRECISION.md
+section 5.1, and the committed probe
+`benchmarks/model_quantization/probe_perplexity_reproducibility.py`
+which reproduces the whole investigation
 
 **Recommendation, in order, before concluding PTQ is a dead end or
 committing to a costlier pivot:**
