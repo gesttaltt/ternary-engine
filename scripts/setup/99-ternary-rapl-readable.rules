@@ -32,7 +32,7 @@
 # or manually:
 #   sudo cp scripts/setup/99-ternary-rapl-readable.rules /etc/udev/rules.d/
 #   sudo udevadm control --reload-rules
-#   sudo udevadm trigger --subsystem-match=powercap
+#   sudo udevadm trigger --action=add --subsystem-match=powercap
 #
 # UNINSTALL
 #   sudo rm /etc/udev/rules.d/99-ternary-rapl-readable.rules
@@ -43,5 +43,12 @@
 # (intel-rapl:0 = package-0, intel-rapl:0:0 = core) and not their parent
 # "intel-rapl", which has no energy_uj attribute.
 
-SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*", ACTION=="add", RUN+="/usr/bin/chgrp adm /sys%p/energy_uj"
-SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*", ACTION=="add", RUN+="/usr/bin/chmod 0440 /sys%p/energy_uj"
+# ACTION matches BOTH add and change. Boot generates "add", so "add" alone
+# would work at boot -- but `udevadm trigger` defaults to --action=change,
+# so an add-only rule cannot be verified without rebooting. Matching both
+# means the install can prove itself immediately (2026-08-30: an add-only
+# version of this rule installed cleanly, passed `udevadm test`, and changed
+# nothing on trigger, which is exactly the kind of "looks installed, silently
+# inert" state this project keeps finding elsewhere).
+SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*", ACTION=="add|change", RUN+="/usr/bin/chgrp adm /sys%p/energy_uj"
+SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*", ACTION=="add|change", RUN+="/usr/bin/chmod 0440 /sys%p/energy_uj"

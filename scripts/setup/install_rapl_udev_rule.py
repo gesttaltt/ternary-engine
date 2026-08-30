@@ -89,8 +89,12 @@ def need_root() -> None:
 
 
 def reload_udev() -> None:
+    # --action=add explicitly: `udevadm trigger` defaults to "change", which
+    # would not match an add-only rule and would leave the install silently
+    # inert until the next reboot.
     for cmd in (["udevadm", "control", "--reload-rules"],
-                ["udevadm", "trigger", "--subsystem-match=powercap"]):
+                ["udevadm", "trigger", "--action=add",
+                 "--subsystem-match=powercap"]):
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
             print(f"  [WARN] {' '.join(cmd)} failed: {r.stderr.strip()}")
