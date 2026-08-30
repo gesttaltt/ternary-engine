@@ -152,7 +152,20 @@ rather than manufacturing them — is covered in
 ## 8. Reproduction
 
 ```bash
+# Persistent (survives reboot) -- installs a udev rule, 0440 root:adm
+sudo python3 scripts/setup/install_rapl_udev_rule.py
+python3 scripts/setup/install_rapl_udev_rule.py --check   # verify, no root
+
+# Or one-shot for this boot only
 sudo chmod a+r /sys/class/powercap/intel-rapl:0/energy_uj \
                /sys/class/powercap/intel-rapl:0:0/energy_uj
+
 OMP_NUM_THREADS=1 python3 benchmarks/python-with-interpreter-overhead/bench_power_efficiency.py --platform intel
 ```
+
+A bare `chmod` does **not** persist: the powercap devices are recreated with
+default 0400 permissions on every boot. The udev rule reapplies the change on
+each device-add. It grants group read to `adm` rather than world read, to keep
+the PLATYPUS side-channel exposure to accounts that are already privileged --
+see `scripts/setup/99-ternary-rapl-readable.rules` for the full trade-off, and
+do not install it on a shared or multi-tenant host.

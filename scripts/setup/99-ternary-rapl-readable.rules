@@ -1,0 +1,47 @@
+# 99-ternary-rapl-readable.rules
+#
+# Makes Intel-RAPL energy counters readable by the "adm" group, persistently
+# across reboots, so this project's power benchmark (commercial-viability
+# criterion 4) can run without root.
+#
+# WHY THIS IS NEEDED
+# ------------------
+# /sys/class/powercap/intel-rapl:*/energy_uj ships as mode 0400 root:root.
+# That is a deliberate mitigation, not an oversight: readable RAPL counters
+# are the basis of the PLATYPUS class of side-channel attacks (CVE-2020-8694 /
+# CVE-2020-8695), which recover secrets by correlating energy draw with
+# secret-dependent work. Kernels have restricted the counters since ~5.10.
+#
+# A manual `chmod a+r` does not survive a reboot, because the powercap
+# devices are re-created on each boot with default permissions.
+#
+# SECURITY TRADE-OFF -- READ BEFORE INSTALLING
+# --------------------------------------------
+# Installing this widens that side channel to every member of "adm". That is
+# a reasonable trade on a single-user development machine where you are
+# already the administrator. It is NOT appropriate on a shared host, a
+# multi-tenant box, or anything running untrusted code, where a local
+# attacker could use it against another user's or another VM's secrets.
+#
+# This rule grants group read (0440 root:adm) rather than world read (0444)
+# specifically to keep the exposure to accounts that already have elevated
+# privileges, instead of every process on the system.
+#
+# INSTALL
+#   sudo python3 scripts/setup/install_rapl_udev_rule.py
+# or manually:
+#   sudo cp scripts/setup/99-ternary-rapl-readable.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger --subsystem-match=powercap
+#
+# UNINSTALL
+#   sudo rm /etc/udev/rules.d/99-ternary-rapl-readable.rules
+#   sudo udevadm control --reload-rules
+#   (permissions revert to 0400 on the next reboot, or re-trigger to be sure)
+#
+# The KERNEL glob requires a colon, so it matches the real domains
+# (intel-rapl:0 = package-0, intel-rapl:0:0 = core) and not their parent
+# "intel-rapl", which has no energy_uj attribute.
+
+SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*", ACTION=="add", RUN+="/usr/bin/chgrp adm /sys%p/energy_uj"
+SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*", ACTION=="add", RUN+="/usr/bin/chmod 0440 /sys%p/energy_uj"
